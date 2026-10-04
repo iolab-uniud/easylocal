@@ -18,9 +18,7 @@
 
 #include <crow.h>
 
-#include <array>
 #include <atomic>
-#include <charconv>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -178,13 +176,7 @@ template<cost::arithmetic Cost>
         case crow::json::num_type::Unsigned_integer:
             return std::to_string(value.u());
         default:
-        {
-            std::array<char, 32> buffer{};
-            const auto [end, error] =
-                std::to_chars(buffer.data(), buffer.data() + buffer.size(), value.d());
-            static_cast<void>(error); // 32 characters hold any double
-            return std::string{buffer.data(), end};
-        }
+            return config::format_value(value.d());
         }
     case crow::json::type::True:
         return "true";
@@ -313,10 +305,7 @@ private:
         std::optional<solution_type> solution;
         std::optional<cost_type> cost;
         std::string error;
-        std::atomic<std::size_t> evaluations{};
-        std::atomic<std::size_t> iterations{};
-        std::atomic<std::size_t> evaluation_limit{};
-        std::atomic_bool has_evaluation_limit{};
+        easylocal::detail::atomic_run_progress progress;
     };
 
     [[nodiscard]] static std::string_view state_name(const run_state state) noexcept
@@ -484,14 +473,14 @@ private:
         add_parameters(body, *record);
         body["status"] = std::string{state_name(record->state)};
         body["cancellation_requested"] = record->stop_source.stop_requested();
-        body["progress"]["evaluations"] = static_cast<std::uint64_t>(
-            record->evaluations.load(std::memory_order_relaxed));
-        body["progress"]["iterations"] = static_cast<std::uint64_t>(
-            record->iterations.load(std::memory_order_relaxed));
-        if (record->has_evaluation_limit.load(std::memory_order_relaxed))
+        const auto progress = record->progress.load();
+        body["progress"]["evaluations"] =
+            static_cast<std::uint64_t>(progress.evaluations);
+        body["progress"]["iterations"] = static_cast<std::uint64_t>(progress.iterations);
+        if (progress.evaluation_limit)
         {
-            body["progress"]["evaluation_limit"] = static_cast<std::uint64_t>(
-                record->evaluation_limit.load(std::memory_order_relaxed));
+            body["progress"]["evaluation_limit"] =
+                static_cast<std::uint64_t>(*progress.evaluation_limit);
         }
         if (!record->error.empty())
         {
@@ -689,6 +678,8 @@ private:
                 runs_.emplace(id, record);
             }
 
+            // The body of the response, before the run can start: queued.
+            auto body = run_body(record);
             const bool accepted = execution_.try_submit(
                 [this, session = std::move(session), record, runner]() mutable {
                     bool cancelled_before_start = false;
@@ -711,18 +702,7 @@ private:
                     }
 
                     auto observer = [record](const easylocal::run_progress& progress) {
-                        record->evaluations.store(
-                            progress.evaluations,
-                            std::memory_order_relaxed);
-                        record->iterations.store(
-                            progress.iterations,
-                            std::memory_order_relaxed);
-                        record->has_evaluation_limit.store(
-                            progress.evaluation_limit.has_value(),
-                            std::memory_order_relaxed);
-                        record->evaluation_limit.store(
-                            progress.evaluation_limit.value_or(0),
-                            std::memory_order_relaxed);
+                        record->progress.store(progress);
                     };
                     const easylocal::run_control control{
                         record->stop_source.get_token(),
@@ -777,17 +757,6 @@ private:
                     "runner execution queue is full");
             }
 
-            crow::json::wvalue body;
-            body["id"] = id;
-            body["runner"] = runner;
-            body["seed"] = record->seed;
-            if (record->target)
-                body["target"] = encode_cost(*record->target);
-            add_parameters(body, *record);
-            body["status"] = "queued";
-                body["cancellation_requested"] = false;
-            body["progress"]["evaluations"] = std::uint64_t{0};
-            body["progress"]["iterations"] = std::uint64_t{0};
             auto response = detail::json_response(202, std::move(body));
             response.set_header("Location", run_url(id));
             return response;

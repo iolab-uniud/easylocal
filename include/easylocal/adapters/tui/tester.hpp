@@ -17,7 +17,6 @@
 #include <easylocal/runners/search_run.hpp>
 
 #include <algorithm>
-#include <atomic>
 #include <charconv>
 #include <chrono>
 #include <concepts>
@@ -568,14 +567,6 @@ struct async_runner_result
     bool cancelled{};
     std::optional<Solution> solution;
     std::string error;
-};
-
-struct async_progress_state
-{
-    std::atomic<std::size_t> evaluations{};
-    std::atomic<std::size_t> iterations{};
-    std::atomic<std::size_t> evaluation_limit{};
-    std::atomic_bool has_evaluation_limit{};
 };
 
 // One editable parameter of the parameters window: its full configuration
@@ -2217,7 +2208,8 @@ private:
             progress_visible_ = true;
             set_status(status_kind::info, "Runner executing: " + run_name_);
 
-            run_progress_state_ = std::make_shared<async_progress_state>();
+            run_progress_state_ =
+                std::make_shared<easylocal::detail::atomic_run_progress>();
 
             std::promise<async_runner_result<typename tester_type::solution_type>> promise;
             run_future_ = promise.get_future();
@@ -2242,18 +2234,7 @@ private:
                     async_runner_result<typename tester_type::solution_type> completion;
                     std::size_t reports = 0;
                     auto observer = [&](const easylocal::run_progress& progress) {
-                        progress_state->evaluations.store(
-                            progress.evaluations,
-                            std::memory_order_relaxed);
-                        progress_state->iterations.store(
-                            progress.iterations,
-                            std::memory_order_relaxed);
-                        progress_state->has_evaluation_limit.store(
-                            progress.evaluation_limit.has_value(),
-                            std::memory_order_relaxed);
-                        progress_state->evaluation_limit.store(
-                            progress.evaluation_limit.value_or(0),
-                            std::memory_order_relaxed);
+                        progress_state->store(progress);
 
                         ++reports;
                         if (event_app != nullptr &&
@@ -2512,25 +2493,17 @@ private:
             return;
         }
 
-        const auto evaluations = run_progress_state_->evaluations.load(
-            std::memory_order_relaxed);
-        const auto iterations = run_progress_state_->iterations.load(
-            std::memory_order_relaxed);
-        const bool has_limit = run_progress_state_->has_evaluation_limit.load(
-            std::memory_order_relaxed);
-        const auto limit = run_progress_state_->evaluation_limit.load(
-            std::memory_order_relaxed);
-
-        progress_.current = evaluations;
-        progress_.total = has_limit ? std::optional<std::size_t>{limit} : std::nullopt;
-        progress_.mode = has_limit
+        const auto progress = run_progress_state_->load();
+        progress_.current = progress.evaluations;
+        progress_.total = progress.evaluation_limit;
+        progress_.mode = progress.evaluation_limit
             ? progress_mode::determinate
             : progress_mode::indeterminate;
         if (!run_worker_.get_stop_token().stop_requested())
         {
-            progress_.label = "Running " + run_name_ +
-                              " [eval=" + std::to_string(evaluations) +
-                              ", iter=" + std::to_string(iterations) + "]";
+            progress_.label = "Running " + run_name_
+                + " [eval=" + std::to_string(progress.evaluations)
+                + ", iter=" + std::to_string(progress.iterations) + "]";
         }
     }
 
@@ -3290,7 +3263,7 @@ private:
     ftxui::App* event_app_{};
     std::jthread run_worker_{};
     std::future<async_runner_result<typename tester_type::solution_type>> run_future_{};
-    std::shared_ptr<async_progress_state> run_progress_state_;
+    std::shared_ptr<easylocal::detail::atomic_run_progress> run_progress_state_;
     std::string run_name_;
     std::string run_before_;
     std::optional<typename tester_type::cost_type> run_target_;

@@ -5,6 +5,7 @@
 /// through a std::stop_token and progress reports (evaluations, iterations,
 /// budget) to an observer.
 
+#include <atomic>
 #include <concepts>
 #include <cstddef>
 #include <functional>
@@ -92,5 +93,48 @@ private:
     void* observer_state_{};
     observer_type observer_{};
 };
+
+namespace detail
+{
+
+// The progress of a run that another thread reads: the run's observer stores
+// it, the reader loads a copy. Each counter is read on its own (relaxed), so a
+// copy may mix two reports.
+class atomic_run_progress
+{
+public:
+    void store(const run_progress& progress) noexcept
+    {
+        evaluations_.store(progress.evaluations, std::memory_order_relaxed);
+        iterations_.store(progress.iterations, std::memory_order_relaxed);
+        evaluation_limit_.store(
+            progress.evaluation_limit.value_or(0),
+            std::memory_order_relaxed);
+        has_evaluation_limit_.store(
+            progress.evaluation_limit.has_value(),
+            std::memory_order_relaxed);
+    }
+
+    [[nodiscard]]
+    run_progress load() const noexcept
+    {
+        return run_progress{
+            .evaluations = evaluations_.load(std::memory_order_relaxed),
+            .iterations = iterations_.load(std::memory_order_relaxed),
+            .evaluation_limit = has_evaluation_limit_.load(std::memory_order_relaxed)
+                ? std::optional<std::size_t>{evaluation_limit_.load(
+                      std::memory_order_relaxed)}
+                : std::nullopt,
+        };
+    }
+
+private:
+    std::atomic<std::size_t> evaluations_{};
+    std::atomic<std::size_t> iterations_{};
+    std::atomic<std::size_t> evaluation_limit_{};
+    std::atomic_bool has_evaluation_limit_{};
+};
+
+} // namespace detail
 
 } // namespace easylocal
