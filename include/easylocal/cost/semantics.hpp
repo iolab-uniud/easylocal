@@ -93,9 +93,15 @@ concept intrinsic_better_or_equivalent =
 
 } // namespace detail
 
+/// A SolutionManager whose costs have a `better` relation: defined by the
+/// function of a root `cost::apply`, or the cost type's `<`.
 template<class SM>
 concept has_better = detail::custom_better<SM> || detail::intrinsic_better<SM>;
 
+/// Whether `candidate` is better than `reference`.
+///
+/// It asks the function of a root `cost::apply` when it defines `better`, and
+/// otherwise compares with `<`.
 template<class SM>
     requires has_better<SM>
 [[nodiscard]]
@@ -115,10 +121,16 @@ constexpr bool better(
     }
 }
 
+/// A SolutionManager whose costs have an `equivalent` relation: defined by the
+/// function of a root `cost::apply`, or the cost type's `==`.
 template<class SM>
 concept has_equivalent =
     detail::custom_equivalent<SM> || detail::intrinsic_equivalent<SM>;
 
+/// Whether `lhs` and `rhs` are equivalent costs.
+///
+/// It asks the function of a root `cost::apply` when it defines `equivalent`,
+/// and otherwise compares with `==`.
 template<class SM>
     requires has_equivalent<SM>
 [[nodiscard]]
@@ -138,11 +150,17 @@ constexpr bool equivalent(
     }
 }
 
+/// A SolutionManager whose costs have a `better_or_equivalent` relation:
+/// defined by the function of a root `cost::apply`, or the cost type's `<=`.
 template<class SM>
 concept has_better_or_equivalent =
     detail::custom_better_or_equivalent<SM> ||
     detail::intrinsic_better_or_equivalent<SM>;
 
+/// Whether `candidate` is better than or equivalent to `reference`.
+///
+/// It asks the function of a root `cost::apply` when it defines
+/// `better_or_equivalent`, and otherwise compares with `<=`.
 template<class SM>
     requires has_better_or_equivalent<SM>
 [[nodiscard]]

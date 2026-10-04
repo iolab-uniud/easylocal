@@ -13,12 +13,17 @@
 namespace easylocal::cost
 {
 
+/// An arithmetic cost: an integral or floating-point type other than bool.
 template<class Cost>
 concept arithmetic =
     (std::integral<std::remove_cv_t<Cost>> ||
      std::floating_point<std::remove_cv_t<Cost>>) &&
     (!std::same_as<std::remove_cv_t<Cost>, bool>);
 
+/// The numeric difference `candidate - current` of two arithmetic costs.
+///
+/// Delta-based acceptance criteria use it; other cost types provide their own
+/// `delta` as a free function found by ADL.
 template<arithmetic Cost>
 [[nodiscard]]
 constexpr auto delta(const Cost& candidate, const Cost& current)
@@ -27,6 +32,8 @@ constexpr auto delta(const Cost& candidate, const Cost& current)
     return candidate - current;
 }
 
+/// A cost type with a numeric difference: `delta(candidate, current)`,
+/// convertible to `long double`.
 template<class Cost>
 concept has_delta =
     requires(const Cost& candidate, const Cost& current) {
@@ -54,12 +61,15 @@ struct zero_cost<Cost>
     }
 };
 
+/// A cost type with a zero: `zero_cost<Cost>` has a static `value()`.
 template<class Cost>
 concept has_zero =
     requires {
         { zero_cost<Cost>::value() } -> std::convertible_to<Cost>;
     };
 
+/// The zero of a cost type, `zero_cost<Cost>::value()`: no violation, no
+/// penalty.
 template<has_zero Cost>
 [[nodiscard]]
 constexpr Cost zero()

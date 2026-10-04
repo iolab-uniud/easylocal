@@ -21,25 +21,36 @@
 namespace easylocal::cost
 {
 
+/// A hierarchical cost: the hard cost has strict priority, the soft cost is
+/// compared only when the hard costs are equal.
+///
+/// Each branch may itself be scalar or structured. Its `delta` never accepts a
+/// hard degradation: minus infinity when the hard cost improves, plus infinity
+/// when it worsens, the soft delta otherwise.
 template<class HardCost, class SoftCost>
 class hierarchical
 {
 public:
+    /// The type of the hard cost.
     using hard_cost_type = HardCost;
+    /// The type of the soft cost.
     using soft_cost_type = SoftCost;
 
+    /// From its hard and soft costs.
     constexpr explicit hierarchical(HardCost hard, SoftCost soft)
         : hard_{std::move(hard)},
           soft_{std::move(soft)}
     {
     }
 
+    /// The hard cost.
     [[nodiscard]]
     constexpr const HardCost& hard() const noexcept
     {
         return hard_;
     }
 
+    /// The soft cost.
     [[nodiscard]]
     constexpr const SoftCost& soft() const noexcept
     {
@@ -48,6 +59,7 @@ public:
 
     auto operator<=>(const hierarchical&) const = default;
 
+    /// `delta(candidate, current)`, when the soft cost has a delta.
     [[nodiscard]]
     friend constexpr long double operator-(
         const hierarchical& candidate,
@@ -107,6 +119,7 @@ struct zero_cost<hierarchical<HardCost, SoftCost>>
     }
 };
 
+/// Whether `T` is a `cost::hierarchical`.
 template<class T>
 struct is_hierarchical : std::false_type
 {
@@ -118,10 +131,12 @@ struct is_hierarchical<hierarchical<HardCost, SoftCost>>
 {
 };
 
+/// Whether `T`, without cv and reference qualifiers, is a `cost::hierarchical`.
 template<class T>
 inline constexpr bool is_hierarchical_v =
     is_hierarchical<std::remove_cvref_t<T>>::value;
 
+/// A `cost::hierarchical`, possibly cv- or reference-qualified.
 template<class T>
 concept hierarchical_type = is_hierarchical_v<T>;
 

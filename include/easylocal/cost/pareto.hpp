@@ -19,14 +19,23 @@
 namespace easylocal::cost
 {
 
+/// A multi-objective cost, every objective minimized, ordered by Pareto
+/// dominance.
+///
+/// `a < b` when `a` is no worse in every objective and better in at least one;
+/// two costs better in different objectives are unordered. It has no numeric
+/// delta.
 template<class... Values>
 class pareto
 {
 public:
+    /// The number of objectives.
     static constexpr std::size_t levels = sizeof...(Values);
 
+    /// From its values, one per objective.
     constexpr explicit pareto(Values... values) : values_{std::move(values)...} {}
 
+    /// The value of objective `Index`.
     template<std::size_t Index>
     [[nodiscard]]
     constexpr const std::tuple_element_t<Index, std::tuple<Values...>>& get()
@@ -94,6 +103,7 @@ struct zero_cost<pareto<Values...>>
     }
 };
 
+/// Whether `T` is a `cost::pareto`.
 template<class T>
 struct is_pareto : std::false_type
 {
@@ -104,9 +114,11 @@ struct is_pareto<pareto<Values...>> : std::true_type
 {
 };
 
+/// Whether `T`, without cv and reference qualifiers, is a `cost::pareto`.
 template<class T>
 inline constexpr bool is_pareto_v = is_pareto<std::remove_cvref_t<T>>::value;
 
+/// A `cost::pareto`, possibly cv- or reference-qualified.
 template<class T>
 concept pareto_type = is_pareto_v<T>;
 

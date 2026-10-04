@@ -38,45 +38,66 @@
 namespace easylocal::cost
 {
 
+/// A term of a `cost::sum`: an expression and its weight.
 template<class Child, class Weight>
 struct weighted_term
 {
+    /// The weighted expression.
     Child child;
+    /// The weight of the term in the sum.
     Weight weight;
 };
 
+/// The node of `cost::sum`: the weighted sum of the costs of its terms.
 template<class... Terms>
 struct sum_expression
 {
+    /// The terms, plain expressions or weighted terms.
     std::tuple<Terms...> terms;
 };
 
+/// The node of `cost::in_order`: a `cost::lexicographic` of its children's
+/// costs.
 template<class... Children>
 struct in_order_expression
 {
+    /// The children, in order of priority.
     std::tuple<Children...> children;
 };
 
+/// The node of `cost::objectives`: a `cost::pareto` of its children's costs.
 template<class... Children>
 struct objectives_expression
 {
+    /// The children, one per objective.
     std::tuple<Children...> children;
 };
 
+/// The node of `cost::hard_soft`: a `cost::hierarchical` of a hard and a soft
+/// cost.
 template<class Hard, class Soft>
 struct hard_soft_expression
 {
+    /// The hard branch, compared first.
     Hard hard;
+    /// The soft branch, compared when the hard costs are equivalent.
     Soft soft;
 };
 
+/// The node of `cost::apply`: a user function of its children's costs.
 template<class Function, class... Children>
 struct apply_expression
 {
+    /// The function, called with the children's costs.
     Function function;
+    /// The children, whose costs are the arguments of the function.
     std::tuple<Children...> children;
 };
 
+/// The term `child` of a `cost::sum` with weight `weight`.
+///
+/// A term not weighted has weight 1; `child * weight` and `weight * child` are
+/// shorthands. It is allowed only directly inside a `cost::sum`.
 template<class Child, arithmetic Weight>
 [[nodiscard]]
 constexpr weighted_term<Child, Weight> weighted(Child child, Weight weight)
@@ -84,6 +105,10 @@ constexpr weighted_term<Child, Weight> weighted(Child child, Weight weight)
     return {std::move(child), weight};
 }
 
+/// The weighted sum of the costs of its terms, which must be arithmetic.
+///
+/// A term has weight 1 unless `cost::weighted(child, w)`, or `child * w`, gives
+/// one; the weights are configurable as `weights`, one per term.
 template<class... Terms>
     requires(sizeof...(Terms) > 0)
 [[nodiscard]]
@@ -92,6 +117,8 @@ constexpr sum_expression<Terms...> sum(Terms... terms)
     return {std::tuple<Terms...>{std::move(terms)...}};
 }
 
+/// A `cost::lexicographic` of the children's costs, compared in the order
+/// given.
 template<class... Children>
     requires(sizeof...(Children) > 0)
 [[nodiscard]]
@@ -100,6 +127,8 @@ constexpr in_order_expression<Children...> in_order(Children... children)
     return {std::tuple<Children...>{std::move(children)...}};
 }
 
+/// A `cost::pareto` of the costs of two or more children, compared by Pareto
+/// dominance.
 template<class... Children>
     requires(sizeof...(Children) > 1)
 [[nodiscard]]
@@ -108,6 +137,10 @@ constexpr objectives_expression<Children...> objectives(Children... children)
     return {std::tuple<Children...>{std::move(children)...}};
 }
 
+/// A `cost::hierarchical` of the costs of `hard` and `soft`.
+///
+/// At the root of the expression, TwoStage evaluates only the components under
+/// `hard` in its first stage.
 template<class Hard, class Soft>
 [[nodiscard]]
 constexpr hard_soft_expression<Hard, Soft> hard_soft(Hard hard, Soft soft)
@@ -115,6 +148,11 @@ constexpr hard_soft_expression<Hard, Soft> hard_soft(Hard hard, Soft soft)
     return {std::move(hard), std::move(soft)};
 }
 
+/// The value of `function` called with the children's costs.
+///
+/// At the root of the expression, the function may also define `better`,
+/// `equivalent` and `better_or_equivalent`; it may expose parameters with
+/// `configuration()`.
 template<class Function, class... Children>
     requires(sizeof...(Children) > 0)
 [[nodiscard]]
@@ -128,6 +166,8 @@ constexpr apply_expression<Function, Children...> apply(
     };
 }
 
+/// Whether `T` is a node of a cost expression (`sum`, `in_order`, `objectives`,
+/// `hard_soft` or `apply`).
 template<class T>
 struct is_expression : std::false_type
 {
@@ -158,6 +198,8 @@ struct is_expression<apply_expression<Function, Children...>> : std::true_type
 {
 };
 
+/// Whether `T`, without cv and reference qualifiers, is a node of a cost
+/// expression.
 template<class T>
 inline constexpr bool is_expression_v =
     is_expression<std::remove_cvref_t<T>>::value;
@@ -171,6 +213,7 @@ constexpr weighted_term<Child, Weight> operator*(Child child, Weight weight)
     return weighted(std::move(child), weight);
 }
 
+/// `weight * child` is `cost::weighted(child, weight)`.
 template<arithmetic Weight, class Child>
     requires is_expression_v<Child>
 [[nodiscard]]
