@@ -317,7 +317,10 @@ void cli_writes_the_stub_without_an_instance()
     assert(contains(
         read_file(directory / "fixed.conf"),
         "runners.sa.temperature.final_temperature = 0.1\n"));
-    assert(contains(read_file(directory / "target-runner"), "exec '/opt/bin/tsp'"));
+    // The program as an absolute path: on Windows, with the current drive.
+    assert(contains(
+        read_file(directory / "target-runner"),
+        "exec '" + std::filesystem::weakly_canonical("/opt/bin/tsp").string() + "'"));
     std::filesystem::remove_all(directory);
 
     // A runner chosen on the command line is the only one tuned.
