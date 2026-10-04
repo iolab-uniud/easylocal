@@ -74,6 +74,11 @@ the uv environment: `uv sync`, then `uv run ...`.
 - A member with a const and a mutable version of the same body is written once,
   with an explicit object parameter (`template<class Self> auto& f(this Self&
   self)`), not as two overloads.
+- A type with an invariant (fields that must stay consistent, state changed
+  only through its members) is a `class`, with its fields private. A type
+  whose fields may each be set freely is a `struct`: parameter blocks
+  (aggregates, built with designated initializers), descriptors, traits, tags
+  and stateless function objects, even when they have member functions.
 - Comments match the surrounding code: a short description of each class or
   function, no narration of the change.
 
