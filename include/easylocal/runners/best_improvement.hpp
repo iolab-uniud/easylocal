@@ -16,6 +16,7 @@
 namespace easylocal::runners
 {
 
+/// The parameters of BestImprovement.
 struct BestImprovementParameters
 {
     /// Evaluation budget, including the initial evaluation; unlimited by default:
@@ -38,6 +39,12 @@ struct BestImprovementParameters
     }
 };
 
+/// Best Improvement (steepest descent): at each iteration the best move of the
+/// whole neighborhood is applied, while it strictly improves the cost.
+///
+/// It stops at a local optimum, or when the evaluation budget is spent; the
+/// current solution is also the best one. Requires a neighborhood explorer that
+/// enumerates its moves (moves(), or a cursor) and a cost with better().
 class BestImprovement
 {
 public:
@@ -49,6 +56,10 @@ public:
     {
     }
 
+    /// Runs the search from solution.
+    ///
+    /// The bound runner calls it, with the run of its context (neighborhood,
+    /// evaluation, cost relations).
     template<class Run>
         requires detail::enumerating_strict_improvement_context<
             typename Run::context_type>

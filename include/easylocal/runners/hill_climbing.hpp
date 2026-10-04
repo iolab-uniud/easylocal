@@ -18,6 +18,7 @@
 namespace easylocal::runners
 {
 
+/// The parameters of HillClimbing.
 struct HillClimbingParameters
 {
     /// Consecutive proposals without a strict improvement after which the
@@ -53,9 +54,12 @@ struct HillClimbingParameters
 
 /// Hill Climbing: at each iteration a random move is proposed and accepted if
 /// it does not worsen the current cost, so the search can drift across
-/// plateaus. It stops after max_idle_iterations consecutive proposals without
-/// a strict improvement. The cost never worsens, so the current solution is
-/// also the best one.
+/// plateaus.
+///
+/// It stops after max_idle_iterations consecutive proposals without a strict
+/// improvement. The cost never worsens, so the current solution is also the
+/// best one. Requires a neighborhood explorer with random_move() and a cost
+/// with better() and better_or_equivalent().
 class HillClimbing
 {
 public:
@@ -67,6 +71,10 @@ public:
         assert(parameters_.validate());
     }
 
+    /// Runs the search from solution, drawing random moves with rng.
+    ///
+    /// The bound runner calls it, with the run of its context (neighborhood,
+    /// evaluation, cost relations).
     template<class Run, std::uniform_random_bit_generator RNG>
         requires detail::random_move_context<typename Run::context_type, RNG>
         && detail::non_worsening_context<typename Run::context_type>

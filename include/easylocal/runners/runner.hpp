@@ -2,9 +2,11 @@
 
 /// \file
 /// Runner: a search algorithm composed with a SolutionManager recipe and a
-/// neighborhood recipe (make_runner). Binding it to an Input builds the services
-/// (bound_runner) on which the algorithm runs; its parameters (search, cost,
-/// neighborhood) are exposed as one parameter_set.
+/// neighborhood recipe (make_runner).
+///
+/// Binding it to an Input builds the services (bound_runner) on which the
+/// algorithm runs; its parameters (search, cost, neighborhood) are exposed as
+/// one parameter_set.
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
@@ -457,12 +459,21 @@ private:
 
 } // namespace detail
 
+/// A search algorithm with the recipes of the services it runs on: a
+/// SolutionManager (with its cost expression) and a neighborhood explorer.
+///
+/// It is composed step by step, make_runner<Algorithm>(parameters) | sm_recipe
+/// | nhe_recipe, each step a specialization; bind(input) then builds the
+/// services for an Input and returns the bound runner, whose run(solution, ...)
+/// runs the algorithm.
 template<
     class Algorithm,
     class SMSpec = detail::unconfigured_t,
     class NHESpec = detail::unconfigured_t>
 class Runner;
 
+/// A runner with its algorithm only; with_solution_manager(), or |, adds the
+/// SolutionManager recipe.
 template<class Algorithm>
 class Runner<Algorithm, detail::unconfigured_t, detail::unconfigured_t>
 {
@@ -528,6 +539,8 @@ private:
     detail::algorithm_source<Algorithm> algorithm_;
 };
 
+/// A runner with its algorithm and SolutionManager recipe; with_neighborhood(),
+/// or |, adds the neighborhood recipe.
 template<class Algorithm, class SMSpec>
     requires detail::is_solution_manager_spec_v<SMSpec>
 class Runner<Algorithm, SMSpec, detail::unconfigured_t>
@@ -588,6 +601,7 @@ private:
     SMSpec solution_manager_spec_;
 };
 
+/// A complete runner: bind(input) builds its services for an Input.
 template<class Algorithm, class SMSpec, class NHESpec>
     requires detail::is_solution_manager_spec_v<SMSpec> &&
              detail::is_neighborhood_spec_v<NHESpec> &&
@@ -629,8 +643,10 @@ public:
 
     /// The parameters of the algorithm ("search"), of the cost expression
     /// ("cost") and of the neighborhood ("neighborhood"), with paths relative
-    /// to the runner: whoever composes it adds a prefix, if any. The set refers
-    /// to this runner, which must stay in place while it is used.
+    /// to the runner: whoever composes it adds a prefix, if any.
+    ///
+    /// The set refers to this runner, which must stay in place while it is
+    /// used.
     [[nodiscard]]
     config::parameter_set configuration()
     {
@@ -720,6 +736,7 @@ private:
     NHESpec neighborhood_spec_;
 };
 
+/// runner | sm_recipe: the runner with its SolutionManager recipe.
 template<class Algorithm, class SMSpec, class NHESpec, class Spec>
     requires std::same_as<SMSpec, detail::unconfigured_t> &&
              std::same_as<NHESpec, detail::unconfigured_t> &&
@@ -732,6 +749,7 @@ auto operator|(
     return std::move(runner).with_solution_manager(std::forward<Spec>(spec));
 }
 
+/// runner | nhe_recipe: the runner with its neighborhood recipe.
 template<class Algorithm, class SMSpec, class NHESpec>
     requires detail::is_solution_manager_spec_v<SMSpec> &&
              detail::is_neighborhood_spec_v<std::remove_cvref_t<NHESpec>>
@@ -744,6 +762,7 @@ auto operator|(
         std::forward<NHESpec>(spec));
 }
 
+/// Runner{algorithm} holds that algorithm.
 template<class Algorithm>
 Runner(Algorithm) -> Runner<std::remove_cvref_t<Algorithm>>;
 

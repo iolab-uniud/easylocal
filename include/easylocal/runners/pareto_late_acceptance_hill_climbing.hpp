@@ -24,6 +24,7 @@
 namespace easylocal::runners
 {
 
+/// The parameters of ParetoLateAcceptanceHillClimbing.
 struct ParetoLateAcceptanceHillClimbingParameters
 {
     /// Number of solutions in the history: the first is the initial solution,
@@ -80,15 +81,19 @@ struct ParetoLateAcceptanceHillClimbingParameters
 
 /// Pareto Late Acceptance Hill Climbing (Da Ros and Di Gaspero), for a
 /// cost::pareto cost: a history of solutions, the initial one and
-/// history_length - 1 random ones, is visited in a circle. At each iteration a
-/// random move of the current solution is evaluated; if the candidate
-/// dominates the current solution it replaces it in the history, otherwise,
-/// with second_chance, it replaces the next solution of the history if it
-/// dominates that one (which is skipped). The search goes on to the next
+/// history_length - 1 random ones, is visited in a circle.
+///
+/// At each iteration a random move of the current solution is evaluated; if the
+/// candidate dominates the current solution it replaces it in the history,
+/// otherwise, with second_chance, it replaces the next solution of the history
+/// if it dominates that one (which is skipped). The search goes on to the next
 /// solution of the history either way. Past max_iterations it stops as soon as
 /// more than idle_ratio of the iterations are idle (no replacement since the
 /// last one). The result is the front of the run (search_run's archive of the
 /// non-dominated solutions reached), with its first solution by objectives.
+/// Requires a neighborhood explorer with random_move(), a SolutionManager with
+/// random_solution() (has_random_solution) to fill the history, and a
+/// cost::pareto cost.
 class ParetoLateAcceptanceHillClimbing
 {
 public:
@@ -101,6 +106,11 @@ public:
         assert(parameters_.validate());
     }
 
+    /// Runs the search from solution, drawing random moves with rng.
+    ///
+    /// The bound runner calls it, with the run of its context (neighborhood,
+    /// evaluation, cost relations). The run keeps the front of the
+    /// non-dominated solutions (Run::archives_front).
     template<class Run, std::uniform_random_bit_generator RNG>
         requires Run::archives_front
         && detail::random_move_context<typename Run::context_type, RNG>

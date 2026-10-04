@@ -17,23 +17,36 @@
 namespace easylocal
 {
 
+/// The progress of a run, as reported to the observer of its run_control.
 struct run_progress
 {
+    /// Solutions and moves evaluated so far.
     std::size_t evaluations{};
+    /// Iterations so far, as the algorithm counts them.
     std::size_t iterations{};
+    /// The evaluation budget, when the run has one.
     std::optional<std::size_t> evaluation_limit;
 };
 
+/// What the caller of a run controls while it runs: a std::stop_token that
+/// cancels it, and an observer of its progress.
+///
+/// It is passed to a run with with(control); a default one neither stops nor
+/// observes.
 class run_control
 {
 public:
+    /// Neither cancellation nor observer.
     run_control() noexcept = default;
 
+    /// Cancellation through stop_token.
     explicit run_control(std::stop_token stop_token) noexcept
         : stop_token_{std::move(stop_token)}
     {
     }
 
+    /// Cancellation through stop_token, and observer(progress) called with
+    /// the progress of the run; the observer must outlive the run.
     template<class Observer>
         requires std::invocable<Observer&, const run_progress&>
     run_control(std::stop_token stop_token, Observer& observer) noexcept
@@ -45,21 +58,25 @@ public:
     {
     }
 
+    /// Whether the caller asked the run to stop.
     [[nodiscard]] bool stop_requested() const noexcept
     {
         return stop_token_.stop_requested();
     }
 
+    /// Whether the caller can ask the run to stop.
     [[nodiscard]] bool stop_possible() const noexcept
     {
         return stop_token_.stop_possible();
     }
 
+    /// Whether an observer receives the progress.
     [[nodiscard]] bool observes_progress() const noexcept
     {
         return observer_ != nullptr;
     }
 
+    /// Passes progress to the observer, if any.
     void report(const run_progress& progress) const
     {
         if (observer_ != nullptr)

@@ -20,6 +20,7 @@
 namespace easylocal::runners
 {
 
+/// The parameters of LateAcceptanceHillClimbing.
 struct LateAcceptanceHillClimbingParameters
 {
     /// Number of past costs a candidate is compared with.
@@ -64,12 +65,15 @@ struct LateAcceptanceHillClimbingParameters
 };
 
 /// Late Acceptance Hill Climbing (Burke and Bykov): a random move is accepted
-/// if its cost is better than or equivalent to the current cost, or to the
-/// cost the current solution had history_length iterations earlier. After each
-/// proposal the current cost replaces that oldest entry of the history, which
-/// starts filled with the initial cost. With history_length 1 it accepts the
-/// moves Hill Climbing accepts. It stops after max_idle_iterations consecutive proposals
-/// without improving the best cost, and returns the best solution found.
+/// if its cost is better than or equivalent to the current cost, or to the cost
+/// the current solution had history_length iterations earlier.
+///
+/// After each proposal the current cost replaces that oldest entry of the
+/// history, which starts filled with the initial cost. With history_length 1 it
+/// accepts the moves Hill Climbing accepts. It stops after max_idle_iterations
+/// consecutive proposals without improving the best cost, and returns the best
+/// solution found. Requires a neighborhood explorer with random_move() and a
+/// cost with better() and better_or_equivalent().
 class LateAcceptanceHillClimbing
 {
 public:
@@ -82,6 +86,10 @@ public:
         assert(parameters_.validate());
     }
 
+    /// Runs the search from solution, drawing random moves with rng.
+    ///
+    /// The bound runner calls it, with the run of its context (neighborhood,
+    /// evaluation, cost relations).
     template<class Run, std::uniform_random_bit_generator RNG>
         requires detail::random_move_context<typename Run::context_type, RNG>
         && detail::non_worsening_context<typename Run::context_type>

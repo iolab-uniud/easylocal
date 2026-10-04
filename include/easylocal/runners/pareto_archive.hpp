@@ -19,22 +19,29 @@ namespace easylocal
 template<class Solution, class Cost>
 struct pareto_point
 {
+    /// The solution.
     Solution solution;
+    /// Its cost.
     Cost cost;
 };
 
-/// The non-dominated solutions reached by a search with a cost::pareto cost:
-/// a solution enters unless an archived one dominates it or is the same (equal
+/// The non-dominated solutions reached by a search with a cost::pareto cost: a
+/// solution enters unless an archived one dominates it or is the same (equal
 /// cost and the same solution), and removes the archived solutions it
-/// dominates. Solutions with equal costs are all kept when they differ.
+/// dominates.
+///
+/// Solutions with equal costs are all kept when they differ.
 template<class Solution, class Cost>
 class pareto_archive
 {
 public:
+    /// A solution of the archive with its cost.
     using point_type = pareto_point<Solution, Cost>;
 
     /// same_solution(lhs, rhs) tells whether two solutions of equal cost are
-    /// the same one. True when the solution entered the archive.
+    /// the same one.
+    ///
+    /// True when the solution entered the archive.
     template<class SameSolution>
     bool offer(const Solution& solution, const Cost& cost, SameSolution&& same_solution)
     {
@@ -52,18 +59,21 @@ public:
         return true;
     }
 
+    /// The points, in the order they entered.
     [[nodiscard]]
     const std::vector<point_type>& points() const noexcept
     {
         return points_;
     }
 
+    /// The number of points.
     [[nodiscard]]
     std::size_t size() const noexcept
     {
         return points_.size();
     }
 
+    /// Removes every point.
     void clear() noexcept
     {
         points_.clear();

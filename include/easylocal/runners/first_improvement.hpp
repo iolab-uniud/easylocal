@@ -17,6 +17,7 @@
 namespace easylocal::runners
 {
 
+/// The parameters of FirstImprovement.
 struct FirstImprovementParameters
 {
     /// Evaluation budget, including the initial evaluation; unlimited by default:
@@ -41,6 +42,13 @@ struct FirstImprovementParameters
     }
 };
 
+/// First Improvement: at each iteration the moves of the neighborhood are
+/// scanned in order and the first one that strictly improves the cost is
+/// applied.
+///
+/// It stops at a local optimum, or when the evaluation budget is spent; the
+/// current solution is also the best one. Requires a neighborhood explorer that
+/// enumerates its moves (moves(), or a cursor) and a cost with better().
 class FirstImprovement
 {
 public:
@@ -53,6 +61,10 @@ public:
         assert(parameters_.validate());
     }
 
+    /// Runs the search from solution.
+    ///
+    /// The bound runner calls it, with the run of its context (neighborhood,
+    /// evaluation, cost relations).
     template<class Run>
         requires detail::enumerating_strict_improvement_context<
             typename Run::context_type>

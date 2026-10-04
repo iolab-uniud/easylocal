@@ -31,6 +31,12 @@ namespace easylocal::runners
 
 // Temperature policies.
 
+/// A temperature schedule of Simulated Annealing.
+///
+/// reset() starts it again, temperature() is the current temperature,
+/// on_iteration(accepted) records a proposal and whether it was accepted (the
+/// schedule cools on its own terms), and finished() ends the annealing. The
+/// built-in schedules are in easylocal::runners::temperature.
 template<class Policy>
 concept temperature_policy =
     requires(Policy& policy, const Policy& const_policy, const bool accepted)
@@ -44,7 +50,9 @@ concept temperature_policy =
 /// A temperature policy that can estimate its initial temperature: before the
 /// run Simulated Annealing evaluates calibration_samples() random moves at the
 /// initial solution, without applying them, and passes their deltas to
-/// calibrate(), then calls reset(). The built-in policies are calibrating.
+/// calibrate(), then calls reset().
+///
+/// The built-in policies are calibrating.
 template<class Policy>
 concept calibrating_temperature_policy = temperature_policy<Policy>
     && requires(
@@ -186,11 +194,16 @@ void calibrate_initial_temperature(
 namespace temperature
 {
 
+/// The parameters of the Classic schedule.
 struct ClassicParameters
 {
+    /// The temperature the annealing starts from.
     double initial_temperature{10.0};
+    /// The temperature the cooling stops at.
     double final_temperature{0.01};
+    /// The factor that multiplies the temperature at each cooling.
     double cooling_rate{0.95};
+    /// Proposals evaluated at each temperature.
     std::size_t samples_per_temperature{100};
 
     /// Moves sampled at the initial solution to estimate the initial
@@ -241,6 +254,10 @@ struct ClassicParameters
     }
 };
 
+/// The classic geometric schedule: samples_per_temperature proposals at each
+/// temperature, which is then multiplied by cooling_rate.
+///
+/// The annealing ends when the temperature reaches final_temperature.
 class Classic
 {
 public:
@@ -309,11 +326,16 @@ private:
     std::size_t sampled_{};
 };
 
+/// The parameters of the FixedLength schedule.
 struct FixedLengthParameters
 {
+    /// The temperature the annealing starts from.
     double initial_temperature{10.0};
+    /// The temperature the cooling stops at.
     double final_temperature{0.01};
+    /// The factor that multiplies the temperature at each cooling.
     double cooling_rate{0.95};
+    /// Proposals in all, spread over the temperature levels.
     std::size_t max_iterations{100'000};
 
     /// Moves sampled at the initial solution to estimate the initial
@@ -370,6 +392,11 @@ struct FixedLengthParameters
     }
 };
 
+/// A geometric schedule with a budget of max_iterations proposals, spread
+/// evenly over the temperature levels from initial_temperature to
+/// final_temperature.
+///
+/// The annealing ends when the budget is spent.
 class FixedLength
 {
 public:
@@ -455,12 +482,19 @@ private:
     std::size_t sampled_{};
 };
 
+/// The parameters of the Cutoff and Hybrid schedules.
 struct CutoffParameters
 {
+    /// The temperature the annealing starts from.
     double initial_temperature{10.0};
+    /// The temperature the cooling stops at.
     double final_temperature{0.01};
+    /// The factor that multiplies the temperature at each cooling.
     double cooling_rate{0.95};
+    /// Proposals in all, spread over the temperature levels.
     std::size_t max_iterations{100'000};
+    /// Accepted proposals that cool, as a share of a level's proposals
+    /// (max_iterations over the temperature levels).
     double accepted_ratio{0.1};
 
     /// Moves sampled at the initial solution to estimate the initial
@@ -516,6 +550,11 @@ struct CutoffParameters
     }
 };
 
+/// A schedule with a budget of max_iterations proposals that cools on
+/// acceptances only: after accepted_ratio times a level's share of the budget
+/// (max_iterations over the temperature levels) has been accepted.
+///
+/// The annealing ends when the budget is spent.
 class Cutoff
 {
 public:
@@ -604,8 +643,14 @@ private:
     std::size_t accepted_{};
 };
 
+/// The parameters of the Hybrid schedule, those of Cutoff.
 using HybridParameters = CutoffParameters;
 
+/// The schedule of EasyLocal 3: a level ends after its share of max_iterations
+/// proposals or, earlier, after accepted_ratio of them have been accepted; the
+/// proposals an early cooling saves are spread over the remaining levels.
+///
+/// The annealing ends when max_iterations proposals are spent.
 class Hybrid
 {
 public:
@@ -739,10 +784,14 @@ private:
     std::size_t current_sample_limit_{};
 };
 
+/// The parameters of the FixedTemperature schedule.
 struct FixedTemperatureParameters
 {
+    /// The constant temperature.
     double temperature{1.0};
+    /// Proposals in all.
     std::size_t max_iterations{100'000};
+    /// The share of max_iterations that, once accepted, ends the annealing.
     double accepted_ratio{1.0};
 
     /// Moves sampled at the initial solution to estimate the temperature; 0
@@ -874,10 +923,14 @@ private:
     std::size_t accepted_{};
 };
 
+/// The parameters of the TimeBased schedule.
 struct TimeBasedParameters
 {
+    /// The temperature the annealing starts from.
     double initial_temperature{10.0};
+    /// The temperature the cooling stops at.
     double final_temperature{0.01};
+    /// The factor that multiplies the temperature at each cooling.
     double cooling_rate{0.95};
     /// Seconds.
     double allowed_running_time{10.0};
@@ -941,13 +994,14 @@ struct TimeBasedParameters
 };
 
 /// The cooling schedule spread over a running time instead of an iteration
-/// budget: the allowed time is divided evenly among the temperature levels,
-/// and the temperature cools when the time of its level is over or, with
+/// budget: the allowed time is divided evenly among the temperature levels, and
+/// the temperature cools when the time of its level is over or, with
 /// accepted_per_temperature, after that many acceptances; the time an early
-/// cooling saves is redistributed over the remaining levels. The annealing
-/// ends when the time is over or the final temperature is reached. The
-/// trajectory depends on the speed of the machine, so equal seeds no longer
-/// give equal runs. The clock is read once per proposal.
+/// cooling saves is redistributed over the remaining levels.
+///
+/// The annealing ends when the time is over or the final temperature is
+/// reached. The trajectory depends on the speed of the machine, so equal seeds
+/// no longer give equal runs. The clock is read once per proposal.
 template<class Clock = std::chrono::steady_clock>
 class BasicTimeBased
 {
@@ -1101,19 +1155,24 @@ concept reheatable_policy = temperature_policy<Policy>
 namespace temperature
 {
 
+/// The parameters of Reheating: those of its schedule, as the group descent,
+/// and of the reheats.
 template<class DescentParameters>
 struct ReheatingParameters
 {
     /// The schedule of the descents; the reheats restart it from a lower
     /// initial temperature.
     DescentParameters descent{};
+    /// Descents after the first one.
     std::size_t max_reheats{3};
     /// The temperature a reheat restarts from, as a factor of the descent's
     /// initial_temperature.
     double reheat_ratio{0.5};
     /// The share of the descent's budget (max_iterations or
-    /// allowed_running_time) spent by the first descent; the reheats divide
-    /// the rest evenly. Ignored by a schedule without a budget.
+    /// allowed_running_time) spent by the first descent; the reheats divide the
+    /// rest evenly.
+    ///
+    /// Ignored by a schedule without a budget.
     double first_descent_share{0.5};
 
     [[nodiscard]]
@@ -1168,12 +1227,13 @@ struct ReheatingParameters
 
 /// Reheats any schedule with an initial temperature: a first descent, then up
 /// to max_reheats descents restarting from reheat_ratio times the initial
-/// temperature. When the schedule has a budget, max_iterations or
-/// allowed_running_time, the first descent spends first_descent_share of it
-/// and the reheats divide the rest evenly; otherwise each descent runs the
-/// whole schedule. It calibrates when the schedule does, and the reheat
-/// temperature stays above the final one. Reheating<Hybrid> is EasyLocal 3's
-/// annealing with reheating.
+/// temperature.
+///
+/// When the schedule has a budget, max_iterations or allowed_running_time, the
+/// first descent spends first_descent_share of it and the reheats divide the
+/// rest evenly; otherwise each descent runs the whole schedule. It calibrates
+/// when the schedule does, and the reheat temperature stays above the final
+/// one. Reheating<Hybrid> is EasyLocal 3's annealing with reheating.
 template<detail::reheatable_policy Descent>
 class Reheating
 {
@@ -1359,9 +1419,16 @@ concept metropolis_cost = cost::has_delta<Cost>;
 
 } // namespace detail
 
+/// The Metropolis criterion: a move that does not worsen the cost is accepted,
+/// a worsening one with probability exp(-delta / temperature).
+///
+/// It requires costs with a numeric difference, cost::delta (cost::has_delta);
+/// an infinite delta, a worsening of a hierarchical hard level, is never
+/// accepted.
 class MetropolisAcceptance
 {
 public:
+    /// Whether candidate is accepted over current at temperature.
     template<detail::metropolis_cost Cost, std::uniform_random_bit_generator RNG>
     [[nodiscard]]
     bool accept(
@@ -1403,6 +1470,7 @@ public:
 template<class TemperatureParameters>
 struct SimulatedAnnealingParameters
 {
+    /// The parameters of the temperature schedule.
     TemperatureParameters temperature{};
 
     [[nodiscard]]
@@ -1471,6 +1539,15 @@ consteval bool validate_simulated_annealing_acceptance()
 
 } // namespace detail
 
+/// Simulated Annealing: at each iteration a random move is proposed and
+/// accepted by the acceptance policy at the temperature of the schedule (by
+/// default, the Metropolis criterion on the classic geometric schedule).
+///
+/// The annealing ends when the schedule finishes, and returns the best solution
+/// found. A calibrating schedule estimates its initial temperature first, from
+/// random moves evaluated at the initial solution. Requires a neighborhood
+/// explorer with random_move(), a cost with better(), and a cost the acceptance
+/// policy can compare (MetropolisAcceptance: cost::delta).
 template<
     temperature_policy TemperaturePolicy = temperature::Classic,
     class Acceptance = MetropolisAcceptance>
@@ -1478,6 +1555,7 @@ class SimulatedAnnealing
     : public detail::policy_parameters<TemperaturePolicy>
 {
 public:
+    /// From a temperature schedule and an acceptance policy.
     explicit SimulatedAnnealing(
         TemperaturePolicy temperature_policy,
         Acceptance acceptance = {})
@@ -1497,6 +1575,8 @@ public:
     {
     }
 
+    /// Rejects, with a readable message, a cost the acceptance policy cannot
+    /// compare.
     template<class Run, std::uniform_random_bit_generator RNG>
         requires detail::random_move_context<typename Run::context_type, RNG> &&
                  detail::strict_improvement_context<typename Run::context_type> &&
@@ -1510,6 +1590,11 @@ public:
                 typename Run::context_type, Acceptance, RNG>());
     }
 
+    /// Runs the search from solution, drawing random moves and acceptances with
+    /// rng.
+    ///
+    /// The bound runner calls it, with the run of its context (neighborhood,
+    /// evaluation, cost relations).
     template<class Run, std::uniform_random_bit_generator RNG>
         requires detail::simulated_annealing_context<
             typename Run::context_type, Acceptance, RNG>

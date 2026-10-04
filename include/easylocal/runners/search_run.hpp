@@ -1,11 +1,13 @@
 #pragma once
 
 /// \file
-/// search_run: one execution of a search algorithm. Algorithms are written in
-/// terms of its primitives (evaluate, commit, random_move, ...), while it keeps
-/// the counters, the evaluation budget, cancellation, progress, the target cost
-/// and the trace events. Also run_options/with() for the caller's options,
-/// termination_reason and the result types.
+/// search_run: one execution of a search algorithm.
+///
+/// Algorithms are written in terms of its primitives (evaluate, commit,
+/// random_move, ...), while it keeps the counters, the evaluation budget,
+/// cancellation, progress, the target cost and the trace events. Also
+/// run_options/with() for the caller's options, termination_reason and the
+/// result types.
 
 #include <easylocal/cost/pareto.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
@@ -71,13 +73,21 @@ concept search_result_for =
         { const_result.cost } -> std::convertible_to<const Cost&>;
     };
 
+/// The result of a search: the solution it returns, its cost, the effort it
+/// took and why it ended.
 template<class Solution, class Cost>
 struct search_result
 {
+    /// The solution the algorithm returns: the best one found, for the built-in
+    /// algorithms.
     Solution solution;
+    /// Its cost.
     Cost cost;
+    /// Solutions and moves evaluated, the initial evaluation included.
     std::size_t evaluations{};
+    /// Iterations, as the algorithm counts them.
     std::size_t iterations{};
+    /// Why the run ended.
     termination_reason termination{};
 };
 
@@ -87,11 +97,18 @@ struct search_result
 template<class Solution, class Cost>
 struct pareto_search_result
 {
+    /// The solution the algorithm returns: the best one found, for the built-in
+    /// algorithms.
     Solution solution;
+    /// Its cost.
     Cost cost;
+    /// Solutions and moves evaluated, the initial evaluation included.
     std::size_t evaluations{};
+    /// Iterations, as the algorithm counts them.
     std::size_t iterations{};
+    /// Why the run ended.
     termination_reason termination{};
+    /// The non-dominated solutions reached, ordered by their objectives.
     std::vector<pareto_point<Solution, Cost>> front;
 };
 
@@ -110,21 +127,28 @@ struct no_target
 {
 };
 
-/// Caller-side run options: optional cancellation/progress control, an
-/// optional semantic tracer and an optional target cost, passed as the trailing
-/// argument of Runner::run() and Solver::solve(). A run stops, with
-/// termination_reason::target_reached, as soon as its best cost is at least as
-/// good as the target.
+/// Caller-side run options: optional cancellation/progress control, an optional
+/// semantic tracer and an optional target cost, passed as the trailing argument
+/// of Runner::run() and Solver::solve().
+///
+/// A run stops, with termination_reason::target_reached, as soon as its best
+/// cost is at least as good as the target.
 template<class Tracer, class Target = no_target>
 struct run_options
 {
+    /// The type of the tracer.
     using tracer_type = Tracer;
+    /// The type of the target cost, or no_target.
     using target_type = Target;
 
+    /// Cancellation and progress, or nullptr.
     const run_control* control{};
+    /// The tracer of the run's events, or nullptr.
     Tracer* tracer{};
+    /// The cost at which the run stops, if any.
     std::optional<Target> target{};
 
+    /// The same options with a target cost: with(control).stop_at(0).
     template<class Cost>
     [[nodiscard]]
     run_options<Tracer, Cost> stop_at(Cost cost) const
@@ -133,12 +157,14 @@ struct run_options
     }
 };
 
+/// Run options with a run_control: run(solution, with(control)).
 [[nodiscard]]
 inline run_options<trace::null_tracer> with(const run_control& control) noexcept
 {
     return {.control = &control, .tracer = nullptr};
 }
 
+/// Run options with a tracer: run(solution, with(tracer)).
 template<class Tracer>
     requires(!std::same_as<std::remove_cvref_t<Tracer>, run_control>)
 [[nodiscard]]
@@ -147,6 +173,7 @@ run_options<Tracer> with(Tracer& tracer) noexcept
     return {.control = nullptr, .tracer = &tracer};
 }
 
+/// Run options with a run_control and a tracer.
 template<class Tracer>
 [[nodiscard]]
 run_options<Tracer> with(const run_control& control, Tracer& tracer) noexcept
@@ -163,36 +190,54 @@ run_options<trace::null_tracer, Cost> stop_at(Cost cost)
 }
 
 /// One execution of a search algorithm. search_run exposes the search context
-/// (neighborhood, evaluation, cost semantics) and owns everything that is common
-/// to every search: evaluation/iteration counters, the evaluation budget,
-/// cancellation, progress reporting and the core trace events. Algorithms
-/// describe only their search logic in terms of these primitives. With a
-/// cost::pareto cost it also keeps the archive of the non-dominated solutions
-/// reached (start, evaluate_solution and commit offer them), and the result
-/// carries that front.
+/// (neighborhood, evaluation, cost semantics) and owns everything that is
+/// common to every search: evaluation/iteration counters, the evaluation
+/// budget, cancellation, progress reporting and the core trace events.
+///
+/// Algorithms describe only their search logic in terms of these primitives.
+/// With a cost::pareto cost it also keeps the archive of the non-dominated
+/// solutions reached (start, evaluate_solution and commit offer them), and the
+/// result carries that front.
 template<class Context, class Tracer = trace::null_tracer>
 class search_run
 {
     using evaluation_facility_type = runners::detail::context_evaluation_type<Context>;
 
 public:
+    /// The search context the bound runner provides.
     using context_type = Context;
+    /// The type of the tracer.
     using tracer_type = Tracer;
+    /// The type of the solutions.
     using solution_type = typename Context::solution_type;
+    /// The type of the costs.
     using cost_type = typename Context::cost_type;
+    /// The type of the neighborhood explorer.
     using neighborhood_explorer_type = typename Context::neighborhood_explorer_type;
+    /// The type of the moves.
     using move_type = typename neighborhood_explorer_type::move_type;
+    /// The evaluation of a solution: its cost, and what a delta evaluation
+    /// keeps.
     using evaluation_type = typename evaluation_facility_type::evaluation_type;
+    /// The evaluation of a move, which commit() applies.
     using candidate_type = typename evaluation_facility_type::candidate_type;
+    /// Whether the run keeps a front: with a cost::pareto cost.
     static constexpr bool archives_front = cost::pareto_type<cost_type>;
+    /// What finish() returns: pareto_search_result with a front, search_result
+    /// otherwise.
     using result_type = std::conditional_t<
         archives_front,
         pareto_search_result<solution_type, cost_type>,
         search_result<solution_type, cost_type>>;
 
+    /// The evaluation limit of a run without a budget.
     static constexpr std::size_t no_evaluation_limit =
         std::numeric_limits<std::size_t>::max();
 
+    /// A run of context, controlled by control and traced by tracer, with an
+    /// evaluation limit and a target cost (nullptr: none).
+    ///
+    /// The bound runner makes it.
     search_run(
         const Context& context,
         const run_control& control,
@@ -213,12 +258,14 @@ public:
 
     // Context access.
 
+    /// The search context.
     [[nodiscard]]
     const Context& context() const noexcept
     {
         return context_;
     }
 
+    /// The neighborhood explorer.
     [[nodiscard]]
     const neighborhood_explorer_type& neighborhood_explorer() const noexcept
     {
@@ -232,6 +279,7 @@ public:
         return context_.evaluation();
     }
 
+    /// The Input, when the context has one.
     [[nodiscard]]
     decltype(auto) input() const noexcept
         requires requires(const Context& context) { context.input(); }
@@ -239,6 +287,7 @@ public:
         return context_.input();
     }
 
+    /// The SolutionManager, when the context has one.
     [[nodiscard]]
     decltype(auto) solution_manager() const noexcept
         requires requires(const Context& context) { context.solution_manager(); }
@@ -246,6 +295,8 @@ public:
         return context_.solution_manager();
     }
 
+    /// Whether candidate is strictly better than reference, by the semantics
+    /// of the cost.
     [[nodiscard]]
     constexpr bool better(const cost_type& candidate, const cost_type& reference) const
         requires requires(const Context& context) {
@@ -255,6 +306,7 @@ public:
         return context_.better(candidate, reference);
     }
 
+    /// Whether lhs and rhs are equivalent, by the semantics of the cost.
     [[nodiscard]]
     constexpr bool equivalent(const cost_type& lhs, const cost_type& rhs) const
         requires requires(const Context& context) {
@@ -264,6 +316,8 @@ public:
         return context_.equivalent(lhs, rhs);
     }
 
+    /// Whether candidate is better than or equivalent to reference, by the
+    /// semantics of the cost.
     [[nodiscard]]
     constexpr bool better_or_equivalent(
         const cost_type& candidate,
@@ -279,24 +333,28 @@ public:
 
     // Run state.
 
+    /// Solutions and moves evaluated so far, the initial evaluation included.
     [[nodiscard]]
     std::size_t evaluations() const noexcept
     {
         return evaluations_;
     }
 
+    /// Iterations so far, counted by next_iteration().
     [[nodiscard]]
     std::size_t iterations() const noexcept
     {
         return iterations_;
     }
 
+    /// The tracer of the run.
     [[nodiscard]]
     Tracer& tracer() noexcept
     {
         return tracer_;
     }
 
+    /// The run_control of the caller.
     [[nodiscard]]
     const run_control& control() const noexcept
     {
@@ -316,6 +374,7 @@ public:
         return target_;
     }
 
+    /// Sends event to the tracer, if it observes events of that type.
     template<class Event>
     void emit(const Event& event)
     {
@@ -324,6 +383,10 @@ public:
 
     // Search primitives.
 
+    /// Starts the run from solution: evaluates it, resets the counters, and
+    /// returns its evaluation.
+    ///
+    /// An algorithm calls it first.
     [[nodiscard]]
     evaluation_type start(const solution_type& solution)
     {
@@ -369,9 +432,10 @@ public:
         return archive_;
     }
 
-    /// True when the run must end: external cancellation, a reached target
-    /// cost or an exhausted evaluation budget. The reason is recorded for
-    /// finish().
+    /// True when the run must end: external cancellation, a reached target cost
+    /// or an exhausted evaluation budget.
+    ///
+    /// The reason is recorded for finish().
     [[nodiscard]]
     bool should_stop()
     {
@@ -396,17 +460,22 @@ public:
         return false;
     }
 
+    /// Counts an iteration.
     void next_iteration() noexcept
     {
         ++iterations_;
     }
 
+    /// The moves of the neighborhood of solution, for the algorithms that
+    /// enumerate them.
     [[nodiscard]]
     auto moves(const solution_type& solution) const
     {
         return easylocal::moves(context_.neighborhood_explorer(), solution);
     }
 
+    /// A random move of the neighborhood of solution, or nothing when there is
+    /// none.
     template<std::uniform_random_bit_generator RNG>
     [[nodiscard]]
     auto random_move(const solution_type& solution, RNG& rng)
@@ -428,6 +497,10 @@ public:
         }
     }
 
+    /// Evaluates move on solution, whose evaluation is current; counts as an
+    /// evaluation.
+    ///
+    /// Check should_stop() before.
     [[nodiscard]]
     candidate_type evaluate_move(
         const solution_type& solution,
@@ -450,6 +523,7 @@ public:
         return candidate;
     }
 
+    /// Applies move, evaluated as candidate, to solution and current.
     void commit(
         solution_type& solution,
         evaluation_type& current,
@@ -474,6 +548,8 @@ public:
             archive(solution, current.cost());
     }
 
+    /// Reports a new best cost, for the trace and the target cost; best_so_far
+    /// calls it.
     void incumbent_updated(
         const cost_type& previous_cost,
         const cost_type& cost)
@@ -487,8 +563,10 @@ public:
         });
     }
 
-    /// Ends the run. Without an explicit reason the termination is the one
-    /// recorded by should_stop(), or completed.
+    /// Ends the run.
+    ///
+    /// Without an explicit reason the termination is the one recorded by
+    /// should_stop(), or completed.
     [[nodiscard]]
     result_type finish(solution_type solution, cost_type cost)
     {
@@ -498,6 +576,8 @@ public:
             stop_reason_);
     }
 
+    /// Ends the run with an explicit reason, such as
+    /// termination_reason::local_optimum.
     [[nodiscard]]
     result_type finish(
         solution_type solution,
@@ -680,7 +760,9 @@ private:
 template<class Solution, class Cost>
 struct best_so_far
 {
+    /// The best solution.
     Solution solution;
+    /// Its cost.
     Cost cost;
 
     /// Keeps candidate when current, its evaluation, is better than the best,
