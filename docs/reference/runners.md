@@ -76,10 +76,11 @@ Pareto Late Acceptance Hill Climbing (Da Ros and Di Gaspero) is the
 multi-objective variant, for a `cost::pareto` cost: its history holds
 solutions, the initial one and `history_length - 1` drawn with the solution
 manager's `random_solution`, visited in a circle. A random move of the current
-solution replaces it in the history when the candidate dominates it; otherwise,
-with `second_chance`, it replaces the next solution of the history if it
-dominates that one, which is skipped. The search moves on to the next solution
-of the history either way and, past `max_iterations`, ends with
+solution replaces it in the history when the candidate dominates it, and the
+search moves on to the next solution of the history. Otherwise, with
+`second_chance`, a candidate that dominates the next solution replaces it, and
+the search goes on from the solution it replaced, two positions on; else it
+moves on to the next solution. Past `max_iterations` the search ends with
 `idle_limit_reached` as soon as more than `idle_ratio` of the iterations went
 without a replacement. Its result is the run's front, with the first solution
 by objectives as `solution`.

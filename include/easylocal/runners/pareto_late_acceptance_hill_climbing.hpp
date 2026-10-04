@@ -92,13 +92,15 @@ struct ParetoLateAcceptanceHillClimbingParameters
 /// history_length - 1 random ones, is visited in a circle.
 ///
 /// At each iteration a random move of the current solution is evaluated; if the
-/// candidate dominates the current solution it replaces it in the history,
-/// otherwise, with second_chance, it replaces the next solution of the history
-/// if it dominates that one (which is skipped). The search goes on to the next
-/// solution of the history either way. Past max_iterations it stops as soon as
-/// more than idle_ratio of the iterations are idle (no replacement since the
-/// last one). The result is the front of the run (search_run's archive of the
-/// non-dominated solutions reached), with its first solution by objectives.
+/// candidate dominates the current solution it replaces it in the history, and
+/// the search goes on from the next solution of the history. Otherwise, with
+/// second_chance, a candidate that dominates the next solution replaces it, and
+/// the search goes on from the solution it replaced, two positions on, as in
+/// Da Ros's implementation; else it goes on from the next solution. Past
+/// max_iterations it stops as soon as more than idle_ratio of the iterations
+/// are idle (no replacement since the last one). The result is the front of the
+/// run (search_run's archive of the non-dominated solutions reached), with its
+/// first solution by objectives.
 /// Requires a neighborhood explorer with random_move(), a SolutionManager with
 /// random_solution() (has_random_solution) to fill the history, and a
 /// cost::pareto cost.
@@ -193,6 +195,8 @@ public:
             else if (parameters_.second_chance
                 && run.better(candidate.cost(), history[next]->evaluation.cost()))
             {
+                // On from the solution replaced, not from the history: as in
+                // the original algorithm.
                 auto replacement = applied(*current, std::move(candidate), *move);
                 current = std::exchange(history[next], std::move(replacement));
                 index = (index + 2) % size;
