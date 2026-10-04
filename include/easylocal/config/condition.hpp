@@ -14,6 +14,7 @@
 #include <concepts>
 #include <cstddef>
 #include <functional>
+#include <limits>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -202,20 +203,33 @@ constexpr auto make_binary(const Left& left, const Right& right)
         as_expression(right)};
 }
 
-// An operand as it is computed with: a limit as its count, an integer of
-// either sign as long long.
+// A count as long long: one too large for it, as unlimited is, is the
+// largest, which compares above every other count.
+[[nodiscard]]
+constexpr long long computed_count(const unsigned long long count) noexcept
+{
+    constexpr auto largest = std::numeric_limits<long long>::max();
+    return count > static_cast<unsigned long long>(largest)
+        ? largest
+        : static_cast<long long>(count);
+}
+
+// An operand as it is computed with: a limit as its count (unlimited above
+// every other), an integer of either sign as long long.
 template<class T>
 [[nodiscard]]
 constexpr auto computed(const T& operand)
 {
     if constexpr (std::same_as<T, bool> || std::floating_point<T>)
         return operand;
+    else if constexpr (std::unsigned_integral<T>)
+        return computed_count(operand);
     else if constexpr (std::integral<T>)
         return static_cast<long long>(operand);
     else if constexpr (std::convertible_to<const T&, std::string_view>)
         return std::string_view{operand};
     else if constexpr (std::convertible_to<const T&, std::size_t>)
-        return static_cast<long long>(static_cast<std::size_t>(operand));
+        return computed_count(static_cast<std::size_t>(operand));
     else
         return operand;
 }

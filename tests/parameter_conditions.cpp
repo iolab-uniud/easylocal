@@ -4,6 +4,7 @@
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/runners/great_deluge.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
+#include <easylocal/utils/limit.hpp>
 
 #include <array>
 #include <cassert>
@@ -179,6 +180,35 @@ void built_in_schemas_declare_their_relations()
     assert(deluge.validate().message == "min_level must be smaller than initial_level");
 }
 
+// A limit in an expression: unlimited is above every count.
+struct Budgeted
+{
+    easylocal::limit budget{easylocal::unlimited};
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return config::fields(
+            config::field<"budget", &Budgeted::budget>(
+                "Budget",
+                config::range(0, easylocal::unlimited)),
+            config::require(config::value<"budget"> > 1000, "budget must be above 1000"));
+    }
+
+    [[nodiscard]]
+    constexpr config::validation_result validate() const noexcept
+    {
+        return config::check_schema(*this);
+    }
+};
+
+void unlimited_is_above_every_count()
+{
+    assert(config::check_schema(Budgeted{}));
+    assert(!config::check_schema(Budgeted{.budget = easylocal::limit{10}}));
+    assert(config::check_schema(Budgeted{.budget = easylocal::limit{2000}}));
+}
+
 } // namespace
 
 int main()
@@ -187,4 +217,5 @@ int main()
     requirements_name_their_block_and_reach_into_groups();
     parameters_list_their_conditions_with_full_paths();
     built_in_schemas_declare_their_relations();
+    unlimited_is_above_every_count();
 }
