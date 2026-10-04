@@ -134,9 +134,8 @@ private:
 };
 
 template<class Component>
-class colocated_delta_spec
+struct colocated_delta_spec
 {
-public:
     using component_type = Component;
     using binding_type = colocated_delta_binding<Component>;
 

@@ -1548,9 +1548,8 @@ concept metropolis_cost = cost::has_delta<Cost>;
 /// It requires costs with a numeric difference, cost::delta (cost::has_delta);
 /// an infinite delta, a worsening of a hierarchical hard level, is never
 /// accepted.
-class MetropolisAcceptance
+struct MetropolisAcceptance
 {
-public:
     /// Whether candidate is accepted over current at temperature.
     template<detail::metropolis_cost Cost, std::uniform_random_bit_generator RNG>
     [[nodiscard]]

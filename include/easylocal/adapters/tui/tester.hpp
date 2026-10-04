@@ -625,35 +625,43 @@ struct async_runner_result
 
 // A scrollable text wrapped to a width: the Input and solution windows. The
 // lines are wrapped again only when the width changes.
-struct text_viewer
+class text_viewer
 {
-    std::string text;
-    std::vector<std::string> lines{""};
-    std::size_t wrap_width{};
-    int selected{};
-
+public:
     // Shows a new text from its first line.
     void show(std::string value, const std::size_t width)
     {
-        text = std::move(value);
-        wrap_width = 0;
+        text_ = std::move(value);
+        wrap_width_ = 0;
         refresh(width);
-        selected = 0;
+        selected_ = 0;
     }
 
     void refresh(const std::size_t width)
     {
-        if (wrap_width == width)
+        if (wrap_width_ == width)
             return;
-        wrap_width = width;
-        lines = wrap_text_lines(text, width);
+        wrap_width_ = width;
+        lines_ = wrap_text_lines(text_, width);
         scroll(0);
     }
 
     void scroll(const int delta)
     {
-        selected = page_scroll_selection(selected, lines.size(), delta);
+        selected_ = page_scroll_selection(selected_, lines_.size(), delta);
     }
+
+    // The lines as a vertical menu, which moves the selected line.
+    [[nodiscard]] ftxui::Component menu()
+    {
+        return ftxui::Menu(&lines_, &selected_, ftxui::MenuOption::Vertical());
+    }
+
+private:
+    std::string text_;
+    std::vector<std::string> lines_{""};
+    std::size_t wrap_width_{};
+    int selected_{};
 };
 
 // One editable parameter of the parameters window: its full configuration
@@ -1918,7 +1926,7 @@ private:
         Closes closes)
     {
         using namespace ftxui;
-        auto menu = Menu(&viewer.lines, &viewer.selected, MenuOption::Vertical());
+        auto menu = viewer.menu();
         auto close =
             Button("Close", [&visible] { visible = false; }, ButtonOption::Ascii());
         auto component = Renderer(
