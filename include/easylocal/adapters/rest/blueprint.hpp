@@ -1,10 +1,11 @@
 #pragma once
 
-// app_blueprint: a Crow blueprint that exposes an app over HTTP (docs/rest.md).
-// It lists the runners and the parameters, submits runs (each on its own
-// Session, with optional parameter overrides, target and initial solution),
-// reports their state and solution, and cancels them. A codec of the problem
-// turns its Input, Solution and costs into JSON and back.
+/// \file
+/// app_blueprint: a Crow blueprint that exposes an app over HTTP (docs/rest.md).
+/// It lists the runners and the parameters, submits runs (each on its own
+/// Session, with optional parameter overrides, target and initial solution),
+/// reports their state and solution, and cancels them. A codec of the problem
+/// turns its Input, Solution and costs into JSON and back.
 
 #include <easylocal/adapters/rest/execution.hpp>
 #include <easylocal/app/session.hpp>
@@ -42,9 +43,9 @@ struct blueprint_options
     std::size_t workers{default_worker_count()};
     std::size_t queue_capacity{64};
     std::size_t completed_run_capacity{64};
-    // Base seed of the RNG given to stochastic runners: a run without an
-    // explicit "seed" uses seed + its run id, so runs differ but are
-    // reproducible.
+    /// Base seed of the RNG given to stochastic runners: a run without an
+    /// explicit "seed" uses seed + its run id, so runs differ but are
+    /// reproducible.
     std::uint64_t seed{0};
 };
 

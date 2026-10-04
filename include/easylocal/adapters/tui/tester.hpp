@@ -1,9 +1,10 @@
 #pragma once
 
-// The interactive tester (TextUI): an FTXUI frontend on a Session. It loads
-// and saves Inputs and Solutions, shows the current solution and its cost,
-// explores and applies moves, edits the parameters and runs the registered
-// runners with progress and cancellation.
+/// \file
+/// The interactive tester (TextUI): an FTXUI frontend on a Session. It loads
+/// and saves Inputs and Solutions, shows the current solution and its cost,
+/// explores and applies moves, edits the parameters and runs the registered
+/// runners with progress and cancellation.
 
 #include <easylocal/app/check.hpp>
 #include <easylocal/app/io.hpp>
@@ -54,8 +55,8 @@ enum class path_display_mode
     both,
 };
 
-// The options of the interactive tester. input_path and solution_path are the
-// initial paths of the Input/Output page; run() loads the Input from input_path.
+/// The options of the interactive tester. input_path and solution_path are the
+/// initial paths of the Input/Output page; run() loads the Input from input_path.
 struct options
 {
     std::string title{"EasyLocal Tester"};
@@ -3294,9 +3295,9 @@ private:
 
 } // namespace detail
 
-// Runs the interactive tester on an app: an interactive session on it, with
-// options.seed for its RNG, and the Input loaded from options.input_path when
-// it is set (through the read_input hook).
+/// Runs the interactive tester on an app: an interactive session on it, with
+/// options.seed for its RNG, and the Input loaded from options.input_path when
+/// it is set (through the read_input hook).
 template<class App>
 void run(App application, tui::options settings = {})
 {

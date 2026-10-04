@@ -1,7 +1,8 @@
 #pragma once
 
-// execution_pool: the worker threads the REST adapter runs searches on, with
-// a bounded queue of pending runs.
+/// \file
+/// execution_pool: the worker threads the REST adapter runs searches on, with
+/// a bounded queue of pending runs.
 
 #include <algorithm>
 #include <condition_variable>
