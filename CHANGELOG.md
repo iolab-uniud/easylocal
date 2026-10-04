@@ -91,11 +91,12 @@ old concepts onto the new ones.
   can stop at a target cost (`stop_at(cost)`) and returns a `search_result`
   with its `termination_reason` (`to_string` gives a readable name).
 - Solvers: **LocalSearch**, **MultiStart** and **Pipeline**, with pluggable
-  initialization. A pipeline (`pipeline() | stage(name, runner) | ...`, or
-  `pipeline(stages...)`) runs runners with their own recipes in sequence over
-  the same solution; a stage may stop at a target (`stop_at`, or
-  `until_feasible()` on the hard cost until it is zero) and be repeated
-  (`attempts`), and the result reports every stage. `two_stage(first,
+  initialization. A pipeline (`stage(name, runner) | ...`, or
+  `pipeline(stages...)`, or `.then(stage)`) runs runners with their own
+  recipes in sequence over the same solution; a stage, with `&` or a method,
+  may stop at a target (`target`, or `until_feasible()` on the hard cost until
+  it is zero) and be repeated (`attempts`), and the result reports every
+  stage. `two_stage(first,
   second)` is the pipeline of the hard/soft model: hard constraints first,
   until the hard cost is zero, then the full cost. Solvers take the same run options as runners —
   cancellation, tracer, target — and report the effort of all their runs.

@@ -15,9 +15,9 @@ namespace easylocal::solvers
 /// A pipeline of two stages for hierarchical costs: `first` on the hard cost
 /// until it reaches zero, then `second` on the whole cost from its solution.
 ///
-/// It is `pipeline(stage("first", first).until_feasible(), stage("second",
-/// second))`, so its parameters are `first.*` and `second.*`, and the first
-/// stage's attempts are set through them or with `stage<0>()`. Requires runners
+/// It is `(stage("first", first) & until_feasible()) | stage("second", second)`,
+/// so its parameters are `first.*` and `second.*`, and the first stage's
+/// attempts are set through them or with `stage<0>()`. Requires runners
 /// with the same Input and Solution, the first with a hierarchical cost
 /// (`cost::hierarchical`).
 template<

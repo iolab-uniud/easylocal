@@ -85,15 +85,19 @@ runners, each with its own name, cost and neighborhood, over the same
 solution:
 
 ```cpp
-auto solver = el::solvers::pipeline()
-    | el::solvers::stage("feasible", descent).until_feasible().attempts(10)
-    | el::solvers::stage("descent", descent)
-    | el::solvers::stage("anneal", annealing);
+using namespace el::solvers;
+auto solver = (stage("feasible", descent) & until_feasible() & attempts(10))
+    | stage("descent", descent)
+    | stage("anneal", annealing);
 auto result = solver.seed(7).solve(input);
 ```
 
+- `|` chains the stages, `&` gives a stage its options, in parentheses (GCC
+  warns about `&` and `|` mixed without them); the methods
+  `.until_feasible()`, `.with_attempts(10)`, `.with_target(0)` and the
+  pipeline's `.then(stage)` spell the same pipeline out.
 - `until_feasible()` runs the stage on the hard cost until it is zero;
-  `stop_at(target)` stops a stage at another target, in its own cost.
+  `target(cost)` stops a stage at another target, in its own cost.
 - `attempts(10)` repeats the stage, here from a new random solution, while it
   has not reached its target, and keeps the best run.
 - `result.stages` reports each stage (attempts, effort, termination, cost),

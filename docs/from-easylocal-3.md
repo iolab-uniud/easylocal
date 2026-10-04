@@ -1016,13 +1016,12 @@ const auto result = stages.solve(tsp);
   example with different parameters or neighborhoods.
 - `result.iterations` and `result.evaluations` add up both stages, and
   `result.stages` reports each one.
-- `two_stage()` is a pipeline of two stages,
-  `solvers::pipeline() | solvers::stage("first", descent).until_feasible() |
-  solvers::stage("second", descent)`: a solver of more stages, each with its
-  own runner, neighborhood and cost, is written the same way (see
-  [Solvers](reference/solvers.md)). A stage can also be repeated:
-  `.attempts(10)` on the first one restarts it from new random tours while the
-  tour is not feasible.
+- `two_stage()` is a pipeline of two stages, `(stage("first", descent) &
+  until_feasible()) | stage("second", descent)` in `solvers`: a solver of more
+  stages, each with its own runner, neighborhood and cost, is written the same
+  way (see [Solvers](reference/solvers.md)). A stage can also be repeated:
+  `& attempts(10)` on the first one restarts it from new random tours while
+  the tour is not feasible.
 
 The report reads the cost by branch and evaluates each component directly:
 components are plain classes, constructed from the Input:

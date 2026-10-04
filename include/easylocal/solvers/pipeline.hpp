@@ -4,11 +4,18 @@
 /// solvers::Pipeline: runners in sequence over the same Input and Solution,
 /// each stage starting from the solution of the previous one.
 ///
-///     auto solver = solvers::pipeline()
-///         | solvers::stage("feasible", descent).until_feasible().attempts(10)
-///         | solvers::stage("descent", descent)
-///         | solvers::stage("anneal", annealing);
+///     using namespace easylocal::solvers;
+///     auto solver = (stage("feasible", descent) & until_feasible() & attempts(10))
+///         | stage("descent", descent)
+///         | stage("anneal", annealing);
 ///     auto result = solver.seed(7).solve(input);
+///
+/// The same pipeline, spelled out:
+///
+///     auto solver = pipeline(stage("feasible",
+///     descent).until_feasible().with_attempts(10))
+///                       .then(stage("descent", descent))
+///                       .then(stage("anneal", annealing));
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/config/parameters.hpp>
@@ -68,8 +75,9 @@ class pipeline_stage;
 /// A stage of a pipeline: a named runner, with an optional target cost and a
 /// number of attempts.
 ///
-/// A stage is built by stage(name, runner) and refined by stop_at(),
-/// attempts() and until_feasible(), each returning the refined stage.
+/// A stage is built by stage(name, runner) and refined by with_target(),
+/// with_attempts() and until_feasible(), each returning the refined stage, or
+/// with `&` and the modifiers target(), attempts() and until_feasible().
 template<class Runner>
 class pipeline_stage
 {
@@ -93,7 +101,7 @@ public:
 
     /// The same stage, stopping as soon as its best cost reaches `target`.
     [[nodiscard]]
-    pipeline_stage stop_at(cost_type target) &&
+    pipeline_stage with_target(cost_type target) &&
     {
         target_ = std::move(target);
         return std::move(*this);
@@ -101,9 +109,9 @@ public:
 
     /// The same stage, stopping as soon as its best cost reaches `target`.
     [[nodiscard]]
-    pipeline_stage stop_at(cost_type target) const&
+    pipeline_stage with_target(cost_type target) const&
     {
-        return pipeline_stage{*this}.stop_at(std::move(target));
+        return pipeline_stage{*this}.with_target(std::move(target));
     }
 
     /// The same stage, run up to `count` times while it does not reach its
@@ -111,7 +119,7 @@ public:
     ///
     /// Throws `std::invalid_argument` when `count` is 0.
     [[nodiscard]]
-    pipeline_stage attempts(const std::size_t count) &&
+    pipeline_stage with_attempts(const std::size_t count) &&
     {
         parameters_.attempts = count;
         if (const auto valid = parameters_.validate(); !valid)
@@ -124,9 +132,9 @@ public:
     ///
     /// Throws `std::invalid_argument` when `count` is 0.
     [[nodiscard]]
-    pipeline_stage attempts(const std::size_t count) const&
+    pipeline_stage with_attempts(const std::size_t count) const&
     {
-        return pipeline_stage{*this}.attempts(count);
+        return pipeline_stage{*this}.with_attempts(count);
     }
 
     /// The same stage on the hard cost only, until it is zero: a feasible
@@ -225,6 +233,83 @@ pipeline_stage<Runner> stage(std::string name, Runner runner)
     return {std::move(name), std::move(runner)};
 }
 
+/// A stage modifier: the stage stops as soon as its best cost reaches `cost`.
+template<class Cost>
+struct stage_target
+{
+    /// The target, converted to the stage's cost.
+    Cost cost;
+};
+
+/// A stage modifier: up to `count` runs while the stage does not reach its
+/// target.
+struct stage_attempts
+{
+    /// The runs, at least 1.
+    std::size_t count{1};
+};
+
+/// A stage modifier: the stage runs on the hard cost until it is zero.
+struct stage_until_feasible
+{
+};
+
+/// The stage stops as soon as its best cost reaches `cost`, written in the
+/// stage's own cost: `stage(...) & target(0)`, as `with_target(0)`.
+template<class Cost>
+[[nodiscard]]
+stage_target<Cost> target(Cost cost)
+{
+    return {std::move(cost)};
+}
+
+/// The stage runs up to `count` times while it does not reach its target, and
+/// keeps its best run: `stage(...) & attempts(10)`, as `with_attempts(10)`.
+[[nodiscard]]
+constexpr stage_attempts attempts(const std::size_t count) noexcept
+{
+    return {count};
+}
+
+/// The stage runs on the hard cost only, until it is zero:
+/// `stage(...) & until_feasible()`, as `.until_feasible()`.
+[[nodiscard]]
+constexpr stage_until_feasible until_feasible() noexcept
+{
+    return {};
+}
+
+/// The stage with a target: `stage.with_target(target.cost)`.
+template<class Runner, class Cost>
+[[nodiscard]]
+pipeline_stage<Runner> operator&(pipeline_stage<Runner> stage, stage_target<Cost> target)
+{
+    using cost_type = typename pipeline_stage<Runner>::cost_type;
+    return std::move(stage).with_target(cost_type(std::move(target.cost)));
+}
+
+/// The stage with a number of attempts: `stage.with_attempts(attempts.count)`.
+///
+/// Throws `std::invalid_argument` when the count is 0.
+template<class Runner>
+[[nodiscard]]
+pipeline_stage<Runner> operator&(
+    pipeline_stage<Runner> stage,
+    const stage_attempts attempts)
+{
+    return std::move(stage).with_attempts(attempts.count);
+}
+
+/// The stage on the hard cost until it is zero: `stage.until_feasible()`.
+///
+/// Requires a runner with a hierarchical cost (`cost::hierarchical`).
+template<class Runner>
+[[nodiscard]]
+auto operator&(pipeline_stage<Runner> stage, stage_until_feasible)
+{
+    return std::move(stage).until_feasible();
+}
+
 /// What one stage of a pipeline did.
 struct stage_report
 {
@@ -287,12 +372,6 @@ bool ends_stage(
 
 template<std::uniform_random_bit_generator RNG, class... Stages>
 class Pipeline;
-
-/// A pipeline without stages yet: `pipeline() | stage(...)` starts one.
-template<std::uniform_random_bit_generator RNG = std::mt19937_64>
-struct empty_pipeline
-{
-};
 
 /// Runners in sequence over the same Input and Solution: each stage starts from
 /// the solution of the previous one, the first from an initial solution.
@@ -402,6 +481,31 @@ public:
         return std::move(*this);
     }
 
+    /// The pipeline with `stage` after its stages, its RNG and initialization
+    /// kept: `pipeline | stage`.
+    template<class Runner>
+    [[nodiscard]]
+    Pipeline<RNG, Stages..., pipeline_stage<Runner>> then(pipeline_stage<Runner> stage) &&
+    {
+        const auto mode = this->initialization_mode();
+        return Pipeline<RNG, Stages..., pipeline_stage<Runner>>{
+            std::tuple_cat(
+                std::move(stages_),
+                std::tuple<pipeline_stage<Runner>>{std::move(stage)}),
+            std::move(rng_),
+            mode};
+    }
+
+    /// The pipeline with `stage` after its stages, its RNG and initialization
+    /// kept: `pipeline | stage`.
+    template<class Runner>
+    [[nodiscard]]
+    Pipeline<RNG, Stages..., pipeline_stage<Runner>> then(
+        pipeline_stage<Runner> stage) const&
+    {
+        return Pipeline{*this}.then(std::move(stage));
+    }
+
     /// The RNG, which feeds the initial solutions and the runs.
     [[nodiscard]]
     RNG& rng() noexcept
@@ -476,12 +580,6 @@ public:
 private:
     template<std::uniform_random_bit_generator, class...>
     friend class Pipeline;
-
-    template<std::uniform_random_bit_generator R, class S>
-    friend Pipeline<R, S> operator|(empty_pipeline<R>, S);
-
-    template<std::uniform_random_bit_generator R, class... Ss, class S>
-    friend Pipeline<R, Ss..., S> operator|(Pipeline<R, Ss...>, S);
 
     Pipeline(std::tuple<Stages...> stages, RNG rng, const initialization::Mode mode)
         : initialization_support{mode}, stages_{std::move(stages)}, rng_{std::move(rng)}
@@ -647,35 +745,38 @@ private:
     RNG rng_;
 };
 
-/// The first stage of a pipeline.
-template<std::uniform_random_bit_generator RNG, class Stage>
+/// The pipeline with one more stage: `pipeline.then(stage)`.
+template<std::uniform_random_bit_generator RNG, class... Stages, class Runner>
 [[nodiscard]]
-Pipeline<RNG, Stage> operator|(empty_pipeline<RNG>, Stage stage)
+auto operator|(Pipeline<RNG, Stages...> pipeline, pipeline_stage<Runner> stage)
 {
-    return Pipeline<RNG, Stage>{std::tuple<Stage>{std::move(stage)}, RNG{}};
+    return std::move(pipeline).then(std::move(stage));
 }
 
-/// The pipeline with one more stage, its RNG and initialization kept.
-template<std::uniform_random_bit_generator RNG, class... Stages, class Stage>
-[[nodiscard]]
-Pipeline<RNG, Stages..., Stage> operator|(Pipeline<RNG, Stages...> pipeline, Stage stage)
-{
-    const auto mode = pipeline.initialization_mode();
-    return Pipeline<RNG, Stages..., Stage>{
-        std::tuple_cat(std::move(pipeline.stages_), std::tuple<Stage>{std::move(stage)}),
-        std::move(pipeline.rng_),
-        mode};
-}
-
-/// A pipeline of `stages`, in order; with none, an empty pipeline that `|`
-/// extends.
+/// A pipeline of `stages`, in order: `pipeline(a, b, c)` is `a | b | c`, and
+/// `pipeline(a)` the pipeline of one stage, which `then()` extends.
 ///
-/// `pipeline(a, b, c)` is `pipeline() | a | b | c`.
-template<std::uniform_random_bit_generator RNG = std::mt19937_64, class... Stages>
+/// RNG, the type of the pipeline's random number generator, may be given:
+/// `pipeline<std::minstd_rand>(a, b)`.
+template<
+    std::uniform_random_bit_generator RNG = std::mt19937_64,
+    class Runner,
+    class... Stages>
 [[nodiscard]]
-auto pipeline(Stages... stages)
+auto pipeline(pipeline_stage<Runner> first, Stages... rest)
 {
-    return (empty_pipeline<RNG>{} | ... | std::move(stages));
+    using first_type = pipeline_stage<Runner>;
+    return (
+        Pipeline<RNG, first_type>{std::tuple<first_type>{std::move(first)}, RNG{}} | ...
+        | std::move(rest));
+}
+
+/// The pipeline of two stages: `pipeline(first, second)`.
+template<class FirstRunner, class SecondRunner>
+[[nodiscard]]
+auto operator|(pipeline_stage<FirstRunner> first, pipeline_stage<SecondRunner> second)
+{
+    return pipeline(std::move(first), std::move(second));
 }
 
 } // namespace easylocal::solvers

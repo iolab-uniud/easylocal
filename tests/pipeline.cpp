@@ -538,7 +538,7 @@ bool run()
     static_assert(std::same_as<
         decltype(shared_solver),
         decltype(solvers::pipeline(
-            solvers::stage("first", shared_runner).until_feasible(),
+            solvers::stage("first", shared_runner) & solvers::until_feasible(),
             solvers::stage("second", shared_runner)))>);
 
     const Instance instance{};
@@ -630,8 +630,8 @@ bool run()
         | sm | neighborhood<SoftNeighborhood>();
     // The explicit pipeline that two_stage() stands for.
     auto stopping_solver =
-        (solvers::pipeline()
-            | solvers::stage("first", std::move(endless_hard_runner)).until_feasible()
+        ((solvers::stage("first", std::move(endless_hard_runner))
+             & solvers::until_feasible())
             | solvers::stage("second", std::move(soft_runner)))
             .initialization(initialization::initial)
             .seed(3);
@@ -678,10 +678,9 @@ int main()
     // Three stages: the first on the hard cost until it is zero, in up to five
     // attempts from new initial solutions; the others from its solution.
     const Countdown countdown;
-    auto three = solvers::pipeline()
-        | solvers::stage("feasible", el::Runner{countdown} | sm | nhe)
-              .until_feasible()
-              .attempts(5)
+    auto three =
+        (solvers::stage("feasible", el::Runner{countdown} | sm | nhe)
+            & solvers::until_feasible() & solvers::attempts(5))
         | solvers::stage("polish", el::Runner{SoftDown{}} | sm | nhe)
         | solvers::stage("finish", el::Runner{SoftDown{}} | sm | nhe);
     static_assert(decltype(three)::stage_count == 3);
@@ -713,20 +712,36 @@ int main()
     // Without a target, a stage runs all its attempts and keeps the best.
     const Noisy noisy;
     auto best_of = solvers::pipeline(
-        solvers::stage("noisy", el::Runner{noisy} | sm | nhe).attempts(4));
+        solvers::stage("noisy", el::Runner{noisy} | sm | nhe).with_attempts(4));
     const auto best = best_of.solve(instance);
     ok &= expect(
         *noisy.runs == 4 && best.solution.soft == 3 && best.stages[0].attempts == 4,
         "a stage without a target keeps its best attempt");
 
-    // pipeline(a, b) is pipeline() | a | b.
+    // pipeline(a, b), a | b and pipeline(a).then(b) are the same pipeline.
     const auto shortcut = solvers::pipeline(
         solvers::stage("polish", el::Runner{SoftDown{}} | sm | nhe),
         solvers::stage("finish", el::Runner{SoftDown{}} | sm | nhe));
-    const auto chained = solvers::pipeline()
-        | solvers::stage("polish", el::Runner{SoftDown{}} | sm | nhe)
+    const auto chained = solvers::stage("polish", el::Runner{SoftDown{}} | sm | nhe)
         | solvers::stage("finish", el::Runner{SoftDown{}} | sm | nhe);
+    const auto spelled =
+        solvers::pipeline(solvers::stage("polish", el::Runner{SoftDown{}} | sm | nhe))
+            .then(solvers::stage("finish", el::Runner{SoftDown{}} | sm | nhe));
     static_assert(std::same_as<decltype(shortcut), decltype(chained)>);
+    static_assert(std::same_as<decltype(shortcut), decltype(spelled)>);
+
+    // A target in the stage's own cost ends its attempts: the hard part is 1
+    // after the second run.
+    const Countdown partial;
+    auto to_one = solvers::pipeline(
+        solvers::stage("partial", (el::Runner{partial} | sm | nhe).with_hard_cost())
+        & solvers::target(1) & solvers::attempts(5));
+    const auto reached =
+        to_one.initialization(el::initialization::initial).solve(instance);
+    ok &= expect(
+        *partial.runs == 2 && reached.solution.hard == 1
+            && reached.stages[0].attempts == 2,
+        "a stage stops its attempts at its target");
 
     // A cancelled solve makes one attempt per stage, and the solve's own
     // target goes to the last stage.
@@ -737,7 +752,7 @@ int main()
     auto cancellable = solvers::pipeline(
         solvers::stage("feasible", el::Runner{cancelled_countdown} | sm | nhe)
             .until_feasible()
-            .attempts(5),
+            .with_attempts(5),
         solvers::stage("polish", el::Runner{SoftDown{}} | sm | nhe));
     const auto cancelled = cancellable.solve(
         instance,
@@ -759,7 +774,7 @@ int main()
                     }})
         | sm | nhe;
     auto configurable = solvers::pipeline(
-        solvers::stage("anneal", annealing).attempts(2),
+        solvers::stage("anneal", annealing) & solvers::attempts(2),
         solvers::stage("polish", el::Runner{SoftDown{}} | sm | nhe));
     const auto parameters = configurable.configuration();
     std::vector<std::string> paths;
@@ -801,7 +816,8 @@ int main()
     try
     {
         static_cast<void>(
-            solvers::stage("none", el::Runner{SoftDown{}} | sm | nhe).attempts(0));
+            solvers::stage("none", el::Runner{SoftDown{}} | sm | nhe)
+            & solvers::attempts(0));
     }
     catch (const std::invalid_argument&)
     {

@@ -27,7 +27,7 @@ directly: `solvers::X<Runner, RNG>{runner, ..., RNG{seed}}`.
 | --- | --- | --- |
 | `solvers::LocalSearch` | `LocalSearchConfig{initialization, seed}` | one initial solution, one run |
 | `solvers::MultiStart` | `MultiStartConfig{parameters = {starts}, initialization, seed}` | up to `starts` runs from fresh solutions, keeps the best by cost semantics |
-| `solvers::Pipeline` | built with `pipeline() \| stage(...)` (below) | runners in sequence, each stage from the solution of the previous one |
+| `solvers::Pipeline` | built from stages with `\|` or `pipeline(...)` (below) | runners in sequence, each stage from the solution of the previous one |
 
 Results carry the effort of the whole solve: `evaluations` and `iterations`
 add up over MultiStart's starts and a pipeline's stages and attempts.
@@ -42,21 +42,32 @@ first from an initial solution, each other from the solution of the previous
 one. A stage is any runner, with its own recipes (cost, neighborhood), named:
 
 ```cpp
-auto solver = solvers::pipeline()
-    | solvers::stage("feasible", descent).until_feasible().attempts(10)
-    | solvers::stage("descent", descent)
-    | solvers::stage("anneal", annealing);
+using namespace easylocal::solvers;
+auto solver = (stage("feasible", descent) & until_feasible() & attempts(10))
+    | stage("descent", descent)
+    | stage("anneal", annealing);
 auto result = solver.initialization(initialization::random).seed(7).solve(input);
 ```
 
-`solvers::pipeline(a, b, c)` is `pipeline() | a | b | c`. The stages must have
-the same Input and Solution (checked at compile time); their costs may differ.
+`&` gives a stage its options and `|` chains the stages. `&` binds tighter
+than `|`, but GCC warns about `a & b | c` (`-Wparentheses`): put a stage and
+its options in parentheses. The same pipeline spelled out, with methods:
 
-| Stage option | Effect |
-| --- | --- |
-| `.stop_at(target)` | the stage stops as soon as its best cost reaches `target`, in the stage's own cost |
-| `.until_feasible()` | the stage runs `runner.with_hard_cost()` until the hard cost is zero; requires a `cost::hierarchical` cost |
-| `.attempts(n)` | up to `n` runs while the target is not reached, keeping the best; the first stage starts each from a new initial solution, the others from the solution they received |
+```cpp
+auto solver = pipeline(stage("feasible", descent).until_feasible().with_attempts(10))
+                  .then(stage("descent", descent))
+                  .then(stage("anneal", annealing));
+```
+
+`pipeline(a, b, c)` is `a | b | c`, and `pipeline(a)` a pipeline of one stage.
+The stages must have the same Input and Solution (checked at compile time);
+their costs may differ.
+
+| Stage option | Method | Effect |
+| --- | --- | --- |
+| `& target(cost)` | `.with_target(cost)` | the stage stops as soon as its best cost reaches `cost`, in the stage's own cost |
+| `& until_feasible()` | `.until_feasible()` | the stage runs `runner.with_hard_cost()` until the hard cost is zero; requires a `cost::hierarchical` cost |
+| `& attempts(n)` | `.with_attempts(n)` | up to `n` runs while the target is not reached, keeping the best; the first stage starts each from a new initial solution, the others from the solution they received |
 
 With a `cost::hard_soft` cost expression, `until_feasible()` evaluates only the
 components of the hard branch, and deltas attached to soft components are
@@ -80,8 +91,8 @@ Stage names must be distinct and non-empty.
 ### two_stage()
 
 `solvers::two_stage(first, second)` is the pipeline of the hierarchical
-hard/soft model: `stage("first", first).until_feasible()`, then
-`stage("second", second)` on the whole cost. `two_stage(runner)` uses the same
+hard/soft model, `(stage("first", first) & until_feasible()) | stage("second",
+second)`: the second stage works on the whole cost. `two_stage(runner)` uses the same
 runner for both. Its parameters are `first.*` and `second.*`.
 
 All solvers expose `supports_initial`, `supports_random`,
