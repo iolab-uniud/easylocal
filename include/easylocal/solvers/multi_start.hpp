@@ -185,11 +185,13 @@ public:
              start < parameters_.starts && !termination.has_value();
              ++start)
         {
-            if (const auto spent = budget.spent())
+            if (easylocal::detail::stop_requested(options...))
             {
-                termination = spent;
+                termination = termination_reason::cancelled;
                 break;
             }
+            if (budget.spent())
+                break;
             auto candidate = run_once(bound_runner, budget, options...);
             budget.consume(candidate);
             termination = ended_by(candidate);
@@ -199,6 +201,10 @@ public:
                 best = std::move(candidate);
             }
         }
+        // The time or the evaluations ran out, before a start or during the
+        // last one.
+        if (!termination)
+            termination = budget.spent();
 
         effort.assign_to(best);
         easylocal::detail::set_termination(

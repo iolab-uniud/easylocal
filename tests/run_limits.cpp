@@ -361,6 +361,20 @@ int main()
         shared.evaluations == 25
             && shared.termination == el::termination_reason::evaluation_budget_exhausted,
         "a MultiStart shares the solve's evaluation budget");
+    // The budget may run out during the last start: the solve still says so.
+    auto single_start = el::make_solver<solvers::MultiStart>(
+        runner,
+        solvers::MultiStartConfig<el::initialization::Initial>{
+            .parameters = {.starts = 1},
+            .initialization = el::initialization::initial,
+            .seed = 3,
+        });
+    const auto last_start = single_start.solve(instance, el::max_evaluations(5));
+    ok &= expect(
+        last_start.evaluations == 5
+            && last_start.termination
+                == el::termination_reason::evaluation_budget_exhausted,
+        "a MultiStart whose last start spends the budget says so");
     auto budgeted_pipeline = solvers::pipeline(
         solvers::stage("first", runner) & solvers::max_evaluations(10),
         solvers::stage("second", runner));
