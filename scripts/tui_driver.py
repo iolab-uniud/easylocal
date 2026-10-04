@@ -152,6 +152,23 @@ class Tui:
     def text(self) -> str:
         return "\n".join(line.rstrip() for line in self.screen_buffer.display)
 
+    # -- terminal size --------------------------------------------------------
+
+    def resize(self, columns: int, lines: int, quiet: float = 0.2,
+               limit: float = 2.0) -> "Tui":
+        """Resize the terminal as a user would: the emulator, the pty window
+        size, then SIGWINCH to the program; return once it has redrawn (or
+        after `limit` seconds, while a run keeps redrawing the screen)."""
+        # The output for the old size is drawn at the old size.
+        self.settle(limit=limit)
+        self.columns, self.lines = columns, lines
+        self.screen_buffer.resize(lines, columns)
+        fcntl.ioctl(self.fd, termios.TIOCSWINSZ,
+                    struct.pack("HHHH", lines, columns, 0, 0))
+        os.kill(self.pid, signal.SIGWINCH)
+        self.settle(quiet=quiet, limit=limit)
+        return self
+
     # -- input ----------------------------------------------------------------
 
     def press(self, *keys: str) -> "Tui":
