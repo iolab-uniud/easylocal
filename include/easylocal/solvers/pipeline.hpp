@@ -725,37 +725,21 @@ public:
     }
 
     /// The parameters of every stage under its name: its runner's and its own
-    /// (`<name>.attempts`).
+    /// (`<name>.attempts`), read-only when the pipeline is const.
     ///
     /// Throws `std::invalid_argument` when two stages have the same name, or
     /// one has none.
+    template<class Self>
     [[nodiscard]]
-    config::parameter_set configuration()
+    config::parameter_set configuration(this Self& self)
     {
-        check_names();
+        self.check_names();
         config::parameter_set parameters;
         std::apply(
             [&parameters](auto&... stage) {
                 (add_stage_configuration(parameters, stage), ...);
             },
-            stages_);
-        return parameters;
-    }
-
-    /// The parameters of every stage under its name, read-only.
-    ///
-    /// Throws `std::invalid_argument` when two stages have the same name, or
-    /// one has none.
-    [[nodiscard]]
-    config::parameter_set configuration() const
-    {
-        check_names();
-        config::parameter_set parameters;
-        std::apply(
-            [&parameters](const auto&... stage) {
-                (add_stage_configuration(parameters, stage), ...);
-            },
-            stages_);
+            self.stages_);
         return parameters;
     }
 

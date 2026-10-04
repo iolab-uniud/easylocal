@@ -599,39 +599,26 @@ public:
         };
     }
 
-    template<class Algorithm>
+    // The parameters of the only runner of type Algorithm, const when the app
+    // is.
+    template<class Algorithm, class Self>
         requires(app_runner_count_v<Algorithm, Registrations...> == 1)
     [[nodiscard]]
-    typename Algorithm::parameters_type& runner_config() noexcept
+    auto& runner_config(this Self& self) noexcept
     {
         constexpr auto index = app_runner_index<Algorithm, Registrations...>();
-        return std::get<index>(registrations_).config;
+        return std::get<index>(self.registrations_).config;
     }
 
-    template<class Algorithm>
-        requires(app_runner_count_v<Algorithm, Registrations...> == 1)
-    [[nodiscard]]
-    const typename Algorithm::parameters_type& runner_config() const noexcept
-    {
-        constexpr auto index = app_runner_index<Algorithm, Registrations...>();
-        return std::get<index>(registrations_).config;
-    }
-
-    template<class Algorithm>
+    // The parameters of the runner of type Algorithm registered as name,
+    // const when the app is.
+    template<class Algorithm, class Self>
         requires(app_runner_count_v<Algorithm, Registrations...> > 0)
     [[nodiscard]]
-    typename Algorithm::parameters_type& runner_config(const std::string_view name)
+    auto& runner_config(this Self& self, const std::string_view name)
     {
-        return app_runner_registration_by_name<Algorithm>(registrations_, name).config;
-    }
-
-    template<class Algorithm>
-        requires(app_runner_count_v<Algorithm, Registrations...> > 0)
-    [[nodiscard]]
-    const typename Algorithm::parameters_type& runner_config(
-        const std::string_view name) const
-    {
-        return app_runner_registration_by_name<Algorithm>(registrations_, name).config;
+        return app_runner_registration_by_name<Algorithm>(self.registrations_, name)
+            .config;
     }
 
     template<class Algorithm>
@@ -646,33 +633,21 @@ public:
     // The parameters of the app: its cost expression ("cost"), its
     // neighborhood ("neighborhood") and each registered runner's
     // ("runners.<name>", for parameters that are a parameter block). Every
-    // run reads them, so a change applies from the next run. The set refers
-    // to this app, which must stay in place while it is used.
+    // run reads them, so a change applies from the next run; read-only when
+    // the app is const. The set refers to this app, which must stay in place
+    // while it is used.
+    template<class Self>
     [[nodiscard]]
-    config::parameter_set configuration()
+    config::parameter_set configuration(this Self& self)
     {
         config::parameter_set parameters;
-        config::add_configuration(parameters, "cost", solution_manager_spec_);
-        config::add_configuration(parameters, "neighborhood", neighborhood_spec_);
+        config::add_configuration(parameters, "cost", self.solution_manager_spec_);
+        config::add_configuration(parameters, "neighborhood", self.neighborhood_spec_);
         std::apply(
             [&](auto&... registration) {
                 (add_runner_configuration(parameters, registration), ...);
             },
-            registrations_);
-        return parameters;
-    }
-
-    [[nodiscard]]
-    config::parameter_set configuration() const
-    {
-        config::parameter_set parameters;
-        config::add_configuration(parameters, "cost", solution_manager_spec_);
-        config::add_configuration(parameters, "neighborhood", neighborhood_spec_);
-        std::apply(
-            [&](const auto&... registration) {
-                (add_runner_configuration(parameters, registration), ...);
-            },
-            registrations_);
+            self.registrations_);
         return parameters;
     }
 

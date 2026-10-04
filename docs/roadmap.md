@@ -129,31 +129,18 @@ part of the design.
 configurator: [irace](https://mlopez-ibanez.github.io/irace/) (iterated
 racing), [SMAC](https://github.com/automl/SMAC3) (Bayesian optimization with
 random forests) or [Optuna](https://optuna.org/) (Bayesian optimization in
-Python, define-by-run). irace is supported: domains in the schemas, a cost
-printed as one number and an exporter of the scenario
-(`cli::run --tuning.irace`). What is left:
+Python, define-by-run). irace is supported: every parameter declares its
+domain (`check(app)` fails on one without), conditions and requirements
+between parameters (`only_if`, `config::require`) are exported as irace
+conditions and `[forbidden]` expressions, and `cli::run --tuning.irace` writes
+the scenario. What is left:
 
-**What.**
+**What.** **SMAC and Optuna** exporters from the same domains and conditions:
+the configuration space (ConfigSpace) and a target function for SMAC; the
+search space as a Python function for Optuna, which with the Python bindings
+(above) could also run the app in-process.
 
-- **Conditions between parameters**, declared next to the domains, where a
-  parameter matters only with a value of another (Simulated Annealing's
-  `initial_acceptance` only with `calibration_samples` above 0, a tabu list's
-  parameters only with that list), and relations that make a combination
-  invalid (a final temperature below the initial one). The exporter would write
-  them as irace conditions and `[forbidden]` expressions, and a block's
-  `validate()` could check the same declarations instead of repeating them;
-  today irace tunes a parameter that has no effect, and the user writes the
-  forbidden combinations by hand.
-- **Unbounded parameters**: a check, with warnings rather than errors, of the
-  parameters that leave a run without a bound (every stopping limit
-  `unlimited`), which tuning and benchmarking make easy to miss.
-- **SMAC and Optuna** exporters from the same domains: the configuration space
-  (ConfigSpace) and a target function for SMAC; the search space as a Python
-  function for Optuna, which with the Python bindings (above) could also run
-  the app in-process.
-
-**When.** Conditions and the unbounded check next; SMAC and Optuna not
-scheduled.
+**When.** Not scheduled.
 
 ## Experiment configurations
 
@@ -234,25 +221,6 @@ October 2026, GCC 16 implements it behind `-freflection`; GCC 15, Clang 22
 and 23 (neither the `^^` operator nor libc++'s `<meta>`) and Apple Clang do
 not. Until all supported compilers have it, reflection could only be an
 optional path next to the hand-written schema.
-
-## Deducing this for const and non-const twins
-
-**Why.** Some members exist twice, once for a const object and once for a
-mutable one, with the same body: `App::configuration()` and the
-`runner_config()` overloads. Each pair repeats its code and its comment, and
-the two copies can drift apart.
-
-**What.** One member per pair, with an explicit object parameter (C++23,
-P0847): `this auto& self` gives the const and the mutable version from a
-single body. The library does not use explicit object parameters yet, so this
-would also become a rule of the code style for future twins.
-
-**When.** Once every compiler of the CI matrix is known to support it. GCC
-15 and 16 and Clang 22 and 23 should; Apple Clang on the macOS runners and
-clang-cl on Windows are to be verified: the test
-`easylocal.explicit-object-parameter` builds the shape of the change on every
-compiler of the CI. Once it passes everywhere, the twins become one member
-each and the code style gains the rule.
 
 ## The API reference in the style of the site
 

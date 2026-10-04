@@ -71,6 +71,9 @@ the uv environment: `uv sync`, then `uv run ...`.
   rejects it.
 - Variants on a hot path (an inverse, a move evaluation) are chosen at compile
   time, with templates, rather than by runtime parameters.
+- A member with a const and a mutable version of the same body is written once,
+  with an explicit object parameter (`template<class Self> auto& f(this Self&
+  self)`), not as two overloads.
 - Comments match the surrounding code: a short description of each class or
   function, no narration of the change.
 
