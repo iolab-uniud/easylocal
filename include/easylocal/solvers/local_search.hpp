@@ -1,6 +1,7 @@
 #pragma once
 
-// solvers::LocalSearch: one runner from an initial solution.
+/// \file
+/// solvers::LocalSearch: one runner from an initial solution.
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/solvers/initialization.hpp>
@@ -22,14 +23,14 @@ struct LocalSearchConfig
     std::uint64_t seed{0};
 };
 
-// The simplest Solver: bind one Runner to an Instance, construct the initial
-// solution according to the selected mode, then run the search. The Solver owns
-// the RNG; random initialization and random-aware algorithms consume the same
-// explicit stream, preserving deterministic replay from a seed.
-//
-// The Runner/SolutionManager type determines which initialization modes exist.
-// Static tags validate this at compile time; initialization::Mode provides the
-// same choice at runtime for CLI/configuration and is validated immediately.
+/// The simplest Solver: bind one Runner to an Instance, construct the initial
+/// solution according to the selected mode, then run the search. The Solver owns
+/// the RNG; random initialization and random-aware algorithms consume the same
+/// explicit stream, preserving deterministic replay from a seed.
+///
+/// The Runner/SolutionManager type determines which initialization modes exist.
+/// Static tags validate this at compile time; initialization::Mode provides the
+/// same choice at runtime for CLI/configuration and is validated immediately.
 template<class RunnerType, std::uniform_random_bit_generator RNG = std::mt19937_64>
 class LocalSearch
     : public easylocal::detail::InitializationSupport<
@@ -50,8 +51,8 @@ public:
     using initialization_support::supports_initial;
     using initialization_support::supports_random;
 
-    // initialization: initialization::initial or random, rejected at compile
-    // time when the runner does not support it, or a Mode, checked here.
+    /// initialization: initialization::initial or random, rejected at compile
+    /// time when the runner does not support it, or a Mode, checked here.
     template<class Initialization>
         requires easylocal::detail::
                      accepted_initialization<Initialization, bound_runner_type, RNG>
@@ -90,8 +91,8 @@ public:
         return rng_;
     }
 
-    // Solves from one initial solution. The optional trailing run options
-    // (easylocal::with(control, tracer), .stop_at(target)) go to the run.
+    /// Solves from one initial solution. The optional trailing run options
+    /// (easylocal::with(control, tracer), .stop_at(target)) go to the run.
     template<class... Options>
         requires easylocal::detail::solve_options<Options...>
     [[nodiscard]]
@@ -108,7 +109,7 @@ public:
             options...);
     }
 
-    // Its runner's parameters (search.*, cost.*, neighborhood.*).
+    /// Its runner's parameters (search.*, cost.*, neighborhood.*).
     [[nodiscard]]
     config::parameter_set configuration()
     {

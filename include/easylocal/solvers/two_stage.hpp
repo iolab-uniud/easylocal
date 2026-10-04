@@ -1,7 +1,8 @@
 #pragma once
 
-// solvers::TwoStage: for hierarchical costs, a first runner on the hard cost
-// until it reaches zero, then a second one on the whole cost.
+/// \file
+/// solvers::TwoStage: for hierarchical costs, a first runner on the hard cost
+/// until it reaches zero, then a second one on the whole cost.
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/solvers/initialization.hpp>
@@ -95,8 +96,8 @@ public:
     using initialization_support::supports_initial;
     using initialization_support::supports_random;
 
-    // initialization: initialization::initial or random, rejected at compile
-    // time when the first runner does not support it, or a Mode, checked here.
+    /// initialization: initialization::initial or random, rejected at compile
+    /// time when the first runner does not support it, or a Mode, checked here.
     template<class Initialization>
         requires easylocal::detail::
                      accepted_initialization<Initialization, bound_first_runner_type, RNG>
@@ -126,8 +127,8 @@ public:
     {
     }
 
-    // The same runner configuration for both stages; the first stage is
-    // projected onto the hard cost branch.
+    /// The same runner configuration for both stages; the first stage is
+    /// projected onto the hard cost branch.
     template<class Initialization>
         requires std::same_as<FirstRunnerType, SecondRunnerType> &&
                  std::copy_constructible<FirstRunnerType> &&
@@ -153,12 +154,12 @@ public:
 
     using hard_cost_type = typename bound_first_runner_type::cost_type;
 
-    // Stage 1 runs on the hard cost until it reaches cost::zero<hard_cost_type>();
-    // stage 2 continues from its solution on the full cost. The optional
-    // trailing run options (easylocal::with(control, tracer), .stop_at(target))
-    // go to both stages, except the target, which applies to stage 2. After a
-    // cancellation in stage 1, stage 2 only evaluates the solution and stops.
-    // The result is stage 2's, with the effort of both stages.
+    /// Stage 1 runs on the hard cost until it reaches cost::zero<hard_cost_type>();
+    /// stage 2 continues from its solution on the full cost. The optional
+    /// trailing run options (easylocal::with(control, tracer), .stop_at(target))
+    /// go to both stages, except the target, which applies to stage 2. After a
+    /// cancellation in stage 1, stage 2 only evaluates the solution and stops.
+    /// The result is stage 2's, with the effort of both stages.
     template<class... Options>
         requires easylocal::detail::solve_options<Options...>
     [[nodiscard]]
@@ -210,7 +211,7 @@ public:
         return result;
     }
 
-    // The parameters of the two runners, under "first" and "second".
+    /// The parameters of the two runners, under "first" and "second".
     [[nodiscard]]
     config::parameter_set configuration()
     {

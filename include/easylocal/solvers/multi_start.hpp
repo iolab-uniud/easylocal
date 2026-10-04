@@ -1,7 +1,8 @@
 #pragma once
 
-// solvers::MultiStart: the same runner from several independent initial
-// solutions, keeping the best result.
+/// \file
+/// solvers::MultiStart: the same runner from several independent initial
+/// solutions, keeping the best result.
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/solvers/initialization.hpp>
@@ -48,9 +49,9 @@ struct MultiStartConfig
     std::uint64_t seed{0};
 };
 
-// Repeatedly initialize and run the same bound Runner, retaining the best
-// result according to the bound runner's cost semantics. `starts`
-// denotes the total number of runs (not the number of runs after a first one).
+/// Repeatedly initialize and run the same bound Runner, retaining the best
+/// result according to the bound runner's cost semantics. `starts`
+/// denotes the total number of runs (not the number of runs after a first one).
 template<class RunnerType, std::uniform_random_bit_generator RNG = std::mt19937_64>
 class MultiStart
     : public easylocal::detail::InitializationSupport<
@@ -72,9 +73,9 @@ public:
     using initialization_support::supports_initial;
     using initialization_support::supports_random;
 
-    // initialization: initialization::initial or random, rejected at compile
-    // time when the runner does not support it, or a Mode, checked here before
-    // the parameters.
+    /// initialization: initialization::initial or random, rejected at compile
+    /// time when the runner does not support it, or a Mode, checked here before
+    /// the parameters.
     template<class Initialization>
         requires easylocal::detail::
                      accepted_initialization<Initialization, bound_runner_type, RNG>
@@ -116,10 +117,10 @@ public:
         return rng_;
     }
 
-    // Runs up to `starts` times from fresh solutions and returns the best
-    // result, with the effort of every start. The optional trailing run
-    // options go to every run; cancellation, or a run that reaches the target,
-    // ends the solve (termination cancelled / target_reached, else completed).
+    /// Runs up to `starts` times from fresh solutions and returns the best
+    /// result, with the effort of every start. The optional trailing run
+    /// options go to every run; cancellation, or a run that reaches the target,
+    /// ends the solve (termination cancelled / target_reached, else completed).
     template<class... Options>
         requires easylocal::detail::solve_options<Options...>
     [[nodiscard]]
@@ -167,8 +168,8 @@ public:
         return best;
     }
 
-    // Its own parameters (starts) and its runner's (search.*, cost.*,
-    // neighborhood.*), with paths relative to the solver.
+    /// Its own parameters (starts) and its runner's (search.*, cost.*,
+    /// neighborhood.*), with paths relative to the solver.
     [[nodiscard]]
     config::parameter_set configuration()
     {
