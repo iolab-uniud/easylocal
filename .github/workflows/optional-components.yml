@@ -7,7 +7,17 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+'
       - 'v[0-9]+.[0-9]+.[0-9]+-*'  # pre-releases, such as v4.0.0-alpha.1
   workflow_dispatch:
+    inputs:
+      level:
+        description: >-
+          quick: what the local check covers, and Windows; full: every
+          toolchain, as for a release tag
+        type: choice
+        options: [quick, full]
+        default: quick
 
+# A release tag, or a dispatch with level full, runs Linux, macOS and Windows;
+# a pull request or a quick dispatch runs Linux.
 permissions:
   contents: read
 
@@ -98,6 +108,7 @@ jobs:
             build/optional-fetch/Testing/Temporary/LastTest.log
 
   macos-fetchcontent:
+    if: github.ref_type == 'tag' || inputs.level == 'full'
     name: macOS ARM64 / all optional components / forced FetchContent
     runs-on: macos-26
     timeout-minutes: 45
@@ -172,6 +183,7 @@ jobs:
             build/optional-fetch/Testing/Temporary/LastTest.log
 
   windows-fetchcontent:
+    if: github.ref_type == 'tag' || inputs.level == 'full'
     name: Windows / ${{ matrix.toolchain }} / all optional components / forced FetchContent
     runs-on: windows-2025
     timeout-minutes: 60

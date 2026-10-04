@@ -42,9 +42,9 @@ also published at <https://iolab-uniud.github.io/easylocal/>.
 
 The current CI exercises:
 
-- Linux: GCC 15 and GCC 16; Clang 22 with libstdc++ and Clang 23 with libc++
-  (Clang 23 from apt.llvm.org)
-- macOS ARM64: AppleClang
+- Linux: GCC 15 and GCC 16; Clang 22 and Clang 23, each with libstdc++ and with
+  libc++ (Clang 23 from apt.llvm.org)
+- macOS ARM64: AppleClang and Homebrew GCC 16
 - Windows: clang-cl with the Microsoft STL
 
 macOS Intel is intentionally not part of the supported CI matrix.
@@ -562,8 +562,11 @@ The full CI matrix is intentionally small and targets C++23 directly:
 | Ubuntu 26.04 | GCC 15 |
 | Ubuntu 26.04 | GCC 16 |
 | Ubuntu 26.04 | Clang 22 + libstdc++ |
+| Ubuntu 26.04 | Clang 22 + libc++ |
+| Ubuntu 26.04 | Clang 23 + libstdc++ (apt.llvm.org) |
 | Ubuntu 26.04 | Clang 23 + libc++ (apt.llvm.org) |
 | macOS ARM64 | AppleClang |
+| macOS ARM64 | GCC 16 |
 | Windows | clang-cl (Microsoft STL) |
 
 GitHub Actions runs automatically for pull requests and release tags of the form
@@ -572,6 +575,11 @@ to the compiler matrix, the **Optional Components** workflow builds and tests
 every optional component (ConfigTOML, TUI, REST) with their dependencies
 fetched by CMake FetchContent, on Linux (GCC 16), macOS ARM64 (AppleClang) and
 Windows (clang-cl).
+
+A release tag runs everything above (a *full* run). A pull request runs a
+*quick* one: format and lint, Linux GCC 15, macOS AppleClang and Windows
+clang-cl, and the optional components on Linux only. A manual run is quick by
+default and full with `level=full`.
 
 Normal development pushes do not trigger the remote CI automatically.
 
@@ -587,6 +595,8 @@ or for a single toolchain:
 ./scripts/act-ci.sh gcc15
 ./scripts/act-ci.sh gcc16
 ./scripts/act-ci.sh clang22-libstdcxx
+./scripts/act-ci.sh clang22-libcxx
+./scripts/act-ci.sh clang23-libstdcxx
 ./scripts/act-ci.sh clang23-libcxx
 ```
 

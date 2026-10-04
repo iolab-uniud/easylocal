@@ -41,18 +41,20 @@ it and run its tests (`ctest -L tui-e2e`, `-L rest-http`, `-L irace`, or
 (MrDocs) are left to CI, as are the other compilers.
 
 Never run `scripts/build-and-test.sh --exhaustive` (every feature subset): it
-is a last resort. For
-a comprehensive check push and dispatch the GitHub workflows, which do not run
-on pushes to `main`:
+is a last resort. CI is the next check: push and dispatch the GitHub
+workflows, which do not run on pushes to `main`:
 
 ```sh
 gh workflow run ci.yml --ref main
 gh workflow run optional-components.yml --ref main
 ```
 
-CI covers Linux (GCC 15 and 16, Clang 22 with libstdc++, Clang 23 with
-libc++), macOS ARM64 (AppleClang) and Windows (clang-cl), with warnings as
-errors. Code that builds with one compiler may not build with another: when CI
+A dispatch, like a pull request, is a quick run: the local check (format and
+lint, AppleClang, GCC 15 Release, the optional components on Linux) and
+Windows clang-cl. `-f level=full` runs everything, as a release tag does:
+Linux GCC 15 and 16, Clang 22 and 23 with libstdc++ and with libc++, macOS
+AppleClang and GCC 16, the optional components on the three systems, and
+coverage. Every job builds with warnings as errors. Code that builds with one compiler may not build with another: when CI
 fails, reproduce it with that compiler locally (for example a GCC 15 Release
 build).
 

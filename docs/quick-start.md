@@ -8,8 +8,8 @@ the rest of the framework.
 
 ## Requirements
 
-- a C++23 compiler: CI covers GCC 15 and 16, Clang 22 (libstdc++) and 23
-  (libc++) and AppleClang;
+- a C++23 compiler: CI covers GCC 15 and 16, Clang 22 and 23 (libstdc++ and
+  libc++) and AppleClang;
 - CMake 3.25+;
 - EasyLocal, either installed (`cmake --install <build> --prefix <prefix>`) or
   added to your project with `add_subdirectory`.

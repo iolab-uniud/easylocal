@@ -7,7 +7,18 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+'
       - 'v[0-9]+.[0-9]+.[0-9]+-*'  # pre-releases, such as v4.0.0-alpha.1
   workflow_dispatch:
+    inputs:
+      level:
+        description: >-
+          quick: what the local check covers, and Windows; full: every
+          toolchain, as for a release tag
+        type: choice
+        options: [quick, full]
+        default: quick
 
+# A release tag, or a dispatch with level full, runs every job; a pull request
+# or a quick dispatch runs the local check (format and lint, AppleClang, a GCC
+# 15 Release build) and Windows.
 permissions:
   contents: read
 
@@ -27,11 +38,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        toolchain:
-          - gcc15
-          - gcc16
-          - clang22-libstdcxx
-          - clang23-libcxx
+        toolchain: ${{ fromJSON((github.ref_type == 'tag' || inputs.level == 'full') && '["gcc15", "gcc16", "clang22-libstdcxx", "clang22-libcxx", "clang23-libstdcxx", "clang23-libcxx"]' || '["gcc15"]') }}
     env:
       PRESET: ci23-release
       TOOLCHAIN: ${{ matrix.toolchain }}
@@ -88,7 +95,14 @@ jobs:
               echo 'CXX=/usr/bin/clang++-22' >> "$GITHUB_ENV"
               echo "CXXFLAGS=-stdlib=libstdc++ --gcc-install-dir=$gcc_dir" >> "$GITHUB_ENV"
               ;;
-            clang23-libcxx)
+            clang22-libcxx)
+              "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
+                apt-get install -y --no-install-recommends \
+                  clang-22 libc++-22-dev libc++abi-22-dev
+              echo 'CXX=/usr/bin/clang++-22' >> "$GITHUB_ENV"
+              echo 'CXXFLAGS=-stdlib=libc++' >> "$GITHUB_ENV"
+              ;;
+            clang23-libstdcxx|clang23-libcxx)
               # Clang 23 is not in Ubuntu 26.04: it comes from the LLVM
               # project's own repository, apt.llvm.org.
               "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
@@ -99,10 +113,17 @@ jobs:
               echo "deb [signed-by=/etc/apt/keyrings/apt.llvm.org.asc] https://apt.llvm.org/resolute/ llvm-toolchain-resolute-23 main" \
                 | "${elevate[@]}" tee /etc/apt/sources.list.d/llvm-23.list > /dev/null
               "${elevate[@]}" apt-get -o Acquire::Retries=3 update
-              "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
-                apt-get install -y --no-install-recommends \
-                  clang-23 libc++-23-dev libc++abi-23-dev
-              echo 'CXXFLAGS=-stdlib=libc++' >> "$GITHUB_ENV"
+              if [ "$TOOLCHAIN" = clang23-libstdcxx ]; then
+                "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
+                  apt-get install -y --no-install-recommends g++-16 clang-23
+                gcc_dir="$(dirname "$(/usr/bin/gcc-16 -print-libgcc-file-name)")"
+                echo "CXXFLAGS=-stdlib=libstdc++ --gcc-install-dir=$gcc_dir" >> "$GITHUB_ENV"
+              else
+                "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
+                  apt-get install -y --no-install-recommends \
+                    clang-23 libc++-23-dev libc++abi-23-dev
+                echo 'CXXFLAGS=-stdlib=libc++' >> "$GITHUB_ENV"
+              fi
               echo 'CXX=/usr/bin/clang++-23' >> "$GITHUB_ENV"
               ;;
             *) echo "Unknown toolchain: $TOOLCHAIN" >&2; exit 1 ;;
@@ -192,7 +213,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        toolchain: [appleclang]
+        toolchain: ${{ fromJSON((github.ref_type == 'tag' || inputs.level == 'full') && '["appleclang", "gcc16"]' || '["appleclang"]') }}
     env:
       PRESET: ci23-release
       TOOLCHAIN: ${{ matrix.toolchain }}
@@ -242,6 +263,17 @@ jobs:
           case "$TOOLCHAIN" in
             appleclang)
               echo "CXX=$(xcrun --find clang++)" >> "$GITHUB_ENV"
+              ;;
+            gcc16)
+              if ! brew list --versions gcc >/dev/null 2>&1; then
+                brew install gcc
+              fi
+              compiler="$(brew --prefix gcc)/bin/g++-16"
+              if [ ! -x "$compiler" ]; then
+                echo "Missing GCC executable: $compiler" >&2
+                exit 1
+              fi
+              echo "CXX=$compiler" >> "$GITHUB_ENV"
               ;;
             *) echo "Unknown toolchain: $TOOLCHAIN" >&2; exit 1 ;;
           esac
@@ -362,6 +394,7 @@ jobs:
 
   coverage:
     name: Linux / GCC 16 / Debug coverage, all optional components
+    if: github.ref_type == 'tag' || inputs.level == 'full'
     permissions:
       contents: write  # the coverage badge on the badges branch
     runs-on: ubuntu-26.04
