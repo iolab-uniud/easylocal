@@ -10,7 +10,7 @@
 [project]
 name = "easylocal-scripts"
 version = "0.0.0"
-description = "Development scripts of EasyLocal (docs snippets, TUI screenshots, coverage, benchmark summaries, formatting and linting)"
+description = "Development scripts of EasyLocal (docs snippets, TUI screenshots, coverage, formatting and linting)"
 requires-python = ">=3.10"
 dependencies = [
     "gcovr>=8",  # coverage reports (scripts/coverage.sh)

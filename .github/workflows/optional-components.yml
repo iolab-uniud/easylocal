@@ -21,7 +21,7 @@ defaults:
 
 jobs:
   linux-fetchcontent:
-    name: Linux / all optional components and benchmarks / forced FetchContent
+    name: Linux / all optional components and irace / forced FetchContent
     runs-on: ubuntu-26.04
     timeout-minutes: 45
     steps:
@@ -30,7 +30,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install build tools
+      - name: Install uv  # the TextUI end-to-end tests, with uv.lock
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
+      - name: Install build tools, R and irace
         run: |
           if [ "$(id -u)" -eq 0 ]; then
             elevate=()
@@ -38,9 +41,11 @@ jobs:
             elevate=(sudo)
           fi
           "${elevate[@]}" apt-get -o Acquire::Retries=3 update
+          # R and irace for easylocal.irace-smoke, which skips without them.
           "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
             apt-get install -y --no-install-recommends \
-              cmake ninja-build g++-16 curl python3-pyte python3-pytest
+              cmake ninja-build g++-16 curl r-base-core r-cran-irace
+          Rscript -e 'cat("irace", as.character(packageVersion("irace")), "\n")'
           echo 'CXX=/usr/bin/g++-16' >> "$GITHUB_ENV"
 
       - name: Configure with forced FetchContent
@@ -79,7 +84,7 @@ jobs:
             2>&1 | tee "${build_dir}.ctest.log"
 
       - name: Upload diagnostics
-        if: ${{ always() }}
+        if: ${{ always() && !env.ACT }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: optional-components-linux-fetchcontent
@@ -153,7 +158,7 @@ jobs:
             2>&1 | tee "${build_dir}.ctest.log"
 
       - name: Upload diagnostics
-        if: ${{ always() }}
+        if: ${{ always() && !env.ACT }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: optional-components-macos-fetchcontent
@@ -232,7 +237,7 @@ jobs:
             2>&1 | tee "${build_dir}.ctest.log"
 
       - name: Upload diagnostics
-        if: ${{ always() }}
+        if: ${{ always() && !env.ACT }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: optional-components-windows-${{ matrix.toolchain }}

@@ -184,12 +184,13 @@ jobs:
             apt-get install -y --no-install-recommends cmake ninja-build g++-15
 
       # The examples are fully formatted; elsewhere only the changed lines are
-      # checked (scripts/format.sh).
+      # checked (scripts/format.sh): those of a pull request, or of the last
+      # commit when the workflow is started by hand.
       - name: Format
         env:
           BASE_REF: ${{ github.base_ref }}
         run: |
-          base=HEAD
+          base=HEAD~1
           if [ -n "$BASE_REF" ]; then
             base="$(git merge-base HEAD "origin/$BASE_REF")"
           fi

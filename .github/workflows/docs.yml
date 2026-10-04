@@ -16,13 +16,18 @@ on:
       - 'uv.lock'
       - '.github/workflows/docs.yml'
   pull_request:
-    paths:
+    paths:  # the same as for a push
       - 'docs/**'
       - 'include/**'
       - 'mkdocs.yml'
       - 'examples/quickstart/**'
       - 'scripts/mkdocs_downloads.py'
       - 'scripts/api-docs.py'
+      - 'CMakeLists.txt'
+      - 'cmake/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.github/workflows/docs.yml'
   workflow_dispatch:
 
 permissions:
