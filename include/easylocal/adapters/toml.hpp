@@ -12,10 +12,7 @@
 #include <cstdint>
 #include <exception>
 #include <filesystem>
-#include <iomanip>
-#include <limits>
 #include <optional>
-#include <sstream>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -78,10 +75,7 @@ inline bool toml_scalar_text(const toml::node& node, std::string& output)
     }
     if (const auto value = node.value<double>())
     {
-        std::ostringstream stream;
-        stream << std::setprecision(std::numeric_limits<double>::max_digits10)
-               << *value;
-        output = stream.str();
+        output = format_value(*value);
         return true;
     }
     if (const auto value = node.value<bool>())
@@ -181,20 +175,22 @@ inline void append_toml_parse_error(
     append_toml_parse_error(result, error.description());
 }
 
-#if TOML_EXCEPTIONS
-// Parse with toml++ in exception mode. A toml++ built as a shared library
-// (Homebrew's, TOML_HEADER_ONLY=0) throws parse_error from the library, where
-// macOS may not match it against the parse_error of this binary: the
-// std::exception base still matches, and is reported as a parse error.
+// The overrides of the TOML document that parse() returns, with its parse
+// error as a diagnostic. toml++ reports the error by an exception or in the
+// result, as it was built. A toml++ built as a shared library (Homebrew's,
+// TOML_HEADER_ONLY=0) throws parse_error from the library, where macOS may not
+// match it against the parse_error of this binary: the std::exception base
+// still matches, and is reported as a parse error.
 template<class Parse>
 [[nodiscard]]
-std::optional<toml::table> parse_toml_table(
-    toml_config_parse_result& result,
-    Parse&& parse)
+toml_config_parse_result parse_toml_overrides(Parse&& parse)
 {
+    toml_config_parse_result result{};
+#if TOML_EXCEPTIONS
+    std::optional<toml::table> table;
     try
     {
-        return std::forward<Parse>(parse)();
+        table = std::forward<Parse>(parse)();
     }
     catch (const toml::parse_error& error)
     {
@@ -204,9 +200,21 @@ std::optional<toml::table> parse_toml_table(
     {
         append_toml_parse_error(result, error.what());
     }
-    return std::nullopt;
-}
+    if (table)
+    {
+        flatten_toml_table(*table, {}, result);
+    }
+#else
+    const auto parsed = std::forward<Parse>(parse)();
+    if (!parsed)
+    {
+        append_toml_parse_error(result, parsed.error());
+        return result;
+    }
+    flatten_toml_table(parsed.table(), {}, result);
 #endif
+    return result;
+}
 
 } // namespace detail
 
@@ -215,51 +223,13 @@ inline toml_config_parse_result parse_toml_text(
     const std::string_view text,
     const std::string_view source_path = {})
 {
-    toml_config_parse_result result{};
-
-#if TOML_EXCEPTIONS
-    const auto table = detail::parse_toml_table(
-        result, [&] { return toml::parse(text, source_path); });
-    if (table)
-    {
-        detail::flatten_toml_table(*table, {}, result);
-    }
-#else
-    const auto parsed = toml::parse(text, source_path);
-    if (!parsed)
-    {
-        detail::append_toml_parse_error(result, parsed.error());
-        return result;
-    }
-    detail::flatten_toml_table(parsed.table(), {}, result);
-#endif
-
-    return result;
+    return detail::parse_toml_overrides([&] { return toml::parse(text, source_path); });
 }
 
 [[nodiscard]]
 inline toml_config_parse_result load_toml_file(const std::filesystem::path& path)
 {
-#if TOML_EXCEPTIONS
-    toml_config_parse_result result{};
-    const auto table = detail::parse_toml_table(
-        result, [&] { return toml::parse_file(path.string()); });
-    if (table)
-    {
-        detail::flatten_toml_table(*table, {}, result);
-    }
-    return result;
-#else
-    const auto parsed = toml::parse_file(path.string());
-    toml_config_parse_result result{};
-    if (!parsed)
-    {
-        detail::append_toml_parse_error(result, parsed.error());
-        return result;
-    }
-    detail::flatten_toml_table(parsed.table(), {}, result);
-    return result;
-#endif
+    return detail::parse_toml_overrides([&] { return toml::parse_file(path.string()); });
 }
 
 } // namespace easylocal::config
