@@ -183,6 +183,43 @@ void check_app_moves(
     }
 }
 
+// The checks of the registered runners: their parameters are valid, and
+// construct the runner. False when some parameters are invalid: a runner
+// asserts that they are valid, and binding the app constructs its runners.
+template<class App>
+bool check_runners(const App& application, app_check_report& report)
+{
+    bool valid = true;
+    application.for_each_runner_registration(
+        [&]<class Algorithm>(std::string_view name, const auto& config) {
+            const auto runner = "runner " + std::string{name} + ": ";
+            if constexpr (requires { config.validate(); })
+            {
+                const auto validation = config.validate();
+                report.check(
+                    static_cast<bool>(validation),
+                    "runner configuration",
+                    runner + std::string{validation.message});
+                if (!validation)
+                {
+                    valid = false;
+                    return;
+                }
+            }
+
+            try
+            {
+                [[maybe_unused]] Algorithm algorithm{config};
+                report.check(true, "runner construction", {});
+            }
+            catch (const std::exception& error)
+            {
+                report.check(false, "runner construction", runner + error.what());
+            }
+        });
+    return valid;
+}
+
 } // namespace detail
 
 /// Runs the contract checks of easylocal::testing on the components of an app
@@ -192,7 +229,9 @@ void check_app_moves(
 /// evaluates twice to the same cost, that the first 128 enumerated moves and 16
 /// random moves are valid and lead to valid solutions (with the incremental
 /// evaluation matching the full one, when the cost defines equivalence), and
-/// that each registered runner's parameters are valid and construct it.
+/// that each registered runner's parameters are valid and construct it. The
+/// runners are checked first: with invalid parameters the app is not bound,
+/// since binding it constructs them.
 template<class App, class Instance, class Solution>
 [[nodiscard]] app_check_report check(
     const App& application,
@@ -200,8 +239,7 @@ template<class App, class Instance, class Solution>
     Solution solution)
     requires requires { application.bind(instance); }
 {
-    auto bound = application.bind(instance);
-    using bound_type = decltype(bound);
+    using bound_type = decltype(application.bind(instance));
     using solution_manager_type = typename bound_type::solution_manager_type;
     using neighborhood_type = typename bound_type::neighborhood_explorer_type;
 
@@ -213,6 +251,11 @@ template<class App, class Instance, class Solution>
     report.coverage().delta_bindings =
         detail::app_delta_binding_count_v<neighborhood_type>;
     report.coverage().runner_registrations = App::runner_count;
+
+    // Binding the app constructs its runners: not with invalid parameters.
+    if (!detail::check_runners(application, report))
+        return report;
+    auto bound = application.bind(instance);
 
     const auto& solution_manager = bound.solution_manager();
     const auto& neighborhood = bound.neighborhood();
@@ -294,35 +337,6 @@ template<class App, class Instance, class Solution>
         }
     }
 
-    application.for_each_runner_registration(
-        [&]<class Algorithm>(std::string_view name, const auto& config) {
-            if constexpr (requires { config.validate(); })
-            {
-                const auto validation = config.validate();
-                report.check(
-                    static_cast<bool>(validation),
-                    "runner configuration",
-                    "a registered runner configuration is invalid");
-            }
-
-            try
-            {
-                [[maybe_unused]] Algorithm algorithm{config};
-                report.check(
-                    true,
-                    "runner construction",
-                    "registered runner can be constructed");
-            }
-            catch (const std::exception&)
-            {
-                report.check(
-                    false,
-                    "runner construction",
-                    "a registered runner could not be constructed");
-            }
-            (void)name;
-        });
-
     // The parameters of the whole app, among them those of its pipelines'
     // stages: their values, and stage names that are distinct and non-empty.
     try
@@ -374,6 +388,11 @@ template<class App, class Instance>
         application.bind(instance).solution_manager().initial_solution();
     }
 {
+    // Binding the app constructs its runners: not with invalid parameters.
+    app_check_report report{application.name()};
+    report.coverage().runner_registrations = App::runner_count;
+    if (!detail::check_runners(application, report))
+        return report;
     auto bound = application.bind(instance);
     return check(application, instance, bound.solution_manager().initial_solution());
 }

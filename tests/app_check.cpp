@@ -7,6 +7,7 @@
 #include <easylocal/app/check.hpp>
 #include <easylocal/runners/best_improvement.hpp>
 #include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/runners/hill_climbing.hpp>
 
 #include <cassert>
 #include <cstddef>
@@ -282,6 +283,37 @@ void check_fails_on_a_parameter_without_a_domain()
     assert(reported);
 }
 
+void check_names_the_runner_with_invalid_parameters()
+{
+    auto application =
+        easylocal::app("assignment")
+            .with_solution_manager(
+                easylocal::solution_manager<AssignmentSolutionManager>()
+                | assignment::assignment_cost())
+            .with_neighborhood(
+                easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
+                | easylocal::delta<
+                    CapacityCostComponent,
+                    ReassignCapacityDeltaEvaluator>())
+            .with_runner<easylocal::runners::HillClimbing>("climb");
+    application.runner_config<easylocal::runners::HillClimbing>().max_idle_iterations = 0;
+
+    const AssignmentInstance instance{
+        .demand = {4, 4, 2},
+        .capacity = {5, 5},
+    };
+    const auto report = easylocal::check(application, instance);
+    assert(!report.passed());
+    bool reported = false;
+    for (const auto& failure : report.failures())
+    {
+        reported = reported
+            || (failure.check == "runner configuration"
+                && failure.message.starts_with("runner climb: "));
+    }
+    assert(reported);
+}
+
 } // namespace
 
 int main()
@@ -289,5 +321,6 @@ int main()
     real_app_graph_is_checked_with_full_coverage();
     check_fails_on_a_broken_realized_graph();
     check_fails_on_a_parameter_without_a_domain();
+    check_names_the_runner_with_invalid_parameters();
     return 0;
 }
