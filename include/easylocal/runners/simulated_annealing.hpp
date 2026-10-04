@@ -174,18 +174,19 @@ inline std::optional<double> estimate_temperature(
 }
 
 // calibrate() for policies with an initial temperature: rebuild with the
-// estimated one, kept above lowest so that the schedule stays valid.
+// estimated one, kept above final_temperature / cooling_rate so that the
+// schedule stays valid.
 template<class Policy, class Parameters>
 void calibrate_initial_temperature(
     Policy& policy,
     Parameters parameters,
-    const std::span<const double> deltas,
-    const double lowest)
+    const std::span<const double> deltas)
 {
     const auto estimate = estimate_temperature(deltas, parameters.initial_acceptance);
     if (!estimate.has_value())
         return;
-    parameters.initial_temperature = std::max(*estimate, lowest);
+    parameters.initial_temperature =
+        std::max(*estimate, parameters.final_temperature / parameters.cooling_rate);
     policy = Policy{parameters};
 }
 
@@ -285,11 +286,7 @@ public:
 
     void calibrate(const std::span<const double> deltas)
     {
-        detail::calibrate_initial_temperature(
-            *this,
-            parameters_,
-            deltas,
-            parameters_.final_temperature / parameters_.cooling_rate);
+        detail::calibrate_initial_temperature(*this, parameters_, deltas);
     }
 
     void reset() noexcept
@@ -429,11 +426,7 @@ public:
 
     void calibrate(const std::span<const double> deltas)
     {
-        detail::calibrate_initial_temperature(
-            *this,
-            parameters_,
-            deltas,
-            parameters_.final_temperature / parameters_.cooling_rate);
+        detail::calibrate_initial_temperature(*this, parameters_, deltas);
     }
 
     void reset() noexcept
@@ -589,11 +582,7 @@ public:
 
     void calibrate(const std::span<const double> deltas)
     {
-        detail::calibrate_initial_temperature(
-            *this,
-            parameters_,
-            deltas,
-            parameters_.final_temperature / parameters_.cooling_rate);
+        detail::calibrate_initial_temperature(*this, parameters_, deltas);
     }
 
     void reset() noexcept
@@ -688,11 +677,7 @@ public:
 
     void calibrate(const std::span<const double> deltas)
     {
-        detail::calibrate_initial_temperature(
-            *this,
-            parameters_,
-            deltas,
-            parameters_.final_temperature / parameters_.cooling_rate);
+        detail::calibrate_initial_temperature(*this, parameters_, deltas);
     }
 
     void reset() noexcept
@@ -1035,11 +1020,7 @@ public:
 
     void calibrate(const std::span<const double> deltas)
     {
-        detail::calibrate_initial_temperature(
-            *this,
-            parameters_,
-            deltas,
-            parameters_.final_temperature / parameters_.cooling_rate);
+        detail::calibrate_initial_temperature(*this, parameters_, deltas);
     }
 
     /// Starts the clock.
