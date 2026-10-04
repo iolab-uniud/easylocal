@@ -19,6 +19,7 @@
 #include <easylocal/trace/tracer.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <concepts>
@@ -209,6 +210,9 @@ struct run_options
     std::optional<Target> target{};
     /// The time after which the run stops, if any, counted from its start.
     std::optional<std::chrono::steady_clock::duration> time_limit{};
+    /// The evaluations the run may make, if bounded, the initial one included;
+    /// the runner's own budget, if smaller, still applies.
+    std::optional<std::size_t> evaluation_budget{};
 
     /// The same options with a target cost: with(control).stop_at(0).
     template<class Cost>
@@ -220,6 +224,7 @@ struct run_options
             .tracer = tracer,
             .target = std::move(cost),
             .time_limit = time_limit,
+            .evaluation_budget = evaluation_budget,
         };
     }
 
@@ -232,6 +237,19 @@ struct run_options
     {
         auto options = *this;
         options.time_limit = detail::steady_time_limit(limit);
+        return options;
+    }
+
+    /// The same options with an evaluation budget:
+    /// with(control).max_evaluations(10000).
+    ///
+    /// The run stops, with termination_reason::evaluation_budget_exhausted,
+    /// once it has made `count` evaluations, the initial one included.
+    [[nodiscard]]
+    run_options max_evaluations(const std::size_t count) const
+    {
+        auto options = *this;
+        options.evaluation_budget = count;
         return options;
     }
 
@@ -289,6 +307,17 @@ template<class Rep, class Period>
 run_options<trace::null_tracer> timeout(const std::chrono::duration<Rep, Period> limit)
 {
     return run_options<trace::null_tracer>{}.timeout(limit);
+}
+
+/// Run options with only an evaluation budget: easylocal::max_evaluations(10000).
+///
+/// The run stops, with termination_reason::evaluation_budget_exhausted, once it
+/// has made `count` evaluations, the initial one included; a runner's own
+/// budget, if smaller, still applies.
+[[nodiscard]]
+inline run_options<trace::null_tracer> max_evaluations(const std::size_t count)
+{
+    return run_options<trace::null_tracer>{}.max_evaluations(count);
 }
 
 /// Run options with only a time limit in seconds: easylocal::timeout(2.5).
@@ -362,6 +391,7 @@ public:
           evaluation_{context.evaluation()},
           control_{control},
           tracer_{tracer},
+          caller_evaluation_limit_{evaluation_limit},
           evaluation_limit_{evaluation_limit},
           target_{target},
           deadline_{deadline}
@@ -476,10 +506,11 @@ public:
         return control_;
     }
 
-    /// The initial evaluation counts towards the budget.
+    /// The runner's own budget; the initial evaluation counts towards it. The
+    /// caller's budget, if smaller, stays.
     void limit_evaluations(const std::size_t max_evaluations) noexcept
     {
-        evaluation_limit_ = max_evaluations;
+        evaluation_limit_ = std::min(max_evaluations, caller_evaluation_limit_);
     }
 
     /// The target cost given by the caller, or nullptr.
@@ -888,6 +919,9 @@ private:
     Tracer& tracer_;
     std::size_t evaluations_{};
     std::size_t iterations_{};
+    // The caller's budget (run_options::max_evaluations), which the runner's
+    // own can only tighten.
+    std::size_t caller_evaluation_limit_{no_evaluation_limit};
     std::size_t evaluation_limit_{no_evaluation_limit};
     // Recorded by should_stop(); completed while the run goes on.
     termination_reason stop_reason_{termination_reason::completed};

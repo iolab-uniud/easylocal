@@ -1,6 +1,7 @@
-// A run stops at its time limit: easylocal::timeout(d), with either a
-// std::chrono duration or a number of seconds, alone or with the other run
-// options.
+// The limits a caller gives a run, a solve or a pipeline stage: a time limit,
+// easylocal::timeout(d) with a std::chrono duration or a number of seconds,
+// and an evaluation budget, easylocal::max_evaluations(n), alone or with the
+// other run options.
 #include <easylocal/cost.hpp>
 #include <easylocal/runners/hill_climbing.hpp>
 #include <easylocal/runners/runner.hpp>
@@ -224,6 +225,44 @@ int main()
     ok &= expect(
         searched.termination == el::termination_reason::time_limit_reached,
         "a LocalSearch stops at its time limit");
+
+    // An evaluation budget stops a run that would never end, at exactly that
+    // many evaluations, the initial one included.
+    const auto budgeted =
+        bound.run(bound.initial_solution(), rng, el::max_evaluations(10));
+    ok &= expect(
+        budgeted.termination == el::termination_reason::evaluation_budget_exhausted
+            && budgeted.evaluations == 10,
+        "a run stops at its evaluation budget");
+
+    // The caller's budget tightens the runner's own, never widens it.
+    auto frugal =
+        el::make_runner<el::runners::HillClimbing>(
+            {.max_idle_iterations = std::numeric_limits<std::size_t>::max(),
+                .max_evaluations = 5})
+        | (el::solution_manager<SolutionManager>() | el::component<Value>())
+        | el::neighborhood<EndlessNeighborhood>();
+    auto frugal_bound = frugal.bind(instance);
+    ok &= expect(
+        frugal_bound.run(frugal_bound.initial_solution(), rng, el::max_evaluations(10))
+                .evaluations
+            == 5,
+        "a larger caller budget leaves the runner's own");
+    ok &= expect(
+        frugal_bound.run(frugal_bound.initial_solution(), rng, el::max_evaluations(3))
+                .evaluations
+            == 3,
+        "a smaller caller budget tightens the runner's own");
+
+    // Every option keeps the others.
+    const auto all = el::with(control).timeout(30s).max_evaluations(7).stop_at(100);
+    ok &= expect(
+        all.control == &control && all.target == 100 && all.evaluation_budget == 7
+            && all.time_limit == el::timeout(30s).time_limit,
+        "max_evaluations combines with timeout and stop_at");
+    ok &= expect(
+        el::with(control).max_evaluations(7).timeout(1s).evaluation_budget == 7,
+        "timeout keeps an evaluation budget set before");
 
     // A solve's time limit bounds all its runs: a MultiStart of endless starts
     // stops at it.

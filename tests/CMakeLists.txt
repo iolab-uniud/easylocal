@@ -1094,9 +1094,9 @@ if(TARGET easylocal_tsp_sa AND NOT WIN32)
 endif()
 
 easylocal_add_test(
-    run-timeout
+    run-limits
     SOURCES
-        run_timeout.cpp
+        run_limits.cpp
     LIBRARIES
         EasyLocal::Core
 )
