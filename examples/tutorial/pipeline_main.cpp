@@ -30,9 +30,7 @@ int main()
             el::component<TourLength>());
     auto two_opt =
         el::neighborhood<TwoOptExplorer>() | el::delta<TourLength, TwoOptLengthDelta>();
-    auto both = el::neighborhood_union(
-        el::neighborhood<TwoOptExplorer>() | el::delta<TourLength, TwoOptLengthDelta>(),
-        el::neighborhood<SwapExplorer>());
+    auto both = el::neighborhood_union(two_opt, el::neighborhood<SwapExplorer>());
 
     auto descent =
         el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
