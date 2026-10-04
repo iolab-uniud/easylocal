@@ -1,10 +1,11 @@
 #pragma once
 
-// app: a problem's components gathered under a name, written as a pipe
-// (app("tsp") | solution_manager | neighborhood | runner<...>("name", {...})).
-// An app is bound to an Input (bound_app) to get its services, runs any of its
-// runners by name, and exposes all its parameters as one parameter_set. Tools
-// (Session, TextUI, REST) work on apps.
+/// \file
+/// app: a problem's components gathered under a name, written as a pipe
+/// (app("tsp") | solution_manager | neighborhood | runner<...>("name", {...})).
+/// An app is bound to an Input (bound_app) to get its services, runs any of its
+/// runners by name, and exposes all its parameters as one parameter_set. Tools
+/// (Session, TextUI, REST) work on apps.
 
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/solvers.hpp>
@@ -25,8 +26,8 @@
 namespace easylocal
 {
 
-// The effort of a run, when its algorithm reports it: the built-in runners
-// do, through search_result.
+/// The effort of a run, when its algorithm reports it: the built-in runners
+/// do, through search_result.
 struct run_effort
 {
     std::size_t evaluations{};
@@ -34,9 +35,9 @@ struct run_effort
     termination_reason termination{termination_reason::completed};
 };
 
-// The result of a runner chosen by name. Each algorithm has its own result
-// type; what every result provides (search_result_for) is the solution and its
-// cost, and the effort when the result has it.
+/// The result of a runner chosen by name. Each algorithm has its own result
+/// type; what every result provides (search_result_for) is the solution and its
+/// cost, and the effort when the result has it.
 template<class Solution, class Cost>
 struct named_run_result
 {
@@ -884,8 +885,8 @@ inline auto app(std::string name)
         detail::unconfigured_t>{std::move(name)};
 }
 
-// A named runner registration for an app, e.g.
-// app("tsp") | sm | nhe | runner<runners::FirstImprovement>("fi", {...}).
+/// A named runner registration for an app, e.g.
+/// app("tsp") | sm | nhe | runner<runners::FirstImprovement>("fi", {...}).
 template<detail::configurable_app_algorithm Algorithm>
 [[nodiscard]]
 detail::app_runner_registration<Algorithm> runner(
@@ -895,7 +896,7 @@ detail::app_runner_registration<Algorithm> runner(
     return {.name = std::move(name), .config = std::move(parameters)};
 }
 
-// Pipe spellings of with_solution_manager, with_neighborhood and with_runner.
+/// Pipe spellings of with_solution_manager, with_neighborhood and with_runner.
 template<class SMSpec, class NHESpec, class... Registrations, class Spec>
     requires requires(detail::app_builder<SMSpec, NHESpec, Registrations...> builder, Spec&& spec) {
         std::move(builder).with_solution_manager(std::forward<Spec>(spec));

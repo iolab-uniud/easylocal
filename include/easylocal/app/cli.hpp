@@ -1,10 +1,11 @@
 #pragma once
 
-// cli::run: an app as a command-line program. It reads the Input, the seed,
-// the runner and the app's parameters from the command line and a
-// configuration file, runs the runner by name on a Session, and prints the
-// cost and the solution: the batch counterpart of the TextUI and the REST
-// service.
+/// \file
+/// cli::run: an app as a command-line program. It reads the Input, the seed,
+/// the runner and the app's parameters from the command line and a
+/// configuration file, runs the runner by name on a Session, and prints the
+/// cost and the solution: the batch counterpart of the TextUI and the REST
+/// service.
 
 #include <easylocal/app/io.hpp>
 #include <easylocal/app/run_parameters.hpp>
@@ -29,13 +30,13 @@
 namespace easylocal::cli
 {
 
-// The command line of cli::run: --instance, --seed, --runner, --start,
-// --solution, --output, --target and --report, next to the app's parameters
-// (--runners.<name>.*, --cost.*, --neighborhood.*).
+/// The command line of cli::run: --instance, --seed, --runner, --start,
+/// --solution, --output, --target and --report. The app's parameters come next
+/// to them: `--runners.<name>.*`, `--cost.*` and `--neighborhood.*`.
 struct parameters
 {
-    // Every field has an initializer, so that designated initializers, as in
-    // options::defaults, may name only some of them.
+    /// Every field has an initializer, so that designated initializers, as in
+    /// options::defaults, may name only some of them.
     std::filesystem::path instance{};
     std::uint64_t seed{0};
     std::string runner{};
@@ -78,15 +79,15 @@ struct parameters
     }
 };
 
-// What cli::run adds to the command line and where it writes.
+/// What cli::run adds to the command line and where it writes.
 struct options
 {
-    // The values of the switches before the command line, such as an
-    // instance or a runner to use when none is given.
+    /// The values of the switches before the command line, such as an
+    /// instance or a runner to use when none is given.
     cli::parameters defaults{};
 
-    // The program's own parameters, parsed with the others; they refer to
-    // blocks that must outlive the call.
+    /// The program's own parameters, parsed with the others; they refer to
+    /// blocks that must outlive the call.
     config::parameter_set parameters{};
     std::ostream* out{&std::cout};
     std::ostream* err{&std::cerr};
@@ -126,14 +127,14 @@ void write_solution(std::ostream& out, const Session& session)
 
 } // namespace detail
 
-// Runs application as a program: parses argc and argv (and a --config file),
-// loads the Input, starts from a random, initial or loaded solution, runs the
-// chosen runner and prints "cost", "time" (seconds), the effort of the run
-// ("iterations", "evaluations", "termination") when the algorithm reports it,
-// with --report the value of each cost component, and the solution, or saves
-// it to --output. Returns the exit
-// status: 0 on success, 1 when the run fails (an unreadable file, for example), 2 for an
-// invalid command line.
+/// Runs application as a program: parses argc and argv (and a --config file),
+/// loads the Input, starts from a random, initial or loaded solution, runs the
+/// chosen runner and prints "cost", "time" (seconds), the effort of the run
+/// ("iterations", "evaluations", "termination") when the algorithm reports it,
+/// with --report the value of each cost component, and the solution, or saves
+/// it to --output. Returns the exit
+/// status: 0 on success, 1 when the run fails (an unreadable file, for example), 2 for an
+/// invalid command line.
 template<class App>
 [[nodiscard]]
 int run(App application, const int argc, char* argv[], options settings = {})

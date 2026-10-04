@@ -1,8 +1,9 @@
 #pragma once
 
-// check(app, instance, solution): the contract checks of easylocal::testing
-// run on every component an app composes (SolutionManager, cost components,
-// neighborhood, delta evaluators, runners), with a report of what they cover.
+/// \file
+/// check(app, instance, solution): the contract checks of easylocal::testing
+/// run on every component an app composes (SolutionManager, cost components,
+/// neighborhood, delta evaluators, runners), with a report of what they cover.
 
 #include <easylocal/app/app.hpp>
 #include <easylocal/cost/semantics.hpp>

@@ -1,9 +1,10 @@
 #pragma once
 
-// Reading and writing a problem's values through its optional hooks: an Input
-// from a stream or a file, a Solution from and to a stream or a file, and the
-// text that describes an Input, a Solution or a Move. Session and the TextUI
-// use the same functions; a program without them calls them directly.
+/// \file
+/// Reading and writing a problem's values through its optional hooks: an Input
+/// from a stream or a file, a Solution from and to a stream or a file, and the
+/// text that describes an Input, a Solution or a Move. Session and the TextUI
+/// use the same functions; a program without them calls them directly.
 
 #include <concepts>
 #include <exception>
@@ -156,38 +157,38 @@ auto read_file(const std::filesystem::path& path, const std::string_view what, R
 
 } // namespace detail::io
 
-// An Input that can be read from a stream: by a static Input::read(in), by a
-// free read_input(std::type_identity<Input>, in) found by ADL, or by operator>>
-// on a default-constructed Input, in this order.
+/// An Input that can be read from a stream: by a static Input::read(in), by a
+/// free read_input(std::type_identity<Input>, in) found by ADL, or by operator>>
+/// on a default-constructed Input, in this order.
 template<class Input>
 concept readable_input =
     detail::io::has_static_input_read<Input> || detail::io::adl::has_read_input<Input>
     || detail::io::has_input_stream_extraction<Input>;
 
-// A Solution that can be read from a stream, given its Input: by a static
-// Solution::read(input, in), by a free read_solution(input, in) found by ADL, or
-// by operator>> on Solution{input}, in this order.
+/// A Solution that can be read from a stream, given its Input: by a static
+/// Solution::read(input, in), by a free read_solution(input, in) found by ADL, or
+/// by operator>> on Solution{input}, in this order.
 template<class Input, class Solution>
 concept readable_solution = detail::io::has_static_solution_read<Input, Solution>
     || detail::io::adl::has_read_solution<Input, Solution>
     || detail::io::has_solution_stream_extraction<Input, Solution>;
 
-// A Solution that can be written to a stream, given its Input: by a member
-// solution.write(input, out), by a free write_solution(input, solution, out)
-// found by ADL, or by operator<<, in this order.
+/// A Solution that can be written to a stream, given its Input: by a member
+/// solution.write(input, out), by a free write_solution(input, solution, out)
+/// found by ADL, or by operator<<, in this order.
 template<class Input, class Solution>
 concept writable_solution = detail::io::has_member_solution_write<Input, Solution>
     || detail::io::adl::has_write_solution<Input, Solution>
     || detail::io::ostream_insertable<Solution>;
 
-// A value with a text for people: a member value.describe(), a free
-// describe(value) found by ADL, or operator<<, in this order.
+/// A value with a text for people: a member value.describe(), a free
+/// describe(value) found by ADL, or operator<<, in this order.
 template<class T>
 concept describable =
     detail::io::has_own_describe<T> || detail::io::ostream_insertable<T>;
 
-// Reads an Input from a stream with the first hook of readable_input. Throws
-// std::runtime_error when the stream fails, or what the hook throws.
+/// Reads an Input from a stream with the first hook of readable_input. Throws
+/// std::runtime_error when the stream fails, or what the hook throws.
 template<class Input>
     requires readable_input<Input>
 [[nodiscard]]
@@ -213,8 +214,8 @@ Input read_input(std::istream& in)
     return input;
 }
 
-// Reads an Input from a file, as read_input does from a stream. Throws
-// std::runtime_error, naming the file, when it cannot be opened or read.
+/// Reads an Input from a file, as read_input does from a stream. Throws
+/// std::runtime_error, naming the file, when it cannot be opened or read.
 template<class Input>
     requires readable_input<Input>
 [[nodiscard]]
@@ -225,9 +226,9 @@ Input load_input(const std::filesystem::path& path)
     });
 }
 
-// Reads a Solution of input from a stream with the first hook of
-// readable_solution. Throws std::runtime_error when the stream fails, or what
-// the hook throws.
+/// Reads a Solution of input from a stream with the first hook of
+/// readable_solution. Throws std::runtime_error when the stream fails, or what
+/// the hook throws.
 template<class Solution, class Input>
     requires readable_solution<Input, Solution>
 [[nodiscard]]
@@ -253,8 +254,8 @@ Solution read_solution(const Input& input, std::istream& in)
     return solution;
 }
 
-// Reads a Solution of input from a file, as read_solution does from a stream.
-// Throws std::runtime_error, naming the file, when it cannot be opened or read.
+/// Reads a Solution of input from a file, as read_solution does from a stream.
+/// Throws std::runtime_error, naming the file, when it cannot be opened or read.
 template<class Solution, class Input>
     requires readable_solution<Input, Solution>
 [[nodiscard]]
@@ -265,8 +266,8 @@ Solution load_solution(const Input& input, const std::filesystem::path& path)
     });
 }
 
-// Writes a Solution of input to a stream with the first hook of
-// writable_solution. Throws std::runtime_error when the stream fails.
+/// Writes a Solution of input to a stream with the first hook of
+/// writable_solution. Throws std::runtime_error when the stream fails.
 template<class Input, class Solution>
     requires writable_solution<Input, Solution>
 void write_solution(const Input& input, const Solution& solution, std::ostream& out)
@@ -280,8 +281,8 @@ void write_solution(const Input& input, const Solution& solution, std::ostream& 
     detail::io::require_write_success(out, "Solution");
 }
 
-// Writes a Solution of input to a file, as write_solution does to a stream.
-// Throws std::runtime_error, naming the file, when it cannot be written.
+/// Writes a Solution of input to a file, as write_solution does to a stream.
+/// Throws std::runtime_error, naming the file, when it cannot be written.
 template<class Input, class Solution>
     requires writable_solution<Input, Solution>
 void save_solution(
@@ -295,7 +296,7 @@ void save_solution(
     write_solution(input, solution, out);
 }
 
-// The text of a value for people, with the first hook of describable.
+/// The text of a value for people, with the first hook of describable.
 template<class T>
     requires describable<T>
 [[nodiscard]]

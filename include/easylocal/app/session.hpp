@@ -1,8 +1,9 @@
 #pragma once
 
-// Session: the state of an interactive session on an app (Input, current
-// solution, selected move, RNG) and the commands that change it. It replaces
-// EasyLocal 3's Tester; the TextUI and the REST adapter are views on it.
+/// \file
+/// Session: the state of an interactive session on an app (Input, current
+/// solution, selected move, RNG) and the commands that change it. It replaces
+/// EasyLocal 3's Tester; the TextUI and the REST adapter are views on it.
 
 #include <easylocal/app/check.hpp>
 #include <easylocal/app/io.hpp>
@@ -82,10 +83,10 @@ std::string report_text(const Value& value)
 
 } // namespace detail
 
-// The state of an interactive session on an app, and the commands that change
-// it: an owned Input, the app bound to it, a current solution, a selected move
-// and an RNG. It has no user interface of its own: interactive frontends, such
-// as the TextUI, are views on it.
+/// The state of an interactive session on an app, and the commands that change
+/// it: an owned Input, the app bound to it, a current solution, a selected move
+/// and an RNG. It has no user interface of its own: interactive frontends, such
+/// as the TextUI, are views on it.
 template<class App>
     requires std::move_constructible<App> && requires { typename App::input_type; }
 class Session
@@ -154,7 +155,7 @@ public:
         std::size_t max_frequency{};
     };
 
-    // One cost component on the current solution, for people.
+    /// One cost component on the current solution, for people.
     struct component_report
     {
         std::string name;        // name(), or "#<position>", from 1
@@ -186,24 +187,24 @@ public:
         "or random_solution(std::mt19937_64&) or solution stream loading "
         "to be available");
 
-    // A session without an Input yet: set_input or load_input provides it, as
-    // in an interactive frontend. The seed initializes the RNG the session
-    // gives to stochastic runners.
+    /// A session without an Input yet: set_input or load_input provides it, as
+    /// in an interactive frontend. The seed initializes the RNG the session
+    /// gives to stochastic runners.
     explicit Session(App application, const std::uint64_t seed = 0)
         : app_{std::move(application)}, rng_{seed}
     {
     }
 
-    // A session on an Input, which it owns: the app bound to it, and the RNG
-    // seeded with seed. Another Input is another session.
+    /// A session on an Input, which it owns: the app bound to it, and the RNG
+    /// seeded with seed. Another Input is another session.
     Session(App application, input_type input, const std::uint64_t seed)
         : Session{std::move(application), seed}
     {
         set_input(std::move(input));
     }
 
-    // A session on an Input it shares with its other owners, for example an
-    // adapter that keeps the Input to encode the results.
+    /// A session on an Input it shares with its other owners, for example an
+    /// adapter that keeps the Input to encode the results.
     Session(
         App application,
         std::shared_ptr<const input_type> input,
@@ -266,8 +267,8 @@ public:
         set_input(easylocal::read_input<input_type>(in));
     }
 
-    // Unlike easylocal::load_input, errors do not name the file, which an
-    // interactive frontend shows on its own.
+    /// Unlike easylocal::load_input, errors do not name the file, which an
+    /// interactive frontend shows on its own.
     void load_input(const std::filesystem::path& path)
         requires supports_input_loading
     {
@@ -391,9 +392,9 @@ public:
         return bound_->solution_manager().evaluate(*solution_);
     }
 
-    // Each cost component of the current solution, in the order of the
-    // recipe: its name, its value and, when the component has
-    // describe(solution), the text that explains it.
+    /// Each cost component of the current solution, in the order of the
+    /// recipe: its name, its value and, when the component has
+    /// describe(solution), the text that explains it.
     [[nodiscard]]
     std::vector<component_report> cost_report() const
         requires requires { typename solution_manager_type::component_types; }
@@ -409,9 +410,9 @@ public:
         return report;
     }
 
-    // A cost written as text, such as a target: by the problem's
-    // read_cost(input, text) when it has one, else as cost::from_text reads it.
-    // Throws std::invalid_argument when the text is not a cost.
+    /// A cost written as text, such as a target: by the problem's
+    /// read_cost(input, text) when it has one, else as cost::from_text reads it.
+    /// Throws std::invalid_argument when the text is not a cost.
     [[nodiscard]]
     cost_type read_cost(const std::string_view text) const
         requires readable_cost<input_type, cost_type>
@@ -428,8 +429,8 @@ public:
         return easylocal::check(app_, *input_, *solution_);
     }
 
-    // The parameters of the app, for reading: cost.*, neighborhood.* and
-    // runners.<name>.* (app.configuration()).
+    /// The parameters of the app, for reading: cost.*, neighborhood.* and
+    /// `runners.<name>.*` (app.configuration()).
     [[nodiscard]]
     config::parameter_set configuration() const
         requires requires(const App& application) { application.configuration(); }
@@ -437,11 +438,11 @@ public:
         return app_.configuration();
     }
 
-    // Changes the parameters of the app, with the paths of configuration():
-    // all of them, validated, or none. The session's services are rebuilt
-    // with the new values, so the costs it reports follow them; the current
-    // solution stays and the selected move is cleared. The runners read their
-    // parameters at each run.
+    /// Changes the parameters of the app, with the paths of configuration():
+    /// all of them, validated, or none. The session's services are rebuilt
+    /// with the new values, so the costs it reports follow them; the current
+    /// solution stays and the selected move is cleared. The runners read their
+    /// parameters at each run.
     config::override_result configure(
         const std::span<const config::text_override> overrides)
         requires requires(App& application) { application.configuration(); }
@@ -468,11 +469,11 @@ public:
         return names;
     }
 
-    // Runs the runner registered under name from the current solution, which
-    // it replaces with the runner's result; false when no runner has that name.
-    // Options are with(control, tracer). Like every app run, it uses freshly
-    // bound services and the current runner parameters, not this session's
-    // bound app.
+    /// Runs the runner registered under name from the current solution, which
+    /// it replaces with the runner's result; false when no runner has that name.
+    /// Options are with(control, tracer). Like every app run, it uses freshly
+    /// bound services and the current runner parameters, not this session's
+    /// bound app.
     template<class... Options>
     [[nodiscard]]
     bool run(const std::string_view name, Options&&... options)
@@ -492,8 +493,8 @@ public:
         return true;
     }
 
-    // The effort of the last run (evaluations, iterations, termination), when
-    // its algorithm reports it; empty before the first run.
+    /// The effort of the last run (evaluations, iterations, termination), when
+    /// its algorithm reports it; empty before the first run.
     [[nodiscard]]
     const std::optional<run_effort>& last_run_effort() const noexcept
     {
