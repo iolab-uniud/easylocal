@@ -1,9 +1,10 @@
 #pragma once
 
-// Parameter blocks: plain structs that describe their own fields with a
-// compile-time schema (config::field, config::group, config::fields) and check
-// them with validate(). Runners, neighborhoods, cost expressions and programs
-// declare their parameters this way.
+/// \file
+/// Parameter blocks: plain structs that describe their own fields with a
+/// compile-time schema (config::field, config::group, config::fields) and check
+/// them with validate(). Runners, neighborhoods, cost expressions and programs
+/// declare their parameters this way.
 
 #include <concepts>
 #include <cstddef>
@@ -131,9 +132,9 @@ constexpr parameter_field<Name, Member> field(
     return {.description = description};
 }
 
-// A member that is itself a parameter block, nested in the schema: its fields
-// are under "Name.", and its validate() runs with the enclosing block's, e.g.
-// group<"temperature", &AnnealingParameters::temperature>("Temperature schedule").
+/// A member that is itself a parameter block, nested in the schema: its fields
+/// are under "Name.", and its validate() runs with the enclosing block's, e.g.
+/// group<"temperature", &AnnealingParameters::temperature>("Temperature schedule").
 template<fixed_string Name, auto Member>
     requires std::is_member_object_pointer_v<decltype(Member)>
 struct parameter_group
@@ -210,7 +211,7 @@ concept configurable_endpoint =
         } -> std::same_as<validation_result>;
     };
 
-// The fields of a block, without its nested groups: function(descriptor, value).
+/// The fields of a block, without its nested groups: function(descriptor, value).
 template<parameter_block Parameters, class Function>
 constexpr void for_each_parameter(
     Parameters& parameters,

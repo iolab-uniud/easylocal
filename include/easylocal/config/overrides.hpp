@@ -1,8 +1,9 @@
 #pragma once
 
-// Textual overrides (path = value) and the text form of parameter values:
-// parse_text_value reads booleans, numbers, strings, arrays and vectors,
-// format_value writes them back in the same syntax.
+/// \file
+/// Textual overrides (path = value) and the text form of parameter values:
+/// parse_text_value reads booleans, numbers, strings, arrays and vectors,
+/// format_value writes them back in the same syntax.
 
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/utils/detail/meta.hpp>
@@ -364,9 +365,9 @@ std::string_view parse_text_value(const std::string_view text, Value& value)
 
 } // namespace detail
 
-// A parameter value as text, in the syntax parse_text_value reads back:
-// true/false, numbers, "unlimited" for an unlimited limit, [a, b] for arrays
-// and vectors.
+/// A parameter value as text, in the syntax parse_text_value reads back:
+/// true/false, numbers, "unlimited" for an unlimited limit, [a, b] for arrays
+/// and vectors.
 template<class Value>
 [[nodiscard]]
 std::string format_value(const Value& value)

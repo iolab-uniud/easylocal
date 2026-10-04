@@ -1,9 +1,10 @@
 #pragma once
 
-// Command-line frontend of the parameters: parse_cli reads overrides
-// (--path value or --path=value), an optional --config file and --help from
-// argv; cli_help lists the parameters of a set with their descriptions and
-// values.
+/// \file
+/// Command-line frontend of the parameters: parse_cli reads overrides
+/// (--path value or --path=value), an optional --config file and --help from
+/// argv; cli_help lists the parameters of a set with their descriptions and
+/// values.
 
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/parameter_set.hpp>

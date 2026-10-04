@@ -1,9 +1,10 @@
 #pragma once
 
-// parameter_set: the parameters of one or more objects as paths and textual
-// values, the common ground of the command line, configuration files, TOML, the
-// TextUI and REST. It lists, validates and changes them transactionally (all
-// overrides or none) on the objects it refers to.
+/// \file
+/// parameter_set: the parameters of one or more objects as paths and textual
+/// values, the common ground of the command line, configuration files, TOML, the
+/// TextUI and REST. It lists, validates and changes them transactionally (all
+/// overrides or none) on the objects it refers to.
 
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/parameters.hpp>
@@ -23,8 +24,8 @@
 namespace easylocal::config
 {
 
-// One parameter of a set: its full path, its description, its value as text
-// (format_value), and whether it can be changed.
+/// One parameter of a set: its full path, its description, its value as text
+/// (format_value), and whether it can be changed.
 struct parameter_info
 {
     std::string path;
@@ -113,22 +114,22 @@ void validate_block(
 
 } // namespace detail
 
-// The parameters of one or more objects, as paths and textual values: what
-// the command line, configuration files, TOML, the TextUI and REST read and
-// change. A set refers to the objects it was built from, which must outlive
-// it and stay in place; it holds no values of its own.
-//
-// Components give their parameters with paths relative to themselves; who
-// composes them adds prefixes:
-//
-//     config::parameter_set parameters;
-//     parameters.add("application", program_parameters);
-//     parameters.add("solver", runner.configuration());
+/// The parameters of one or more objects, as paths and textual values: what
+/// the command line, configuration files, TOML, the TextUI and REST read and
+/// change. A set refers to the objects it was built from, which must outlive
+/// it and stay in place; it holds no values of its own.
+///
+/// Components give their parameters with paths relative to themselves; who
+/// composes them adds prefixes:
+///
+///     config::parameter_set parameters;
+///     parameters.add("application", program_parameters);
+///     parameters.add("solver", runner.configuration());
 class parameter_set
 {
 public:
-    // A block of values (a parameter_block): its fields, under prefix. A const
-    // block is read-only.
+    /// A block of values (a parameter_block): its fields, under prefix. A const
+    /// block is read-only.
     template<parameter_block Block>
     parameter_set& add(const std::string_view prefix, Block& block)
     {
@@ -143,8 +144,8 @@ public:
                 std::move(commit)));
     }
 
-    // A configurable object: parameters() gives its block, configure() takes a
-    // valid one, for objects that rebuild something from their parameters.
+    /// A configurable object: parameters() gives its block, configure() takes a
+    /// valid one, for objects that rebuild something from their parameters.
     template<class Endpoint>
         requires configurable_endpoint<Endpoint>
     parameter_set& add(const std::string_view prefix, Endpoint& endpoint)
@@ -169,7 +170,7 @@ public:
                 std::move(commit)));
     }
 
-    // The parameters of another set, under prefix.
+    /// The parameters of another set, under prefix.
     parameter_set& add(const std::string_view prefix, const parameter_set& other)
     {
         for (auto entry : other.entries_)
@@ -180,7 +181,7 @@ public:
         return *this;
     }
 
-    // The same, at the root of this set.
+    /// The same, at the root of this set.
     template<class Source>
     parameter_set& add(Source& source)
         requires requires(parameter_set& set) { set.add(std::string_view{}, source); }
@@ -208,7 +209,7 @@ public:
         return result;
     }
 
-    // The diagnostics of every block's validate(), with the block's path.
+    /// The diagnostics of every block's validate(), with the block's path.
     [[nodiscard]]
     configuration_validation_result validate() const
     {
@@ -218,11 +219,11 @@ public:
         return result;
     }
 
-    // Applies textual overrides: all of them, or none. Every block they touch
-    // is changed on a copy, parsed and validated first; only when every
-    // override names a parameter and every touched block is valid are the
-    // copies committed. The set itself does not change, only the objects it
-    // refers to.
+    /// Applies textual overrides: all of them, or none. Every block they touch
+    /// is changed on a copy, parsed and validated first; only when every
+    /// override names a parameter and every touched block is valid are the
+    /// copies committed. The set itself does not change, only the objects it
+    /// refers to.
     override_result apply(const std::span<const text_override> overrides) const
     {
         override_result result;
@@ -409,7 +410,7 @@ private:
     std::vector<entry_type> entries_;
 };
 
-// The free spellings of the set's members.
+/// The free spellings of the set's members.
 [[nodiscard]]
 inline override_result apply_overrides(
     const parameter_set& parameters,
@@ -424,14 +425,14 @@ inline configuration_validation_result validate(const parameter_set& parameters)
     return parameters.validate();
 }
 
-// Something whose parameters a set can hold: configuration() gives them, with
-// paths relative to it.
+/// Something whose parameters a set can hold: configuration() gives them, with
+/// paths relative to it.
 template<class T>
 concept configuration_provider = requires(T& value) {
     { value.configuration() } -> std::same_as<parameter_set>;
 };
 
-// The parameters of value under prefix, if it has any.
+/// The parameters of value under prefix, if it has any.
 template<class T>
 void add_configuration(parameter_set& parameters, const std::string_view prefix, T& value)
 {
