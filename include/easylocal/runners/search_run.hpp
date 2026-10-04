@@ -741,8 +741,11 @@ public:
     }
 
     /// A run over a decorated context sharing this run's control, tracer,
-    /// budget and (for the same cost type) target, e.g. for algorithms that
-    /// delegate to another algorithm.
+    /// deadline, what is left of its evaluation budget and (for the same cost
+    /// type) target, e.g. for algorithms that delegate to another algorithm.
+    ///
+    /// The new run counts its own effort from its start(): an algorithm calls
+    /// it instead of starting this run, and returns the new run's result.
     template<class OtherContext>
     [[nodiscard]]
     search_run<OtherContext, Tracer> with_context(const OtherContext& context)
@@ -752,11 +755,14 @@ public:
         {
             target = target_;
         }
+        const auto left = evaluation_limit_ == no_evaluation_limit
+            ? no_evaluation_limit
+            : evaluation_limit_ - std::min(evaluations_, evaluation_limit_);
         return search_run<OtherContext, Tracer>{
             context,
             control_,
             tracer_,
-            evaluation_limit_,
+            left,
             target,
             deadline_,
         };
