@@ -73,7 +73,14 @@ The *Target cost* field stops a run as soon as its solution reaches a cost,
 for example a known optimum or a lower bound: 26 here would end Simulated
 Annealing at the first tour of that length. It is written as a number, or as
 `[hard, soft]` for a hierarchical cost, as the line below the field shows the
-current cost; empty, runs have no target.
+current cost; empty, runs have no target. The *Stop after* row bounds a run in
+*seconds* and in *evaluations*, the initial one included; empty fields leave
+only the runner's own limits. The result of the last run, its cost before and
+after and why it stopped when it did not end on its own (a target, the time,
+the evaluations), is shown below the controls and in the status line.
+
+A terminal too small for a page does not cut it: the page scrolls to the
+control that has the focus, moved with Tab or the arrows.
 
 When the problem itself has parameters, the weights of a `cost::sum`
 (chapter 2) or the biases of a neighborhood union (chapter 6), `P` on the Run

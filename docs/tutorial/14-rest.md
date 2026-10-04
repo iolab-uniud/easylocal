@@ -120,6 +120,7 @@ $ curl localhost:18080/tsp/runs/1/solution
 | --- | --- |
 | `GET /tsp/` | application metadata |
 | `GET /tsp/runners` | registered runner names |
+| `GET /tsp/parameters` | the parameters a run may set, with their values |
 | `POST /tsp/runners/<runner>/runs` | enqueue a run (`202`, with a `Location`) |
 | `GET /tsp/runs/<id>` | status and progress |
 | `GET /tsp/runs/<id>/solution` | the solution and its cost |

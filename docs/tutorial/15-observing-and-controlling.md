@@ -25,8 +25,11 @@ const auto observed = descent_search.run(
   budget is set, the evaluation limit).
 - The tracer receives typed search events: `run_started`, `move_evaluated`,
   `move_accepted`, `incumbent_updated`, `local_optimum`,
-  `neighborhood_selection`, `run_finished`. Without a tracer, their
-  construction is removed at compile time.
+  `neighborhood_selection`, `solution_visited` (the hash of each solution
+  reached), Tabu Search's `aspiration_applied`, `tabu_escape` and
+  `tabu_tenure_changed`, and `run_finished`, which says why the run ended
+  (its `termination`). Without a tracer, their construction is removed at
+  compile time.
 - `easylocal::with(control)`, `easylocal::with(tracer)` and
   `easylocal::with(control, tracer)` are all accepted.
 - A target cost ends the run as soon as the best cost is at least as good:
