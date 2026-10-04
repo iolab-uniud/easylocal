@@ -385,8 +385,11 @@ constexpr auto evaluate_with(const Expression& node, const Read& read)
         return []<expression_operator Op, class Left, class Right>(
                    const binary_expression<Op, Left, Right>& binary,
                    const Read& reader) {
-            const auto left = detail::computed(evaluate_with(binary.left, reader));
-            const auto right = detail::computed(evaluate_with(binary.right, reader));
+            // The values outlive left and right, which may view their text.
+            const auto left_value = evaluate_with(binary.left, reader);
+            const auto right_value = evaluate_with(binary.right, reader);
+            const auto left = detail::computed(left_value);
+            const auto right = detail::computed(right_value);
             if constexpr (Op == expression_operator::less)
                 return left < right;
             else if constexpr (Op == expression_operator::less_equal)
