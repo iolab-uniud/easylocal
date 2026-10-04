@@ -1,11 +1,14 @@
 #pragma once
 
+// The neighborhood explorer of exam timetabling: move one exam to another
+// timeslot.
+
 #include "move.hpp"
 #include "solution_manager.hpp"
 
 #include <easylocal/helpers/neighborhood_explorer.hpp>
+#include <easylocal/utils/generator.hpp>
 
-#include <cassert>
 #include <cstddef>
 #include <optional>
 #include <random>
@@ -21,6 +24,15 @@ class MoveExamNeighborhoodExplorer
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
+    // Every exam to every timeslot other than its own, in exam order.
+    easylocal::generator<MoveExam> moves(const ExamTimetable& solution) const
+    {
+        for (exam_id exam = 0; exam < solution.timeslot_by_exam.size(); ++exam)
+            for (timeslot_id timeslot = 0; timeslot < input().timeslot_count; ++timeslot)
+                if (timeslot != solution.timeslot_by_exam[exam])
+                    co_yield MoveExam{.exam = exam, .destination = timeslot};
+    }
+
     bool is_valid(const ExamTimetable& solution, const MoveExam& move) const
     {
         return move.exam < solution.timeslot_by_exam.size()
@@ -28,45 +40,13 @@ public:
             && solution.timeslot_by_exam[move.exam] != move.destination;
     }
 
-    bool first_move(const ExamTimetable& solution, MoveExam& move) const
-    {
-        if (solution.timeslot_by_exam.empty() || input().timeslot_count < 2)
-            return false;
-
-        move.exam = 0;
-        move.destination = first_destination(solution, 0);
-        return true;
-    }
-
-    bool next_move(const ExamTimetable& solution, MoveExam& move) const
-    {
-        const auto current = solution.timeslot_by_exam[move.exam];
-        for (auto destination = move.destination + 1;
-            destination < input().timeslot_count;
-            ++destination)
-        {
-            if (destination != current)
-            {
-                move.destination = destination;
-                return true;
-            }
-        }
-
-        if (move.exam + 1 < solution.timeslot_by_exam.size())
-        {
-            ++move.exam;
-            move.destination = first_destination(solution, move.exam);
-            return true;
-        }
-
-        return false;
-    }
-
+    // One of the moves, drawn uniformly; none when there is no move.
     template<std::uniform_random_bit_generator RNG>
     std::optional<MoveExam> random_move(const ExamTimetable& solution, RNG& rng) const
     {
+        const auto timeslot_count = input().timeslot_count;
         const auto alternatives =
-            input().timeslot_count > 0 ? input().timeslot_count - 1 : std::size_t{0};
+            timeslot_count > 0 ? timeslot_count - 1 : std::size_t{0};
         const auto count = solution.timeslot_by_exam.size() * alternatives;
 
         if (count == 0)
@@ -88,12 +68,6 @@ public:
     void make_move(ExamTimetable& solution, const MoveExam& move) const
     {
         solution.timeslot_by_exam[move.exam] = move.destination;
-    }
-
-private:
-    timeslot_id first_destination(const ExamTimetable& solution, exam_id exam) const
-    {
-        return solution.timeslot_by_exam[exam] == 0 ? timeslot_id{1} : timeslot_id{0};
     }
 };
 

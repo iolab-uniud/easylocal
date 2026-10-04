@@ -78,22 +78,6 @@ int main()
         observed == expected,
         "moves are generated deterministically in job-major order");
 
-    std::vector<observed_move> cursor_observed;
-    ReassignJobMove cursor_move{};
-    if (neighborhood.first_move(solution, cursor_move))
-    {
-        do
-        {
-            cursor_observed.emplace_back(
-                cursor_move.job,
-                cursor_move.destination);
-        } while (neighborhood.next_move(solution, cursor_move));
-    }
-
-    ok &= expect(
-        cursor_observed == expected,
-        "FirstMove/NextMove authoring protocol matches the move range");
-
     for (const auto move : easylocal::moves(neighborhood, solution))
     {
         ok &= expect(
