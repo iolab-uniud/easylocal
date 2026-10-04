@@ -1,0 +1,209 @@
+// A run stops at its time limit: easylocal::timeout(d), with either a
+// std::chrono duration or a number of seconds, alone or with the other run
+// options.
+#include <easylocal/cost.hpp>
+#include <easylocal/runners/hill_climbing.hpp>
+#include <easylocal/runners/runner.hpp>
+
+#include <chrono>
+#include <cstdint>
+#include <iostream>
+#include <limits>
+#include <optional>
+#include <random>
+#include <stdexcept>
+#include <stop_token>
+#include <string_view>
+
+namespace
+{
+
+struct Instance
+{
+};
+
+struct Solution
+{
+    int value{};
+};
+
+class SolutionManager
+{
+public:
+    using input_type = Instance;
+    using solution_type = Solution;
+
+    explicit SolutionManager(const Instance& instance) : instance_{instance} {}
+
+    [[nodiscard]]
+    const Instance& input() const noexcept
+    {
+        return instance_;
+    }
+
+    [[nodiscard]]
+    static bool is_valid(const Solution&) noexcept
+    {
+        return true;
+    }
+
+    [[nodiscard]]
+    static Solution initial_solution()
+    {
+        return {.value = 7};
+    }
+
+private:
+    const Instance& instance_;
+};
+
+struct Value
+{
+    [[nodiscard]]
+    static int evaluate(const Solution& solution)
+    {
+        return solution.value;
+    }
+};
+
+struct Move
+{
+};
+
+// Always proposes a move that changes nothing: a hill climbing on it never
+// improves and, without a limit, never ends.
+class EndlessNeighborhood
+{
+public:
+    using input_type = Instance;
+    using solution_type = Solution;
+    using move_type = Move;
+
+    explicit EndlessNeighborhood(const SolutionManager& sm) : sm_{sm} {}
+
+    [[nodiscard]]
+    const Instance& input() const noexcept
+    {
+        return sm_.input();
+    }
+
+    template<std::uniform_random_bit_generator RNG>
+    [[nodiscard]]
+    static std::optional<Move> random_move(const Solution&, RNG&)
+    {
+        return Move{};
+    }
+
+    [[nodiscard]]
+    static bool is_valid(const Solution&, const Move&) noexcept
+    {
+        return true;
+    }
+
+    static void make_move(Solution&, const Move&) noexcept {}
+
+private:
+    const SolutionManager& sm_;
+};
+
+bool expect(const bool condition, const std::string_view message)
+{
+    if (!condition)
+        std::cerr << "FAILED: " << message << '\n';
+    return condition;
+}
+
+} // namespace
+
+int main()
+{
+    namespace el = easylocal;
+    using namespace std::chrono_literals;
+    using clock = std::chrono::steady_clock;
+
+    const Instance instance{};
+    auto runner =
+        el::make_runner<el::runners::HillClimbing>(
+            {.max_idle_iterations = std::numeric_limits<std::size_t>::max()})
+        | (el::solution_manager<SolutionManager>() | el::component<Value>())
+        | el::neighborhood<EndlessNeighborhood>();
+    auto bound = runner.bind(instance);
+    std::mt19937_64 rng{1};
+    bool ok = true;
+
+    // A run that would never end stops at its time limit.
+    const auto started = clock::now();
+    const auto limited = bound.run(bound.initial_solution(), rng, el::timeout(50ms));
+    const auto elapsed = clock::now() - started;
+    ok &= expect(
+        limited.termination == el::termination_reason::time_limit_reached,
+        "a run stops at its time limit");
+    ok &= expect(elapsed >= 50ms && elapsed < 5s, "a run lasts about its time limit");
+    ok &= expect(limited.evaluations > 1, "a run works until its time limit");
+    ok &= expect(
+        el::to_string(limited.termination) == "time limit reached",
+        "the termination has a readable name");
+
+    // No time at all: the run stops at its first check, after the initial
+    // evaluation.
+    const auto immediate = bound.run(bound.initial_solution(), rng, el::timeout(0s));
+    ok &= expect(
+        immediate.termination == el::termination_reason::time_limit_reached
+            && immediate.evaluations == 1,
+        "a run without time stops at once");
+
+    // A number of seconds is the same limit.
+    const auto in_seconds = bound.run(bound.initial_solution(), rng, el::timeout(0.0));
+    ok &= expect(
+        in_seconds.termination == el::termination_reason::time_limit_reached
+            && in_seconds.evaluations == 1,
+        "a time limit in seconds");
+    ok &= expect(
+        el::timeout(2.5).time_limit == el::timeout(2500ms).time_limit,
+        "seconds and a duration give the same limit");
+
+    // With the other options: each one is kept.
+    std::stop_source stop;
+    const el::run_control control{stop.get_token()};
+    const auto combined = el::with(control).timeout(30s).stop_at(7);
+    ok &= expect(
+        combined.control == &control && combined.target == 7
+            && combined.time_limit == el::timeout(30s).time_limit,
+        "timeout and stop_at combine");
+    const auto reached = bound.run(bound.initial_solution(), rng, combined);
+    ok &= expect(
+        reached.termination == el::termination_reason::target_reached,
+        "the target ends a run before its time limit");
+    const auto reversed = el::with(control).stop_at(7).timeout(30s);
+    ok &= expect(
+        reversed.target == 7 && reversed.time_limit == combined.time_limit,
+        "stop_at keeps a time limit set before");
+
+    // A limit beyond what the clock counts is no limit; a negative one is an
+    // error.
+    ok &= expect(
+        el::timeout(std::chrono::hours::max()).time_limit == clock::duration::max(),
+        "a limit beyond the clock is the largest one");
+    bool rejected = false;
+    try
+    {
+        static_cast<void>(el::timeout(-1.0));
+    }
+    catch (const std::invalid_argument&)
+    {
+        rejected = true;
+    }
+    ok &= expect(rejected, "a negative time limit is rejected");
+    rejected = false;
+    try
+    {
+        static_cast<void>(el::timeout(std::numeric_limits<double>::quiet_NaN()));
+    }
+    catch (const std::invalid_argument&)
+    {
+        rejected = true;
+    }
+    ok &= expect(rejected, "a time limit that is not a number is rejected");
+
+    return ok ? 0 : 1;
+}

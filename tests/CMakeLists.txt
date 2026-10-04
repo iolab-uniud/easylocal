@@ -1072,6 +1072,13 @@ if(TARGET easylocal_tsp_sa AND NOT WIN32)
 endif()
 
 easylocal_add_test(
+    run-timeout
+    SOURCES
+        run_timeout.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
+easylocal_add_test(
     pipeline
     SOURCES
         pipeline.cpp

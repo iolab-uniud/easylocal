@@ -21,6 +21,7 @@
 #include <easylocal/trace/tracer.hpp>
 
 #include <cassert>
+#include <chrono>
 #include <concepts>
 #include <cstddef>
 #include <memory>
@@ -245,13 +246,23 @@ auto run_algorithm(
         }
     }
 
+    // The time limit starts now, with the run.
+    std::optional<std::chrono::steady_clock::time_point> deadline;
+    if constexpr (arguments::has_options)
+    {
+        const auto& options = std::get<sizeof...(Args) - 1>(forwarded);
+        if (options.time_limit)
+            deadline = detail::deadline_after(*options.time_limit);
+    }
+
     // The run refers to the target, which outlives it.
     search_run<Context, tracer_type> run{
         context,
         *control,
         *tracer,
         search_run<Context, tracer_type>::no_evaluation_limit,
-        target ? &*target : nullptr};
+        target ? &*target : nullptr,
+        deadline};
     return [&]<std::size_t... Index>(std::index_sequence<Index...>) {
         return algorithm.run(
             run,

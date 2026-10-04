@@ -19,10 +19,13 @@
 #include <easylocal/trace/tracer.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
 
+#include <chrono>
+#include <cmath>
 #include <concepts>
 #include <cstddef>
 #include <limits>
 #include <optional>
+#include <stdexcept>
 #include <string_view>
 #include <type_traits>
 #include <utility>
@@ -47,6 +50,8 @@ enum class termination_reason
     target_reached,
     /// Too many iterations went without improvement.
     idle_limit_reached,
+    /// The time limit of the run (run_options::timeout) passed.
+    time_limit_reached,
 };
 
 /// A readable name of the reason, e.g. "evaluation budget exhausted".
@@ -67,6 +72,8 @@ constexpr std::string_view to_string(const termination_reason reason) noexcept
         return "target reached";
     case termination_reason::idle_limit_reached:
         return "idle limit reached";
+    case termination_reason::time_limit_reached:
+        return "time limit reached";
     }
     return "unknown";
 }
@@ -135,6 +142,51 @@ struct no_target
 {
 };
 
+namespace detail
+{
+
+// A time limit as the steady clock counts it; a limit beyond what it can count
+// is the largest it can. Throws std::invalid_argument for a negative limit.
+template<class Rep, class Period>
+[[nodiscard]]
+std::chrono::steady_clock::duration steady_time_limit(
+    const std::chrono::duration<Rep, Period> limit)
+{
+    using steady_duration = std::chrono::steady_clock::duration;
+    if (limit < std::chrono::duration<Rep, Period>::zero())
+        throw std::invalid_argument{"a time limit cannot be negative"};
+    if (std::chrono::duration<double>{limit}
+        >= std::chrono::duration<double>{steady_duration::max()})
+    {
+        return steady_duration::max();
+    }
+    return std::chrono::duration_cast<steady_duration>(limit);
+}
+
+// A time limit in seconds. Throws std::invalid_argument when the number is
+// negative or not finite.
+[[nodiscard]]
+inline std::chrono::steady_clock::duration steady_time_limit(const double seconds)
+{
+    if (!std::isfinite(seconds))
+        throw std::invalid_argument{"a time limit must be a finite number of seconds"};
+    return steady_time_limit(std::chrono::duration<double>{seconds});
+}
+
+// The moment a limit starting now ends; none when the clock cannot count that
+// far.
+[[nodiscard]]
+inline std::optional<std::chrono::steady_clock::time_point> deadline_after(
+    const std::chrono::steady_clock::duration limit)
+{
+    const auto now = std::chrono::steady_clock::now();
+    if (limit > std::chrono::steady_clock::time_point::max() - now)
+        return std::nullopt;
+    return now + limit;
+}
+
+} // namespace detail
+
 /// Caller-side run options: optional cancellation/progress control, an optional
 /// semantic tracer and an optional target cost, passed as the trailing argument
 /// of Runner::run() and Solver::solve().
@@ -155,13 +207,43 @@ struct run_options
     Tracer* tracer{};
     /// The cost at which the run stops, if any.
     std::optional<Target> target{};
+    /// The time after which the run stops, if any, counted from its start.
+    std::optional<std::chrono::steady_clock::duration> time_limit{};
 
     /// The same options with a target cost: with(control).stop_at(0).
     template<class Cost>
     [[nodiscard]]
     run_options<Tracer, Cost> stop_at(Cost cost) const
     {
-        return {.control = control, .tracer = tracer, .target = std::move(cost)};
+        return {
+            .control = control,
+            .tracer = tracer,
+            .target = std::move(cost),
+            .time_limit = time_limit,
+        };
+    }
+
+    /// The same options with a time limit: with(control).timeout(5s).
+    ///
+    /// Throws `std::invalid_argument` when the limit is negative.
+    template<class Rep, class Period>
+    [[nodiscard]]
+    run_options timeout(const std::chrono::duration<Rep, Period> limit) const
+    {
+        auto options = *this;
+        options.time_limit = detail::steady_time_limit(limit);
+        return options;
+    }
+
+    /// The same options with a time limit in seconds: with(control).timeout(2.5).
+    ///
+    /// Throws `std::invalid_argument` when the number is negative or not finite.
+    [[nodiscard]]
+    run_options timeout(const double seconds) const
+    {
+        auto options = *this;
+        options.time_limit = detail::steady_time_limit(seconds);
+        return options;
     }
 };
 
@@ -195,6 +277,27 @@ template<class Cost>
 run_options<trace::null_tracer, Cost> stop_at(Cost cost)
 {
     return {.control = nullptr, .tracer = nullptr, .target = std::move(cost)};
+}
+
+/// Run options with only a time limit: run(solution, easylocal::timeout(5s)).
+///
+/// The run stops, with termination_reason::time_limit_reached, once `limit`
+/// has passed since it started. Throws `std::invalid_argument` when the limit
+/// is negative.
+template<class Rep, class Period>
+[[nodiscard]]
+run_options<trace::null_tracer> timeout(const std::chrono::duration<Rep, Period> limit)
+{
+    return run_options<trace::null_tracer>{}.timeout(limit);
+}
+
+/// Run options with only a time limit in seconds: easylocal::timeout(2.5).
+///
+/// Throws `std::invalid_argument` when the number is negative or not finite.
+[[nodiscard]]
+inline run_options<trace::null_tracer> timeout(const double seconds)
+{
+    return run_options<trace::null_tracer>{}.timeout(seconds);
 }
 
 /// One execution of a search algorithm. search_run exposes the search context
@@ -243,7 +346,8 @@ public:
         std::numeric_limits<std::size_t>::max();
 
     /// A run of context, controlled by control and traced by tracer, with an
-    /// evaluation limit and a target cost (nullptr: none).
+    /// evaluation limit, a target cost (nullptr: none) and a deadline (none: no
+    /// time limit).
     ///
     /// The bound runner makes it.
     search_run(
@@ -251,13 +355,16 @@ public:
         const run_control& control,
         Tracer& tracer,
         const std::size_t evaluation_limit = no_evaluation_limit,
-        const cost_type* target = nullptr)
+        const cost_type* target = nullptr,
+        const std::optional<std::chrono::steady_clock::time_point> deadline =
+            std::nullopt)
         : context_{context},
           evaluation_{context.evaluation()},
           control_{control},
           tracer_{tracer},
           evaluation_limit_{evaluation_limit},
-          target_{target}
+          target_{target},
+          deadline_{deadline}
     {
     }
 
@@ -440,8 +547,8 @@ public:
         return archive_;
     }
 
-    /// True when the run must end: external cancellation, a reached target cost
-    /// or an exhausted evaluation budget.
+    /// True when the run must end: external cancellation, a reached target
+    /// cost, an exhausted evaluation budget or a passed time limit.
     ///
     /// The reason is recorded for finish().
     [[nodiscard]]
@@ -462,6 +569,12 @@ public:
         if (evaluations_ >= evaluation_limit_)
         {
             stop_reason_ = termination_reason::evaluation_budget_exhausted;
+            return true;
+        }
+
+        if (time_is_up())
+        {
+            stop_reason_ = termination_reason::time_limit_reached;
             return true;
         }
 
@@ -655,10 +768,41 @@ public:
             tracer_,
             evaluation_limit_,
             target,
+            deadline_,
         };
     }
 
 private:
+    // Whether the deadline has passed. The clock is read at the first check,
+    // then at an interval of checks that adapts so that readings come about a
+    // millisecond apart: it doubles while they come sooner, halves while they
+    // come later. A fast loop reads the clock rarely; a slow one, at every
+    // check.
+    [[nodiscard]]
+    bool time_is_up()
+    {
+        if (!deadline_.has_value())
+            return false;
+        if (time_up_)
+            return true;
+        if (++checks_since_clock_ < clock_interval_)
+            return false;
+        checks_since_clock_ = 0;
+
+        const auto now = std::chrono::steady_clock::now();
+        if (last_clock_reading_.has_value())
+        {
+            const auto gap = now - *last_clock_reading_;
+            if (gap < clock_spacing / 2 && clock_interval_ < max_clock_interval)
+                clock_interval_ *= 2;
+            else if (gap > clock_spacing * 2 && clock_interval_ > 1)
+                clock_interval_ /= 2;
+        }
+        last_clock_reading_ = now;
+        time_up_ = now >= *deadline_;
+        return time_up_;
+    }
+
     // Offers a solution to the archive; solutions of equal cost are the same
     // when the problem has solution equality and they are equal, or always
     // without it.
@@ -749,6 +893,14 @@ private:
     termination_reason stop_reason_{termination_reason::completed};
     const cost_type* target_{};
     bool target_reached_{};
+    static constexpr std::chrono::steady_clock::duration clock_spacing =
+        std::chrono::milliseconds{1};
+    static constexpr std::size_t max_clock_interval = std::size_t{1} << 20U;
+    std::optional<std::chrono::steady_clock::time_point> deadline_;
+    std::optional<std::chrono::steady_clock::time_point> last_clock_reading_;
+    std::size_t clock_interval_{1};
+    std::size_t checks_since_clock_{};
+    bool time_up_{};
     EASYLOCAL_NO_UNIQUE_ADDRESS std::conditional_t<
         archives_front,
         pareto_archive<solution_type, cost_type>,
