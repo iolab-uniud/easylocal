@@ -1,60 +1,77 @@
-# Exam timetabling MWE
+# Exam timetabling
 
-This MWE is the reference model for the standard Simulated Annealing cost path.
-It deliberately uses three independent cost components, each with a plain
-`penalty_type` value, and combines them into one arithmetic cost with the cost
-expression
-`cost::sum(component<StudentConflictComponent>() * 1000, component<ConsecutiveExamComponent>() * 10, component<TimeslotLoadComponent>())`:
+A small example with a weighted sum of costs and delta cost components:
+Simulated Annealing on an exam timetabling problem, run from the command line.
 
-- `StudentConflictComponent`: students with two exams in the same timeslot;
-- `ConsecutiveExamComponent`: students with exams in consecutive timeslots;
-- `TimeslotLoadComponent`: squared timeslot load, used as a simple balance term.
+## The problem
 
-Two components have delta cost components for `MoveExam`, in both supported
-spellings: `StudentConflictComponent` co-locates its `delta_evaluate(...)` and
-is attached with `delta<StudentConflictComponent>()`, while
-`ConsecutiveExamComponent` uses the separate-evaluator form
-`delta<Component, DeltaEvaluator>()`. Both look only at the conflicts of the
-moved exam, which `conflicts_by_exam(instance)` lists once per exam when they
-are built. `TimeslotLoadComponent` has none: its change needs the load of two
-timeslots, and counting loads visits every exam, which is what a full
-evaluation does; the framework evaluates it on a candidate solution instead. The final `penalty_type` is therefore
-already the SA energy: no Cost-to-Energy adapter or projection is required by
-the standard `MetropolisAcceptance` path.
+Each exam must be put in one timeslot. Some pairs of exams share students, and
+the penalty of a timetable is a weighted sum of three cost components:
 
-## Runnable SA example
+- `StudentConflictComponent`, weight 1000: the students with two exams in the
+  same timeslot;
+- `ConsecutiveExamComponent`, weight 10: the students with two exams in
+  consecutive timeslots;
+- `TimeslotLoadComponent`, weight 1: the sum of the squared number of exams of
+  each timeslot, which spreads the exams.
 
-The executable intentionally uses the explicit `with_*` spelling of the
-composition API: `solution_manager<SM>().with_cost(...)`,
-`neighborhood<NHE>().with_delta<C, D>()...` and
-`app(...).with_solution_manager(...).with_neighborhood(...).with_runner<...>(...)`.
-Assignment demonstrates the equivalent pipe spelling.
+An instance file holds the number of exams, of timeslots and of conflicts,
+then one line `first second students` per pair of exams that share students
+(`instances/small.exam`):
 
-`main.cpp` registers Simulated Annealing as the runner `sa` of an app and runs
-it with `easylocal::cli::run`, on `instances/small.exam` from the
-SolutionManager's `initial_solution()`, with the seed 2026 by default:
-
-```sh
-./build/<preset>/examples/exam_timetabling/easylocal_exam_timetabling
+```text
+4 3 4
+0 1 4
+0 2 2
+...
 ```
 
-`--help` lists the switches; the runner's parameters are
-`--runners.sa.temperature.*` and the cost's weights `--cost.weights`:
+## The files
+
+| File | Holds |
+| --- | --- |
+| `instance.hpp` | the input, `ExamTimetablingInstance`, with `read`; `conflicts_by_exam`, the conflicts of each exam |
+| `solution.hpp` | the solution, `ExamTimetable`: the timeslot of each exam, with `read`, `write` and `describe` |
+| `solution_manager.hpp` | `ExamTimetablingSolutionManager`: the initial timetable and the validity check |
+| `cost_components.hpp` | the three cost components |
+| `cost_deltas.hpp` | `ConsecutiveExamDeltaEvaluator`, the delta cost component of `ConsecutiveExamComponent` |
+| `move.hpp` | the move, `MoveExam`: an exam and its new timeslot |
+| `neighborhood_explorer.hpp` | `MoveExamNeighborhoodExplorer`: the moves (a generator), a random move, `make_move` |
+| `main.cpp` | the program: the cost, the neighborhood with its delta cost components, the app with the runner `sa` |
+
+The delta cost components compute the change of a cost component from the
+conflicts of the moved exam only. They are written in two ways:
+`StudentConflictComponent` has a member `delta_evaluate`, attached with
+`with_delta<StudentConflictComponent>()`, while `ConsecutiveExamComponent` has
+a class of its own, attached with
+`with_delta<ConsecutiveExamComponent, ConsecutiveExamDeltaEvaluator>()`.
+`TimeslotLoadComponent` has none: counting the loads visits every exam, as a
+full evaluation does, so EasyLocal evaluates each move on a candidate solution.
+
+`main.cpp` builds the app with `with_*` calls; the assignment and TSP examples
+write the same with pipes (`|`).
+
+Read `instance.hpp`, `solution.hpp` and `cost_components.hpp` first, then
+`cost_deltas.hpp`, `neighborhood_explorer.hpp` and `main.cpp`.
+
+## Build and run
 
 ```sh
-./build/<preset>/examples/exam_timetabling/easylocal_exam_timetabling \
-  --runners.sa.temperature.max_iterations=10 \
-  --seed=42
+cmake --preset dev && cmake --build build/dev
+./build/dev/examples/exam_timetabling/easylocal_exam_timetabling
 ```
 
-`--target` stops the search at the first timetable whose penalty reaches a
-value, `--target=0` at the first one with no penalty.
-
-A compact configuration file can provide the same dotted paths:
+The program runs Simulated Annealing from the initial timetable of
+`instances/small.exam`, with the seed 2026, and prints the penalty, the
+running time, the effort of the run and the timetable. `--help` lists the
+switches, among them the runner's parameters (`--runners.sa.temperature.*`)
+and the weights of the cost (`--cost.weights`):
 
 ```sh
-./build/<preset>/examples/exam_timetabling/easylocal_exam_timetabling \
-  --config examples/exam_timetabling/configs/small.cfg
+./build/dev/examples/exam_timetabling/easylocal_exam_timetabling \
+  --runners.sa.temperature.max_iterations=10 --seed=42
 ```
 
-CLI values have higher precedence than values from the file.
+`--target=0` stops the run at the first timetable with no penalty.
+`--config examples/exam_timetabling/configs/small.cfg` reads the parameters
+from a file; the switches on the command line win over it.
