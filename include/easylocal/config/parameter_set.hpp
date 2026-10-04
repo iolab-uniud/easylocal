@@ -373,19 +373,20 @@ public:
     override_result apply(const std::span<const text_override> overrides) const
     {
         override_result result;
-        for (std::size_t first = 0; first < overrides.size(); ++first)
+        // Each repetition of a path once, however many came before it.
+        for (std::size_t index = 1; index < overrides.size(); ++index)
         {
-            for (std::size_t second = first + 1; second < overrides.size(); ++second)
+            const auto earlier = overrides.first(index);
+            if (std::ranges::any_of(earlier, [&](const text_override& other) {
+                    return other.path == overrides[index].path;
+                }))
             {
-                if (overrides[first].path == overrides[second].path)
-                {
-                    result.diagnostics.push_back({
-                        .error = override_error::duplicate_path,
-                        .path = std::string{overrides[second].path},
-                        .value = std::string{overrides[second].value},
-                        .message = "duplicate override path",
-                    });
-                }
+                result.diagnostics.push_back({
+                    .error = override_error::duplicate_path,
+                    .path = std::string{overrides[index].path},
+                    .value = std::string{overrides[index].value},
+                    .message = "duplicate override path",
+                });
             }
         }
 

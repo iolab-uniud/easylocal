@@ -267,6 +267,17 @@ void unknown_and_repeated_paths_are_errors()
     assert(!repeated);
     assert(repeated.diagnostics[0].error == config::override_error::duplicate_path);
     assert(app.seed == 2026U);
+
+    // Each repetition once: three equal paths are two repetitions.
+    const std::array thrice{
+        config::text_override{"input.seed", "1"},
+        config::text_override{"input.seed", "2"},
+        config::text_override{"input.seed", "3"},
+    };
+    const auto repetitions = set.apply(thrice);
+    assert(repetitions.diagnostics.size() == 2);
+    assert(repetitions.diagnostics[0].value == "2");
+    assert(repetitions.diagnostics[1].value == "3");
 }
 
 void the_same_path_cannot_be_added_twice()
