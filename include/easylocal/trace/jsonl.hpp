@@ -18,6 +18,8 @@
 namespace easylocal::trace
 {
 
+/// A writer of costs as JSON: `writer(out, cost)` writes cost to the stream
+/// out.
 template<class Writer, class Cost>
 concept json_cost_writer_for = requires(
     Writer& writer,
@@ -26,8 +28,11 @@ concept json_cost_writer_for = requires(
     writer(out, cost);
 };
 
+/// The default JSON cost writer: inserts the cost into the stream with
+/// `operator<<`.
 struct ostream_json_cost_writer
 {
+    /// Writes cost to out with `out << cost`.
     template<class Cost>
     void operator()(std::ostream& out, const Cost& cost) const
         requires requires { out << cost; }
@@ -85,6 +90,12 @@ inline void write_route_json(
 
 } // namespace detail
 
+/// A tracer that writes each event to a stream as it is emitted, one JSON
+/// object per line with an `"event"` field naming it.
+///
+/// It observes every event; costs are written by CostWriter, routes as arrays
+/// of child indices. The stream is held by reference.
+/// Requires a CostWriter callable as `writer(out, cost)`.
 template<class Cost, class CostWriter = ostream_json_cost_writer>
 class jsonl_recorder
 {
@@ -93,12 +104,14 @@ class jsonl_recorder
         "jsonl_recorder requires a cost writer callable as writer(ostream, cost)");
 
 public:
+    /// Writes to out, with a default-constructed cost writer.
     explicit jsonl_recorder(std::ostream& out) noexcept
         requires std::default_initializable<CostWriter>
         : out_{out}
     {
     }
 
+    /// Writes to out, costs with cost_writer.
     jsonl_recorder(std::ostream& out, CostWriter cost_writer)
         noexcept(std::is_nothrow_move_constructible_v<CostWriter>)
         : out_{out},
@@ -106,9 +119,11 @@ public:
     {
     }
 
+    /// Whether the recorder receives Event: always.
     template<class Event>
     static constexpr bool observes = true;
 
+    /// Writes the event as a JSON line.
     void emit(const event::run_started<Cost>& value)
     {
         out_ << "{\"event\":\"run_started\",\"cost\":";
@@ -116,6 +131,7 @@ public:
         out_ << "}\n";
     }
 
+    /// Writes the event as a JSON line.
     void emit(const event::move_evaluated<Cost>& value)
     {
         out_ << "{\"event\":\"move_evaluated\",\"evaluations\":" << value.evaluations
@@ -129,6 +145,7 @@ public:
         out_ << "}\n";
     }
 
+    /// Writes the event as a JSON line.
     void emit(const event::move_accepted<Cost>& value)
     {
         out_ << "{\"event\":\"move_accepted\",\"evaluations\":" << value.evaluations
@@ -142,6 +159,7 @@ public:
         out_ << "}\n";
     }
 
+    /// Writes the event as a JSON line.
     void emit(const event::incumbent_updated<Cost>& value)
     {
         out_ << "{\"event\":\"incumbent_updated\",\"evaluations\":" << value.evaluations
@@ -153,6 +171,7 @@ public:
         out_ << "}\n";
     }
 
+    /// Writes the event as a JSON line.
     void emit(const event::local_optimum<Cost>& value)
     {
         out_ << "{\"event\":\"local_optimum\",\"evaluations\":" << value.evaluations
@@ -162,6 +181,7 @@ public:
         out_ << "}\n";
     }
 
+    /// Writes the event as a JSON line.
     void emit(const event::neighborhood_selection& value)
     {
         out_ << "{\"event\":\"neighborhood_selection\",\"attempt\":" << value.attempt
@@ -175,6 +195,7 @@ public:
         out_ << "}\n";
     }
 
+    /// Writes the event as a JSON line.
     void emit(const event::solution_visited<Cost>& value)
     {
         out_ << "{\"event\":\"solution_visited\",\"evaluations\":" << value.evaluations
@@ -184,6 +205,7 @@ public:
         out_ << "}\n";
     }
 
+    /// Writes the event as a JSON line.
     void emit(const event::aspiration_applied<Cost>& value)
     {
         out_ << "{\"event\":\"aspiration_applied\",\"evaluations\":" << value.evaluations
@@ -192,6 +214,7 @@ public:
         out_ << "}\n";
     }
 
+    /// Writes the event as a JSON line.
     void emit(const event::tabu_escape& value)
     {
         out_ << "{\"event\":\"tabu_escape\",\"evaluations\":" << value.evaluations
@@ -199,6 +222,7 @@ public:
              << "}\n";
     }
 
+    /// Writes the event as a JSON line.
     void emit(const event::tabu_tenure_changed& value)
     {
         out_ << "{\"event\":\"tabu_tenure_changed\",\"evaluations\":" << value.evaluations
@@ -206,6 +230,7 @@ public:
              << value.previous_tenure << ",\"tenure\":" << value.tenure << "}\n";
     }
 
+    /// Writes the event as a JSON line.
     void emit(const event::run_finished<Cost>& value)
     {
         out_ << "{\"event\":\"run_finished\",\"evaluations\":" << value.evaluations
@@ -215,11 +240,13 @@ public:
         out_ << "}\n";
     }
 
+    /// Flushes the stream.
     void flush()
     {
         out_.flush();
     }
 
+    /// Whether the stream has had no error.
     [[nodiscard]]
     bool good() const
     {
@@ -244,6 +271,8 @@ void write_jsonl(
     recorder.replay(json);
 }
 
+/// Writes the events of a memory_recorder as JSONL, with the default cost
+/// writer.
 template<class Cost>
     requires json_cost_writer_for<ostream_json_cost_writer, Cost>
 void write_jsonl(

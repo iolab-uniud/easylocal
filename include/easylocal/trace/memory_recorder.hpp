@@ -16,96 +16,156 @@
 namespace easylocal::trace
 {
 
+/// A tracer that keeps a copy of every event in memory, in order, for tests,
+/// short traces and in-process analysis.
+///
+/// It observes every event and copies the neighborhood routes.
 template<class Cost>
 class memory_recorder
 {
 public:
+    /// A recorded `event::run_started`.
     struct run_started_record
     {
+        /// The cost of the initial solution.
         Cost cost;
     };
 
+    /// A recorded `event::move_evaluated`, its route copied.
     struct move_evaluated_record
     {
+        /// Evaluations so far.
         std::size_t evaluations{};
+        /// Iterations so far.
         std::size_t iterations{};
+        /// The cost of the current solution.
         Cost current_cost;
+        /// The cost the solution would have after the move.
         Cost candidate_cost;
+        /// The route of the move through neighborhood unions, empty outside
+        /// one.
         std::vector<std::size_t> neighborhood;
     };
 
+    /// A recorded `event::move_accepted`, its route copied.
     struct move_accepted_record
     {
+        /// Evaluations so far.
         std::size_t evaluations{};
+        /// Iterations so far.
         std::size_t iterations{};
+        /// The cost of the solution before the move.
         Cost previous_cost;
+        /// The cost of the solution after the move.
         Cost cost;
+        /// The route of the move through neighborhood unions, empty outside
+        /// one.
         std::vector<std::size_t> neighborhood;
     };
 
+    /// A recorded `event::incumbent_updated`.
     struct incumbent_updated_record
     {
+        /// Evaluations so far.
         std::size_t evaluations{};
+        /// Iterations so far.
         std::size_t iterations{};
+        /// The cost of the previous best solution.
         Cost previous_cost;
+        /// The cost of the new best solution.
         Cost cost;
     };
 
+    /// A recorded `event::local_optimum`.
     struct local_optimum_record
     {
+        /// Evaluations so far.
         std::size_t evaluations{};
+        /// Iterations so far.
         std::size_t iterations{};
+        /// The cost of the local optimum.
         Cost cost;
     };
 
+    /// A recorded `event::neighborhood_selection`, its route copied.
     struct neighborhood_selection_record
     {
+        /// The attempt within the draw, from 0.
         std::size_t attempt{};
+        /// The index of the chosen child in its union.
         std::size_t child{};
+        /// The bias of the chosen child.
         double bias{};
+        /// The total bias of the children still active at this attempt.
         double active_bias_total{};
+        /// The probability of choosing this child at this attempt.
         double conditional_probability{};
+        /// Whether the child produced a move.
         bool produced_move{};
+        /// The route of the chosen child through the enclosing unions.
         std::vector<std::size_t> neighborhood;
     };
 
+    /// A recorded `event::solution_visited`.
     struct solution_visited_record
     {
+        /// Evaluations so far.
         std::size_t evaluations{};
+        /// Iterations so far.
         std::size_t iterations{};
+        /// The solution hash of the solution.
         std::uint64_t hash{};
+        /// The cost of the solution.
         Cost cost;
     };
 
+    /// A recorded `event::aspiration_applied`.
     struct aspiration_applied_record
     {
+        /// Evaluations so far.
         std::size_t evaluations{};
+        /// Iterations so far.
         std::size_t iterations{};
+        /// The cost of the solution after the move.
         Cost cost;
     };
 
+    /// A recorded `event::tabu_escape`.
     struct tabu_escape_record
     {
+        /// Evaluations so far.
         std::size_t evaluations{};
+        /// Iterations so far.
         std::size_t iterations{};
+        /// The number of random moves of the escape.
         std::size_t moves{};
     };
 
+    /// A recorded `event::tabu_tenure_changed`.
     struct tabu_tenure_changed_record
     {
+        /// Evaluations so far.
         std::size_t evaluations{};
+        /// Iterations so far.
         std::size_t iterations{};
+        /// The tenure before the change, 0 at the start of a run.
         std::size_t previous_tenure{};
+        /// The new tenure.
         std::size_t tenure{};
     };
 
+    /// A recorded `event::run_finished`.
     struct run_finished_record
     {
+        /// Evaluations in the run.
         std::size_t evaluations{};
+        /// Iterations in the run.
         std::size_t iterations{};
+        /// The cost of the solution returned.
         Cost cost;
     };
 
+    /// A recorded event.
     using record = std::variant<
         run_started_record,
         move_evaluated_record,
@@ -119,14 +179,17 @@ public:
         tabu_tenure_changed_record,
         run_finished_record>;
 
+    /// Whether the recorder receives Event: always.
     template<class Event>
     static constexpr bool observes = true;
 
+    /// Records the event.
     void emit(const event::run_started<Cost>& value)
     {
         records_.emplace_back(run_started_record{value.cost});
     }
 
+    /// Records the event.
     void emit(const event::move_evaluated<Cost>& value)
     {
         records_.emplace_back(move_evaluated_record{
@@ -138,6 +201,7 @@ public:
         });
     }
 
+    /// Records the event.
     void emit(const event::move_accepted<Cost>& value)
     {
         records_.emplace_back(move_accepted_record{
@@ -149,6 +213,7 @@ public:
         });
     }
 
+    /// Records the event.
     void emit(const event::incumbent_updated<Cost>& value)
     {
         records_.emplace_back(incumbent_updated_record{
@@ -159,6 +224,7 @@ public:
         });
     }
 
+    /// Records the event.
     void emit(const event::local_optimum<Cost>& value)
     {
         records_.emplace_back(local_optimum_record{
@@ -168,6 +234,7 @@ public:
         });
     }
 
+    /// Records the event.
     void emit(const event::neighborhood_selection& value)
     {
         records_.emplace_back(neighborhood_selection_record{
@@ -181,6 +248,7 @@ public:
         });
     }
 
+    /// Records the event.
     void emit(const event::solution_visited<Cost>& value)
     {
         records_.emplace_back(
@@ -192,6 +260,7 @@ public:
             });
     }
 
+    /// Records the event.
     void emit(const event::aspiration_applied<Cost>& value)
     {
         records_.emplace_back(
@@ -202,6 +271,7 @@ public:
             });
     }
 
+    /// Records the event.
     void emit(const event::tabu_escape& value)
     {
         records_.emplace_back(
@@ -212,6 +282,7 @@ public:
             });
     }
 
+    /// Records the event.
     void emit(const event::tabu_tenure_changed& value)
     {
         records_.emplace_back(
@@ -223,6 +294,7 @@ public:
             });
     }
 
+    /// Records the event.
     void emit(const event::run_finished<Cost>& value)
     {
         records_.emplace_back(run_finished_record{
@@ -232,6 +304,7 @@ public:
         });
     }
 
+    /// The recorded events, in the order they were emitted.
     [[nodiscard]]
     const std::vector<record>& records() const noexcept
     {

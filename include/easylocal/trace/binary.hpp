@@ -41,94 +41,131 @@ namespace easylocal::trace
 /// The types of the fields of an ELTR record.
 enum class binary_type : std::uint8_t
 {
+    /// An unsigned 8-bit integer.
     u8 = 1,
+    /// A signed 8-bit integer.
     i8 = 2,
+    /// An unsigned 16-bit integer.
     u16 = 3,
+    /// A signed 16-bit integer.
     i16 = 4,
+    /// An unsigned 32-bit integer.
     u32 = 5,
+    /// A signed 32-bit integer.
     i32 = 6,
+    /// An unsigned 64-bit integer.
     u64 = 7,
+    /// A signed 64-bit integer.
     i64 = 8,
+    /// A 32-bit floating-point number.
     f32 = 9,
+    /// A 64-bit floating-point number.
     f64 = 10,
+    /// A boolean, one byte 0 or 1.
     boolean = 11,
-    string = 12, // u32 size, then UTF-8 bytes
-    bytes = 13,  // u32 size, then the bytes
-    route = 14,  // u32 count, then a u32 per level
-    cost = 15,   // the trace's cost layout
+    /// A string: a u32 size, then the UTF-8 bytes.
+    string = 12,
+    /// A byte sequence: a u32 size, then the bytes.
+    bytes = 13,
+    /// A neighborhood route: a u32 count, then a u32 child index per level.
+    route = 14,
+    /// A cost, written as the fields of the cost layout of the trace header.
+    cost = 15,
 };
 
+/// A field of an ELTR record: its name and type.
 struct binary_field
 {
+    /// The name of the field.
     std::string name;
+    /// The type of the field.
     binary_type type;
 };
 
 /// The name and fields of the records of one tag.
 struct binary_event_schema
 {
+    /// The name of the event.
     std::string name;
+    /// The fields of a record, in order.
     std::vector<binary_field> fields;
 };
 
+/// Appends the fields of an ELTR record to a byte buffer, in their ELTR
+/// representation: little-endian integers, IEEE floats, size-prefixed strings.
+///
+/// The buffer is held by reference; the recorder writes the tag and the size
+/// of the record.
 class binary_record_writer
 {
 public:
+    /// Appends to buffer.
     explicit binary_record_writer(std::vector<char>& buffer) noexcept
         : buffer_{buffer}
     {
     }
 
+    /// Writes value as a u8.
     void u8(const std::uint8_t value)
     {
         buffer_.push_back(static_cast<char>(value));
     }
 
+    /// Writes value as an i8.
     void i8(const std::int8_t value)
     {
         u8(static_cast<std::uint8_t>(value));
     }
 
+    /// Writes value as a byte, 1 for true and 0 for false.
     void boolean(const bool value)
     {
         u8(value ? 1U : 0U);
     }
 
+    /// Writes value as a little-endian u16.
     void u16(const std::uint16_t value)
     {
         append_unsigned_le(value);
     }
 
+    /// Writes value as a little-endian i16.
     void i16(const std::int16_t value)
     {
         append_unsigned_le(static_cast<std::uint16_t>(value));
     }
 
+    /// Writes value as a little-endian u32.
     void u32(const std::uint32_t value)
     {
         append_unsigned_le(value);
     }
 
+    /// Writes value as a little-endian i32.
     void i32(const std::int32_t value)
     {
         append_unsigned_le(static_cast<std::uint32_t>(value));
     }
 
+    /// Writes value as a little-endian u64.
     void u64(const std::uint64_t value)
     {
         append_unsigned_le(value);
     }
 
+    /// Writes value as a little-endian i64.
     void i64(const std::int64_t value)
     {
         u64(static_cast<std::uint64_t>(value));
     }
 
+    /// Writes value as an f32, the little-endian bits of the float.
     void f32(const float value)
     {
         u32(std::bit_cast<std::uint32_t>(value));
     }
 
+    /// Writes value as an f64, the little-endian bits of the double.
     void f64(const double value)
     {
         u64(std::bit_cast<std::uint64_t>(value));
@@ -145,6 +182,8 @@ public:
         }
     }
 
+    /// Writes an event schema: the described tag as a u8, the name, then the
+    /// field list.
     void schema(const std::uint8_t tag, const binary_event_schema& value)
     {
         u8(tag);
@@ -152,6 +191,7 @@ public:
         fields(value.fields);
     }
 
+    /// Writes the size bytes at data as they are, with no size prefix.
     void raw_bytes(const void* data, const std::size_t size)
     {
         if (size == 0)
@@ -163,18 +203,22 @@ public:
         std::memcpy(buffer_.data() + offset, data, size);
     }
 
+    /// Writes value as bytes: a u32 size, then the bytes.
     void bytes(const std::span<const std::byte> value)
     {
         u32(static_cast<std::uint32_t>(value.size()));
         raw_bytes(value.data(), value.size());
     }
 
+    /// Writes value as a string: a u32 size, then its bytes.
     void string(const std::string_view value)
     {
         u32(static_cast<std::uint32_t>(value.size()));
         raw_bytes(value.data(), value.size());
     }
 
+    /// Writes the route ending at node: a u32 count, then the u32 child indices
+    /// from the outermost union inward.
     void route(const neighborhood_route_node* node)
     {
         u32(static_cast<std::uint32_t>(route_size(node)));
@@ -366,11 +410,13 @@ struct default_binary_cost_writer
         "no default ELTR encoding for this cost type: give the recorder a cost writer "
         "with operator()(binary_record_writer&, const Cost&) and fields()");
 
+    /// Writes cost to out.
     void operator()(binary_record_writer& out, const Cost& cost) const
     {
         detail::default_binary_cost<Cost>::write(out, cost);
     }
 
+    /// The fields the writer writes for a cost, in order.
     [[nodiscard]]
     std::vector<binary_field> fields() const
     {
@@ -391,6 +437,10 @@ concept described_binary_event = requires {
     } -> std::convertible_to<binary_event_schema>;
 };
 
+/// The ELTR tag of the application event of index Index, 0 to 127: tag
+/// 128 + Index.
+///
+/// Tags 1 to 127 are reserved to EasyLocal.
 template<std::uint8_t Index>
 consteval std::uint8_t user_binary_event_tag()
 {
@@ -398,9 +448,14 @@ consteval std::uint8_t user_binary_event_tag()
     return static_cast<std::uint8_t>(128U + Index);
 }
 
+/// The options of a binary recorder: its buffering and the metadata of its
+/// header.
 struct binary_buffer_options
 {
+    /// The bytes buffered before a write (256 KiB by default, at least 1).
     std::size_t block_size = 256U * 1024U;
+    /// The blocks an async recorder can queue to its writer thread before the
+    /// search waits (at least 1).
     std::size_t async_queue_blocks = 4;
     /// Key-value pairs written in the header: the instance, the runner, the
     /// seed, the parameters, whatever tells the run apart.
@@ -1033,6 +1088,13 @@ private:
 
 } // namespace detail
 
+/// A tracer that writes the events as an ELTR binary stream, a block of
+/// encoded records at a time.
+///
+/// The header is encoded at construction, and a block is written to the stream
+/// when it reaches the block size, by flush() and by the destructor. The
+/// stream is held by reference.
+/// Requires a CostWriter callable as `writer(out, cost)`, with `fields()`.
 template<class Cost, class CostWriter = default_binary_cost_writer<Cost>>
 class buffered_binary_recorder
 {
@@ -1044,8 +1106,10 @@ class buffered_binary_recorder
     using encoder_type = detail::binary_event_encoder<CostWriter>;
 
 public:
+    /// The version of the ELTR format written.
     static constexpr std::uint16_t format_version = 1;
 
+    /// Writes to out, with a default-constructed cost writer.
     explicit buffered_binary_recorder(
         std::ostream& out,
         binary_buffer_options options = {})
@@ -1057,6 +1121,7 @@ public:
         encoder_.append_header(buffer_, options.metadata);
     }
 
+    /// Writes to out, costs with cost_writer.
     buffered_binary_recorder(
         std::ostream& out,
         CostWriter cost_writer,
@@ -1084,9 +1149,16 @@ public:
         }
     }
 
+    /// Whether the recorder receives Event: a core event, or an application
+    /// event with the ADL functions `binary_event_tag` and
+    /// `encode_binary_event`.
     template<class Event>
     static constexpr bool observes = encoder_type::template observes<Event>;
 
+    /// Encodes value as a record, writing the block when it is full.
+    ///
+    /// An application event with a schema is preceded, the first time, by the
+    /// schema record of its tag.
     template<class Event>
         requires (encoder_type::template observes<Event>)
     void emit(const Event& value)
@@ -1098,12 +1170,14 @@ public:
         }
     }
 
+    /// Writes the pending records and flushes the stream.
     void flush()
     {
         write_pending();
         out_.flush();
     }
 
+    /// Whether the stream has had no error.
     [[nodiscard]]
     bool good() const
     {
@@ -1127,9 +1201,18 @@ private:
     std::size_t block_size_{};
 };
 
+/// The binary recorder: the synchronous buffered_binary_recorder.
 template<class Cost, class CostWriter = default_binary_cost_writer<Cost>>
 using binary_recorder = buffered_binary_recorder<Cost, CostWriter>;
 
+/// A tracer that writes the events as an ELTR binary stream from a background
+/// writer thread, a block at a time.
+///
+/// The search fills a block and hands it to the thread, waiting when the queue
+/// is full: no event is lost and the order is kept. One search only emits to
+/// it. The stream is held by reference, and the destructor writes the pending
+/// records.
+/// Requires a CostWriter callable as `writer(out, cost)`, with `fields()`.
 template<class Cost, class CostWriter = default_binary_cost_writer<Cost>>
 class async_binary_recorder
 {
@@ -1141,8 +1224,10 @@ class async_binary_recorder
     using encoder_type = detail::binary_event_encoder<CostWriter>;
 
 public:
+    /// The version of the ELTR format written.
     static constexpr std::uint16_t format_version = 1;
 
+    /// Writes to out, with a default-constructed cost writer.
     explicit async_binary_recorder(
         std::ostream& out,
         binary_buffer_options options = {})
@@ -1155,6 +1240,7 @@ public:
         encoder_.append_header(current_, options.metadata);
     }
 
+    /// Writes to out, costs with cost_writer.
     async_binary_recorder(
         std::ostream& out,
         CostWriter cost_writer,
@@ -1182,9 +1268,17 @@ public:
         }
     }
 
+    /// Whether the recorder receives Event: a core event, or an application
+    /// event with the ADL functions `binary_event_tag` and
+    /// `encode_binary_event`.
     template<class Event>
     static constexpr bool observes = encoder_type::template observes<Event>;
 
+    /// Encodes value as a record, handing the block to the writer thread when
+    /// it is full.
+    ///
+    /// An application event with a schema is preceded, the first time, by the
+    /// schema record of its tag.
     template<class Event>
         requires (encoder_type::template observes<Event>)
     void emit(const Event& value)
@@ -1196,12 +1290,17 @@ public:
         }
     }
 
+    /// Hands the pending records to the writer thread, waits until it has
+    /// written them and flushes the stream.
+    ///
+    /// Throws `std::ios_base::failure` if the writer has failed.
     void flush()
     {
         submit_current();
         sink_.flush_output();
     }
 
+    /// Whether the writer thread has had no error.
     [[nodiscard]]
     bool good() const noexcept
     {

@@ -14,17 +14,23 @@
 namespace easylocal::trace
 {
 
+/// The tracer of a run without tracing: it observes no event, so the search
+/// builds none.
 struct null_tracer
 {
+    /// Whether the tracer receives Event: never.
     template<class Event>
     static constexpr bool observes = false;
 
+    /// Discards the event.
     template<class Event>
     constexpr void emit(const Event&) noexcept
     {
     }
 };
 
+/// A tracer that says, with `observes<Event>`, whether it receives Event, and
+/// that has `emit(event)` when it does.
 template<class Tracer, class Event>
 concept tracer_for = requires {
     { std::remove_cvref_t<Tracer>::template observes<Event> } ->
@@ -35,10 +41,13 @@ concept tracer_for = requires {
         tracer.emit(event);
     });
 
+/// A tracer that receives Event.
 template<class Tracer, class Event>
 concept observes = tracer_for<Tracer, Event> &&
     std::remove_cvref_t<Tracer>::template observes<Event>;
 
+/// Sends value to tracer when it observes the event type, and does nothing,
+/// at compile time, otherwise.
 template<class Event, class Tracer>
 constexpr void emit(Tracer& tracer, const Event& value)
 {
@@ -85,6 +94,10 @@ void build_move_route(
 
 } // namespace detail
 
+/// Calls callback with the route of move through nested neighborhood unions,
+/// null for a move outside a union.
+///
+/// The route lives on the stack only during the call.
 template<class Move, class Callback>
 void with_move_route(const Move& move, Callback&& callback)
 {

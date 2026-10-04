@@ -31,10 +31,13 @@ class without_events
 public:
     explicit without_events(Tracer& tracer) noexcept : tracer_{tracer} {}
 
+    /// Whether the wrapper receives Event: when the tracer observes it and it
+    /// is not an instance of an Excluded template.
     template<class Event>
     static constexpr bool observes =
         trace::observes<Tracer, Event> && !(detail::is_event_of<Event, Excluded> || ...);
 
+    /// Forwards value to the tracer.
     template<class Event>
         requires observes<Event>
     void emit(const Event& value)
@@ -42,6 +45,7 @@ public:
         tracer_.emit(value);
     }
 
+    /// The wrapped tracer.
     [[nodiscard]]
     Tracer& tracer() const noexcept
     {
