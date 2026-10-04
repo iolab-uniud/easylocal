@@ -242,3 +242,18 @@ site. If the MrDocs templates (Handlebars, overridable through
 **When.** Once the comments of the headers are settled (brief first
 sentences, the requirements of the public templates), so that the style is
 designed on the final pages.
+
+## A shorter README
+
+**Why.** The README has grown into a design log: next to the overview, the
+build and the citation, about 300 lines describe the header layout, the
+composition grammar, writing a runner, the cost expressions and the
+configuration layers, which the tutorial and the reference pages explain, and
+keep up to date, in more detail. Two copies of the same text drift apart.
+
+**What.** A README that introduces EasyLocal, shows a short example, says how to
+build, test and install it, and links the documentation for the rest: the
+quick start, the tutorial, the reference pages and the API reference.
+
+**When.** Next, after the audit of the codebase.
+
