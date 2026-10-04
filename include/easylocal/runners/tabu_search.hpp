@@ -320,8 +320,9 @@ struct FixedLengthParameters
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
+        using self = FixedLengthParameters;
         return config::fields(
-            config::field<"tenure", &FixedLengthParameters::tenure>(
+            config::field<"tenure", &self::tenure>(
                 "Number of iterations a move stays tabu"));
     }
 
@@ -419,10 +420,11 @@ struct RandomTenureParameters
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
+        using self = RandomTenureParameters;
         return config::fields(
-            config::field<"min_tenure", &RandomTenureParameters::min_tenure>(
+            config::field<"min_tenure", &self::min_tenure>(
                 "Minimum number of iterations a move stays tabu"),
-            config::field<"max_tenure", &RandomTenureParameters::max_tenure>(
+            config::field<"max_tenure", &self::max_tenure>(
                 "Maximum number of iterations a move stays tabu"));
     }
 
@@ -504,11 +506,11 @@ struct CyclicParameters
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
+        using self = CyclicParameters;
         return config::fields(
-            config::field<"period", &CyclicParameters::period>(
+            config::field<"period", &self::period>(
                 "Number of iterations each tenure is used for"),
-            config::field<"tenures", &CyclicParameters::tenures>(
-                "The tenures, used in turn"));
+            config::field<"tenures", &self::tenures>("The tenures, used in turn"));
     }
 
     [[nodiscard]]
@@ -611,20 +613,20 @@ struct ReactiveParameters
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
+        using self = ReactiveParameters;
         return config::fields(
-            config::field<"increase", &ReactiveParameters::increase>(
+            config::field<"increase", &self::increase>(
                 "Factor of the tenure when a solution is revisited within cycle_length"),
-            config::field<"decrease", &ReactiveParameters::decrease>(
+            config::field<"decrease", &self::decrease>(
                 "Factor of the tenure when no cycle is seen for the average cycle length"),
-            config::field<"repetitions", &ReactiveParameters::repetitions>(
+            config::field<"repetitions", &self::repetitions>(
                 "Visits of a solution after which further visits count as chaos"),
-            config::field<"chaos", &ReactiveParameters::chaos>(
+            config::field<"chaos", &self::chaos>(
                 "Chaos counts after which the search escapes with random moves"),
-            config::field<"cycle_length", &ReactiveParameters::cycle_length>(
+            config::field<"cycle_length", &self::cycle_length>(
                 "Revisits closer than this many iterations are cycles"),
-            config::field<"max_tenure", &ReactiveParameters::max_tenure>(
-                "The largest tenure"),
-            config::field<"verify_equality", &ReactiveParameters::verify_equality>(
+            config::field<"max_tenure", &self::max_tenure>("The largest tenure"),
+            config::field<"verify_equality", &self::verify_equality>(
                 "Confirm revisits by comparing solutions with equal hashes"));
     }
 
@@ -831,8 +833,9 @@ struct FrequencyParameters
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
+        using self = FrequencyParameters;
         return config::fields(
-            config::field<"threshold", &FrequencyParameters::threshold>(
+            config::field<"threshold", &self::threshold>(
                 "Relative frequency of an attribute above which its moves are tabu"));
     }
 
@@ -921,8 +924,9 @@ struct ObjectiveBasedParameters
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
+        using self = ObjectiveBasedParameters;
         return config::fields(
-            config::field<"tenure", &ObjectiveBasedParameters::tenure>(
+            config::field<"tenure", &self::tenure>(
                 "Number of iterations a reached cost stays tabu"));
     }
 
@@ -1005,12 +1009,13 @@ struct LimDynamicParameters
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
+        using self = LimDynamicParameters;
         return config::fields(
-            config::field<"min_tenure", &LimDynamicParameters::min_tenure>(
+            config::field<"min_tenure", &self::min_tenure>(
                 "The tenure after an improvement of the best cost"),
-            config::field<"max_tenure", &LimDynamicParameters::max_tenure>(
+            config::field<"max_tenure", &self::max_tenure>(
                 "The tenure at which it falls back to min_tenure"),
-            config::field<"idle_threshold", &LimDynamicParameters::idle_threshold>(
+            config::field<"idle_threshold", &self::idle_threshold>(
                 "Iterations without improvement after which the tenure grows"));
     }
 
@@ -1189,12 +1194,13 @@ struct FooParameters
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
+        using self = FooParameters;
         return config::fields(
-            config::field<"window", &FooParameters::window>(
+            config::field<"window", &self::window>(
                 "Iterations between two tenure changes"),
-            config::field<"increment", &FooParameters::increment>(
+            config::field<"increment", &self::increment>(
                 "Growth of the tenure when the costs fluctuate little (the initial tenure)"),
-            config::field<"fluctuation", &FooParameters::fluctuation>(
+            config::field<"fluctuation", &self::fluctuation>(
                 "Spread of the costs in a window below which the tenure grows"));
     }
 
@@ -1289,18 +1295,15 @@ struct RandomFooParameters
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
+        using self = RandomFooParameters;
         return config::fields(
-            config::field<"min_window", &RandomFooParameters::min_window>(
-                "Smallest window"),
-            config::field<"max_window", &RandomFooParameters::max_window>(
-                "Largest window"),
-            config::field<"min_increment", &RandomFooParameters::min_increment>(
-                "Smallest increment"),
-            config::field<"max_increment", &RandomFooParameters::max_increment>(
-                "Largest increment"),
-            config::field<"min_fluctuation", &RandomFooParameters::min_fluctuation>(
+            config::field<"min_window", &self::min_window>("Smallest window"),
+            config::field<"max_window", &self::max_window>("Largest window"),
+            config::field<"min_increment", &self::min_increment>("Smallest increment"),
+            config::field<"max_increment", &self::max_increment>("Largest increment"),
+            config::field<"min_fluctuation", &self::min_fluctuation>(
                 "Smallest fluctuation threshold"),
-            config::field<"max_fluctuation", &RandomFooParameters::max_fluctuation>(
+            config::field<"max_fluctuation", &self::max_fluctuation>(
                 "Largest fluctuation threshold"));
     }
 
@@ -1454,17 +1457,15 @@ struct TabuSearchParameters
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
+        using self = TabuSearchParameters;
         return config::fields(
-            config::field<
-                "max_idle_iterations",
-                &TabuSearchParameters::max_idle_iterations>(
+            config::field<"max_idle_iterations", &self::max_idle_iterations>(
                 "Maximum number of iterations without improving the best cost"),
-            config::field<"max_iterations", &TabuSearchParameters::max_iterations>(
+            config::field<"max_iterations", &self::max_iterations>(
                 "Maximum number of iterations (0: no limit)"),
-            config::field<"max_evaluations", &TabuSearchParameters::max_evaluations>(
+            config::field<"max_evaluations", &self::max_evaluations>(
                 "Maximum number of solution evaluations (0: no budget)"),
-            config::group<"tabu_list", &TabuSearchParameters::tabu_list>(
-                "The tabu list"));
+            config::group<"tabu_list", &self::tabu_list>("The tabu list"));
     }
 
     // The tabu list is validated as a group.
@@ -1494,25 +1495,17 @@ struct FirstImprovementTabuSearchParameters
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
+        using self = FirstImprovementTabuSearchParameters;
         return config::fields(
-            config::field<
-                "max_idle_iterations",
-                &FirstImprovementTabuSearchParameters::max_idle_iterations>(
+            config::field<"max_idle_iterations", &self::max_idle_iterations>(
                 "Maximum number of iterations without improving the best cost"),
-            config::field<
-                "max_iterations",
-                &FirstImprovementTabuSearchParameters::max_iterations>(
+            config::field<"max_iterations", &self::max_iterations>(
                 "Maximum number of iterations (0: no limit)"),
-            config::field<
-                "max_evaluations",
-                &FirstImprovementTabuSearchParameters::max_evaluations>(
+            config::field<"max_evaluations", &self::max_evaluations>(
                 "Maximum number of solution evaluations (0: no budget)"),
-            config::field<
-                "improve_on_best",
-                &FirstImprovementTabuSearchParameters::improve_on_best>(
+            config::field<"improve_on_best", &self::improve_on_best>(
                 "Stop the scan at a move improving the best cost, not the current one"),
-            config::group<"tabu_list", &FirstImprovementTabuSearchParameters::tabu_list>(
-                "The tabu list"));
+            config::group<"tabu_list", &self::tabu_list>("The tabu list"));
     }
 
     [[nodiscard]]
