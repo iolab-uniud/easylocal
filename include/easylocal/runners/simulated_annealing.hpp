@@ -1521,8 +1521,7 @@ public:
             calibrate(run, temperature, solution, current, rng);
         temperature.reset();
 
-        auto best_solution = solution;
-        auto best_cost = current.cost();
+        best_so_far best{solution, current.cost()};
 
         while (!temperature.finished() && !run.should_stop())
         {
@@ -1545,19 +1544,13 @@ public:
             {
                 run.commit(solution, current, std::move(candidate), *move);
 
-                if (run.better(current.cost(), best_cost))
-                {
-                    const auto previous_best = best_cost;
-                    best_solution = solution;
-                    best_cost = current.cost();
-                    run.incumbent_updated(previous_best, best_cost);
-                }
+                best.update(run, solution, current);
             }
 
             temperature.on_iteration(accepted);
         }
 
-        return run.finish(std::move(best_solution), std::move(best_cost));
+        return run.finish(std::move(best.solution), std::move(best.cost));
     }
 
 private:

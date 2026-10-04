@@ -667,4 +667,35 @@ private:
         archive_{};
 };
 
+// The best solution of a run and its cost, for the algorithms that return the
+// best solution they visited rather than the last one:
+//
+//     best_so_far best{solution, current.cost()};
+//     ...
+//     if (best.update(run, solution, current))
+//         idle_iterations = 0;
+//     ...
+//     return run.finish(std::move(best.solution), std::move(best.cost));
+template<class Solution, class Cost>
+struct best_so_far
+{
+    Solution solution;
+    Cost cost;
+
+    // Keeps candidate when current, its evaluation, is better than the best,
+    // and reports the new best to the run (incumbent_updated); true when it
+    // does.
+    template<class Run, class Evaluation>
+    bool update(Run& run, const Solution& candidate, const Evaluation& current)
+    {
+        if (!run.better(current.cost(), cost))
+            return false;
+        const auto previous = cost;
+        solution = candidate;
+        cost = current.cost();
+        run.incumbent_updated(previous, cost);
+        return true;
+    }
+};
+
 } // namespace easylocal

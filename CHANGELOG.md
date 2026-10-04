@@ -80,7 +80,8 @@ old concepts onto the new ones.
   Acceptance Hill Climbing** for multi-objective problems. Writing a new
   runner means writing one `run(...)` function against
   `easylocal::search_run`, which owns counters, evaluation budget,
-  cancellation, progress and trace events.
+  cancellation, progress and trace events, with `best_so_far` for those that
+  return the best solution they visited.
 - Limits on a count (`max_evaluations`, `max_iterations`, TimeBased's
   `accepted_per_temperature`) are `easylocal::limit` values: a number or
   `easylocal::unlimited`, written `unlimited` in configuration files, on the

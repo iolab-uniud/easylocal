@@ -117,15 +117,14 @@ public:
     {
         run.limit_evaluations(parameters_.max_evaluations);
         auto current = run.start(solution);
-        auto best_solution = solution;
-        auto best_cost = current.cost();
+        best_so_far best{solution, current.cost()};
 
         auto level = parameters_.initial_level * static_cast<double>(current.cost());
         std::size_t sampled = 0;
 
         while (!run.should_stop()
-            && level >= parameters_.min_level * static_cast<double>(best_cost)
-            && best_cost > 0)
+            && level >= parameters_.min_level * static_cast<double>(best.cost)
+            && best.cost > 0)
         {
             auto move = run.random_move(solution, rng);
             if (!move.has_value())
@@ -139,13 +138,7 @@ public:
             {
                 run.commit(solution, current, std::move(candidate), *move);
 
-                if (run.better(current.cost(), best_cost))
-                {
-                    const auto previous_best = best_cost;
-                    best_solution = solution;
-                    best_cost = current.cost();
-                    run.incumbent_updated(previous_best, best_cost);
-                }
+                best.update(run, solution, current);
             }
 
             if (++sampled == parameters_.neighbors_sampled)
@@ -155,7 +148,7 @@ public:
             }
         }
 
-        return run.finish(std::move(best_solution), std::move(best_cost));
+        return run.finish(std::move(best.solution), std::move(best.cost));
     }
 
 private:

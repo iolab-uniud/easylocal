@@ -276,6 +276,13 @@ Extra `run` arguments (an RNG, for example) are passed through
 `evaluation` / `candidate` expose `cost()`; `finish` without a reason uses the
 one recorded by `should_stop()`, or `completed`.
 
+An algorithm that returns the best solution it visited, rather than the last,
+keeps it in a `best_so_far{solution, cost}`: `best.update(run, solution,
+current)` copies the solution when its evaluation is better than the best,
+emits `incumbent_updated`, and returns whether it did; at the end
+`run.finish(std::move(best.solution), std::move(best.cost))`. Late Acceptance,
+Great Deluge, Simulated Annealing and the tabu searches use it.
+
 ## Run options
 
 | Spelling | Effect |

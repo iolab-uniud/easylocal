@@ -89,8 +89,7 @@ public:
     {
         run.limit_evaluations(parameters_.max_evaluations);
         auto current = run.start(solution);
-        auto best_solution = solution;
-        auto best_cost = current.cost();
+        best_so_far best{solution, current.cost()};
 
         std::vector history(parameters_.history_length, current.cost());
         std::size_t position = 0;
@@ -101,8 +100,8 @@ public:
             if (idle_iterations >= parameters_.max_idle_iterations)
             {
                 return run.finish(
-                    std::move(best_solution),
-                    std::move(best_cost),
+                    std::move(best.solution),
+                    std::move(best.cost),
                     termination_reason::idle_limit_reached);
             }
 
@@ -119,12 +118,8 @@ public:
             {
                 run.commit(solution, current, std::move(candidate), *move);
 
-                if (run.better(current.cost(), best_cost))
+                if (best.update(run, solution, current))
                 {
-                    const auto previous_best = best_cost;
-                    best_solution = solution;
-                    best_cost = current.cost();
-                    run.incumbent_updated(previous_best, best_cost);
                     idle_iterations = 0;
                 }
             }
@@ -133,7 +128,7 @@ public:
             position = (position + 1) % history.size();
         }
 
-        return run.finish(std::move(best_solution), std::move(best_cost));
+        return run.finish(std::move(best.solution), std::move(best.cost));
     }
 
 private:

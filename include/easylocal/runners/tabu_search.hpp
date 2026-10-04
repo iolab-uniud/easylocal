@@ -1541,8 +1541,7 @@ struct tabu_run
 {
     typename Run::solution_type solution;
     typename Run::evaluation_type current;
-    typename Run::solution_type best_solution;
-    typename Run::cost_type best_cost;
+    best_so_far<typename Run::solution_type, typename Run::cost_type> best;
     ListState list;
     std::size_t idle_iterations{};
 };
@@ -1586,14 +1585,12 @@ public:
     {
         run.limit_evaluations(max_evaluations_);
         auto current = run.start(solution);
-        auto best_cost = current.cost();
-        auto best_solution = solution;
+        auto best = best_so_far{solution, current.cost()};
         using list_type = decltype(tabu_list_.template make_state<Run>());
         tabu_run<Run, list_type> state{
             .solution = std::move(solution),
             .current = std::move(current),
-            .best_solution = std::move(best_solution),
-            .best_cost = std::move(best_cost),
+            .best = std::move(best),
             .list = tabu_list_.template make_state<Run>(),
         };
         if constexpr (requires { state.list.current_tenure(); })
@@ -1684,14 +1681,14 @@ public:
                 ? std::move(*evaluated)
                 : run.evaluate_move(state.solution, state.current, move);
             if (tenure.has_value()
-                && !aspiration_.overrides(run, candidate.cost(), state.best_cost))
+                && !aspiration_.overrides(run, candidate.cost(), state.best.cost))
             {
                 continue;
             }
 
             on_admissible(move, candidate.cost(), here);
             const auto stop =
-                stop_at(run, candidate.cost(), state.current.cost(), state.best_cost);
+                stop_at(run, candidate.cost(), state.current.cost(), state.best.cost);
             if (!result.chosen.has_value()
                 || run.better(candidate.cost(), result.chosen->cost()))
             {
@@ -1778,7 +1775,7 @@ public:
     [[nodiscard]]
     auto finish(Run& run, State& state) const
     {
-        return run.finish(std::move(state.best_solution), std::move(state.best_cost));
+        return run.finish(std::move(state.best.solution), std::move(state.best.cost));
     }
 
     template<class Run, class State>
@@ -1786,11 +1783,11 @@ public:
     auto finish(Run& run, State& state, const termination_reason reason) const
     {
         return run
-            .finish(std::move(state.best_solution), std::move(state.best_cost), reason);
+            .finish(std::move(state.best.solution), std::move(state.best.cost), reason);
     }
 
     // The search of the runners that scan the whole neighborhood: make_stop(run,
-    // best_cost) gives, for each scan, the callable that decides at each
+    // best.cost) gives, for each scan, the callable that decides at each
     // admissible candidate whether the scan stops there.
     template<class Run, class RNG, class MakeStop>
     [[nodiscard]]
@@ -1810,7 +1807,7 @@ public:
                 run,
                 state,
                 run.moves(state.solution),
-                make_stop(run, state.best_cost),
+                make_stop(run, state.best.cost),
                 rng,
                 [](const auto&...) {});
             if (result.interrupted)
@@ -1835,12 +1832,8 @@ private:
     {
         run.next_iteration();
         run.commit(state.solution, state.current, std::move(candidate), move);
-        if (run.better(state.current.cost(), state.best_cost))
+        if (state.best.update(run, state.solution, state.current))
         {
-            const auto previous_best = state.best_cost;
-            state.best_solution = state.solution;
-            state.best_cost = state.current.cost();
-            run.incumbent_updated(previous_best, state.best_cost);
             state.idle_iterations = 0;
         }
         else
@@ -2189,7 +2182,7 @@ public:
         {
             if (const auto reason = engine_.limit_reached(run, state))
                 return engine_.finish(run, state, *reason);
-            const auto level = quality_ * static_cast<double>(state.best_cost);
+            const auto level = quality_ * static_cast<double>(state.best.cost);
 
             // The kept moves still valid, while the best is good enough.
             std::erase_if(elite, [&](const move_type& move) {
