@@ -400,14 +400,14 @@ run_profile() {
     echo
     echo "==> Test: ${build_dir}"
     if [[ "$RUN_INTEGRATION" == on ]]; then
-        ctest --test-dir "$build_dir" --output-on-failure
+        ctest --test-dir "$build_dir" --output-on-failure -j
     else
-        ctest --test-dir "$build_dir" --output-on-failure -LE integration
+        ctest --test-dir "$build_dir" --output-on-failure -j -LE integration
         if [[ "$rest" == on ]]; then
             echo
             echo "==> REST HTTP integration: ${build_dir}"
             ctest --test-dir "$build_dir" \
-                --output-on-failure \
+                --output-on-failure -j \
                 --no-tests=ignore \
                 -L rest-http
         fi

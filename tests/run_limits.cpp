@@ -283,14 +283,14 @@ int main()
         "a MultiStart stops at the solve's time limit");
 
     // A stage's own limit ends that stage; the next one has what is left of
-    // the solve's limit.
+    // the solve's limit, wide enough to leave it time on a busy machine.
     auto timed = solvers::pipeline(
-        solvers::stage("first", runner) & solvers::timeout(30ms),
+        solvers::stage("first", runner) & solvers::timeout(100ms),
         solvers::stage("second", runner));
     const auto pipeline_started = clock::now();
     const auto staged =
         timed.initialization(el::initialization::initial)
-            .solve(instance, el::timeout(120ms));
+            .solve(instance, el::timeout(400ms));
     const auto pipeline_elapsed = clock::now() - pipeline_started;
     ok &= expect(
         staged.stages.size() == 2
@@ -299,7 +299,7 @@ int main()
             && staged.termination == el::termination_reason::time_limit_reached,
         "both stages stop at a time limit");
     ok &= expect(
-        pipeline_elapsed >= 120ms && pipeline_elapsed < 5s,
+        pipeline_elapsed >= 400ms && pipeline_elapsed < 5s,
         "a pipeline lasts about the solve's time limit");
     ok &= expect(
         staged.stages[0].evaluations < staged.evaluations,

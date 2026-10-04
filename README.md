@@ -621,25 +621,12 @@ documentation. They are regression diagnostics, with no pass/fail threshold.
 
 ## Tests
 
-The current tests cover:
-
-- toolchain/C++23 support;
-- public-header self-containment;
-- multi-translation-unit linking;
-- the assignment MWE model contract, including value semantics, structural
-  validity, full evaluation, and coexistence of managers bound to different
-  instances;
-- deterministic range-based neighborhood traversal, move application, and
-  composition with standard range filters;
-- deterministic n-ary neighborhood union, including heterogeneous move types
-  and transparent use through the public `Runner`;
-- single random proposals through `random_move(solution, rng)` and deterministic
-  seeded proposal behavior;
-- n-ary neighborhood-union random proposals, including explicit child-selection
-  biases;
-- per-component delta propagation through neighborhood unions, including nested
-  unions and full-evaluation fallback when a child lacks a component delta;
-- public First/Best Improvement and Simulated Annealing integration through the Runner.
+The tests are registered in `tests/CMakeLists.txt`, one per contract: the
+library's components, its runners and solvers, the apps and their tools, the
+examples, the documentation's snippets, header self-containment and the
+installed package; compile-fail tests check the diagnostics of misuse. Labels
+group them: `integration` for the slower end-to-end ones, `tui-e2e` for the
+TextUI (`ctest -L tui-e2e`), `irace` for the irace smoke test.
 
 EasyLocal also provides framework-agnostic checks for user-defined services:
 
@@ -663,7 +650,7 @@ return easylocal::testing::run_checks(
 CTest is the common test entry point locally and in CI:
 
 ```sh
-ctest --preset dev --output-on-failure
+ctest --preset dev --output-on-failure -j
 ```
 
 Tests are named after stable contracts/responsibilities rather than development
