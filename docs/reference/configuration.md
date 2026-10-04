@@ -73,7 +73,7 @@ prefix.
 | `neighborhood<NHE>(parameters, args...)` for an explorer with `parameters_type` | the explorer's parameters |
 | `runner.configuration()` | `search.*`, `cost.*`, `neighborhood.*` |
 | an app, `app.configuration()` (also a `Session`'s) | `cost.*`, `neighborhood.*`, `runners.<name>.*` |
-| `MultiStart`, `LocalSearch`, `TwoStage` solvers | `starts` and the runner's (MultiStart), the runner's (LocalSearch), `first.*` and `second.*` (TwoStage) |
+| `MultiStart`, `LocalSearch`, `Pipeline` solvers | `starts` and the runner's (MultiStart), the runner's (LocalSearch), each stage's runner and `attempts` under its name (Pipeline; `first.*` and `second.*` for `two_stage()`) |
 
 ## Frontends
 

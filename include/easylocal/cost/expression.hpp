@@ -18,8 +18,9 @@
 /// - cost::in_order(children...)  cost::lexicographic of the children's costs;
 /// - cost::objectives(children...) cost::pareto of the children's costs,
 ///                                compared by Pareto dominance;
-/// - cost::hard_soft(hard, soft)  cost::hierarchical; TwoStage evaluates only
-///                                the components under `hard` in its first stage;
+/// - cost::hard_soft(hard, soft)  cost::hierarchical; a pipeline stage
+///                                until_feasible() evaluates only the
+///                                components under `hard`;
 /// - cost::apply(f, children...)  f(costs...), any user function; f may also
 ///                                define better / equivalent /
 ///                                better_or_equivalent (at the root) and
@@ -139,8 +140,8 @@ constexpr objectives_expression<Children...> objectives(Children... children)
 
 /// A `cost::hierarchical` of the costs of `hard` and `soft`.
 ///
-/// At the root of the expression, TwoStage evaluates only the components under
-/// `hard` in its first stage.
+/// At the root of the expression, a pipeline stage until_feasible() (the first
+/// stage of solvers::two_stage()) evaluates only the components under `hard`.
 template<class Hard, class Soft>
 [[nodiscard]]
 constexpr hard_soft_expression<Hard, Soft> hard_soft(Hard hard, Soft soft)

@@ -34,7 +34,7 @@ applied before CLI values, so explicit CLI options win:
 ```
 
 The two-stage search on the hard cost and then on the whole cost, with
-`solvers::TwoStage`, is shown by the tutorial's `staged_main.cpp`.
+`solvers::two_stage()`, is shown by the tutorial's `staged_main.cpp`.
 
 The example deliberately uses the recipe/pipeline API rather than constructing
 framework services manually, so it is suitable as a minimal starting point for
@@ -137,7 +137,8 @@ The framework cost models (`easylocal::cost`) provide:
 `HardCost`; `cost::apply` applies it to the capacity component, and
 `cost::hard_soft` puts that branch above `LoadImbalanceCostComponent` in the
 full `hierarchical` cost. Because the hard branch is written in the
-expression, TwoStage evaluates only the capacity component in its first stage.
+expression, `two_stage()` evaluates only the capacity component in its first
+stage.
 The two branches remain independently typed and may themselves be sums or
 lexicographic costs. `assignment_cost()` in `cost.hpp` returns this expression;
 the programs and the tests use it.
@@ -331,21 +332,18 @@ auto runner =
              component<LoadImbalanceCostComponent>()))
     | neighborhood<ReassignJobNeighborhoodExplorer>();
 
-auto solver = make_solver<solvers::TwoStage>(
-    std::move(runner),
-    solvers::TwoStageConfig<initialization::Initial>{
-        .initialization = initialization::initial,
-    });
+auto solver = solvers::two_stage(std::move(runner))
+                  .initialization(initialization::initial);
 
 auto result = solver.solve(instance);
 ```
 
 `bind(instance)` materializes an instance-bound graph owned by an internal,
 non-movable bound runner: first the solution manager, then the neighborhood
-explorer. For the hierarchical Assignment model, `solvers::TwoStage` derives the first-stage
-hard view automatically and reuses the full runner for the second stage. When
-both stages share the same runner, the one-runner factory overload copies the
-configuration internally, keeping the user-facing construction concise.
+explorer. For the hierarchical Assignment model, `solvers::two_stage()` derives
+the first-stage hard view automatically (`until_feasible()`) and reuses the full
+runner for the second stage. When both stages share the same runner, the
+one-runner overload copies it, keeping the user-facing construction concise.
 Service construction state remains reusable before an instance is loaded, while
 ownership and graph consistency remain internal to the runner/solver.
 

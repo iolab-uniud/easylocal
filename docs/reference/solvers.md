@@ -1,7 +1,7 @@
 # Solvers
 
 `<easylocal/solvers.hpp>`; `solvers/local_search.hpp`, `solvers/multi_start.hpp`,
-`solvers/two_stage.hpp`, `solvers/initialization.hpp`
+`solvers/pipeline.hpp`, `solvers/two_stage.hpp`, `solvers/initialization.hpp`
 
 A solver goes from an Input to a final solution. It owns the RNG, builds the
 initial solutions and orchestrates its runners.
@@ -27,26 +27,66 @@ directly: `solvers::X<Runner, RNG>{runner, ..., RNG{seed}}`.
 | --- | --- | --- |
 | `solvers::LocalSearch` | `LocalSearchConfig{initialization, seed}` | one initial solution, one run |
 | `solvers::MultiStart` | `MultiStartConfig{parameters = {starts}, initialization, seed}` | up to `starts` runs from fresh solutions, keeps the best by cost semantics |
-| `solvers::TwoStage` | `TwoStageConfig{initialization, seed}` | stage 1 on the hard cost (`runner.with_hard_cost()`) until it reaches zero, stage 2 on the full cost from the stage-1 solution |
+| `solvers::Pipeline` | built with `pipeline() \| stage(...)` (below) | runners in sequence, each stage from the solution of the previous one |
 
 Results carry the effort of the whole solve: `evaluations` and `iterations`
-add up over MultiStart's starts and TwoStage's stages.
+add up over MultiStart's starts and a pipeline's stages and attempts.
 
 `MultiStart` ends early when a start is cancelled or reaches the target; its
 termination is then `cancelled` or `target_reached`, otherwise `completed`.
 
-`TwoStage` takes one runner (used for both stages) or two. It requires a
-`cost::hierarchical` cost. With a `cost::hard_soft` cost expression the first
-stage evaluates only the components of the hard branch; with another
-expression producing a hierarchical cost it evaluates them all and keeps the
-hard part. Stage 1 always stops
-at `cost::zero` of the hard cost — a feasible solution — and a caller's target
-applies to stage 2. After a cancellation in stage 1, stage 2 only evaluates
-the solution, so the result still has its full cost.
+## Pipeline
+
+A pipeline runs its stages in order over the same Input and Solution: the
+first from an initial solution, each other from the solution of the previous
+one. A stage is any runner, with its own recipes (cost, neighborhood), named:
+
+```cpp
+auto solver = solvers::pipeline()
+    | solvers::stage("feasible", descent).until_feasible().attempts(10)
+    | solvers::stage("descent", descent)
+    | solvers::stage("anneal", annealing);
+auto result = solver.initialization(initialization::random).seed(7).solve(input);
+```
+
+`solvers::pipeline(a, b, c)` is `pipeline() | a | b | c`. The stages must have
+the same Input and Solution (checked at compile time); their costs may differ.
+
+| Stage option | Effect |
+| --- | --- |
+| `.stop_at(target)` | the stage stops as soon as its best cost reaches `target`, in the stage's own cost |
+| `.until_feasible()` | the stage runs `runner.with_hard_cost()` until the hard cost is zero; requires a `cost::hierarchical` cost |
+| `.attempts(n)` | up to `n` runs while the target is not reached, keeping the best; the first stage starts each from a new initial solution, the others from the solution they received |
+
+With a `cost::hard_soft` cost expression, `until_feasible()` evaluates only the
+components of the hard branch, and deltas attached to soft components are
+ignored; with another expression producing a hierarchical cost it evaluates
+them all and keeps the hard part.
+
+The pipeline's `.initialization(...)` and `.seed(...)` return the pipeline;
+by default it starts from a random solution when the first stage supports it.
+A caller's target applies to the last stage, unless that stage has its own.
+After a cancellation the remaining stages stop at once, so the result still
+has the last stage's cost.
+
+The result is the last stage's, with the effort of every stage and attempt,
+and `result.stages`: per stage its name, attempts, evaluations, iterations,
+termination and cost (as `cost::to_text` writes it).
+
+The parameters (`configuration()`) are each stage's under its name: its
+runner's (`<name>.search.*`, `<name>.cost.*`, ...) and `<name>.attempts`.
+Stage names must be distinct and non-empty.
+
+### two_stage()
+
+`solvers::two_stage(first, second)` is the pipeline of the hierarchical
+hard/soft model: `stage("first", first).until_feasible()`, then
+`stage("second", second)` on the whole cost. `two_stage(runner)` uses the same
+runner for both. Its parameters are `first.*` and `second.*`.
 
 All solvers expose `supports_initial`, `supports_random`,
 `supports(initialization::Mode)`, `initialization_mode()` (get and set) and
-`rng()`.
+`rng()`; for a pipeline they refer to its first stage.
 
 ## Initialization
 
@@ -63,5 +103,6 @@ There is never an implicit fallback from one mode to the other.
   random-aware runners, so a seed reproduces the whole solve.
 - **Runners stay solution-to-solution.** Construction belongs to solvers, which
   keeps runners composable.
-- **TwoStage is specific on purpose.** It targets the hierarchical hard/soft
-  model rather than being a generic pipeline of runners.
+- **One way to chain runners.** The hierarchical hard/soft model is a pipeline
+  of two stages, so `two_stage()` and a longer pipeline share their options,
+  their result and their parameters.

@@ -202,7 +202,7 @@ inline constexpr bool delta_component_active_v =
         typename SM::component_types>;
 
 // A component of the recipe that a projection leaves out, such as a soft
-// component in the hard-cost projection of TwoStage's first stage: its delta
+// component in the hard-cost projection of with_hard_cost(): its delta
 // belongs to the recipe but is not used by the projected SolutionManager.
 template<class SM, class Binding>
 consteval bool delta_component_projected_out()

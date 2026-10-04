@@ -105,12 +105,10 @@ int main(int argc, char* argv[])
     // EasyLocal 3's two solvers, one per SolutionManager, and the Resolve that
     // passed the solution from one to the other: the descent on the hard cost
     // from a random tour until it is feasible, then on the whole cost.
-    auto stages = el::make_solver<el::solvers::TwoStage>(
-        descent,
-        el::solvers::TwoStageConfig<el::initialization::Random>{
-            .initialization = el::initialization::random,
-            .seed = main_parameters.seed,
-        });
+    auto stages =
+        el::solvers::two_stage(descent)
+            .initialization(el::initialization::random)
+            .seed(main_parameters.seed);
     const auto result = stages.solve(tsp);
     // [staged-run] ---------------------------------------------------------
 

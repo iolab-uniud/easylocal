@@ -20,7 +20,7 @@ A problem is described by a few components — a solution manager, cost
 components, neighborhood explorers and their delta costs — and generic runners
 (First and Best Improvement, Hill Climbing, Late Acceptance, Great Deluge,
 Simulated Annealing, Tabu Search, and Pareto Late Acceptance for several
-objectives) and solvers (LocalSearch, MultiStart, TwoStage) search it. Optional components add an interactive
+objectives) and solvers (LocalSearch, MultiStart, Pipeline) search it. Optional components add an interactive
 terminal tester, a REST service and TOML configuration.
 
 New to the library? Start with the [quick start](docs/quick-start.md), then
@@ -321,7 +321,7 @@ solution semantics. The recipe holds one **cost expression** whose leaves are
 the components: a single `component<C>()` is the cost, and several are combined
 by `cost::sum` (with weighted terms `component<C>() * w`, weights configurable
 as `cost.weights`), `cost::in_order` (lexicographic), `cost::hard_soft`
-(hierarchical, the hard components evaluated alone by TwoStage) and
+(hierarchical, the hard components evaluated alone by `two_stage()`) and
 `cost::apply` (any function), nested freely. `cost::sum` adds numbers only, so
 domain value types never need arithmetic operators just to be summed. TSP
 maps its domain value with `cost::apply`, Exam Timetabling uses a weighted

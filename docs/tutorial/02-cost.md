@@ -125,8 +125,8 @@ auto sm = el::solution_manager<TimetableManager>()
 - `cost::sum` adds numbers. A component with a domain value is turned into one
   with `cost::apply`, for example
   `cost::apply([](const Load& l) { return l.overload; }, component<Capacity>())`.
-- `TwoStage` (see [Solvers](08-solvers.md)) evaluates only the components of
-  the `hard` branch in its first stage.
+- `solvers::two_stage()` (see [Solvers](08-solvers.md)) evaluates only the
+  components of the `hard` branch in its first stage.
 
 ## Structured costs
 

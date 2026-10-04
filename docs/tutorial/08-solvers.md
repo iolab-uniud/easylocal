@@ -40,7 +40,7 @@ The built-in solvers live in `easylocal::solvers`:
 | --- | --- | --- |
 | `LocalSearch` | builds an initial solution, runs once | the chosen initialization |
 | `MultiStart` | `starts` independent runs, keeps the best | the chosen initialization |
-| `TwoStage` | first stage on the hard cost until it is zero, second on the full cost | a `cost::hierarchical` cost, best from a `cost::hard_soft` expression |
+| `Pipeline` | runners in sequence, each stage from the solution of the previous one | stages with the same Input and Solution |
 
 - The initialization is chosen statically, with `initialization::initial` or
   `initialization::random` checked at compile time against the
@@ -52,9 +52,10 @@ The built-in solvers live in `easylocal::solvers`:
 
 ## Hard and soft costs
 
-`TwoStage` is for problems whose cost is written with `cost::hard_soft`
-([chapter 2](02-cost.md#cost-expressions)): it first removes the violations,
-then optimizes the full cost from the feasible solution it found.
+`solvers::two_stage()` is for problems whose cost is written with
+`cost::hard_soft` ([chapter 2](02-cost.md#cost-expressions)): it first removes
+the violations, then optimizes the full cost from the feasible solution it
+found.
 
 ```cpp
 auto sm = el::solution_manager<TimetableManager>()
@@ -63,12 +64,11 @@ auto sm = el::solution_manager<TimetableManager>()
                             el::component<Unavailability>()),
               el::component<Compactness>() * 2);
 
-auto solver = el::make_solver<el::solvers::TwoStage>(
-    el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
-        | sm | nhe,
-    el::solvers::TwoStageConfig<el::initialization::Initial>{
-        .initialization = el::initialization::initial,
-    });
+auto solver = el::solvers::two_stage(
+                  el::make_runner<runners::FirstImprovement>(
+                      runners::FirstImprovementParameters{})
+                  | sm | nhe)
+                  .initialization(el::initialization::initial);
 ```
 
 - The first stage evaluates only the components of the `hard` branch, read
@@ -77,6 +77,28 @@ auto solver = el::make_solver<el::solvers::TwoStage>(
   where a hard degradation is never accepted.
 - The Assignment example (`examples/assignment/main.cpp`) is a complete
   program.
+
+## Several stages
+
+`two_stage()` is a pipeline of two stages. A pipeline chains any number of
+runners, each with its own name, cost and neighborhood, over the same
+solution:
+
+```cpp
+auto solver = el::solvers::pipeline()
+    | el::solvers::stage("feasible", descent).until_feasible().attempts(10)
+    | el::solvers::stage("descent", descent)
+    | el::solvers::stage("anneal", annealing);
+auto result = solver.seed(7).solve(input);
+```
+
+- `until_feasible()` runs the stage on the hard cost until it is zero;
+  `stop_at(target)` stops a stage at another target, in its own cost.
+- `attempts(10)` repeats the stage, here from a new random solution, while it
+  has not reached its target, and keeps the best run.
+- `result.stages` reports each stage (attempts, effort, termination, cost),
+  and the parameters of a stage are under its name (`anneal.search.*`,
+  `feasible.attempts`).
 
 ## See also
 

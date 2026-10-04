@@ -59,8 +59,8 @@ old concepts onto the new ones.
   `cost::sum` with weighted terms (`component<C>() * w`, or
   `cost::weighted(component<C>(), w)`), `cost::in_order`,
   `cost::objectives`, `cost::hard_soft` and `cost::apply`, nested freely; their weights are
-  configuration parameters, and TwoStage reads the hard components from a
-  `cost::hard_soft` expression.
+  configuration parameters, and a pipeline stage `until_feasible()` reads the
+  hard components from a `cost::hard_soft` expression.
 
 ### Runners and solvers
 
@@ -90,9 +90,14 @@ old concepts onto the new ones.
 - Every runner is cancellable through a `std::stop_token`, reports progress,
   can stop at a target cost (`stop_at(cost)`) and returns a `search_result`
   with its `termination_reason` (`to_string` gives a readable name).
-- Solvers: **LocalSearch**, **MultiStart** and **TwoStage** (hard constraints
-  first, until the hard cost is zero, then the full cost), with pluggable
-  initialization. Solvers take the same run options as runners —
+- Solvers: **LocalSearch**, **MultiStart** and **Pipeline**, with pluggable
+  initialization. A pipeline (`pipeline() | stage(name, runner) | ...`, or
+  `pipeline(stages...)`) runs runners with their own recipes in sequence over
+  the same solution; a stage may stop at a target (`stop_at`, or
+  `until_feasible()` on the hard cost until it is zero) and be repeated
+  (`attempts`), and the result reports every stage. `two_stage(first,
+  second)` is the pipeline of the hard/soft model: hard constraints first,
+  until the hard cost is zero, then the full cost. Solvers take the same run options as runners —
   cancellation, tracer, target — and report the effort of all their runs.
 - Runners and solvers are built with `make_runner<Algorithm>(...)` /
   `make_solver<Solver>(...)`, where the algorithm class is its own key, and

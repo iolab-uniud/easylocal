@@ -992,20 +992,18 @@ if (main_parameters.evaluations_per_city != 0)
         main_parameters.evaluations_per_city * tsp.cities();
 ```
 
-`solvers::TwoStage` replaces the two solvers and the `Resolve` that passed the
-solution from one to the other:
+`solvers::two_stage()` replaces the two solvers and the `Resolve` that passed
+the solution from one to the other:
 
 <!-- snippet: tutorial/staged_main.cpp:staged-run -->
 ```cpp title="EasyLocal 4"
 // EasyLocal 3's two solvers, one per SolutionManager, and the Resolve that
 // passed the solution from one to the other: the descent on the hard cost
 // from a random tour until it is feasible, then on the whole cost.
-auto stages = el::make_solver<el::solvers::TwoStage>(
-    descent,
-    el::solvers::TwoStageConfig<el::initialization::Random>{
-        .initialization = el::initialization::random,
-        .seed = main_parameters.seed,
-    });
+auto stages =
+    el::solvers::two_stage(descent)
+        .initialization(el::initialization::random)
+        .seed(main_parameters.seed);
 const auto result = stages.solve(tsp);
 ```
 
@@ -1014,9 +1012,17 @@ const auto result = stages.solve(tsp);
   continues from its solution on the whole cost.
 - A delta attached to a soft component, `TwoOptLengthDelta` here, is ignored by
   the first stage and used by the second.
-- One runner serves both stages; `make_solver<solvers::TwoStage>(first, second,
-  config)` takes two, for example with different parameters or neighborhoods.
-- `result.iterations` and `result.evaluations` add up both stages.
+- One runner serves both stages; `two_stage(first, second)` takes two, for
+  example with different parameters or neighborhoods.
+- `result.iterations` and `result.evaluations` add up both stages, and
+  `result.stages` reports each one.
+- `two_stage()` is a pipeline of two stages,
+  `solvers::pipeline() | solvers::stage("first", descent).until_feasible() |
+  solvers::stage("second", descent)`: a solver of more stages, each with its
+  own runner, neighborhood and cost, is written the same way (see
+  [Solvers](reference/solvers.md)). A stage can also be repeated:
+  `.attempts(10)` on the first one restarts it from new random tours while the
+  tour is not feasible.
 
 The report reads the cost by branch and evaluates each component directly:
 components are plain classes, constructed from the Input:

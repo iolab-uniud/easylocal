@@ -53,7 +53,8 @@ solution_manager<SM>()
   number with `cost::apply`. A weighted term, `cost::weighted(child, w)` or its
   shorthand `child * w`, is allowed only directly inside a `cost::sum`.
 - The components of the `hard` branch of a `cost::hard_soft` at the root come
-  first: TwoStage evaluates only them in its first stage.
+  first: a pipeline stage `until_feasible()` (the first stage of
+  `two_stage()`) evaluates only them.
 - At the root, the function of a `cost::apply` may define `better`,
   `equivalent` and `better_or_equivalent` (see Cost semantics).
 - Configuration: the expression is exposed under `cost`. A `sum` has its
@@ -153,8 +154,8 @@ ADL (call it as `using cost::delta; delta(a, b)`). The concept
 value-initializable types (0 for arithmetic costs) and the zero of every level
 for `lexicographic`, `hierarchical` and `pareto` costs. Other cost types provide it by
 specializing `cost::zero_cost<Cost>` with a static `value()`;
-`cost::has_zero<Cost>` tells whether it exists. TwoStage stops its first stage
-at the zero of the hard cost.
+`cost::has_zero<Cost>` tells whether it exists. A pipeline stage
+`until_feasible()` stops at the zero of the hard cost.
 
 ### Costs as text
 
@@ -195,7 +196,8 @@ three relations are deliberately independent queries.
 - **The structure of the cost is written in the recipe.** Which components
   are hard and which soft, their order and their weights are read where the
   components are listed, not deduced from a declaration order and a separate
-  list of weights. TwoStage reads the hard components from the expression.
+  list of weights. `until_feasible()` reads the hard components from the
+  expression.
 - **Weights sit beside their term.** `component<C>() * w` cannot drift out of
   line with the components, as positional weights can. The `*` only marks a
   term of a `cost::sum`: it never multiplies component values, so domain types

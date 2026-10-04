@@ -7,8 +7,8 @@
 // evaluates them into a tuple of component values; cost_layer_with_expression
 // computes the cost from those values through the cost expression of the
 // recipe. hard_cost_layer projects a hierarchical cost onto its hard branch for
-// TwoStage, evaluating only the hard components when the expression has a
-// hard_soft root.
+// with_hard_cost(), evaluating only the hard components when the expression has
+// a hard_soft root.
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
@@ -318,7 +318,7 @@ private:
 };
 
 // A composed SolutionManager whose cost is hierarchical (hard and soft), the
-// cost TwoStage requires.
+// cost with_hard_cost() requires.
 template<class SM>
 concept hierarchical_solution_manager =
     requires { typename SM::cost_type; } &&
@@ -344,7 +344,7 @@ template<class SM>
 using hard_layer_base_t = typename hard_layer_base<SM>::type;
 
 // The hard-cost projection of a SolutionManager with a hierarchical cost, for
-// TwoStage's first stage: the same solutions, with the hard branch as cost.
+// with_hard_cost(): the same solutions, with the hard branch as cost.
 template<class SM>
 class hard_cost_layer_base : public solution_manager_layer<SM, hard_layer_base_t<SM>>
 {

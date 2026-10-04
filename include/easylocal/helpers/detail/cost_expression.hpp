@@ -529,7 +529,7 @@ public:
 };
 
 // Hierarchical: the hard branch has strict priority. Its components are the
-// leading ones, so TwoStage can evaluate them alone.
+// leading ones, so a stage on the hard cost can evaluate them alone.
 template<class Hard, class Soft, class Solution>
 class cost_node<cost::hard_soft_expression<Hard, Soft>, Solution>
 {
