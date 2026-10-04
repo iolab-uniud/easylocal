@@ -6,6 +6,7 @@
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
 #include <easylocal/runners/search_run.hpp>
+#include <easylocal/utils/limit.hpp>
 
 #include <cassert>
 #include <concepts>
@@ -21,8 +22,8 @@ struct HillClimbingParameters
     // Consecutive proposals without a strict improvement after which the
     // search stops.
     std::size_t max_idle_iterations{1000};
-    // Evaluation budget, including the initial evaluation; 0 means no budget.
-    std::size_t max_evaluations{0};
+    // Evaluation budget, including the initial evaluation; unlimited by default.
+    limit max_evaluations{unlimited};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -34,7 +35,7 @@ struct HillClimbingParameters
                 "Maximum number of consecutive proposals without "
                 "improvement"),
             config::field<"max_evaluations", &HillClimbingParameters::max_evaluations>(
-                "Maximum number of solution evaluations (0: no budget)"));
+                "Maximum number of solution evaluations, or unlimited"));
     }
 
     [[nodiscard]]
@@ -71,8 +72,7 @@ public:
     [[nodiscard]]
     auto run(Run& run, typename Run::solution_type solution, RNG& rng) const
     {
-        if (parameters_.max_evaluations != 0)
-            run.limit_evaluations(parameters_.max_evaluations);
+        run.limit_evaluations(parameters_.max_evaluations);
         auto current = run.start(solution);
         std::size_t idle_iterations = 0;
 

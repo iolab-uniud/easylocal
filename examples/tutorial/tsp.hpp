@@ -6,6 +6,7 @@
 
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
+#include <easylocal/utils/limit.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -458,7 +459,7 @@ inline bool operator==(const TwoOpt& a, const TwoOpt& b)
 // [custom-runner] ----------------------------------------------------------
 struct RandomDescentParameters
 {
-    std::size_t max_evaluations{1000};
+    easylocal::limit max_evaluations{1000}; // a count, or easylocal::unlimited
 };
 
 class RandomDescent

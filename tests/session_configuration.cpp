@@ -67,7 +67,7 @@ void the_session_lists_the_app_parameters()
     const el::Session session{make_application(), five_cities(), 1};
     const auto parameters = session.configuration();
     assert(value_at(parameters, "cost.weights") == "[1, 10]");
-    assert(value_at(parameters, "runners.fi.max_evaluations") == "0");
+    assert(value_at(parameters, "runners.fi.max_evaluations") == "unlimited");
 }
 
 void runner_parameters_apply_from_the_next_run()

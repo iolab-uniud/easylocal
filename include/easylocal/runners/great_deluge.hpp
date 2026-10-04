@@ -7,6 +7,7 @@
 #include <easylocal/cost/concepts.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
 #include <easylocal/runners/search_run.hpp>
+#include <easylocal/utils/limit.hpp>
 
 #include <cassert>
 #include <cmath>
@@ -29,8 +30,8 @@ struct GreatDelugeParameters
     double level_rate{0.99};
     // Proposals at each level.
     std::size_t neighbors_sampled{100};
-    // Evaluation budget, including the initial evaluation; 0 means no budget.
-    std::size_t max_evaluations{0};
+    // Evaluation budget, including the initial evaluation; unlimited by default.
+    limit max_evaluations{unlimited};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -45,7 +46,7 @@ struct GreatDelugeParameters
             config::field<"neighbors_sampled", &GreatDelugeParameters::neighbors_sampled>(
                 "Number of proposals at each water level"),
             config::field<"max_evaluations", &GreatDelugeParameters::max_evaluations>(
-                "Maximum number of solution evaluations (0: no budget)"));
+                "Maximum number of solution evaluations, or unlimited"));
     }
 
     [[nodiscard]]
@@ -114,8 +115,7 @@ public:
     [[nodiscard]]
     auto run(Run& run, typename Run::solution_type solution, RNG& rng) const
     {
-        if (parameters_.max_evaluations != 0)
-            run.limit_evaluations(parameters_.max_evaluations);
+        run.limit_evaluations(parameters_.max_evaluations);
         auto current = run.start(solution);
         auto best_solution = solution;
         auto best_cost = current.cost();

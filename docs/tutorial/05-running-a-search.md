@@ -21,9 +21,11 @@ Step by step:
 
 1. `make_runner<runners::FirstImprovement>(parameters)` chooses the algorithm
    and holds its parameters. `FirstImprovementParameters{}` keeps the
-   defaults: no budget on the evaluations, so the search runs until a local
-   optimum. Written inline, `make_runner<runners::FirstImprovement>({.max_evaluations = 1000})`
-   sets a budget; `fi.parameters()` reads and changes them later.
+   defaults: no budget on the evaluations (`max_evaluations` is
+   `easylocal::unlimited`, `unlimited` in text), so the search runs until a
+   local optimum. Written inline,
+   `make_runner<runners::FirstImprovement>({.max_evaluations = 1000})` sets a
+   budget; `fi.parameters()` reads and changes them later.
 2. `| sm` gives the runner its SolutionManager, and with it the cost: the
    runner will build tours with `TourManager` and evaluate them with
    `TourLength`.
@@ -67,9 +69,9 @@ The algorithms live in `easylocal::runners`, one header each:
 
 | Algorithm | Header | Needs | Parameters |
 | --- | --- | --- | --- |
-| `FirstImprovement` | `runners/first_improvement.hpp` | `moves` or cursor | `max_evaluations` (0: until a local optimum) |
-| `BestImprovement` | `runners/best_improvement.hpp` | `moves` or cursor | `max_evaluations` (0: until a local optimum) |
-| `HillClimbing` | `runners/hill_climbing.hpp` | `random_move` | `max_idle_iterations`, `max_evaluations` (0: no budget) |
+| `FirstImprovement` | `runners/first_improvement.hpp` | `moves` or cursor | `max_evaluations` (unlimited: until a local optimum) |
+| `BestImprovement` | `runners/best_improvement.hpp` | `moves` or cursor | `max_evaluations` (unlimited: until a local optimum) |
+| `HillClimbing` | `runners/hill_climbing.hpp` | `random_move` | `max_idle_iterations`, `max_evaluations` (unlimited by default) |
 | `LateAcceptanceHillClimbing` | `runners/late_acceptance_hill_climbing.hpp` | `random_move` | `history_length`, `max_idle_iterations`, `max_evaluations` |
 | `GreatDeluge` | `runners/great_deluge.hpp` | `random_move`, an arithmetic cost | `initial_level`, `min_level`, `level_rate`, `neighbors_sampled`, `max_evaluations` |
 | `TabuSearch<List, Aspiration>`, `FirstImprovementTabuSearch<…>`, `AspirationPlusTabuSearch<…>`, `EliteCandidateTabuSearch<…>` | `runners/tabu_search.hpp` | `moves` or cursor, `inverse` | `max_idle_iterations`, `max_iterations`, `max_evaluations`, `tabu_list` |

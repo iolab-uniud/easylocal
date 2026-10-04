@@ -6,6 +6,7 @@
 
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/utils/detail/meta.hpp>
+#include <easylocal/utils/limit.hpp>
 
 #include <algorithm>
 #include <array>
@@ -177,7 +178,21 @@ std::string_view parse_text_value(const std::string_view text, Value& value)
 {
     using value_type = std::remove_cvref_t<Value>;
 
-    if constexpr (std::same_as<value_type, std::filesystem::path>)
+    if constexpr (std::same_as<value_type, easylocal::limit>)
+    {
+        // "unlimited", or a count.
+        if (trim_ascii_space(text) == "unlimited")
+        {
+            value = easylocal::unlimited;
+            return {};
+        }
+        std::size_t count{};
+        if (const auto error = parse_text_value(text, count); !error.empty())
+            return "expected a count or 'unlimited'";
+        value = count;
+        return {};
+    }
+    else if constexpr (std::same_as<value_type, std::filesystem::path>)
     {
         value = std::filesystem::path{std::string{text}};
         return {};
@@ -350,14 +365,21 @@ std::string_view parse_text_value(const std::string_view text, Value& value)
 } // namespace detail
 
 // A parameter value as text, in the syntax parse_text_value reads back:
-// true/false, numbers, [a, b] for arrays and vectors.
+// true/false, numbers, "unlimited" for an unlimited limit, [a, b] for arrays
+// and vectors.
 template<class Value>
 [[nodiscard]]
 std::string format_value(const Value& value)
 {
     using value_type = std::remove_cvref_t<Value>;
 
-    if constexpr (std::same_as<value_type, bool>)
+    if constexpr (std::same_as<value_type, easylocal::limit>)
+    {
+        return value.is_unlimited()
+            ? std::string{"unlimited"}
+            : format_value(static_cast<std::size_t>(value));
+    }
+    else if constexpr (std::same_as<value_type, bool>)
     {
         return value ? "true" : "false";
     }

@@ -2,6 +2,7 @@
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/config/parameters.hpp>
+#include <easylocal/utils/limit.hpp>
 
 #include <array>
 #include <cassert>
@@ -36,13 +37,21 @@ struct SearchParameters
 {
     double cooling_rate{0.9};
     std::array<double, 2> biases{1.0, 1.0};
+    easylocal::limit max_evaluations{100};
+    easylocal::limit max_iterations{100};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
             easylocal::config::field<"cooling_rate", &SearchParameters::cooling_rate>(),
-            easylocal::config::field<"biases", &SearchParameters::biases>());
+            easylocal::config::field<"biases", &SearchParameters::biases>(),
+            easylocal::config::field<
+                "max_evaluations",
+                &SearchParameters::max_evaluations>(),
+            easylocal::config::field<
+                "max_iterations",
+                &SearchParameters::max_iterations>());
     }
 
     [[nodiscard]]
@@ -69,10 +78,12 @@ seed = 2026
 [solver.search]
 cooling_rate = 0.75
 biases = [3.0, 1.0]
+max_evaluations = "unlimited"
+max_iterations = 500
 )toml");
 
     assert(parsed);
-    assert(parsed.overrides.size() == 4);
+    assert(parsed.overrides.size() == 6);
 
     AppParameters app{};
     SearchParameters search{};
@@ -87,6 +98,9 @@ biases = [3.0, 1.0]
     assert(app.seed == 2026);
     assert(search.cooling_rate == 0.75);
     assert((search.biases == std::array<double, 2>{3.0, 1.0}));
+    // A limit is a TOML integer, or the string "unlimited".
+    assert(search.max_evaluations.is_unlimited());
+    assert(search.max_iterations == 500);
 
     const auto malformed = easylocal::config::parse_toml_text("x = [1,");
     assert(!malformed);

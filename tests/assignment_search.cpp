@@ -351,7 +351,7 @@ int main()
         "constructor arguments captured by the runner recipe reach the bound neighborhood");
 
     const auto run_with_budget =
-        [&](const std::size_t max_evaluations, AssignmentSolution solution) {
+        [&](const easylocal::limit max_evaluations, AssignmentSolution solution) {
             auto runner =
                 easylocal::make_runner<FirstImprovement>({
                     .max_evaluations = max_evaluations,
@@ -447,7 +447,7 @@ int main()
         "empty neighborhood is locally optimal even when the budget is exhausted");
 
     const auto run_best_with_budget =
-        [&](const std::size_t max_evaluations, AssignmentSolution solution) {
+        [&](const easylocal::limit max_evaluations, AssignmentSolution solution) {
             auto runner =
                 easylocal::make_runner<BestImprovement>({
                     .max_evaluations = max_evaluations,
@@ -533,15 +533,14 @@ int main()
             easylocal::termination_reason::local_optimum,
         "best improvement recognizes an empty neighborhood as locally optimal");
 
-
-    const auto unbounded = run_with_budget(0, initial);
+    const auto unbounded = run_with_budget(easylocal::unlimited, initial);
     ok &= expect(
         unbounded.termination == easylocal::termination_reason::local_optimum &&
             unbounded.cost == complete.cost &&
             unbounded.evaluations == complete.evaluations,
         "first improvement without a budget runs to a local optimum");
 
-    const auto best_unbounded = run_best_with_budget(0, initial);
+    const auto best_unbounded = run_best_with_budget(easylocal::unlimited, initial);
     ok &= expect(
         best_unbounded.termination == easylocal::termination_reason::local_optimum &&
             best_unbounded.cost == best_complete.cost,

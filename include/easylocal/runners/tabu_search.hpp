@@ -14,6 +14,7 @@
 #include <easylocal/runners/search_run.hpp>
 #include <easylocal/trace/events.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
+#include <easylocal/utils/limit.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -1448,10 +1449,10 @@ struct TabuSearchParameters
 {
     // Iterations without improving the best cost after which the search stops.
     std::size_t max_idle_iterations{1000};
-    // 0: no limit.
-    std::size_t max_iterations{0};
-    // Evaluation budget, including the initial evaluation; 0 means no budget.
-    std::size_t max_evaluations{0};
+    // Iterations in all; unlimited by default.
+    limit max_iterations{unlimited};
+    // Evaluation budget, including the initial evaluation; unlimited by default.
+    limit max_evaluations{unlimited};
     ListParameters tabu_list{};
 
     [[nodiscard]]
@@ -1462,9 +1463,9 @@ struct TabuSearchParameters
             config::field<"max_idle_iterations", &self::max_idle_iterations>(
                 "Maximum number of iterations without improving the best cost"),
             config::field<"max_iterations", &self::max_iterations>(
-                "Maximum number of iterations (0: no limit)"),
+                "Maximum number of iterations, or unlimited"),
             config::field<"max_evaluations", &self::max_evaluations>(
-                "Maximum number of solution evaluations (0: no budget)"),
+                "Maximum number of solution evaluations, or unlimited"),
             config::group<"tabu_list", &self::tabu_list>("The tabu list"));
     }
 
@@ -1485,8 +1486,8 @@ template<class ListParameters>
 struct FirstImprovementTabuSearchParameters
 {
     std::size_t max_idle_iterations{1000};
-    std::size_t max_iterations{0};
-    std::size_t max_evaluations{0};
+    limit max_iterations{unlimited};
+    limit max_evaluations{unlimited};
     // The scan stops at the first admissible move that improves the best cost
     // rather than the current one.
     bool improve_on_best{false};
@@ -1500,9 +1501,9 @@ struct FirstImprovementTabuSearchParameters
             config::field<"max_idle_iterations", &self::max_idle_iterations>(
                 "Maximum number of iterations without improving the best cost"),
             config::field<"max_iterations", &self::max_iterations>(
-                "Maximum number of iterations (0: no limit)"),
+                "Maximum number of iterations, or unlimited"),
             config::field<"max_evaluations", &self::max_evaluations>(
-                "Maximum number of solution evaluations (0: no budget)"),
+                "Maximum number of solution evaluations, or unlimited"),
             config::field<"improve_on_best", &self::improve_on_best>(
                 "Stop the scan at a move improving the best cost, not the current one"),
             config::group<"tabu_list", &self::tabu_list>("The tabu list"));
@@ -1583,8 +1584,7 @@ public:
     [[nodiscard]]
     auto start(Run& run, typename Run::solution_type solution) const
     {
-        if (max_evaluations_ != 0)
-            run.limit_evaluations(max_evaluations_);
+        run.limit_evaluations(max_evaluations_);
         auto current = run.start(solution);
         auto best_cost = current.cost();
         auto best_solution = solution;
@@ -1609,7 +1609,7 @@ public:
     {
         if (state.idle_iterations >= max_idle_iterations_)
             return termination_reason::idle_limit_reached;
-        if (max_iterations_ != 0 && run.iterations() >= max_iterations_)
+        if (run.iterations() >= max_iterations_)
             return termination_reason::completed;
         return std::nullopt;
     }
@@ -1759,8 +1759,7 @@ public:
             }
             for (auto escape = escape_moves; escape > 0; --escape)
             {
-                if (run.should_stop()
-                    || (max_iterations_ != 0 && run.iterations() >= max_iterations_))
+                if (run.should_stop() || run.iterations() >= max_iterations_)
                 {
                     break;
                 }
@@ -1902,8 +1901,8 @@ private:
     }
 
     std::size_t max_idle_iterations_;
-    std::size_t max_iterations_;
-    std::size_t max_evaluations_;
+    limit max_iterations_;
+    limit max_evaluations_;
     TabuList tabu_list_;
     EASYLOCAL_NO_UNIQUE_ADDRESS Aspiration aspiration_;
 };
@@ -1993,8 +1992,8 @@ template<class ListParameters>
 struct AspirationPlusTabuSearchParameters
 {
     std::size_t max_idle_iterations{1000};
-    std::size_t max_iterations{0};
-    std::size_t max_evaluations{0};
+    limit max_iterations{unlimited};
+    limit max_evaluations{unlimited};
     // Admissible moves examined at least and at most in each scan.
     std::size_t min_moves{10};
     std::size_t max_moves{100};
@@ -2012,9 +2011,9 @@ struct AspirationPlusTabuSearchParameters
             config::field<"max_idle_iterations", &self::max_idle_iterations>(
                 "Maximum number of iterations without improving the best cost"),
             config::field<"max_iterations", &self::max_iterations>(
-                "Maximum number of iterations (0: no limit)"),
+                "Maximum number of iterations, or unlimited"),
             config::field<"max_evaluations", &self::max_evaluations>(
-                "Maximum number of solution evaluations (0: no budget)"),
+                "Maximum number of solution evaluations, or unlimited"),
             config::field<"min_moves", &self::min_moves>(
                 "Admissible moves examined at least in each scan"),
             config::field<"max_moves", &self::max_moves>(
@@ -2108,8 +2107,8 @@ template<class ListParameters>
 struct EliteCandidateTabuSearchParameters
 {
     std::size_t max_idle_iterations{1000};
-    std::size_t max_iterations{0};
-    std::size_t max_evaluations{0};
+    limit max_iterations{unlimited};
+    limit max_evaluations{unlimited};
     // The moves kept from a full scan.
     std::size_t elite_size{10};
     // A candidate of the list is applied while its cost is not above this
@@ -2125,9 +2124,9 @@ struct EliteCandidateTabuSearchParameters
             config::field<"max_idle_iterations", &self::max_idle_iterations>(
                 "Maximum number of iterations without improving the best cost"),
             config::field<"max_iterations", &self::max_iterations>(
-                "Maximum number of iterations (0: no limit)"),
+                "Maximum number of iterations, or unlimited"),
             config::field<"max_evaluations", &self::max_evaluations>(
-                "Maximum number of solution evaluations (0: no budget)"),
+                "Maximum number of solution evaluations, or unlimited"),
             config::field<"elite_size", &self::elite_size>(
                 "The moves kept from a full scan"),
             config::field<"quality", &self::quality>(

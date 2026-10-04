@@ -8,6 +8,7 @@
 #include <easylocal/runners/detail/context_concepts.hpp>
 #include <easylocal/runners/search_run.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
+#include <easylocal/utils/limit.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -879,8 +880,8 @@ struct TimeBasedParameters
     double cooling_rate{0.95};
     // Seconds.
     double allowed_running_time{10.0};
-    // Accepted proposals that cool early; 0 cools only on time.
-    std::size_t accepted_per_temperature{0};
+    // Accepted proposals that cool early; unlimited cools only on time.
+    limit accepted_per_temperature{unlimited};
 
     // Moves sampled at the initial solution to estimate the initial
     // temperature; 0 keeps initial_temperature.
@@ -907,7 +908,7 @@ struct TimeBasedParameters
             config::field<
                 "accepted_per_temperature",
                 &TimeBasedParameters::accepted_per_temperature>(
-                "Accepted proposals that trigger cooling (0: cool only on time)"),
+                "Accepted proposals that trigger cooling (unlimited: cool only on time)"),
             config::field<
                 "calibration_samples",
                 &TimeBasedParameters::calibration_samples>(
@@ -1018,8 +1019,7 @@ public:
         accepted_ += accepted ? 1U : 0U;
         const auto level_elapsed = now - level_start_;
         const auto time_over = level_elapsed >= level_time_;
-        const auto accepted_cutoff = parameters_.accepted_per_temperature != 0
-            && accepted_ >= parameters_.accepted_per_temperature;
+        const auto accepted_cutoff = accepted_ >= parameters_.accepted_per_temperature;
         if (!time_over && !accepted_cutoff)
             return;
 

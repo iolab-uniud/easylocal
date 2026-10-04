@@ -1,6 +1,7 @@
 #pragma once
 
 #include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/utils/limit.hpp>
 
 #include <chrono>
 #include <cstddef>
@@ -13,7 +14,7 @@ namespace assignment::demo
 
 struct SlowFirstImprovementParameters
 {
-    std::size_t max_evaluations{2000};
+    easylocal::limit max_evaluations{2000};
     std::size_t delay_ms{5};
 };
 

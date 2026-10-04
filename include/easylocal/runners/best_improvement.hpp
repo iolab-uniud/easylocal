@@ -6,6 +6,7 @@
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
 #include <easylocal/runners/search_run.hpp>
+#include <easylocal/utils/limit.hpp>
 
 #include <cstddef>
 #include <optional>
@@ -16,19 +17,17 @@ namespace easylocal::runners
 
 struct BestImprovementParameters
 {
-    // Evaluation budget, including the initial evaluation; 0 means no budget:
+    // Evaluation budget, including the initial evaluation; unlimited by default:
     // the search runs until a local optimum.
-    std::size_t max_evaluations{0};
+    limit max_evaluations{unlimited};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<
-                "max_evaluations",
-                &BestImprovementParameters::max_evaluations>(
-                    "Maximum number of solution evaluations "
-                    "(0: until a local optimum)"));
+            config::field<"max_evaluations", &BestImprovementParameters::max_evaluations>(
+                "Maximum number of solution evaluations "
+                "(unlimited: until a local optimum)"));
     }
 
     [[nodiscard]]
@@ -55,10 +54,7 @@ public:
     [[nodiscard]]
     auto run(Run& run, typename Run::solution_type solution) const
     {
-        if (parameters_.max_evaluations != 0)
-        {
-            run.limit_evaluations(parameters_.max_evaluations);
-        }
+        run.limit_evaluations(parameters_.max_evaluations);
         auto current = run.start(solution);
 
         while (true)

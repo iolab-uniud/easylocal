@@ -35,17 +35,22 @@ held as an object: `make_runner<Algorithm>(args...)` or `Runner{Algorithm{...}}`
 
 | Algorithm | Needs | Parameters | `iterations` counts |
 | --- | --- | --- | --- |
-| `runners::FirstImprovement` | `moves` or cursor, `better` | `max_evaluations` (0: until a local optimum) | committed moves |
-| `runners::BestImprovement` | `moves` or cursor, `better` | `max_evaluations` (0: until a local optimum) | committed moves |
-| `runners::HillClimbing` | `random_move`, `better`, `better_or_equivalent` | `max_idle_iterations`, `max_evaluations` (0: no budget) | proposed moves |
-| `runners::LateAcceptanceHillClimbing` | `random_move`, `better`, `better_or_equivalent` | `history_length`, `max_idle_iterations`, `max_evaluations` (0: no budget) | proposed moves |
-| `runners::ParetoLateAcceptanceHillClimbing` | `random_move`, `better`, a `cost::pareto` cost, `random_solution` | `history_length`, `max_iterations`, `idle_ratio`, `second_chance`, `max_evaluations` (0: no budget) | proposed moves |
-| `runners::GreatDeluge` | `random_move`, `better`, an arithmetic cost | `initial_level`, `min_level`, `level_rate`, `neighbors_sampled`, `max_evaluations` (0: no budget) | proposed moves |
+| `runners::FirstImprovement` | `moves` or cursor, `better` | `max_evaluations` (unlimited: until a local optimum) | committed moves |
+| `runners::BestImprovement` | `moves` or cursor, `better` | `max_evaluations` (unlimited: until a local optimum) | committed moves |
+| `runners::HillClimbing` | `random_move`, `better`, `better_or_equivalent` | `max_idle_iterations`, `max_evaluations` | proposed moves |
+| `runners::LateAcceptanceHillClimbing` | `random_move`, `better`, `better_or_equivalent` | `history_length`, `max_idle_iterations`, `max_evaluations` | proposed moves |
+| `runners::ParetoLateAcceptanceHillClimbing` | `random_move`, `better`, a `cost::pareto` cost, `random_solution` | `history_length`, `max_iterations`, `idle_ratio`, `second_chance`, `max_evaluations` | proposed moves |
+| `runners::GreatDeluge` | `random_move`, `better`, an arithmetic cost | `initial_level`, `min_level`, `level_rate`, `neighbors_sampled`, `max_evaluations` | proposed moves |
 | `runners::TabuSearch<List, Aspiration>` | `moves` or cursor, `better`, `inverse` | `max_idle_iterations`, `max_iterations`, `max_evaluations`, `tabu_list`: the list's | committed moves |
 | `runners::FirstImprovementTabuSearch<List, Aspiration>` | as TabuSearch | as TabuSearch, plus `improve_on_best` | committed moves |
 | `runners::AspirationPlusTabuSearch<List, Aspiration>` | as TabuSearch, an arithmetic cost | as TabuSearch, plus `min_moves`, `max_moves`, `plus`, `aspiration_level` | committed moves |
 | `runners::EliteCandidateTabuSearch<List, Aspiration>` | as TabuSearch, an arithmetic cost | as TabuSearch, plus `elite_size`, `quality` | committed moves |
 | `runners::SimulatedAnnealing<Temperature, Acceptance>` | `random_move`, `better`, an acceptance-compatible cost | a temperature policy, an acceptance policy | proposed moves |
+
+The limits on a count, `max_evaluations` and `max_iterations`, are of type
+`easylocal::limit`: a number, or `easylocal::unlimited`, written `unlimited` in
+a configuration file, on the command line and in the TextUI. They are
+unlimited by default, and 0 is a limit of zero, not "no limit".
 
 The budget is checked only before evaluating a move, so an empty neighborhood
 is a local optimum even when the budget is exhausted.
@@ -168,7 +173,7 @@ Simulated Annealing returns the best solution found. Temperature policies in
 | `Cutoff` | as FixedLength, plus accepted ratio | max iterations; cools early after enough acceptances |
 | `Hybrid` | as Cutoff | max iterations; cools on samples or acceptances |
 | `FixedTemperature` | temperature, max iterations, accepted ratio | max iterations, or enough acceptances; never cools |
-| `TimeBased` | initial/final temperature, cooling rate, running time, accepted per temperature | the running time is over or the final temperature is reached; levels share the time |
+| `TimeBased` | initial/final temperature, cooling rate, running time, accepted per temperature (unlimited: cools only on time) | the running time is over or the final temperature is reached; levels share the time |
 | `Reheating<Descent>` | `descent`: the schedule's, plus max reheats, reheat ratio, first-descent share | the last descent ends; each reheat restarts from `reheat_ratio` times T0 |
 
 `TimeBased` reads the clock (`std::chrono::steady_clock`; `BasicTimeBased<Clock>`
@@ -251,7 +256,7 @@ Extra `run` arguments (an RNG, for example) are passed through
 
 | Member | Effect |
 | --- | --- |
-| `limit_evaluations(n)` | evaluation budget, including the initial evaluation |
+| `limit_evaluations(n)` | evaluation budget, including the initial evaluation: a count, or `easylocal::unlimited` |
 | `start(solution) -> evaluation` | first evaluation, `run_started`, progress |
 | `evaluate_solution(solution) -> evaluation` | another solution (a population, a history): counts, traced as visited, offered to the archive |
 | `front()` | with a `cost::pareto` cost, the archive of the non-dominated solutions reached |

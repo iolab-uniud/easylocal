@@ -1,7 +1,9 @@
+#include <easylocal/config/overrides.hpp>
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/helpers/neighborhood_union.hpp>
 #include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
+#include <easylocal/utils/limit.hpp>
 
 #include <array>
 #include <cassert>
@@ -10,6 +12,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <limits>
+#include <string>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
@@ -161,13 +164,34 @@ void first_improvement_parameters_live_with_the_search_method()
     using descriptor_type = std::tuple_element_t<0, schema_type>;
 
     static_assert(descriptor_type::name() == "max_evaluations");
-    static_assert(std::same_as<descriptor_type::value_type, std::size_t>);
+    static_assert(std::same_as<descriptor_type::value_type, easylocal::limit>);
 
     FirstImprovementParameters parameters{.max_evaluations = 100};
     assert(parameters.validate());
-    parameters.max_evaluations = 0; // no budget: until a local optimum
+    assert(parameters.max_evaluations == 100);
+    // No budget, the default: until a local optimum.
+    assert(FirstImprovementParameters{}.max_evaluations.is_unlimited());
+    parameters.max_evaluations = easylocal::unlimited;
     assert(parameters.validate());
-    assert(FirstImprovementParameters{}.max_evaluations == 0);
+    // Zero is a budget of zero, not "no budget".
+    parameters.max_evaluations = 0;
+    assert(!parameters.max_evaluations.is_unlimited());
+}
+
+void a_limit_is_a_count_or_unlimited_in_text()
+{
+    namespace config = easylocal::config;
+    easylocal::limit value = 5;
+    assert(config::detail::parse_text_value("unlimited", value).empty());
+    assert(value.is_unlimited());
+    assert(config::format_value(value) == "unlimited");
+    assert(config::detail::parse_text_value(" 25 ", value).empty());
+    assert(value == 25);
+    assert(config::format_value(value) == "25");
+    assert(config::detail::parse_text_value("0", value).empty());
+    assert(value == 0);
+    assert(!config::detail::parse_text_value("infinite", value).empty());
+    assert(value == 0); // unchanged by an invalid text
 }
 
 void every_temperature_policy_has_a_parameter_block()
@@ -240,5 +264,6 @@ int main()
     iteration_exposes_names_descriptions_and_typed_references();
     fixed_length_validation_checks_cross_field_invariants();
     first_improvement_parameters_live_with_the_search_method();
+    a_limit_is_a_count_or_unlimited_in_text();
     neighborhood_union_parameter_block_describes_bias_array();
 }

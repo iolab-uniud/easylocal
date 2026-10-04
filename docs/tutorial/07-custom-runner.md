@@ -7,7 +7,7 @@ random moves and keeps the improving ones:
 ```cpp
 struct RandomDescentParameters
 {
-    std::size_t max_evaluations{1000};
+    easylocal::limit max_evaluations{1000}; // a count, or easylocal::unlimited
 };
 
 class RandomDescent
@@ -52,7 +52,7 @@ and the trace events. The algorithm only describes its logic:
 
 | `search_run` member | Effect |
 | --- | --- |
-| `limit_evaluations(n)` | evaluation budget, including the initial evaluation |
+| `limit_evaluations(n)` | evaluation budget, including the initial evaluation: a count, or `easylocal::unlimited` |
 | `start(solution)` | first evaluation; emits `run_started`, reports progress |
 | `should_stop()` | true on cancellation or exhausted budget; records the reason |
 | `moves(solution)`, `random_move(solution, rng)` | neighborhood access |

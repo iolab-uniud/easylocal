@@ -81,6 +81,11 @@ old concepts onto the new ones.
   runner means writing one `run(...)` function against
   `easylocal::search_run`, which owns counters, evaluation budget,
   cancellation, progress and trace events.
+- Limits on a count (`max_evaluations`, `max_iterations`, TimeBased's
+  `accepted_per_temperature`) are `easylocal::limit` values: a number or
+  `easylocal::unlimited`, written `unlimited` in configuration files, on the
+  command line and in the TextUI. They are unlimited by default, and 0 is a
+  limit of zero.
 - Every runner is cancellable through a `std::stop_token`, reports progress,
   can stop at a target cost (`stop_at(cost)`) and returns a `search_result`
   with its `termination_reason` (`to_string` gives a readable name).

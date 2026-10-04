@@ -8,6 +8,7 @@
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
 #include <easylocal/runners/search_run.hpp>
+#include <easylocal/utils/limit.hpp>
 
 #include <cassert>
 #include <cmath>
@@ -35,8 +36,8 @@ struct ParetoLateAcceptanceHillClimbingParameters
     // A candidate that does not dominate the current solution may still
     // replace the next solution of the history if it dominates it.
     bool second_chance{true};
-    // Evaluation budget, including the initial evaluations; 0 means no budget.
-    std::size_t max_evaluations{0};
+    // Evaluation budget, including the initial evaluations; unlimited by default.
+    limit max_evaluations{unlimited};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -61,7 +62,7 @@ struct ParetoLateAcceptanceHillClimbingParameters
             config::field<
                 "max_evaluations",
                 &ParetoLateAcceptanceHillClimbingParameters::max_evaluations>(
-                "Maximum number of solution evaluations (0: no budget)"));
+                "Maximum number of solution evaluations, or unlimited"));
     }
 
     [[nodiscard]]
@@ -109,8 +110,7 @@ public:
     [[nodiscard]]
     auto run(Run& run, typename Run::solution_type solution, RNG& rng) const
     {
-        if (parameters_.max_evaluations != 0)
-            run.limit_evaluations(parameters_.max_evaluations);
+        run.limit_evaluations(parameters_.max_evaluations);
 
         // Entries are immutable and shared: moving along the history copies
         // no solution.
