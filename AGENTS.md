@@ -173,7 +173,8 @@ are staged, so it is formatted whole, in the same commit.
 
 `VERSION` holds the version in preparation (`4.0.0-alpha.1`), whose section in
 `CHANGELOG.md` reads "not yet released". `scripts/release.sh` releases it: it
-dates the section, runs the Release build and its tests, commits, creates the
-annotated tag `vVERSION` and pushes both. The tag runs the full CI and the
-benchmarks. Then `VERSION` gets the next version, with its section in
+dates the section and `CITATION.cff`, runs the Release build and its tests,
+commits, creates the annotated tag `vVERSION`, pushes both and creates the
+GitHub release from the section (`--page-only` creates it alone, for an
+existing tag). The tag runs the full CI and the benchmarks. Then `VERSION` gets the next version, with its section in
 `CHANGELOG.md`.
