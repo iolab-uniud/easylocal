@@ -21,24 +21,39 @@
 namespace easylocal::config
 {
 
+/// The kind of an error found while reading a TOML document.
 enum class toml_config_error
 {
+    /// The text is not valid TOML.
     parse_error,
+    /// A value that is not a string, a number, a boolean or an array of numbers
+    /// and booleans.
     unsupported_value,
 };
 
+/// An error found while reading a TOML document.
 struct toml_config_diagnostic
 {
+    /// The kind of the error.
     toml_config_error error;
+    /// The dotted path of the value, empty for a parse error.
     std::string path;
+    /// The description of the error.
     std::string message;
 };
 
+/// The overrides read from a TOML document, and the errors found.
+///
+/// A value that cannot be read is reported and skipped, the others are still
+/// read; a parse error leaves no overrides.
 struct toml_config_parse_result
 {
+    /// The path = value overrides, nested tables giving the dotted paths.
     std::vector<owned_text_override> overrides;
+    /// The errors found, empty when the document was read in full.
     std::vector<toml_config_diagnostic> diagnostics;
 
+    /// Whether the document was read without errors.
     [[nodiscard]]
     explicit operator bool() const noexcept
     {
@@ -218,6 +233,9 @@ toml_config_parse_result parse_toml_overrides(Parse&& parse)
 
 } // namespace detail
 
+/// The overrides of a TOML document given as text, with its errors.
+///
+/// `source_path` names the document in the parse error messages.
 [[nodiscard]]
 inline toml_config_parse_result parse_toml_text(
     const std::string_view text,
@@ -226,6 +244,9 @@ inline toml_config_parse_result parse_toml_text(
     return detail::parse_toml_overrides([&] { return toml::parse(text, source_path); });
 }
 
+/// The overrides of a TOML file, with its errors.
+///
+/// A file that cannot be read is reported as a parse error.
 [[nodiscard]]
 inline toml_config_parse_result load_toml_file(const std::filesystem::path& path)
 {

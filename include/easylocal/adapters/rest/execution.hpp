@@ -18,6 +18,8 @@
 namespace easylocal::rest
 {
 
+/// The default number of worker threads: one less than the hardware threads,
+/// and at least 1.
 [[nodiscard]] inline std::size_t default_worker_count() noexcept
 {
     const auto available = std::thread::hardware_concurrency();
@@ -28,6 +30,11 @@ namespace easylocal::rest
     return static_cast<std::size_t>(available - 1);
 }
 
+/// A fixed set of worker threads that run tasks taken from a bounded queue.
+///
+/// A task that throws does not stop its worker: the exception is ignored, and
+/// the task is responsible for recording it. Destruction refuses new tasks,
+/// lets the workers finish the queued ones, and joins them.
 class execution_pool
 {
 private:
@@ -42,6 +49,8 @@ private:
 #endif
 
 public:
+    /// From the number of worker threads and the capacity of the queue of
+    /// pending tasks, both at least 1.
     explicit execution_pool(
         std::size_t workers = default_worker_count(),
         std::size_t queue_capacity = 64)
@@ -69,6 +78,8 @@ public:
         ready_.notify_all();
     }
 
+    /// Queues a task, and returns whether it was accepted: false when the queue
+    /// is full or the pool is being destroyed.
     template<class Function>
         requires std::invocable<Function&>
     [[nodiscard]] bool try_submit(Function&& function)
@@ -85,11 +96,13 @@ public:
         return true;
     }
 
+    /// The number of worker threads.
     [[nodiscard]] std::size_t worker_count() const noexcept
     {
         return workers_.size();
     }
 
+    /// The maximum number of tasks waiting in the queue.
     [[nodiscard]] std::size_t queue_capacity() const noexcept
     {
         return queue_capacity_;

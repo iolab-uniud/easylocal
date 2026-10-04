@@ -38,10 +38,17 @@
 namespace easylocal::rest
 {
 
+/// The options of an app_blueprint: its execution pool and run history.
 struct blueprint_options
 {
+    /// The number of worker threads that execute runs (default: one less than
+    /// the hardware threads, at least 1).
     std::size_t workers{default_worker_count()};
+    /// The maximum number of runs waiting for a worker: a submission beyond it
+    /// is rejected with `503`.
     std::size_t queue_capacity{64};
+    /// The maximum number of terminal runs kept, the oldest forgotten first;
+    /// must be positive.
     std::size_t completed_run_capacity{64};
     /// Base seed of the RNG given to stochastic runners: a run without an
     /// explicit "seed" uses seed + its run id, so runs differ but are
@@ -230,6 +237,19 @@ inline void collect_parameters(
 
 } // namespace detail
 
+/// A Crow blueprint that serves an app over HTTP, with its runs executed by a
+/// pool of worker threads.
+///
+/// Its routes list the runners and the parameters, submit a run of a runner
+/// (each on its own Session, with optional seed, parameter overrides, target
+/// and initial solution), report its state, progress and solution, cancel it
+/// and forget it. It is neither copyable nor movable, since its routes refer
+/// to it: keep it alive as long as the Crow app uses its blueprint. Calls to
+/// the codec are serialized.
+///
+/// Requires a copyable app and a codec with `decode_input(json)`,
+/// `encode_solution(input, solution)` and `encode_cost(cost)`, and optionally
+/// `decode_initial_solution(input, json)` and `decode_cost(json)`.
 template<class App, class Codec>
     requires std::copy_constructible<App> &&
              std::move_constructible<Codec> &&
@@ -237,15 +257,28 @@ template<class App, class Codec>
 class app_blueprint
 {
 public:
+    /// The app served.
     using app_type = App;
+    /// The codec that turns the problem's values into JSON and back.
     using codec_type = Codec;
+    /// The Input of the problem.
     using input_type = typename App::input_type;
+    /// The app bound to an Input, as `bind()` returns it.
     using bound_app_type = detail::bound_app_t<App>;
+    /// The solution manager of the bound app.
     using solution_manager_type = typename bound_app_type::solution_manager_type;
+    /// The Solution of the problem.
     using solution_type = typename solution_manager_type::solution_type;
+    /// The cost of a solution.
     using cost_type = typename solution_manager_type::cost_type;
+    /// The Session that executes one run.
     using session_type = easylocal::Session<App>;
 
+    /// From the prefix of its routes, the app, the codec and the options.
+    ///
+    /// Leading and trailing slashes of the prefix are dropped. Throws
+    /// `std::invalid_argument` when the prefix is empty or
+    /// `completed_run_capacity` is zero.
     app_blueprint(
         std::string prefix,
         App application,
@@ -271,11 +304,13 @@ public:
     app_blueprint(app_blueprint&&) = delete;
     app_blueprint& operator=(app_blueprint&&) = delete;
 
+    /// The Crow blueprint, to register on a Crow app.
     [[nodiscard]] crow::Blueprint& crow_blueprint() noexcept
     {
         return blueprint_;
     }
 
+    /// The prefix of the routes, without leading and trailing slashes.
     [[nodiscard]] std::string_view prefix() const noexcept
     {
         return prefix_;
@@ -964,6 +999,9 @@ private:
     execution_pool execution_;
 };
 
+/// The app_blueprint that serves the app with the codec under the prefix.
+///
+/// The result is neither copyable nor movable: initialize a variable with it.
 template<class App, class Codec>
 [[nodiscard]] auto blueprint(
     std::string prefix,
