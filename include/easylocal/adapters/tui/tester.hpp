@@ -562,6 +562,39 @@ struct async_runner_result
     std::string error;
 };
 
+// A scrollable text wrapped to a width: the Input and solution windows. The
+// lines are wrapped again only when the width changes.
+struct text_viewer
+{
+    std::string text;
+    std::vector<std::string> lines{""};
+    std::size_t wrap_width{};
+    int selected{};
+
+    // Shows a new text from its first line.
+    void show(std::string value, const std::size_t width)
+    {
+        text = std::move(value);
+        wrap_width = 0;
+        refresh(width);
+        selected = 0;
+    }
+
+    void refresh(const std::size_t width)
+    {
+        if (wrap_width == width)
+            return;
+        wrap_width = width;
+        lines = wrap_text_lines(text, width);
+        scroll(0);
+    }
+
+    void scroll(const int delta)
+    {
+        selected = page_scroll_selection(selected, lines.size(), delta);
+    }
+};
+
 // One editable parameter of the parameters window: its full configuration
 // path, the label shown (the path without its first segment), the value when
 // the tester started, the value when the window opened, and the edited text.
@@ -1081,76 +1114,25 @@ public:
             return false;
         });
 
-        auto input_viewer_menu = Menu(
-            &input_viewer_lines_,
-            &input_viewer_selected_,
-            MenuOption::Vertical());
-        auto input_viewer_close = Button(
-            "Close",
-            [this] { input_visible_ = false; },
-            ButtonOption::Ascii());
-        auto input_viewer_controls = Container::Vertical({
-            input_viewer_menu,
-            input_viewer_close,
-        });
-        auto input_viewer = Renderer(
-            input_viewer_controls,
-            [this, input_viewer_menu, input_viewer_close] {
-                refresh_input_viewer_layout();
-                return render_input_viewer(input_viewer_menu, input_viewer_close);
+        auto input_viewer = viewer_component(
+            input_viewer_,
+            input_visible_,
+            [this](const Component& menu, const Component& close) {
+                return render_input_viewer(menu, close);
+            },
+            [](const Event& event) {
+                return event == Event::Escape || event == Event::F1;
             });
-        input_viewer = CatchEvent(input_viewer, [this](Event event) {
-            if (event == Event::PageUp || event == Event::PageDown)
-            {
-                input_viewer_selected_ = detail::page_scroll_selection(
-                    input_viewer_selected_,
-                    input_viewer_lines_.size(),
-                    event == Event::PageUp ? -10 : 10);
-                return true;
-            }
-            if (event == Event::Escape || event == Event::F1)
-            {
-                input_visible_ = false;
-                return true;
-            }
-            return false;
-        });
-
-        auto solution_viewer_menu = Menu(
-            &solution_viewer_lines_,
-            &solution_viewer_selected_,
-            MenuOption::Vertical());
-        auto solution_viewer_close = Button(
-            "Close",
-            [this] { solution_visible_ = false; },
-            ButtonOption::Ascii());
-        auto solution_viewer_controls = Container::Vertical({
-            solution_viewer_menu,
-            solution_viewer_close,
-        });
-        auto solution_viewer = Renderer(
-            solution_viewer_controls,
-            [this, solution_viewer_menu, solution_viewer_close] {
-                refresh_solution_viewer_layout();
-                return render_solution_viewer(solution_viewer_menu, solution_viewer_close);
+        auto solution_viewer = viewer_component(
+            solution_viewer_,
+            solution_visible_,
+            [this](const Component& menu, const Component& close) {
+                return render_solution_viewer(menu, close);
+            },
+            [](const Event& event) {
+                return event == Event::Escape || event == Event::F2 || event == Event::s
+                    || event == Event::S;
             });
-        solution_viewer = CatchEvent(solution_viewer, [this](Event event) {
-            if (event == Event::PageUp || event == Event::PageDown)
-            {
-                solution_viewer_selected_ = detail::page_scroll_selection(
-                    solution_viewer_selected_,
-                    solution_viewer_lines_.size(),
-                    event == Event::PageUp ? -10 : 10);
-                return true;
-            }
-            if (event == Event::Escape || event == Event::F2 ||
-                event == Event::s || event == Event::S)
-            {
-                solution_visible_ = false;
-                return true;
-            }
-            return false;
-        });
 
         parameter_inputs_ = Container::Vertical({});
         auto parameter_submit = Button(
@@ -1775,20 +1757,14 @@ private:
 
     void show_input()
     {
-        input_viewer_text_ = input_text();
-        input_viewer_wrap_width_ = 0;
-        refresh_input_viewer_layout();
-        input_viewer_selected_ = 0;
+        input_viewer_.show(input_text(), viewer_wrap_width());
         solution_visible_ = false;
         input_visible_ = true;
     }
 
     void show_solution()
     {
-        solution_viewer_text_ = solution_text();
-        solution_viewer_wrap_width_ = 0;
-        refresh_solution_viewer_layout();
-        solution_viewer_selected_ = 0;
+        solution_viewer_.show(solution_text(), viewer_wrap_width());
         input_visible_ = false;
         solution_visible_ = true;
     }
@@ -1802,34 +1778,38 @@ private:
         return static_cast<std::size_t>(std::max(1, available - 8));
     }
 
-    void refresh_input_viewer_layout()
+    // The window of a text viewer: its lines as a scrollable menu and a Close
+    // button, drawn by render(menu, close) and closed by the keys of closes.
+    template<class Render, class Closes>
+    [[nodiscard]] ftxui::Component viewer_component(
+        detail::text_viewer& viewer,
+        bool& visible,
+        Render render,
+        Closes closes)
     {
-        const auto width = viewer_wrap_width();
-        if (input_viewer_wrap_width_ == width)
-        {
-            return;
-        }
-        input_viewer_wrap_width_ = width;
-        input_viewer_lines_ = wrap_text_lines(input_viewer_text_, width);
-        input_viewer_selected_ = page_scroll_selection(
-            input_viewer_selected_,
-            input_viewer_lines_.size(),
-            0);
-    }
-
-    void refresh_solution_viewer_layout()
-    {
-        const auto width = viewer_wrap_width();
-        if (solution_viewer_wrap_width_ == width)
-        {
-            return;
-        }
-        solution_viewer_wrap_width_ = width;
-        solution_viewer_lines_ = wrap_text_lines(solution_viewer_text_, width);
-        solution_viewer_selected_ = page_scroll_selection(
-            solution_viewer_selected_,
-            solution_viewer_lines_.size(),
-            0);
+        using namespace ftxui;
+        auto menu = Menu(&viewer.lines, &viewer.selected, MenuOption::Vertical());
+        auto close =
+            Button("Close", [&visible] { visible = false; }, ButtonOption::Ascii());
+        auto component = Renderer(
+            Container::Vertical({menu, close}),
+            [this, &viewer, menu, close, render] {
+                viewer.refresh(viewer_wrap_width());
+                return render(menu, close);
+            });
+        return CatchEvent(component, [&viewer, &visible, closes](Event event) {
+            if (event == Event::PageUp || event == Event::PageDown)
+            {
+                viewer.scroll(event == Event::PageUp ? -10 : 10);
+                return true;
+            }
+            if (closes(event))
+            {
+                visible = false;
+                return true;
+            }
+            return false;
+        });
     }
 
     void check()
@@ -3251,15 +3231,9 @@ private:
     std::string run_before_;
     std::optional<typename tester_type::cost_type> run_target_;
     bool input_visible_{};
-    std::string input_viewer_text_;
-    std::vector<std::string> input_viewer_lines_{""};
-    std::size_t input_viewer_wrap_width_{};
-    int input_viewer_selected_{};
+    detail::text_viewer input_viewer_;
     bool solution_visible_{};
-    std::string solution_viewer_text_;
-    std::vector<std::string> solution_viewer_lines_{""};
-    std::size_t solution_viewer_wrap_width_{};
-    int solution_viewer_selected_{};
+    detail::text_viewer solution_viewer_;
 };
 
 } // namespace detail
