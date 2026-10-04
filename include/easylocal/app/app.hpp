@@ -31,8 +31,11 @@ namespace easylocal
 /// do, through search_result.
 struct run_effort
 {
+    /// Solutions and moves evaluated, the initial evaluation included.
     std::size_t evaluations{};
+    /// Iterations, as the algorithm counts them.
     std::size_t iterations{};
+    /// Why the run ended.
     termination_reason termination{termination_reason::completed};
 };
 
@@ -44,8 +47,11 @@ struct run_effort
 template<class Solution, class Cost>
 struct named_run_result
 {
+    /// The solution the runner returns.
     Solution solution;
+    /// Its cost.
     Cost cost;
+    /// The effort of the run; empty when the result does not report it.
     std::optional<run_effort> effort;
 };
 
@@ -849,6 +855,9 @@ private:
 
 } // namespace detail
 
+/// Starts an app named name, without components: a SolutionManager, a
+/// neighborhood and runners are added to it with `|` (or with_solution_manager,
+/// with_neighborhood and with_runner).
 [[nodiscard]]
 inline auto app(std::string name)
 {
@@ -879,6 +888,7 @@ auto operator|(detail::app_builder<SMSpec, NHESpec, Registrations...> builder, S
     return std::move(builder).with_solution_manager(std::forward<Spec>(spec));
 }
 
+/// Adds a neighborhood to an app: the pipe spelling of with_neighborhood.
 template<class SMSpec, class NHESpec, class... Registrations, class Spec>
     requires requires(detail::app_builder<SMSpec, NHESpec, Registrations...> builder, Spec&& spec) {
         std::move(builder).with_neighborhood(std::forward<Spec>(spec));
@@ -889,6 +899,7 @@ auto operator|(detail::app_builder<SMSpec, NHESpec, Registrations...> builder, S
     return std::move(builder).with_neighborhood(std::forward<Spec>(spec));
 }
 
+/// Registers a runner in an app: the pipe spelling of with_runner.
 template<class SMSpec, class NHESpec, class... Registrations, class Algorithm>
     requires requires(
         detail::app_builder<SMSpec, NHESpec, Registrations...> builder,

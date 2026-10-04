@@ -96,91 +96,147 @@ template<class App>
 class Session
 {
 public:
+    /// The app of the session.
     using app_type = App;
+    /// The Input of the problem.
     using input_type = typename App::input_type;
+    /// The app bound to the Input, with its services.
     using bound_app_type =
         decltype(std::declval<const App&>().bind(std::declval<const input_type&>()));
+    /// The SolutionManager of the bound app.
     using solution_manager_type = typename bound_app_type::solution_manager_type;
+    /// The neighborhood explorer of the bound app.
     using neighborhood_type = typename bound_app_type::neighborhood_explorer_type;
+    /// The Solution of the problem.
     using solution_type = typename solution_manager_type::solution_type;
+    /// The cost of a solution.
     using cost_type = typename solution_manager_type::cost_type;
+    /// The move of the neighborhood.
     using move_type = typename neighborhood_type::move_type;
+    /// The random generator of the session.
     using rng_type = std::mt19937_64;
 
+    /// Whether the SolutionManager has initial_solution().
     static constexpr bool supports_initial_solution =
         has_initial_solution<solution_manager_type>;
+    /// Whether the SolutionManager has random_solution(rng).
     static constexpr bool supports_random_solution =
         has_random_solution<solution_manager_type, rng_type>;
+    /// Whether the neighborhood enumerates its moves.
     static constexpr bool supports_deterministic_moves =
         deterministic_neighborhood_for<neighborhood_type, solution_type>;
+    /// Whether the neighborhood draws random moves.
     static constexpr bool supports_random_moves =
         random_neighborhood_for<neighborhood_type, solution_type, rng_type>;
+    /// Whether moves can be selected by their cost: the neighborhood enumerates
+    /// them and the cost compares with better().
     static constexpr bool supports_improvement_selection =
         supports_deterministic_moves && cost::has_better<solution_manager_type>;
+    /// Whether check_neighborhood_costs is available: the neighborhood
+    /// enumerates its moves and the cost has equivalent().
     static constexpr bool supports_cost_consistency_check =
         supports_deterministic_moves && cost::has_equivalent<solution_manager_type>;
+    /// Whether check_move_independence is available: the neighborhood
+    /// enumerates its moves and solutions compare with `==`.
     static constexpr bool supports_move_independence_check =
         supports_deterministic_moves && std::equality_comparable<solution_type>;
+    /// Whether check_random_move_distribution is available: the neighborhood
+    /// enumerates and draws its moves, and moves compare with `==`.
     static constexpr bool supports_random_distribution_check =
         supports_deterministic_moves && supports_random_moves
         && detail::comparable_moves_v<move_type>;
 
+    /// The result of neighborhood_statistics.
     struct neighborhood_statistics_result
     {
+        /// Moves enumerated.
         std::size_t moves{};
+        /// Valid moves that lead to a better cost.
         std::size_t improving{};
+        /// Valid moves that lead to neither a better nor a worse cost.
         std::size_t sideways{};
+        /// Valid moves that lead to a worse cost.
         std::size_t worsening{};
+        /// Moves enumerated that are not valid.
         std::size_t invalid{};
     };
 
+    /// The result of check_neighborhood_costs.
     struct neighborhood_cost_check_result
     {
+        /// Moves enumerated.
         std::size_t moves{};
+        /// Moves whose delta evaluation disagrees with the full evaluation.
         std::size_t mismatches{};
+        /// Moves enumerated that are not valid, or lead to an invalid solution.
         std::size_t invalid{};
     };
 
+    /// The result of check_move_independence.
     struct move_independence_result
     {
+        /// Moves enumerated.
         std::size_t moves{};
+        /// Valid moves that leave the solution unchanged.
         std::size_t null_moves{};
+        /// Valid moves that lead to a solution an earlier move led to.
         std::size_t repeated_states{};
+        /// Moves enumerated that are not valid.
         std::size_t invalid{};
     };
 
+    /// The result of check_random_move_distribution.
     struct random_distribution_result
     {
+        /// Valid moves enumerated.
         std::size_t neighborhood_size{};
+        /// Random moves drawn.
         std::size_t samples{};
+        /// Draws that found no move, or a move not among the valid enumerated
+        /// ones.
         std::size_t out_of_neighborhood{};
+        /// Valid enumerated moves never drawn.
         std::size_t unseen{};
+        /// The fewest draws of a valid enumerated move.
         std::size_t min_frequency{};
+        /// The most draws of a valid enumerated move.
         std::size_t max_frequency{};
     };
 
     /// One cost component on the current solution, for people.
     struct component_report
     {
-        std::string name;        // name(), or "#<position>", from 1
-        std::string value;       // the component's own value, without weights
-        std::string description; // describe(solution); empty without it
+        /// The component's name(), or `#<position>`, from 1.
+        std::string name;
+        /// The component's own value, without weights.
+        std::string value;
+        /// Its describe(solution) text; empty without it.
+        std::string description;
     };
 
+    /// A move of neighborhood_preview, with its cost.
     struct inspected_move
     {
+        /// The move.
         move_type move;
+        /// The cost of the solution the move leads to.
         cost_type cost;
     };
 
+    /// The result of neighborhood_preview.
     struct neighborhood_preview_result
     {
+        /// Moves enumerated.
         std::size_t moves{};
+        /// The first valid moves, with their costs.
         std::vector<inspected_move> entries;
     };
+    /// Whether the Input can be read from a stream.
     static constexpr bool supports_input_loading = readable_input<input_type>;
+    /// Whether a solution can be read from a stream.
     static constexpr bool supports_solution_loading =
         readable_solution<input_type, solution_type>;
+    /// Whether a solution can be written to a stream.
     static constexpr bool supports_solution_saving =
         writable_solution<input_type, solution_type>;
 
@@ -221,40 +277,51 @@ public:
         set_input(std::move(input));
     }
 
+    /// Seeds the RNG of the session.
     void set_seed(const std::uint64_t seed)
     {
         rng_.seed(seed);
     }
 
+    /// The RNG of the session.
     [[nodiscard]]
     rng_type& rng() noexcept
     {
         return rng_;
     }
 
+    /// The app.
     [[nodiscard]]
     App& app() noexcept
     {
         return app_;
     }
 
+    /// The app.
     [[nodiscard]]
     const App& app() const noexcept
     {
         return app_;
     }
 
+    /// Whether the session has an Input.
     [[nodiscard]]
     bool has_input() const noexcept
     {
         return static_cast<bool>(input_);
     }
 
+    /// Sets the Input, which the session owns, and binds the app to it; the
+    /// solution and the move are dropped.
     void set_input(input_type input)
     {
         set_input(std::make_shared<const input_type>(std::move(input)));
     }
 
+    /// Sets an Input shared with other owners and binds the app to it; the
+    /// solution and the move are dropped.
+    ///
+    /// Throws std::invalid_argument when new_input is null.
     void set_input(std::shared_ptr<const input_type> new_input)
     {
         if (!new_input)
@@ -268,12 +335,17 @@ public:
         bound_ = std::move(new_bound);
     }
 
+    /// Reads the Input from a stream with the problem's read hook, as
+    /// set_input.
     void load_input(std::istream& in)
         requires supports_input_loading
     {
         set_input(easylocal::read_input<input_type>(in));
     }
 
+    /// Reads the Input from a file, as set_input; throws std::runtime_error
+    /// when the file cannot be opened.
+    ///
     /// Unlike easylocal::load_input, errors do not name the file, which an
     /// interactive frontend shows on its own.
     void load_input(const std::filesystem::path& path)
@@ -285,6 +357,7 @@ public:
         load_input(in);
     }
 
+    /// The Input; the session must have one.
     [[nodiscard]]
     const input_type& input() const noexcept
     {
@@ -292,12 +365,14 @@ public:
         return *input_;
     }
 
+    /// The shared Input; null without one.
     [[nodiscard]]
     std::shared_ptr<const input_type> input_handle() const noexcept
     {
         return input_;
     }
 
+    /// The app bound to the Input; the session must have one.
     [[nodiscard]]
     bound_app_type& bound_app() noexcept
     {
@@ -305,6 +380,7 @@ public:
         return *bound_;
     }
 
+    /// The app bound to the Input; the session must have one.
     [[nodiscard]]
     const bound_app_type& bound_app() const noexcept
     {
@@ -312,12 +388,14 @@ public:
         return *bound_;
     }
 
+    /// Whether the session has a current solution.
     [[nodiscard]]
     bool has_solution() const noexcept
     {
         return static_cast<bool>(solution_);
     }
 
+    /// Makes the SolutionManager's initial_solution() the current solution.
     void use_initial_solution()
         requires supports_initial_solution
     {
@@ -327,6 +405,8 @@ public:
         clear_move_state();
     }
 
+    /// Makes a random_solution(rng) of the SolutionManager the current
+    /// solution.
     void use_random_solution(rng_type& rng)
         requires supports_random_solution
     {
@@ -336,6 +416,7 @@ public:
         clear_move_state();
     }
 
+    /// Makes solution the current solution.
     void set_solution(solution_type solution)
     {
         assert(bound_);
@@ -343,6 +424,7 @@ public:
         clear_move_state();
     }
 
+    /// Reads the current solution from a stream with the problem's read hook.
     void load_solution(std::istream& in)
         requires supports_solution_loading
     {
@@ -350,6 +432,8 @@ public:
         set_solution(easylocal::read_solution<solution_type>(*input_, in));
     }
 
+    /// Reads the current solution from a file; throws std::runtime_error when
+    /// the file cannot be opened.
     void load_solution(const std::filesystem::path& path)
         requires supports_solution_loading
     {
@@ -359,6 +443,7 @@ public:
         load_solution(in);
     }
 
+    /// Writes the current solution to a stream with the problem's write hook.
     void save_solution(std::ostream& out) const
         requires supports_solution_saving
     {
@@ -367,6 +452,7 @@ public:
         easylocal::write_solution(*input_, *solution_, out);
     }
 
+    /// Writes the current solution to a file.
     void save_solution(const std::filesystem::path& path) const
         requires supports_solution_saving
     {
@@ -375,6 +461,7 @@ public:
         easylocal::save_solution(*input_, *solution_, path);
     }
 
+    /// The current solution; the session must have one.
     [[nodiscard]]
     const solution_type& solution() const noexcept
     {
@@ -382,6 +469,7 @@ public:
         return *solution_;
     }
 
+    /// Whether the current solution is valid for the SolutionManager.
     [[nodiscard]]
     bool is_valid() const
     {
@@ -390,6 +478,7 @@ public:
         return static_cast<bool>(bound_->solution_manager().is_valid(*solution_));
     }
 
+    /// The cost of the current solution, which must be valid.
     [[nodiscard]]
     cost_type evaluate() const
     {
@@ -430,6 +519,8 @@ public:
         return easylocal::read_cost<cost_type>(*input_, text);
     }
 
+    /// The contract checks of the app from the current solution:
+    /// check(app, input, solution).
     [[nodiscard]]
     app_check_report check() const
     {
@@ -467,6 +558,7 @@ public:
         return result;
     }
 
+    /// The names of the registered runners, in the order of registration.
     [[nodiscard]]
     std::vector<std::string_view> runner_names() const
     {
@@ -513,12 +605,14 @@ public:
         return last_run_effort_;
     }
 
+    /// Whether a move is selected.
     [[nodiscard]]
     bool has_move() const noexcept
     {
         return move_.has_value();
     }
 
+    /// The selected move; one must be selected.
     [[nodiscard]]
     const move_type& move() const noexcept
     {
@@ -526,6 +620,7 @@ public:
         return *move_;
     }
 
+    /// Selects move.
     void set_move(move_type move)
     {
         assert(solution_);
@@ -533,6 +628,7 @@ public:
         deterministic_move_index_.reset();
     }
 
+    /// Selects the first enumerated move; false when the neighborhood is empty.
     [[nodiscard]]
     bool use_first_move()
         requires supports_deterministic_moves
@@ -542,6 +638,8 @@ public:
         return select_deterministic_move(0);
     }
 
+    /// Selects the move enumerated after the selected one; false when there is
+    /// none, or the selected move was not enumerated.
     [[nodiscard]]
     bool use_next_move()
         requires supports_deterministic_moves
@@ -555,6 +653,8 @@ public:
         return select_deterministic_move(*deterministic_move_index_ + 1);
     }
 
+    /// Selects the first valid move that improves the current cost; false, with
+    /// no move selected, when there is none.
     [[nodiscard]]
     bool use_first_improving_move()
         requires supports_improvement_selection
@@ -583,6 +683,8 @@ public:
         return false;
     }
 
+    /// Selects the valid move of the best cost, the first among equals; false,
+    /// with no move selected, when there is none.
     [[nodiscard]]
     bool use_best_move()
         requires supports_improvement_selection
@@ -628,6 +730,7 @@ public:
         return true;
     }
 
+    /// Selects a random move; false, with no move selected, when none is drawn.
     [[nodiscard]]
     bool use_random_move(rng_type& rng)
         requires supports_random_moves
@@ -648,6 +751,7 @@ public:
         return true;
     }
 
+    /// Whether the selected move is valid on the current solution.
     [[nodiscard]]
     bool move_is_valid() const
     {
@@ -657,6 +761,8 @@ public:
         return static_cast<bool>(bound_->neighborhood().is_valid(*solution_, *move_));
     }
 
+    /// The cost of the solution the selected move leads to, by delta
+    /// evaluation; the move must be valid.
     [[nodiscard]]
     cost_type evaluate_move() const
     {
@@ -671,6 +777,8 @@ public:
             .cost();
     }
 
+    /// The cost of the solution the selected move leads to, by applying the
+    /// move to a copy and evaluating it fully; the move must be valid.
     [[nodiscard]]
     cost_type evaluate_move_fully() const
     {
@@ -685,6 +793,8 @@ public:
         return bound_->solution_manager().evaluate(candidate);
     }
 
+    /// Whether evaluate_move and evaluate_move_fully agree, by the cost's
+    /// equivalent().
     [[nodiscard]]
     bool move_evaluation_matches_full() const
         requires cost::has_equivalent<solution_manager_type>
@@ -694,6 +804,8 @@ public:
         return cost::equivalent(bound_->solution_manager(), incremental, full);
     }
 
+    /// The moves enumerated from the current solution, counted, and the first
+    /// max_entries valid ones with their costs.
     [[nodiscard]]
     neighborhood_preview_result neighborhood_preview(
         const std::size_t max_entries = 8) const
@@ -726,6 +838,8 @@ public:
         return result;
     }
 
+    /// Counts the enumerated moves from the current solution that improve, keep
+    /// or worsen its cost, and the invalid ones.
     [[nodiscard]]
     neighborhood_statistics_result neighborhood_statistics() const
         requires supports_improvement_selection
@@ -760,6 +874,8 @@ public:
         return result;
     }
 
+    /// Compares the delta evaluation of each enumerated move with the full
+    /// evaluation of the solution it leads to.
     [[nodiscard]]
     neighborhood_cost_check_result check_neighborhood_costs() const
         requires supports_cost_consistency_check
@@ -799,6 +915,8 @@ public:
         return result;
     }
 
+    /// Counts the enumerated moves that leave the current solution unchanged,
+    /// and those that lead to a solution an earlier move led to.
     [[nodiscard]]
     move_independence_result check_move_independence() const
         requires supports_move_independence_check
@@ -845,6 +963,8 @@ public:
         return result;
     }
 
+    /// Draws rounds_per_move random moves per valid enumerated move and counts
+    /// how often each is drawn, and the draws outside the enumerated moves.
     [[nodiscard]]
     random_distribution_result check_random_move_distribution(
         rng_type& rng,
@@ -904,6 +1024,8 @@ public:
         return result;
     }
 
+    /// Applies the selected move, which must be valid, to the current solution,
+    /// and drops it.
     void apply_move()
     {
         assert(bound_);

@@ -67,8 +67,10 @@ Cost read_cost(const Input& input, const std::string_view text)
 /// costs with read_cost(input, text).
 struct RunParameters
 {
+    /// The cost at which a run stops, such as 0 or [0, 120]; empty: no target.
     std::string target;
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -78,6 +80,7 @@ struct RunParameters
                 "[0, 120]; empty: no target"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {

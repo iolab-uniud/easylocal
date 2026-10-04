@@ -35,20 +35,30 @@ namespace easylocal::cli
 /// --solution, --output, --target and --report.
 ///
 /// The app's parameters come next to them: `--runners.<name>.*`, `--cost.*` and
-/// `--neighborhood.*`.
+/// `--neighborhood.*`. Every field has an initializer, so that designated
+/// initializers, as in options::defaults, may name only some of them.
 struct parameters
 {
-    /// Every field has an initializer, so that designated initializers, as in
-    /// options::defaults, may name only some of them.
+    /// The Input file; it must be set.
     std::filesystem::path instance{};
+    /// The seed of the random generator.
     std::uint64_t seed{0};
+    /// The name of the runner; empty: the first registered.
     std::string runner{};
+    /// The starting solution, random or initial; empty: random when the problem
+    /// has random solutions.
     std::string start{};
+    /// A file to read the starting solution from, instead of start.
     std::filesystem::path solution{};
+    /// The file to write the solution to; empty: the standard output.
     std::filesystem::path output{};
+    /// The cost at which the run stops, such as 0 or [0, 120]; empty: no
+    /// target.
     std::string target{};
+    /// Whether to print the value of each cost component, and its description.
     bool report{false};
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -71,6 +81,7 @@ struct parameters
                 "Print the value of each cost component, and its description"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const
     {
@@ -92,7 +103,10 @@ struct options
     /// The program's own parameters, parsed with the others; they refer to
     /// blocks that must outlive the call.
     config::parameter_set parameters{};
+    /// Where the help and the results go: the cost, the effort, the report and
+    /// the solution, when no output file is given.
     std::ostream* out{&std::cout};
+    /// Where the errors go.
     std::ostream* err{&std::cerr};
 };
 

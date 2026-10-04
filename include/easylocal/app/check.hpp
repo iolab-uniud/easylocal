@@ -24,15 +24,25 @@
 namespace easylocal
 {
 
+/// How many parts of an app check(app, input, solution) covered.
 struct app_check_coverage
 {
+    /// SolutionManagers checked.
     std::size_t solution_managers{};
+    /// Cost components of the SolutionManager.
     std::size_t cost_components{};
+    /// Neighborhoods checked.
     std::size_t neighborhood_graphs{};
+    /// Delta cost bindings of the neighborhood.
     std::size_t delta_bindings{};
+    /// Runner registrations checked.
     std::size_t runner_registrations{};
 };
 
+/// The report of check(app, input, solution): the checks that passed and
+/// failed, and what they covered.
+///
+/// It converts to true when every check passed; print_report writes it.
 class app_check_report
 {
 public:
@@ -41,25 +51,31 @@ public:
     {
     }
 
+    /// Whether every check passed.
     [[nodiscard]] bool passed() const noexcept
     {
         return report_.passed();
     }
     [[nodiscard]] explicit operator bool() const noexcept { return passed(); }
+    /// The number of checks made.
     [[nodiscard]] std::size_t checks() const noexcept
     {
         return report_.checks();
     }
+    /// The checks that failed.
     [[nodiscard]] auto failures() const noexcept { return report_.failures(); }
+    /// What the checks covered.
     [[nodiscard]] app_check_coverage& coverage() noexcept
     {
         return coverage_;
     }
+    /// What the checks covered.
     [[nodiscard]] const app_check_coverage& coverage() const noexcept
     {
         return coverage_;
     }
 
+    /// Records a check named name, failed with message when condition is false.
     void check(bool condition, std::string_view name, std::string_view message)
     {
         report_.check(condition, name, message);
@@ -72,6 +88,7 @@ private:
     app_check_coverage coverage_{};
 };
 
+/// Writes the checks of a report to out, then a line with its coverage.
 inline void print_report(std::ostream& out, const app_check_report& report)
 {
     testing::print_report(out, report.report_);
@@ -165,6 +182,14 @@ void check_app_moves(
 
 } // namespace detail
 
+/// Runs the contract checks of easylocal::testing on the components of an app
+/// bound to instance, from solution, and returns their report.
+///
+/// It checks that the services refer to instance, that solution is valid and
+/// evaluates twice to the same cost, that the first 128 enumerated moves and 16
+/// random moves are valid and lead to valid solutions (with the incremental
+/// evaluation matching the full one, when the cost defines equivalence), and
+/// that each registered runner's parameters are valid and construct it.
 template<class App, class Instance, class Solution>
 [[nodiscard]] app_check_report check(
     const App& application,
@@ -298,6 +323,8 @@ template<class App, class Instance, class Solution>
     return report;
 }
 
+/// Runs check(app, instance, solution) from the SolutionManager's
+/// initial_solution().
 template<class App, class Instance>
 [[nodiscard]] auto check(const App& application, const Instance& instance)
     requires requires {
