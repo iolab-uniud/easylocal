@@ -300,6 +300,12 @@ public:
             moves_.pop_back();
     }
 
+    // Forgets every move.
+    void clear() noexcept
+    {
+        moves_.clear();
+    }
+
 private:
     std::deque<std::pair<Move, std::size_t>> moves_;
 };
@@ -675,16 +681,7 @@ public:
         [[nodiscard]]
         std::optional<std::size_t> tabu_tenure(const Candidate& candidate) const
         {
-            const auto tenure = current_tenure();
-            for (const auto& [move, applied] : moves_)
-            {
-                const auto age = iteration_ - applied;
-                if (age >= tenure)
-                    break;
-                if (candidate.forbidden_by(move))
-                    return tenure - age;
-            }
-            return std::nullopt;
+            return moves_.tabu_tenure(candidate, iteration_, current_tenure());
         }
 
         template<class Step, class RNG>
@@ -694,7 +691,7 @@ public:
         void update(const Step& step, RNG& rng)
         {
             iteration_ = step.iteration();
-            moves_.emplace_front(step.move(), iteration_);
+            moves_.add(step.move(), iteration_);
             ++since_change_;
 
             auto* visit = find_visit(step);
@@ -736,9 +733,7 @@ public:
                 since_change_ = 0;
             }
 
-            const auto tenure = current_tenure();
-            while (!moves_.empty() && iteration_ - moves_.back().second >= tenure)
-                moves_.pop_back();
+            moves_.trim(iteration_, current_tenure());
         }
 
         [[nodiscard]]
@@ -798,7 +793,7 @@ public:
 
         ReactiveParameters parameters_;
         // Newest first.
-        std::deque<std::pair<Move, std::size_t>> moves_;
+        detail::aging_moves<Move> moves_;
         // The visits by solution hash; more than one only with verify_equality.
         std::unordered_map<std::uint64_t, std::vector<visit_record>> history_;
         double tenure_{1.0};
