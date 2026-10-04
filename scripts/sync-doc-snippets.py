@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Keep the code snippets of the documentation in sync with the examples.
+"""Keep the code snippets of the documentation and the README in sync with the
+examples.
 
 A fenced block preceded by
 
@@ -84,7 +85,7 @@ def markers(lines: list[str], ref: str, section: str) -> tuple[int, int]:
 def main() -> int:
     check = "--check" in sys.argv[1:]
     stale = []
-    for page in sorted(DOCS.rglob("*.md")):
+    for page in [*sorted(DOCS.rglob("*.md")), ROOT / "README.md"]:
         text = page.read_text(encoding="utf-8")
         synced = SNIPPET.sub(
             lambda m: m.group(1) + extract(m.group("ref")) + "\n" + m.group("close"),

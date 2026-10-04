@@ -224,18 +224,3 @@ October 2026, GCC 16 implements it behind `-freflection`; GCC 15, Clang 22
 and 23 (neither the `^^` operator nor libc++'s `<meta>`) and Apple Clang do
 not. Until all supported compilers have it, reflection could only be an
 optional path next to the hand-written schema.
-
-## A shorter README
-
-**Why.** The README has grown into a design log: next to the overview, the
-build and the citation, about 300 lines describe the header layout, the
-composition grammar, writing a runner, the cost expressions and the
-configuration layers, which the tutorial and the reference pages explain, and
-keep up to date, in more detail. Two copies of the same text drift apart.
-
-**What.** A README that introduces EasyLocal, shows a short example, says how to
-build, test and install it, and links the documentation for the rest: the
-quick start, the tutorial, the reference pages and the API reference.
-
-**When.** Next, after the audit of the codebase.
-

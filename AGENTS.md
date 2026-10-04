@@ -54,12 +54,15 @@ lint, AppleClang, GCC 15 Release, the optional components on Linux) and
 Windows clang-cl. `-f level=full` runs everything, as a release tag does:
 Linux GCC 15 and 16, Clang 22 and 23 with libstdc++ and with libc++, macOS
 AppleClang and GCC 16, the optional components on the three systems, and
-coverage. Every job builds with warnings as errors. Code that builds with one compiler may not build with another: when CI
-fails, reproduce it with that compiler locally (for example a GCC 15 Release
-build).
+coverage. Every job builds with warnings as errors. Code that builds with one
+compiler may not build with another: when CI fails, reproduce it with that
+compiler locally (for example a GCC 15 Release build), or run a Linux job in
+Docker with `scripts/act-ci.sh <toolchain>`.
 
 Python tools (`scripts/`, the documentation, the TUI end-to-end tests) run in
-the uv environment: `uv sync`, then `uv run ...`.
+the uv environment: `uv sync`, then `uv run ...`; `uv run mkdocs serve`
+previews the site, `scripts/coverage.sh` measures the coverage of
+`include/easylocal` (the CI badge).
 
 ## Code style
 
@@ -163,5 +166,14 @@ are staged, so it is formatted whole, in the same commit.
   hunk: leave others' changes out.
 - Messages follow Conventional Commits (`feat(runners): ...`, `fix(rest): ...`,
   `docs: ...`, `ci: ...`), with `!` for a breaking change.
-- EasyLocal 4 has no release yet: an API may change without keeping backward
-  compatibility.
+- Until 4.0.0 an API may change without keeping backward compatibility;
+  `docs/stability.md` says what each release promises.
+
+## Releases
+
+`VERSION` holds the version in preparation (`4.0.0-alpha.1`), whose section in
+`CHANGELOG.md` reads "not yet released". `scripts/release.sh` releases it: it
+dates the section, runs the Release build and its tests, commits, creates the
+annotated tag `vVERSION` and pushes both. The tag runs the full CI and the
+benchmarks. Then `VERSION` gets the next version, with its section in
+`CHANGELOG.md`.

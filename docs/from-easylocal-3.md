@@ -1098,6 +1098,12 @@ layer (`AutoState`, expressions). The shifting penalty runner and Simulated
 Annealing with learning are in the [roadmap](roadmap.md). A runner of your
 own is written once on `search_run` ([chapter 7](tutorial/07-custom-runner.md)).
 
+The EasyLocal 3 code compared here is the Bitbucket repository
+`satt/easylocal-3`, branch `no_output`, at commit `b40b14c`; the unfinished
+redesign in
+[iolab-uniud/easylocal-legacy](https://github.com/iolab-uniud/easylocal-legacy)
+was not the starting point of EasyLocal 4.
+
 ## Next steps
 
 The [reference](reference/README.md) describes every component in full.
