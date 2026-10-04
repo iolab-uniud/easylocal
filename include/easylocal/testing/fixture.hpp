@@ -129,7 +129,7 @@ concept check_fixture = detail::is_fixture_v<std::remove_cvref_t<T>>;
 namespace detail
 {
 
-// Builds a component or a delta evaluator the way an app does: from the Input
+// Builds a component or a delta cost component the way an app does: from the Input
 // when it takes one, default-constructed otherwise.
 template<class T, class Input>
 [[nodiscard]] T make_from_input(const Input& input)

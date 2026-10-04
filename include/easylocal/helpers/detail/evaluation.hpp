@@ -252,14 +252,14 @@ consteval bool validate_delta_binding()
         delta_component_active_v<SM, Binding>
             || delta_component_projected_out<SM, Binding>(),
         "attached delta names a component that is not active in the bound "
-        "SolutionManager recipe; the offending component and delta evaluator "
+        "SolutionManager recipe; the offending component and delta cost component "
         "types are shown in the template instantiation context");
 
     if constexpr (delta_component_active_v<SM, Binding>)
     {
         static_assert(
             delta_binding_compatible<SM, NHE, Binding>(),
-            "attached delta evaluator is incompatible with the bound component "
+            "attached delta cost component is incompatible with the bound component "
             "value, Solution, or Move type; the offending component and delta "
             "evaluator types are shown in the template instantiation context");
     }
@@ -291,7 +291,7 @@ consteval bool has_unique_delta_binding()
 {
     static_assert(
         Count <= 1,
-        "at most one delta evaluator may be attached to a component type; "
+        "at most one delta cost component may be attached to a component type; "
         "the offending component type is shown in the template instantiation "
         "context");
     return Count == 1;
@@ -405,7 +405,7 @@ private:
                         typename NHE::move_type,
                         typename SM::solution_type,
                         value_type>,
-                    "attached delta evaluator is incompatible with its component, "
+                    "attached delta cost component is incompatible with its component, "
                     "Solution, or Move");
 
                 return std::get<DeltaIndex>(neighborhood_.delta_bindings())

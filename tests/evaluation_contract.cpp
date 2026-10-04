@@ -404,9 +404,9 @@ int main()
             counters.second_full_evaluations == 2,
             "mixed candidate fully evaluates only the component without a delta");
         ok &= expect(
-            counters.first_delta_evaluations == 1 &&
-                counters.second_delta_evaluations == 0,
-            "mixed candidate invokes only the attached delta evaluator");
+            counters.first_delta_evaluations == 1
+                && counters.second_delta_evaluations == 0,
+            "mixed candidate invokes only the attached delta cost component");
         ok &= expect(
             counters.make_moves == 1,
             "mixed candidate materializes one Solution and commit never reapplies the move");
@@ -437,9 +437,9 @@ int main()
                 counters.second_full_evaluations == 2,
             "no-delta candidate fully evaluates each component exactly once");
         ok &= expect(
-            counters.first_delta_evaluations == 0 &&
-                counters.second_delta_evaluations == 0,
-            "no-delta candidate never invokes a delta evaluator");
+            counters.first_delta_evaluations == 0
+                && counters.second_delta_evaluations == 0,
+            "no-delta candidate never invokes a delta cost component");
         ok &= expect(
             counters.make_moves == 1,
             "no-delta candidate materializes one Solution and commit reuses it");

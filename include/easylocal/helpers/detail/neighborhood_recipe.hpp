@@ -98,7 +98,7 @@ public:
 
     static_assert(
         unique_types_v<typename DeltaSpecs::component_type...>,
-        "a neighborhood recipe may attach at most one delta evaluator "
+        "a neighborhood recipe may attach at most one delta cost component "
         "to each component type; the conflicting component type is shown in "
         "the template instantiation context");
 
@@ -176,7 +176,7 @@ public:
     {
         static_assert(
             !type_in_pack_v<Component, typename DeltaSpecs::component_type...>,
-            "a neighborhood recipe may attach at most one delta evaluator "
+            "a neighborhood recipe may attach at most one delta cost component "
             "to each component type; the conflicting component type is shown in "
             "the template instantiation context");
 
@@ -205,7 +205,7 @@ public:
     {
         static_assert(
             !type_in_pack_v<Component, typename DeltaSpecs::component_type...>,
-            "a neighborhood recipe may attach at most one delta evaluator "
+            "a neighborhood recipe may attach at most one delta cost component "
             "to each component type; the conflicting component type is shown in "
             "the template instantiation context");
 
@@ -234,7 +234,7 @@ public:
     {
         static_assert(
             !type_in_pack_v<Component, typename DeltaSpecs::component_type...>,
-            "a neighborhood recipe may attach at most one delta evaluator "
+            "a neighborhood recipe may attach at most one delta cost component "
             "to each component type; the conflicting component type is shown in "
             "the template instantiation context");
 
@@ -258,7 +258,7 @@ public:
     {
         static_assert(
             !type_in_pack_v<Component, typename DeltaSpecs::component_type...>,
-            "a neighborhood recipe may attach at most one delta evaluator "
+            "a neighborhood recipe may attach at most one delta cost component "
             "to each component type; the conflicting component type is shown in "
             "the template instantiation context");
 

@@ -546,8 +546,9 @@ int main()
             .construct(stateless_delta_manager);
     ok &= expect(
         std::tuple_size_v<
-            typename decltype(stateless_delta_neighborhood)::delta_bindings_type> == 1,
-        "a delta evaluator may be stateless and constructed without an Instance");
+            typename decltype(stateless_delta_neighborhood)::delta_bindings_type>
+            == 1,
+        "a delta cost component may be stateless and constructed without an Instance");
 
     int variant_make_moves = 0;
     auto variant_runner = easylocal::make_runner<FirstImprovement>({.max_evaluations = 2})
@@ -561,9 +562,8 @@ int main()
     const auto variant_result = variant_runner.bind(instance).run(initial);
 
     ok &= expect(
-        variant_result.cost.get<0>() == 0 &&
-            variant_result.cost.get<1>() == 0,
-        "the same delta evaluator type can be attached under distinct component identities");
+        variant_result.cost.get<0>() == 0 && variant_result.cost.get<1>() == 0,
+        "the same delta cost component type can be attached under distinct component identities");
     ok &= expect(
         variant_make_moves == 1,
         "distinct component identities remain an all-delta configuration");

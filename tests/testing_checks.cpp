@@ -242,9 +242,9 @@ int main()
         return 7;
     }
 
-    if (run_output.str().find("SolutionManager") == std::string::npos ||
-        run_output.str().find("cost component") == std::string::npos ||
-        run_output.str().find("delta evaluator") == std::string::npos)
+    if (run_output.str().find("SolutionManager") == std::string::npos
+        || run_output.str().find("cost component") == std::string::npos
+        || run_output.str().find("delta cost component") == std::string::npos)
     {
         return 8;
     }

@@ -1,6 +1,6 @@
 #pragma once
 
-// A delta evaluator for the exam-timetabling example's timeslot load, used by
+// A delta cost component for the exam-timetabling example's timeslot load, used by
 // the tests as a third delta bound to the same neighborhood. It is not part of
 // the example: counting the loads visits every exam, so it costs as much as
 // the full evaluation EasyLocal falls back to.

@@ -766,7 +766,7 @@ easylocal_add_compile_failure_test(
 easylocal_add_compile_failure_test(
     duplicate-delta
     duplicate_delta.cpp
-    "a neighborhood recipe may attach at most one delta evaluator to each component type"
+    "a neighborhood recipe may attach at most one delta cost component to each component type"
     "ComponentA"
 )
 easylocal_add_compile_failure_test(
@@ -778,25 +778,25 @@ easylocal_add_compile_failure_test(
 easylocal_add_compile_failure_test(
     incompatible-delta
     incompatible_delta.cpp
-    "attached delta evaluator is incompatible with the bound component value, Solution, or Move type"
+    "attached delta cost component is incompatible with the bound component value, Solution, or Move type"
     "MalformedDeltaA"
 )
 easylocal_add_compile_failure_test(
     incompatible-union-child-delta
     incompatible_union_child_delta.cpp
-    "attached delta evaluator is incompatible with the bound component value, Solution, or Move type"
+    "attached delta cost component is incompatible with the bound component value, Solution, or Move type"
     "MalformedDeltaA"
 )
 easylocal_add_compile_failure_test(
     missing-delta-evaluate
     missing_delta_evaluate.cpp
-    "attached delta evaluator is incompatible with the bound component value, Solution, or Move type"
+    "attached delta cost component is incompatible with the bound component value, Solution, or Move type"
     "MissingDeltaEvaluateA"
 )
 easylocal_add_compile_failure_test(
     delta-not-constructible
     delta_not_constructible.cpp
-    "a delta evaluator must be constructible either from the bound Instance followed by its recipe arguments or from its recipe arguments alone"
+    "a delta cost component must be constructible either from the bound Instance followed by its recipe arguments or from its recipe arguments alone"
     "NonConstructibleDeltaA"
 )
 easylocal_add_compile_failure_test(

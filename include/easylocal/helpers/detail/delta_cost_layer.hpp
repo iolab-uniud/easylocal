@@ -82,10 +82,8 @@ public:
                 else
                 {
                     static_assert(
-                        std::constructible_from<
-                            DeltaEvaluator,
-                            const StoredArgs&...>,
-                        "a delta evaluator must be constructible either from the "
+                        std::constructible_from<DeltaEvaluator, const StoredArgs&...>,
+                        "a delta cost component must be constructible either from the "
                         "bound Instance followed by its recipe arguments or from "
                         "its recipe arguments alone");
                     return binding_type{DeltaEvaluator{args...}};
@@ -159,7 +157,7 @@ public:
 
     static_assert(
         unique_types_v<typename DeltaSpecs::component_type...>,
-        "a neighborhood recipe may attach at most one delta evaluator "
+        "a neighborhood recipe may attach at most one delta cost component "
         "to each component type; the conflicting component type is shown in "
         "the template instantiation context");
 

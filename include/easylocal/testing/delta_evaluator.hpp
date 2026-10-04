@@ -3,7 +3,7 @@
 /// \file
 /// check_delta_evaluator: for the moves of the fixture Solution, value + delta
 /// equals the component's value after the move, for separate and co-located
-/// delta evaluators.
+/// delta cost components.
 
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/testing/check.hpp>
@@ -48,7 +48,7 @@ template<class Fixture, class NHE, class Component, class Delta>
     const auto& solution_manager = fixture.solution_manager();
     const auto& solution = fixture.solution();
 
-    check_report report{"delta evaluator"};
+    check_report report{"delta cost component"};
 
     if (!check_fixture_solution(report, fixture))
     {
@@ -148,7 +148,7 @@ template<class Fixture, class NHE, class Component, class Delta>
 /// neighborhood cannot enumerate), value + delta equals the component's value
 /// after the move.
 ///
-/// The delta comes from a separate delta evaluator...
+/// The delta comes from a separate delta cost component...
 template<check_fixture Fixture, class NHE, class Component, class DeltaEvaluator>
 [[nodiscard]] check_report check_delta_evaluator(
     const Fixture& fixture,
