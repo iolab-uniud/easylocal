@@ -99,8 +99,10 @@ inline constexpr bool text_readable_v<pareto<Values...>> =
 
 } // namespace detail
 
-/// Costs that from_text reads: arithmetic ones, and hierarchical,
-/// lexicographic and pareto costs of them. Others need the problem's read_cost.
+/// Costs that from_text reads: arithmetic ones, and hierarchical, lexicographic
+/// and pareto costs of them.
+///
+/// Others need the problem's read_cost.
 template<class Cost>
 concept text_readable = detail::text_readable_v<std::remove_cv_t<Cost>>;
 

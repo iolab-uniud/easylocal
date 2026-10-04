@@ -1,8 +1,10 @@
 #pragma once
 
 /// \file
-/// Common Solver infrastructure. A Solver orchestrates one or more Runners from
-/// an Input to a final solution; built-in solvers live in easylocal::solvers.
+/// Common Solver infrastructure.
+///
+/// A Solver orchestrates one or more Runners from an Input to a final solution;
+/// built-in solvers live in easylocal::solvers.
 
 #include <easylocal/runners/runner.hpp>
 
@@ -173,6 +175,7 @@ std::optional<termination_reason> termination_of(const Result& result) noexcept
 
 /// Constructs a Solver from its arguments, e.g.
 /// make_solver<solvers::MultiStart>(runner, solvers::MultiStartConfig{...}).
+///
 /// The Solver class template is its own key; its arguments are deduced.
 template<template<class...> class Solver, class... Args>
     requires requires(Args&&... args) { Solver{std::forward<Args>(args)...}; }

@@ -3,8 +3,10 @@
 /// \file
 /// Reading and writing a problem's values through its optional hooks: an Input
 /// from a stream or a file, a Solution from and to a stream or a file, and the
-/// text that describes an Input, a Solution or a Move. Session and the TextUI
-/// use the same functions; a program without them calls them directly.
+/// text that describes an Input, a Solution or a Move.
+///
+/// Session and the TextUI use the same functions; a program without them calls
+/// them directly.
 
 #include <concepts>
 #include <exception>
@@ -187,8 +189,9 @@ template<class T>
 concept describable =
     detail::io::has_own_describe<T> || detail::io::ostream_insertable<T>;
 
-/// Reads an Input from a stream with the first hook of readable_input. Throws
-/// std::runtime_error when the stream fails, or what the hook throws.
+/// Reads an Input from a stream with the first hook of readable_input.
+///
+/// Throws std::runtime_error when the stream fails, or what the hook throws.
 template<class Input>
     requires readable_input<Input>
 [[nodiscard]]
@@ -214,8 +217,10 @@ Input read_input(std::istream& in)
     return input;
 }
 
-/// Reads an Input from a file, as read_input does from a stream. Throws
-/// std::runtime_error, naming the file, when it cannot be opened or read.
+/// Reads an Input from a file, as read_input does from a stream.
+///
+/// Throws std::runtime_error, naming the file, when it cannot be opened or
+/// read.
 template<class Input>
     requires readable_input<Input>
 [[nodiscard]]
@@ -227,8 +232,9 @@ Input load_input(const std::filesystem::path& path)
 }
 
 /// Reads a Solution of input from a stream with the first hook of
-/// readable_solution. Throws std::runtime_error when the stream fails, or what
-/// the hook throws.
+/// readable_solution.
+///
+/// Throws std::runtime_error when the stream fails, or what the hook throws.
 template<class Solution, class Input>
     requires readable_solution<Input, Solution>
 [[nodiscard]]
@@ -255,7 +261,9 @@ Solution read_solution(const Input& input, std::istream& in)
 }
 
 /// Reads a Solution of input from a file, as read_solution does from a stream.
-/// Throws std::runtime_error, naming the file, when it cannot be opened or read.
+///
+/// Throws std::runtime_error, naming the file, when it cannot be opened or
+/// read.
 template<class Solution, class Input>
     requires readable_solution<Input, Solution>
 [[nodiscard]]
@@ -267,7 +275,9 @@ Solution load_solution(const Input& input, const std::filesystem::path& path)
 }
 
 /// Writes a Solution of input to a stream with the first hook of
-/// writable_solution. Throws std::runtime_error when the stream fails.
+/// writable_solution.
+///
+/// Throws std::runtime_error when the stream fails.
 template<class Input, class Solution>
     requires writable_solution<Input, Solution>
 void write_solution(const Input& input, const Solution& solution, std::ostream& out)
@@ -282,6 +292,7 @@ void write_solution(const Input& input, const Solution& solution, std::ostream& 
 }
 
 /// Writes a Solution of input to a file, as write_solution does to a stream.
+///
 /// Throws std::runtime_error, naming the file, when it cannot be written.
 template<class Input, class Solution>
     requires writable_solution<Input, Solution>

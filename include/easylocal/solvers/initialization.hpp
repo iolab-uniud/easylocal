@@ -31,6 +31,7 @@ inline constexpr Initial initial{};
 inline constexpr Random random{};
 
 /// Mode is the runtime-facing counterpart, suitable for CLI/configuration.
+///
 /// Unsupported runtime selections are rejected explicitly; there is never an
 /// implicit fallback from one initialization mode to another.
 enum class Mode

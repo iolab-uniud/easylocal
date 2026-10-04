@@ -154,12 +154,15 @@ public:
 
     using hard_cost_type = typename bound_first_runner_type::cost_type;
 
-    /// Stage 1 runs on the hard cost until it reaches cost::zero<hard_cost_type>();
-    /// stage 2 continues from its solution on the full cost. The optional
-    /// trailing run options (easylocal::with(control, tracer), .stop_at(target))
-    /// go to both stages, except the target, which applies to stage 2. After a
-    /// cancellation in stage 1, stage 2 only evaluates the solution and stops.
-    /// The result is stage 2's, with the effort of both stages.
+    /// Stage 1 runs on the hard cost until it reaches
+    /// cost::zero<hard_cost_type>(); stage 2 continues from its solution on the
+    /// full cost.
+    ///
+    /// The optional trailing run options (easylocal::with(control, tracer),
+    /// .stop_at(target)) go to both stages, except the target, which applies to
+    /// stage 2. After a cancellation in stage 1, stage 2 only evaluates the
+    /// solution and stops. The result is stage 2's, with the effort of both
+    /// stages.
     template<class... Options>
         requires easylocal::detail::solve_options<Options...>
     [[nodiscard]]

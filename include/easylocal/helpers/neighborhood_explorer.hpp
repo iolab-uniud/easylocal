@@ -248,8 +248,10 @@ inline detail::cursor_moves_view<Explorer, Solution> cursor_moves(
     return detail::cursor_moves_view<Explorer, Solution>{explorer, solution};
 }
 
-/// Unified deterministic-neighborhood customization point. The EL3 cursor
-/// protocol wins when both cursor and native range protocols are present.
+/// Unified deterministic-neighborhood customization point.
+///
+/// The EL3 cursor protocol wins when both cursor and native range protocols are
+/// present.
 template<class Explorer, class Solution>
     requires deterministic_neighborhood_for<Explorer, Solution>
 [[nodiscard]]
@@ -267,8 +269,10 @@ inline auto moves(
     }
 }
 
-/// Unified random-neighborhood customization point. A neighborhood may return
-/// std::optional<T> for any T from which its declared move_type can be built.
+/// Unified random-neighborhood customization point.
+///
+/// A neighborhood may return std::optional<T> for any T from which its declared
+/// move_type can be built.
 template<class Explorer, class Solution, std::uniform_random_bit_generator RNG>
     requires random_neighborhood_for<Explorer, Solution, RNG>
 [[nodiscard]]
@@ -315,9 +319,11 @@ inline bool inverse(
 }
 
 /// tabu_attribute(move): the attribute of a move that frequency-based memory
-/// counts, a value with std::hash and ==. A tabu_attribute member chooses it
-/// (the pair of jobs of a swap, ignoring their positions); without one, the
-/// move itself is the attribute when it has std::hash and ==.
+/// counts, a value with std::hash and ==.
+///
+/// A tabu_attribute member chooses it (the pair of jobs of a swap, ignoring
+/// their positions); without one, the move itself is the attribute when it has
+/// std::hash and ==.
 template<class NHE>
 concept has_tabu_attribute_member =
     requires(const NHE& neighborhood, const typename NHE::move_type& move) {
@@ -355,7 +361,9 @@ using tabu_attribute_t = decltype(easylocal::tabu_attribute(
     std::declval<const typename Explorer::move_type&>()));
 
 /// Optional non-virtual convenience base: associated types and the
-/// SolutionManager reference. Not required by the structural concepts above.
+/// SolutionManager reference.
+///
+/// Not required by the structural concepts above.
 template<class SolutionManager, class Move>
 class neighborhood_explorer_base
 {

@@ -87,7 +87,9 @@ struct neighborhood_selection
 
 /// The solution reached at the start of a run and after each applied move,
 /// identified by its hash (solution_hash): the nodes of search trajectory and
-/// local optima networks. Emitted only when the problem has a solution hash.
+/// local optima networks.
+///
+/// Emitted only when the problem has a solution hash.
 template<class Cost>
 struct solution_visited
 {

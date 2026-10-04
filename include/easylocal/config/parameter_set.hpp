@@ -2,9 +2,11 @@
 
 /// \file
 /// parameter_set: the parameters of one or more objects as paths and textual
-/// values, the common ground of the command line, configuration files, TOML, the
-/// TextUI and REST. It lists, validates and changes them transactionally (all
-/// overrides or none) on the objects it refers to.
+/// values, the common ground of the command line, configuration files, TOML,
+/// the TextUI and REST.
+///
+/// It lists, validates and changes them transactionally (all overrides or none)
+/// on the objects it refers to.
 
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/parameters.hpp>
@@ -114,10 +116,12 @@ void validate_block(
 
 } // namespace detail
 
-/// The parameters of one or more objects, as paths and textual values: what
-/// the command line, configuration files, TOML, the TextUI and REST read and
-/// change. A set refers to the objects it was built from, which must outlive
-/// it and stay in place; it holds no values of its own.
+/// The parameters of one or more objects, as paths and textual values: what the
+/// command line, configuration files, TOML, the TextUI and REST read and
+/// change.
+///
+/// A set refers to the objects it was built from, which must outlive it and
+/// stay in place; it holds no values of its own.
 ///
 /// Components give their parameters with paths relative to themselves; who
 /// composes them adds prefixes:
@@ -128,8 +132,9 @@ void validate_block(
 class parameter_set
 {
 public:
-    /// A block of values (a parameter_block): its fields, under prefix. A const
-    /// block is read-only.
+    /// A block of values (a parameter_block): its fields, under prefix.
+    ///
+    /// A const block is read-only.
     template<parameter_block Block>
     parameter_set& add(const std::string_view prefix, Block& block)
     {
@@ -219,11 +224,12 @@ public:
         return result;
     }
 
-    /// Applies textual overrides: all of them, or none. Every block they touch
-    /// is changed on a copy, parsed and validated first; only when every
-    /// override names a parameter and every touched block is valid are the
-    /// copies committed. The set itself does not change, only the objects it
-    /// refers to.
+    /// Applies textual overrides: all of them, or none.
+    ///
+    /// Every block they touch is changed on a copy, parsed and validated first;
+    /// only when every override names a parameter and every touched block is
+    /// valid are the copies committed. The set itself does not change, only the
+    /// objects it refers to.
     override_result apply(const std::span<const text_override> overrides) const
     {
         override_result result;

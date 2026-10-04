@@ -1,7 +1,9 @@
 #pragma once
 
 /// \file
-/// app_blueprint: a Crow blueprint that exposes an app over HTTP (docs/rest.md).
+/// app_blueprint: a Crow blueprint that exposes an app over HTTP
+/// (docs/rest.md).
+///
 /// It lists the runners and the parameters, submits runs (each on its own
 /// Session, with optional parameter overrides, target and initial solution),
 /// reports their state and solution, and cancels them. A codec of the problem

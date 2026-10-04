@@ -2,8 +2,9 @@
 
 /// \file
 /// Helpers to write the hash of a solution: hash_combine folds the hash of a
-/// value into a running hash, hash_range folds every element of a range. The
-/// result depends on the order of the values, and on std::hash, so it may
+/// value into a running hash, hash_range folds every element of a range.
+///
+/// The result depends on the order of the values, and on std::hash, so it may
 /// differ between standard libraries.
 
 #include <concepts>

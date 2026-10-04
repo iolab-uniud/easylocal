@@ -31,10 +31,12 @@ concept base_solution_manager =
         } -> std::convertible_to<bool>;
     };
 
-/// Optional SolutionManager construction capabilities. They deliberately do not
-/// participate in the minimal base_solution_manager contract: a Runner starts
-/// from an existing solution, while a Solver may choose to require one of these
-/// capabilities when it owns solution initialization.
+/// Optional SolutionManager construction capabilities.
+///
+/// They deliberately do not participate in the minimal base_solution_manager
+/// contract: a Runner starts from an existing solution, while a Solver may
+/// choose to require one of these capabilities when it owns solution
+/// initialization.
 ///
 /// Both operations are observed through a const SolutionManager. Randomness is
 /// supplied explicitly by the caller so that the future Solver layer can own
@@ -61,10 +63,12 @@ concept has_random_solution =
 
 /// Optional solution identity, for algorithms and tools that recognize a
 /// solution met before (reactive tabu search, search trajectories): a hash,
-/// equal for equal solutions, and an equality. A SolutionManager member takes
-/// precedence over the solution type's own std::hash or operator==, so that a
-/// problem can leave out redundant data (caches, derived matrices) or identify
-/// symmetric representations. Nothing in the framework requires them.
+/// equal for equal solutions, and an equality.
+///
+/// A SolutionManager member takes precedence over the solution type's own
+/// std::hash or operator==, so that a problem can leave out redundant data
+/// (caches, derived matrices) or identify symmetric representations. Nothing in
+/// the framework requires them.
 template<class SM>
 concept has_solution_hash_member =
     requires(const SM& solution_manager, const typename SM::solution_type& solution) {
@@ -115,8 +119,10 @@ constexpr bool solutions_equal(
         return static_cast<bool>(lhs == rhs);
 }
 
-/// Optional non-virtual convenience base: associated types and the bound
-/// Input reference. Not required by the structural concepts above.
+/// Optional non-virtual convenience base: associated types and the bound Input
+/// reference.
+///
+/// Not required by the structural concepts above.
 template<class Input, class Solution>
 class solution_manager_base
 {

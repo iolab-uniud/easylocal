@@ -146,7 +146,9 @@ template<class Fixture, class NHE, class Component, class Delta>
 
 /// For the valid moves of the fixture Solution (enumerated, or sampled when the
 /// neighborhood cannot enumerate), value + delta equals the component's value
-/// after the move. The delta comes from a separate delta evaluator...
+/// after the move.
+///
+/// The delta comes from a separate delta evaluator...
 template<check_fixture Fixture, class NHE, class Component, class DeltaEvaluator>
 [[nodiscard]] check_report check_delta_evaluator(
     const Fixture& fixture,

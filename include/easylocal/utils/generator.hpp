@@ -2,11 +2,13 @@
 
 /// \file
 /// easylocal::generator<T>: a coroutine that yields values of type T, lazily,
-/// as an input range. It is std::generator<T> where the standard library
-/// provides it, and a minimal equivalent otherwise (libc++ does not ship
-/// `<generator>` yet). Its intended use is NeighborhoodExplorer::moves(): the
-/// moves are produced one at a time, while the runner consumes them, instead
-/// of being materialized in a container.
+/// as an input range.
+///
+/// It is std::generator<T> where the standard library provides it, and a
+/// minimal equivalent otherwise (libc++ does not ship `<generator>` yet). Its
+/// intended use is NeighborhoodExplorer::moves(): the moves are produced one at
+/// a time, while the runner consumes them, instead of being materialized in a
+/// container.
 
 #include <version>
 
@@ -38,8 +40,10 @@ namespace easylocal
 
 /// The subset of std::generator<T> the framework relies on: co_yield of a
 /// value, a single pass over the yielded values, exceptions propagated to the
-/// consumer. Unlike std::generator, values are always copied or moved into the
-/// coroutine frame and co_yield ranges::elements_of(...) is not supported.
+/// consumer.
+///
+/// Unlike std::generator, values are always copied or moved into the coroutine
+/// frame and co_yield ranges::elements_of(...) is not supported.
 template<class T>
 class generator : public std::ranges::view_interface<generator<T>>
 {

@@ -24,9 +24,11 @@ struct LocalSearchConfig
 };
 
 /// The simplest Solver: bind one Runner to an Instance, construct the initial
-/// solution according to the selected mode, then run the search. The Solver owns
-/// the RNG; random initialization and random-aware algorithms consume the same
-/// explicit stream, preserving deterministic replay from a seed.
+/// solution according to the selected mode, then run the search.
+///
+/// The Solver owns the RNG; random initialization and random-aware algorithms
+/// consume the same explicit stream, preserving deterministic replay from a
+/// seed.
 ///
 /// The Runner/SolutionManager type determines which initialization modes exist.
 /// Static tags validate this at compile time; initialization::Mode provides the
@@ -91,8 +93,10 @@ public:
         return rng_;
     }
 
-    /// Solves from one initial solution. The optional trailing run options
-    /// (easylocal::with(control, tracer), .stop_at(target)) go to the run.
+    /// Solves from one initial solution.
+    ///
+    /// The optional trailing run options (easylocal::with(control, tracer),
+    /// .stop_at(target)) go to the run.
     template<class... Options>
         requires easylocal::detail::solve_options<Options...>
     [[nodiscard]]

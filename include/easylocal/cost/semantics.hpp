@@ -1,11 +1,12 @@
 #pragma once
 
 /// \file
-/// Semantic cost relations used by search algorithms. They are resolved through
-/// the SolutionManager: the function of a cost::apply at the root of the cost
-/// expression may customize them (better(...), equivalent(...),
-/// better_or_equivalent(...)); otherwise the cost type's own operators <, ==,
-/// <= are the exact default.
+/// Semantic cost relations used by search algorithms.
+///
+/// They are resolved through the SolutionManager: the function of a cost::apply
+/// at the root of the cost expression may customize them (better(...),
+/// equivalent(...), better_or_equivalent(...)); otherwise the cost type's own
+/// operators <, ==, <= are the exact default.
 
 #include <concepts>
 

@@ -2,11 +2,13 @@
 
 /// \file
 /// run_launcher: a menu of several apps on the same problem, each opened in the
-/// interactive tester when selected. The apps share the Input and the current
-/// solution, which the launcher owns: its first entry, "Input and solution",
-/// loads and saves them, and each app opens on them, creates solutions, moves
-/// and runs, but loads no files; what it leaves becomes the shared state, so a
-/// solution built with one neighborhood can be explored with another.
+/// interactive tester when selected.
+///
+/// The apps share the Input and the current solution, which the launcher owns:
+/// its first entry, "Input and solution", loads and saves them, and each app
+/// opens on them, creates solutions, moves and runs, but loads no files; what
+/// it leaves becomes the shared state, so a solution built with one
+/// neighborhood can be explored with another.
 
 #include <easylocal/adapters/tui/tester.hpp>
 #include <easylocal/app/session.hpp>
@@ -251,8 +253,9 @@ private:
 } // namespace detail
 
 /// Opens a menu of the apps, which share the Input (loaded from
-/// options.tester.input_path when it is set) and the current solution. The
-/// apps must have the same SolutionManager recipe: this is checked when the
+/// options.tester.input_path when it is set) and the current solution.
+///
+/// The apps must have the same SolutionManager recipe: this is checked when the
 /// program is compiled.
 template<class... Apps>
     requires(sizeof...(Apps) > 0) && (std::copy_constructible<Apps> && ...)

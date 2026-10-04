@@ -10,9 +10,11 @@
 namespace easylocal
 {
 
-/// A count that may be unlimited. It converts to and from std::size_t, so a
-/// limit is set with a number and compared with a count as one; unlimited is
-/// the largest std::size_t, which no count reaches. Zero is a limit of zero.
+/// A count that may be unlimited.
+///
+/// It converts to and from std::size_t, so a limit is set with a number and
+/// compared with a count as one; unlimited is the largest std::size_t, which no
+/// count reaches. Zero is a limit of zero.
 class limit
 {
 public:

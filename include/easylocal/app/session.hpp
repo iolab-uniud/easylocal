@@ -2,8 +2,10 @@
 
 /// \file
 /// Session: the state of an interactive session on an app (Input, current
-/// solution, selected move, RNG) and the commands that change it. It replaces
-/// EasyLocal 3's Tester; the TextUI and the REST adapter are views on it.
+/// solution, selected move, RNG) and the commands that change it.
+///
+/// It replaces EasyLocal 3's Tester; the TextUI and the REST adapter are views
+/// on it.
 
 #include <easylocal/app/check.hpp>
 #include <easylocal/app/io.hpp>
@@ -85,8 +87,10 @@ std::string report_text(const Value& value)
 
 /// The state of an interactive session on an app, and the commands that change
 /// it: an owned Input, the app bound to it, a current solution, a selected move
-/// and an RNG. It has no user interface of its own: interactive frontends, such
-/// as the TextUI, are views on it.
+/// and an RNG.
+///
+/// It has no user interface of its own: interactive frontends, such as the
+/// TextUI, are views on it.
 template<class App>
     requires std::move_constructible<App> && requires { typename App::input_type; }
 class Session
@@ -188,15 +192,18 @@ public:
         "to be available");
 
     /// A session without an Input yet: set_input or load_input provides it, as
-    /// in an interactive frontend. The seed initializes the RNG the session
-    /// gives to stochastic runners.
+    /// in an interactive frontend.
+    ///
+    /// The seed initializes the RNG the session gives to stochastic runners.
     explicit Session(App application, const std::uint64_t seed = 0)
         : app_{std::move(application)}, rng_{seed}
     {
     }
 
     /// A session on an Input, which it owns: the app bound to it, and the RNG
-    /// seeded with seed. Another Input is another session.
+    /// seeded with seed.
+    ///
+    /// Another Input is another session.
     Session(App application, input_type input, const std::uint64_t seed)
         : Session{std::move(application), seed}
     {
@@ -411,7 +418,9 @@ public:
     }
 
     /// A cost written as text, such as a target: by the problem's
-    /// read_cost(input, text) when it has one, else as cost::from_text reads it.
+    /// read_cost(input, text) when it has one, else as cost::from_text reads
+    /// it.
+    ///
     /// Throws std::invalid_argument when the text is not a cost.
     [[nodiscard]]
     cost_type read_cost(const std::string_view text) const
@@ -439,10 +448,11 @@ public:
     }
 
     /// Changes the parameters of the app, with the paths of configuration():
-    /// all of them, validated, or none. The session's services are rebuilt
-    /// with the new values, so the costs it reports follow them; the current
-    /// solution stays and the selected move is cleared. The runners read their
-    /// parameters at each run.
+    /// all of them, validated, or none.
+    ///
+    /// The session's services are rebuilt with the new values, so the costs it
+    /// reports follow them; the current solution stays and the selected move is
+    /// cleared. The runners read their parameters at each run.
     config::override_result configure(
         const std::span<const config::text_override> overrides)
         requires requires(App& application) { application.configuration(); }
@@ -470,7 +480,9 @@ public:
     }
 
     /// Runs the runner registered under name from the current solution, which
-    /// it replaces with the runner's result; false when no runner has that name.
+    /// it replaces with the runner's result; false when no runner has that
+    /// name.
+    ///
     /// Options are with(control, tracer). Like every app run, it uses freshly
     /// bound services and the current runner parameters, not this session's
     /// bound app.

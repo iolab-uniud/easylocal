@@ -2,6 +2,7 @@
 
 /// \file
 /// Lexicographically ordered cost: values are compared in declaration order.
+///
 /// A lexicographic cost has no numeric delta.
 
 #include <easylocal/cost/concepts.hpp>

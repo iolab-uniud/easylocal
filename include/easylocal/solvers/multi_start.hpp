@@ -50,8 +50,10 @@ struct MultiStartConfig
 };
 
 /// Repeatedly initialize and run the same bound Runner, retaining the best
-/// result according to the bound runner's cost semantics. `starts`
-/// denotes the total number of runs (not the number of runs after a first one).
+/// result according to the bound runner's cost semantics.
+///
+/// `starts` denotes the total number of runs (not the number of runs after a
+/// first one).
 template<class RunnerType, std::uniform_random_bit_generator RNG = std::mt19937_64>
 class MultiStart
     : public easylocal::detail::InitializationSupport<
@@ -118,9 +120,11 @@ public:
     }
 
     /// Runs up to `starts` times from fresh solutions and returns the best
-    /// result, with the effort of every start. The optional trailing run
-    /// options go to every run; cancellation, or a run that reaches the target,
-    /// ends the solve (termination cancelled / target_reached, else completed).
+    /// result, with the effort of every start.
+    ///
+    /// The optional trailing run options go to every run; cancellation, or a
+    /// run that reaches the target, ends the solve (termination cancelled /
+    /// target_reached, else completed).
     template<class... Options>
         requires easylocal::detail::solve_options<Options...>
     [[nodiscard]]

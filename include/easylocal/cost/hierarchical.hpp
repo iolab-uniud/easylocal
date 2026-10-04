@@ -2,8 +2,9 @@
 
 /// \file
 /// Hierarchical hard/soft cost: the hard branch has strict priority, soft is
-/// compared only when hard is equivalent. Each branch may itself be scalar or
-/// structured (e.g. cost::lexicographic).
+/// compared only when hard is equivalent.
+///
+/// Each branch may itself be scalar or structured (e.g. cost::lexicographic).
 ///
 /// delta() preserves the hard level: hard better -> -inf, hard worse -> +inf,
 /// hard equivalent -> soft delta. This lets delta-based acceptance work on the
@@ -61,8 +62,10 @@ private:
     SoftCost soft_;
 };
 
-/// Hard-preserving numeric delta. A namespace-scope function (not a hidden
-/// friend) so that the qualified cost::delta(...) also finds it.
+/// Hard-preserving numeric delta.
+///
+/// A namespace-scope function (not a hidden friend) so that the qualified
+/// cost::delta(...) also finds it.
 template<class HardCost, class SoftCost>
     requires requires(const HardCost& lhs, const HardCost& rhs) {
         { lhs < rhs } -> std::convertible_to<bool>;

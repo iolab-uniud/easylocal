@@ -3,8 +3,10 @@
 /// \file
 /// Parameter blocks: plain structs that describe their own fields with a
 /// compile-time schema (config::field, config::group, config::fields) and check
-/// them with validate(). Runners, neighborhoods, cost expressions and programs
-/// declare their parameters this way.
+/// them with validate().
+///
+/// Runners, neighborhoods, cost expressions and programs declare their
+/// parameters this way.
 
 #include <concepts>
 #include <cstddef>

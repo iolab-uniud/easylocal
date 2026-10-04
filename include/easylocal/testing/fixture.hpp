@@ -25,9 +25,11 @@ struct check_options
 };
 
 /// The data every component check runs on: an Input, a valid Solution and the
-/// SolutionManager built on the Input. Values are compared with Equivalent
-/// (operator== by default; pass a tolerance-based comparison for floating
-/// point costs that accumulate rounding errors).
+/// SolutionManager built on the Input.
+///
+/// Values are compared with Equivalent (operator== by default; pass a
+/// tolerance-based comparison for floating point costs that accumulate rounding
+/// errors).
 ///
 /// The fixture owns the Input the SolutionManager refers to, so it can be
 /// neither copied nor moved: construct it in place.

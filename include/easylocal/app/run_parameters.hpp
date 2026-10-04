@@ -44,8 +44,9 @@ template<class Input, class Cost>
 concept readable_cost =
     detail::cost_text_adl::has_read_cost<Input, Cost> || cost::text_readable<Cost>;
 
-/// A cost written as text, such as a target: by the problem's
-/// read_cost(input, text) when it has one, else as cost::from_text reads it.
+/// A cost written as text, such as a target: by the problem's read_cost(input,
+/// text) when it has one, else as cost::from_text reads it.
+///
 /// Throws std::invalid_argument (or what the problem's read_cost throws) when
 /// the text is not a cost.
 template<class Cost, class Input>
@@ -60,8 +61,10 @@ Cost read_cost(const Input& input, const std::string_view text)
 }
 
 /// The options of a run that a program reads with its configuration, for
-/// example under "run": --run.target=0. The target stays text until the Input
-/// is known, since a problem may read its costs with read_cost(input, text).
+/// example under "run": --run.target=0.
+///
+/// The target stays text until the Input is known, since a problem may read its
+/// costs with read_cost(input, text).
 struct RunParameters
 {
     std::string target;
@@ -82,8 +85,10 @@ struct RunParameters
     }
 
     /// The target as a cost of the problem, read with read_cost; empty when no
-    /// target is set. Throws std::invalid_argument, naming the field, when the
-    /// text is not a cost.
+    /// target is set.
+    ///
+    /// Throws std::invalid_argument, naming the field, when the text is not a
+    /// cost.
     template<class Cost, class Input>
         requires readable_cost<Input, Cost>
     [[nodiscard]]

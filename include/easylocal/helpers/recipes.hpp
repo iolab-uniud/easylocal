@@ -4,8 +4,9 @@
 /// Composition vocabulary for problem-side components: SolutionManager recipes
 /// (solution_manager<SM>() | component<C>(), or a cost expression over several
 /// components, see <easylocal/cost/expression.hpp>) and neighborhood recipes
-/// (neighborhood<NHE>() | delta<C, D>()). Recipes are constructed lazily from the bound
-/// Input by runners and apps.
+/// (neighborhood<NHE>() | delta<C, D>()).
+///
+/// Recipes are constructed lazily from the bound Input by runners and apps.
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
@@ -117,9 +118,11 @@ auto component(Args&&... args)
 }
 
 /// The recipe of a NeighborhoodExplorer constructed from the SolutionManager
-/// and args. For an explorer with parameters (parameterized_neighborhood), a
-/// first argument of its parameters_type gives its parameters, which otherwise
-/// are the defaults.
+/// and args.
+///
+/// For an explorer with parameters (parameterized_neighborhood), a first
+/// argument of its parameters_type gives its parameters, which otherwise are
+/// the defaults.
 template<class NHE, class... Args>
 [[nodiscard]]
 auto neighborhood(Args&&... args)

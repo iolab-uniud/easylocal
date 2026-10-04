@@ -1,9 +1,10 @@
 #pragma once
 
 /// \file
-/// ELTR binary recording: encoders, buffered and asynchronous recorders. A
-/// trace describes itself: its header gives the metadata of the run, the layout
-/// of the costs and the fields of every event (docs/tracing.md).
+/// ELTR binary recording: encoders, buffered and asynchronous recorders.
+///
+/// A trace describes itself: its header gives the metadata of the run, the
+/// layout of the costs and the fields of every event (docs/tracing.md).
 
 #include <easylocal/trace/events.hpp>
 #include <easylocal/trace/tracer.hpp>

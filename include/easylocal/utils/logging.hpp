@@ -38,8 +38,10 @@ struct record
     std::source_location location{};
 };
 
-/// A sink is invoked synchronously. String views in a record are guaranteed to
-/// remain valid only for the duration of the call. Sinks must not throw.
+/// A sink is invoked synchronously.
+///
+/// String views in a record are guaranteed to remain valid only for the
+/// duration of the call. Sinks must not throw.
 using sink = void (*)(const record&) noexcept;
 
 [[nodiscard]]

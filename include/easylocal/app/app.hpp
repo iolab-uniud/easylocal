@@ -3,6 +3,7 @@
 /// \file
 /// app: a problem's components gathered under a name, written as a pipe
 /// (app("tsp") | solution_manager | neighborhood | runner<...>("name", {...})).
+///
 /// An app is bound to an Input (bound_app) to get its services, runs any of its
 /// runners by name, and exposes all its parameters as one parameter_set. Tools
 /// (Session, TextUI, REST) work on apps.
@@ -35,9 +36,11 @@ struct run_effort
     termination_reason termination{termination_reason::completed};
 };
 
-/// The result of a runner chosen by name. Each algorithm has its own result
-/// type; what every result provides (search_result_for) is the solution and its
-/// cost, and the effort when the result has it.
+/// The result of a runner chosen by name.
+///
+/// Each algorithm has its own result type; what every result provides
+/// (search_result_for) is the solution and its cost, and the effort when the
+/// result has it.
 template<class Solution, class Cost>
 struct named_run_result
 {

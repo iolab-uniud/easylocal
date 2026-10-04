@@ -1,10 +1,11 @@
 #pragma once
 
 /// \file
-/// The interactive tester (TextUI): an FTXUI frontend on a Session. It loads
-/// and saves Inputs and Solutions, shows the current solution and its cost,
-/// explores and applies moves, edits the parameters and runs the registered
-/// runners with progress and cancellation.
+/// The interactive tester (TextUI): an FTXUI frontend on a Session.
+///
+/// It loads and saves Inputs and Solutions, shows the current solution and its
+/// cost, explores and applies moves, edits the parameters and runs the
+/// registered runners with progress and cancellation.
 
 #include <easylocal/app/check.hpp>
 #include <easylocal/app/io.hpp>

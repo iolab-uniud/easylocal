@@ -1,11 +1,12 @@
 #pragma once
 
 /// \file
-/// cli::run: an app as a command-line program. It reads the Input, the seed,
-/// the runner and the app's parameters from the command line and a
-/// configuration file, runs the runner by name on a Session, and prints the
-/// cost and the solution: the batch counterpart of the TextUI and the REST
-/// service.
+/// cli::run: an app as a command-line program.
+///
+/// It reads the Input, the seed, the runner and the app's parameters from the
+/// command line and a configuration file, runs the runner by name on a Session,
+/// and prints the cost and the solution: the batch counterpart of the TextUI
+/// and the REST service.
 
 #include <easylocal/app/io.hpp>
 #include <easylocal/app/run_parameters.hpp>
@@ -31,8 +32,10 @@ namespace easylocal::cli
 {
 
 /// The command line of cli::run: --instance, --seed, --runner, --start,
-/// --solution, --output, --target and --report. The app's parameters come next
-/// to them: `--runners.<name>.*`, `--cost.*` and `--neighborhood.*`.
+/// --solution, --output, --target and --report.
+///
+/// The app's parameters come next to them: `--runners.<name>.*`, `--cost.*` and
+/// `--neighborhood.*`.
 struct parameters
 {
     /// Every field has an initializer, so that designated initializers, as in
@@ -132,9 +135,10 @@ void write_solution(std::ostream& out, const Session& session)
 /// chosen runner and prints "cost", "time" (seconds), the effort of the run
 /// ("iterations", "evaluations", "termination") when the algorithm reports it,
 /// with --report the value of each cost component, and the solution, or saves
-/// it to --output. Returns the exit
-/// status: 0 on success, 1 when the run fails (an unreadable file, for example), 2 for an
-/// invalid command line.
+/// it to --output.
+///
+/// Returns the exit status: 0 on success, 1 when the run fails (an unreadable
+/// file, for example), 2 for an invalid command line.
 template<class App>
 [[nodiscard]]
 int run(App application, const int argc, char* argv[], options settings = {})
