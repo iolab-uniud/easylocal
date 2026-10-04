@@ -180,6 +180,20 @@ class Tui:
     def type(self, text: str) -> "Tui":
         return self.press(*text)
 
+    def step(self, key: str, limit: float = 2.0) -> "Tui":
+        """Press `key` and wait for the screen to change (for at most `limit`
+        seconds, as a key may change nothing): a slow machine may redraw after
+        the quiet time of `press`, and a loop pressing until a marker shows
+        would then press once too often."""
+        before = self.text()
+        os.write(self.fd, key.encode())
+        deadline = time.time() + limit
+        while self.text() == before and time.time() < deadline:
+            if not self.pump(0.05):
+                break
+        self.settle()
+        return self
+
     # -- expectations ---------------------------------------------------------
 
     def wait_until(self, condition: Callable[[str], bool], timeout: float = 10.0,
@@ -212,7 +226,7 @@ class Tui:
         for _ in range(attempts):
             if marker in self.text():
                 return self
-            self.press(key)
+            self.step(key)
         raise TuiError(f"{marker!r} never appeared\n{self.text()}")
 
     def focus(self, label: str, key: str = DOWN, attempts: int = 20) -> "Tui":
@@ -221,7 +235,7 @@ class Tui:
         for _ in range(attempts):
             if marker in self.text():
                 return self
-            self.press(key)
+            self.step(key)
         raise TuiError(f"{marker!r} never got the focus\n{self.text()}")
 
     def cost(self) -> int | float:

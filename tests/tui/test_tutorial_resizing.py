@@ -242,24 +242,23 @@ def test_a_run_goes_on_while_the_terminal_is_resized(tui):
     tui.select("sa")
     tui.press("G")
     tui.expect("Parameters of sa")
-    # A slower cooling makes the run last a few seconds (about 9 on a laptop).
+    # So slow a cooling that the run lasts until X stops it.
     tui.press(TAB, TAB, *[BACKSPACE] * 4)
-    tui.type("0.9999")
+    tui.type("0.99999999")
     send(tui, ENTER)
     tui.expect("Running sa [eval=")
 
     seen = evaluations(tui)
     for columns, lines in ((80, 24), (60, 20), (120, 40), (100, 30)):
         tui.resize(columns, lines, limit=0.5)
-        if "Runner completed: sa" in tui.text():
-            pytest.fail(f"the run ended before {columns}x{lines}: make it longer")
         assert_framed(tui)
         tui.expect(" Progress ", timeout=1)
         tui.wait_until(lambda _: evaluations(tui) > seen, timeout=5,
                        what=f"the progress to move on in {columns}x{lines}")
         seen = evaluations(tui)
 
-    tui.expect("Runner completed: sa", timeout=120)
+    send(tui, "X")
+    tui.expect("Runner stopped: sa", timeout=10)
     tui.expect_absent(" Progress ")
     assert_framed(tui)
     final = int(tui.expect(re.compile(rf"sa: {INITIAL_COST} -> (\d+)")).group(1))
