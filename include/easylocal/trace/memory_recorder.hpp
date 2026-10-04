@@ -6,8 +6,8 @@
 #include <easylocal/trace/events.hpp>
 #include <easylocal/trace/tracer.hpp>
 
+#include <concepts>
 #include <cstddef>
-#include <cstdint>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -24,12 +24,8 @@ template<class Cost>
 class memory_recorder
 {
 public:
-    /// A recorded `event::run_started`.
-    struct run_started_record
-    {
-        /// The cost of the initial solution.
-        Cost cost;
-    };
+    /// A recorded `event::run_started`, as it is.
+    using run_started_record = event::run_started<Cost>;
 
     /// A recorded `event::move_evaluated`, its route copied.
     struct move_evaluated_record
@@ -63,29 +59,11 @@ public:
         std::vector<std::size_t> neighborhood;
     };
 
-    /// A recorded `event::incumbent_updated`.
-    struct incumbent_updated_record
-    {
-        /// Evaluations so far.
-        std::size_t evaluations{};
-        /// Iterations so far.
-        std::size_t iterations{};
-        /// The cost of the previous best solution.
-        Cost previous_cost;
-        /// The cost of the new best solution.
-        Cost cost;
-    };
+    /// A recorded `event::incumbent_updated`, as it is.
+    using incumbent_updated_record = event::incumbent_updated<Cost>;
 
-    /// A recorded `event::local_optimum`.
-    struct local_optimum_record
-    {
-        /// Evaluations so far.
-        std::size_t evaluations{};
-        /// Iterations so far.
-        std::size_t iterations{};
-        /// The cost of the local optimum.
-        Cost cost;
-    };
+    /// A recorded `event::local_optimum`, as it is.
+    using local_optimum_record = event::local_optimum<Cost>;
 
     /// A recorded `event::neighborhood_selection`, its route copied.
     struct neighborhood_selection_record
@@ -106,66 +84,31 @@ public:
         std::vector<std::size_t> neighborhood;
     };
 
-    /// A recorded `event::solution_visited`.
-    struct solution_visited_record
-    {
-        /// Evaluations so far.
-        std::size_t evaluations{};
-        /// Iterations so far.
-        std::size_t iterations{};
-        /// The solution hash of the solution.
-        std::uint64_t hash{};
-        /// The cost of the solution.
-        Cost cost;
-    };
+    /// A recorded `event::solution_visited`, as it is.
+    using solution_visited_record = event::solution_visited<Cost>;
 
-    /// A recorded `event::aspiration_applied`.
-    struct aspiration_applied_record
-    {
-        /// Evaluations so far.
-        std::size_t evaluations{};
-        /// Iterations so far.
-        std::size_t iterations{};
-        /// The cost of the solution after the move.
-        Cost cost;
-    };
+    /// A recorded `event::aspiration_applied`, as it is.
+    using aspiration_applied_record = event::aspiration_applied<Cost>;
 
-    /// A recorded `event::tabu_escape`.
-    struct tabu_escape_record
-    {
-        /// Evaluations so far.
-        std::size_t evaluations{};
-        /// Iterations so far.
-        std::size_t iterations{};
-        /// The number of random moves of the escape.
-        std::size_t moves{};
-    };
+    /// A recorded `event::tabu_escape`, as it is.
+    using tabu_escape_record = event::tabu_escape;
 
-    /// A recorded `event::tabu_tenure_changed`.
-    struct tabu_tenure_changed_record
-    {
-        /// Evaluations so far.
-        std::size_t evaluations{};
-        /// Iterations so far.
-        std::size_t iterations{};
-        /// The tenure before the change, 0 at the start of a run.
-        std::size_t previous_tenure{};
-        /// The new tenure.
-        std::size_t tenure{};
-    };
+    /// A recorded `event::tabu_tenure_changed`, as it is.
+    using tabu_tenure_changed_record = event::tabu_tenure_changed;
 
-    /// A recorded `event::run_finished`.
-    struct run_finished_record
-    {
-        /// Evaluations in the run.
-        std::size_t evaluations{};
-        /// Iterations in the run.
-        std::size_t iterations{};
-        /// The cost of the solution returned.
-        Cost cost;
-        /// Why the run ended.
-        termination_reason termination{termination_reason::completed};
-    };
+    /// A recorded `event::run_finished`, as it is.
+    using run_finished_record = event::run_finished<Cost>;
+
+    /// Whether an event is recorded as it is: it has no route to copy.
+    template<class Event>
+    static constexpr bool stored_as_is = std::same_as<Event, run_started_record>
+        || std::same_as<Event, incumbent_updated_record>
+        || std::same_as<Event, local_optimum_record>
+        || std::same_as<Event, solution_visited_record>
+        || std::same_as<Event, aspiration_applied_record>
+        || std::same_as<Event, tabu_escape_record>
+        || std::same_as<Event, tabu_tenure_changed_record>
+        || std::same_as<Event, run_finished_record>;
 
     /// A recorded event.
     using record = std::variant<
@@ -184,12 +127,6 @@ public:
     /// Whether the recorder receives Event: always.
     template<class Event>
     static constexpr bool observes = true;
-
-    /// Records the event.
-    void emit(const event::run_started<Cost>& value)
-    {
-        records_.emplace_back(run_started_record{value.cost});
-    }
 
     /// Records the event.
     void emit(const event::move_evaluated<Cost>& value)
@@ -216,27 +153,6 @@ public:
     }
 
     /// Records the event.
-    void emit(const event::incumbent_updated<Cost>& value)
-    {
-        records_.emplace_back(incumbent_updated_record{
-            value.evaluations,
-            value.iterations,
-            value.previous_cost,
-            value.cost,
-        });
-    }
-
-    /// Records the event.
-    void emit(const event::local_optimum<Cost>& value)
-    {
-        records_.emplace_back(local_optimum_record{
-            value.evaluations,
-            value.iterations,
-            value.cost,
-        });
-    }
-
-    /// Records the event.
     void emit(const event::neighborhood_selection& value)
     {
         records_.emplace_back(neighborhood_selection_record{
@@ -250,62 +166,12 @@ public:
         });
     }
 
-    /// Records the event.
-    void emit(const event::solution_visited<Cost>& value)
+    /// Records the event, an event without a route, as it is.
+    template<class Event>
+        requires stored_as_is<Event>
+    void emit(const Event& value)
     {
-        records_.emplace_back(
-            solution_visited_record{
-                .evaluations = value.evaluations,
-                .iterations = value.iterations,
-                .hash = value.hash,
-                .cost = value.cost,
-            });
-    }
-
-    /// Records the event.
-    void emit(const event::aspiration_applied<Cost>& value)
-    {
-        records_.emplace_back(
-            aspiration_applied_record{
-                .evaluations = value.evaluations,
-                .iterations = value.iterations,
-                .cost = value.cost,
-            });
-    }
-
-    /// Records the event.
-    void emit(const event::tabu_escape& value)
-    {
-        records_.emplace_back(
-            tabu_escape_record{
-                .evaluations = value.evaluations,
-                .iterations = value.iterations,
-                .moves = value.moves,
-            });
-    }
-
-    /// Records the event.
-    void emit(const event::tabu_tenure_changed& value)
-    {
-        records_.emplace_back(
-            tabu_tenure_changed_record{
-                .evaluations = value.evaluations,
-                .iterations = value.iterations,
-                .previous_tenure = value.previous_tenure,
-                .tenure = value.tenure,
-            });
-    }
-
-    /// Records the event.
-    void emit(const event::run_finished<Cost>& value)
-    {
-        records_.emplace_back(
-            run_finished_record{
-                value.evaluations,
-                value.iterations,
-                value.cost,
-                value.termination,
-            });
+        records_.emplace_back(value);
     }
 
     /// The recorded events, in the order they were emitted.
@@ -357,12 +223,6 @@ private:
     };
 
     template<class Tracer>
-    static void replay_record(Tracer& tracer, const run_started_record& value)
-    {
-        trace::emit(tracer, event::run_started<Cost>{.cost = value.cost});
-    }
-
-    template<class Tracer>
     static void replay_record(Tracer& tracer, const move_evaluated_record& value)
     {
         const route_nodes route{value.neighborhood};
@@ -393,31 +253,6 @@ private:
     }
 
     template<class Tracer>
-    static void replay_record(Tracer& tracer, const incumbent_updated_record& value)
-    {
-        trace::emit(
-            tracer,
-            event::incumbent_updated<Cost>{
-                .evaluations = value.evaluations,
-                .iterations = value.iterations,
-                .previous_cost = value.previous_cost,
-                .cost = value.cost,
-            });
-    }
-
-    template<class Tracer>
-    static void replay_record(Tracer& tracer, const local_optimum_record& value)
-    {
-        trace::emit(
-            tracer,
-            event::local_optimum<Cost>{
-                .evaluations = value.evaluations,
-                .iterations = value.iterations,
-                .cost = value.cost,
-            });
-    }
-
-    template<class Tracer>
     static void replay_record(Tracer& tracer, const neighborhood_selection_record& value)
     {
         const route_nodes route{value.neighborhood};
@@ -434,67 +269,11 @@ private:
             });
     }
 
-    template<class Tracer>
-    static void replay_record(Tracer& tracer, const solution_visited_record& value)
+    template<class Tracer, class Event>
+        requires stored_as_is<Event>
+    static void replay_record(Tracer& tracer, const Event& value)
     {
-        trace::emit(
-            tracer,
-            event::solution_visited<Cost>{
-                .evaluations = value.evaluations,
-                .iterations = value.iterations,
-                .hash = value.hash,
-                .cost = value.cost,
-            });
-    }
-
-    template<class Tracer>
-    static void replay_record(Tracer& tracer, const aspiration_applied_record& value)
-    {
-        trace::emit(
-            tracer,
-            event::aspiration_applied<Cost>{
-                .evaluations = value.evaluations,
-                .iterations = value.iterations,
-                .cost = value.cost,
-            });
-    }
-
-    template<class Tracer>
-    static void replay_record(Tracer& tracer, const tabu_escape_record& value)
-    {
-        trace::emit(
-            tracer,
-            event::tabu_escape{
-                .evaluations = value.evaluations,
-                .iterations = value.iterations,
-                .moves = value.moves,
-            });
-    }
-
-    template<class Tracer>
-    static void replay_record(Tracer& tracer, const tabu_tenure_changed_record& value)
-    {
-        trace::emit(
-            tracer,
-            event::tabu_tenure_changed{
-                .evaluations = value.evaluations,
-                .iterations = value.iterations,
-                .previous_tenure = value.previous_tenure,
-                .tenure = value.tenure,
-            });
-    }
-
-    template<class Tracer>
-    static void replay_record(Tracer& tracer, const run_finished_record& value)
-    {
-        trace::emit(
-            tracer,
-            event::run_finished<Cost>{
-                .evaluations = value.evaluations,
-                .iterations = value.iterations,
-                .cost = value.cost,
-                .termination = value.termination,
-            });
+        trace::emit(tracer, value);
     }
 
     std::vector<record> records_;
