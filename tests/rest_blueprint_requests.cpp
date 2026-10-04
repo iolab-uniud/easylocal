@@ -83,6 +83,24 @@ public:
     }
 };
 
+// Runs until it is asked to stop.
+class EndlessRunner
+{
+public:
+    using parameters_type = NoParameters;
+
+    explicit EndlessRunner(NoParameters) {}
+
+    template<class Run>
+    auto run(Run& run, Run::solution_type solution) const
+    {
+        auto current = run.start(solution);
+        while (!run.should_stop())
+            std::this_thread::sleep_for(1ms);
+        return run.finish(std::move(solution), current.cost());
+    }
+};
+
 // Fails as soon as it starts, with a std::exception or with something else.
 template<bool StandardException>
 class BrokenRunner
@@ -127,6 +145,7 @@ public:
             .with_neighborhood(nhe)
             .with_runner<easylocal::runners::FirstImprovement>("fi")
             .with_runner<GatedRunner>("gated")
+            .with_runner<EndlessRunner>("endless")
             .with_runner<BrokenRunner<true>>("broken")
             .with_runner<BrokenRunner<false>>("very-broken")
             .with_pipeline(
@@ -537,6 +556,41 @@ void a_full_queue_rejects_runs_and_a_queued_run_can_be_cancelled(crow::SimpleApp
         send(server, crow::HTTPMethod::GET, "/assignment/runs/" + queued_id).code == 404);
 }
 
+// Destroying the blueprint stops its runs: the running one stops, the queued
+// one never starts, and the destructor does not wait for either to end alone.
+void destroying_the_blueprint_stops_its_runs()
+{
+    const auto started = std::chrono::steady_clock::now();
+    {
+        auto api = easylocal::rest::blueprint(
+            "/stopping",
+            make_application(),
+            AssignmentCodec{},
+            easylocal::rest::blueprint_options{.workers = 1, .queue_capacity = 1});
+        crow::SimpleApp server;
+        server.loglevel(crow::LogLevel::Warning);
+        server.register_blueprint(api.crow_blueprint());
+        server.add_blueprint();
+        server.validate();
+
+        const auto start = [&server] {
+            return send(
+                server,
+                crow::HTTPMethod::POST,
+                "/stopping/runners/endless/runs",
+                R"({"input": {}})");
+        };
+        const auto running = start();
+        assert(running.code == 202);
+        const auto status_url = "/stopping/runs/" + text(running.body["id"]);
+        while (text(send(server, crow::HTTPMethod::GET, status_url).body["status"])
+            != "running")
+            std::this_thread::sleep_for(1ms);
+        assert(start().code == 202); // queued behind it
+    }
+    assert(std::chrono::steady_clock::now() - started < 10s);
+}
+
 void an_empty_prefix_is_rejected()
 {
     bool rejected = false;
@@ -586,5 +640,6 @@ int main()
     an_arithmetic_target_is_a_number();
     a_full_queue_rejects_runs_and_a_queued_run_can_be_cancelled(server);
     an_empty_prefix_is_rejected();
+    destroying_the_blueprint_stops_its_runs();
     run_gate.open(); // never leave a worker waiting on exit
 }

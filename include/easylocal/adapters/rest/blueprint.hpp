@@ -305,6 +305,15 @@ public:
     app_blueprint(app_blueprint&&) = delete;
     app_blueprint& operator=(app_blueprint&&) = delete;
 
+    /// Stops the runs: those queued end cancelled without starting, those
+    /// running stop at their next check; then waits for them.
+    ~app_blueprint()
+    {
+        const std::lock_guard lock{runs_mutex_};
+        for (auto& entry : runs_)
+            entry.second->stop_source.request_stop();
+    }
+
     /// The Crow blueprint, to register on a Crow app.
     [[nodiscard]] crow::Blueprint& crow_blueprint() noexcept
     {
