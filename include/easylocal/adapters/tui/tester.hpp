@@ -226,7 +226,7 @@ template<class Tester>
 template<class T>
 [[nodiscard]] std::string value_text(const T& value)
 {
-    if constexpr (easylocal::detail::io::has_own_describe<T>)
+    if constexpr (easylocal::has_describe<T>)
     {
         return easylocal::describe(value);
     }
@@ -2336,8 +2336,7 @@ private:
             progress_visible_ = true;
             set_status(status_kind::info, "Runner executing: " + run_name_);
 
-            run_progress_state_ =
-                std::make_shared<easylocal::detail::atomic_run_progress>();
+            run_progress_state_ = std::make_shared<easylocal::shared_run_progress>();
 
             std::promise<async_runner_result<typename tester_type::solution_type>> promise;
             run_future_ = promise.get_future();
@@ -3440,7 +3439,7 @@ private:
     ftxui::Component evaluations_input_;
     std::jthread run_worker_{};
     std::future<async_runner_result<typename tester_type::solution_type>> run_future_{};
-    std::shared_ptr<easylocal::detail::atomic_run_progress> run_progress_state_;
+    std::shared_ptr<easylocal::shared_run_progress> run_progress_state_;
     std::string run_name_;
     std::string run_before_;
     std::optional<typename tester_type::cost_type> run_target_;

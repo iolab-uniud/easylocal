@@ -122,7 +122,7 @@ int main()
     static_assert(std::three_way_comparable<LexicographicCost>);
     static_assert(cost::lexicographic_type<LexicographicCost>);
     static_assert(!cost::lexicographic_type<int>);
-    static_assert(cost::lexicographic_traits<LexicographicCost>::size == 2);
+    static_assert(LexicographicCost::levels == 2);
     static_assert(std::three_way_comparable<HierarchicalCost>);
     static_assert(!std::same_as<LexicographicCost, HierarchicalCost>);
     static_assert(!subtractable_cost<LexicographicCost>);

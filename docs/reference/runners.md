@@ -303,7 +303,9 @@ Great Deluge, Simulated Annealing and the tabu searches use it.
 | `timeout(5s)`, `timeout(2.5)`, `with(...).timeout(...)` | stop once the time limit has passed since the run started: a `std::chrono` duration or a number of seconds; termination `time_limit_reached` |
 
 `run_control{stop_token, observer}` calls `observer(const run_progress&)` with
-`evaluations`, `iterations` and `evaluation_limit`.
+`evaluations`, `iterations` and `evaluation_limit`. A frontend that shows the
+progress from another thread stores it in a `shared_run_progress` from the
+observer and loads a copy when it draws, as the TextUI and the REST server do.
 
 The options combine in any order:
 `with(control).timeout(30s).max_evaluations(100000).stop_at(0)`. A

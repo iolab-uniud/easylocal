@@ -59,28 +59,22 @@ struct zero_cost<lexicographic<Values...>>
     }
 };
 
-/// Whether `T` is a `cost::lexicographic`, and its number of values.
+/// Whether `T` is a `cost::lexicographic`.
 template<class T>
-struct lexicographic_traits
+struct is_lexicographic : std::false_type
 {
-    /// Whether `T` is a `cost::lexicographic`.
-    static constexpr bool value = false;
-    /// The number of values of `T`, 0 when it is not a `cost::lexicographic`.
-    static constexpr std::size_t size = 0;
 };
 
 template<class... Values>
-struct lexicographic_traits<lexicographic<Values...>>
+struct is_lexicographic<lexicographic<Values...>> : std::true_type
 {
-    static constexpr bool value = true;
-    static constexpr std::size_t size = sizeof...(Values);
 };
 
 /// Whether `T`, without cv and reference qualifiers, is a
 /// `cost::lexicographic`.
 template<class T>
 inline constexpr bool is_lexicographic_v =
-    lexicographic_traits<std::remove_cvref_t<T>>::value;
+    is_lexicographic<std::remove_cvref_t<T>>::value;
 
 /// A `cost::lexicographic`, possibly cv- or reference-qualified.
 template<class T>

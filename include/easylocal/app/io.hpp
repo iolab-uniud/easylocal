@@ -122,10 +122,6 @@ concept member_describable = requires(const T& value) {
     { value.describe() } -> std::convertible_to<std::string>;
 };
 
-// A describe hook of the value itself, member or free, without operator<<.
-template<class T>
-concept has_own_describe = member_describable<T> || adl::has_describe<T>;
-
 inline void require_read_success(const std::istream& in, const std::string_view what)
 {
     if (in.fail())
@@ -183,11 +179,16 @@ concept writable_solution = detail::io::has_member_solution_write<Input, Solutio
     || detail::io::adl::has_write_solution<Input, Solution>
     || detail::io::ostream_insertable<Solution>;
 
+/// A value with a describe hook of its own: a member value.describe(), or a
+/// free describe(value) found by ADL; operator<< does not count.
+template<class T>
+concept has_describe =
+    detail::io::member_describable<T> || detail::io::adl::has_describe<T>;
+
 /// A value with a text for people: a member value.describe(), a free
 /// describe(value) found by ADL, or operator<<, in this order.
 template<class T>
-concept describable =
-    detail::io::has_own_describe<T> || detail::io::ostream_insertable<T>;
+concept describable = has_describe<T> || detail::io::ostream_insertable<T>;
 
 /// Reads an Input from a stream with the first hook of readable_input.
 ///

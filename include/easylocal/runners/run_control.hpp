@@ -94,15 +94,14 @@ private:
     observer_type observer_{};
 };
 
-namespace detail
-{
-
-// The progress of a run that another thread reads: the run's observer stores
-// it, the reader loads a copy. Each counter is read on its own (relaxed), so a
-// copy may mix two reports.
-class atomic_run_progress
+/// The progress of a run, shared with another thread: the run's observer stores
+/// it, a frontend loads a copy while the run goes on.
+///
+/// Each counter is read on its own (relaxed), so a copy may mix two reports.
+class shared_run_progress
 {
 public:
+    /// Stores the progress the run reports.
     void store(const run_progress& progress) noexcept
     {
         evaluations_.store(progress.evaluations, std::memory_order_relaxed);
@@ -115,6 +114,7 @@ public:
             std::memory_order_relaxed);
     }
 
+    /// A copy of the progress last stored.
     [[nodiscard]]
     run_progress load() const noexcept
     {
@@ -134,7 +134,5 @@ private:
     std::atomic<std::size_t> evaluation_limit_{};
     std::atomic_bool has_evaluation_limit_{};
 };
-
-} // namespace detail
 
 } // namespace easylocal

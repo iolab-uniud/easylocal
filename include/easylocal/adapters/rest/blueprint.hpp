@@ -358,7 +358,7 @@ private:
         std::optional<solution_type> solution;
         std::optional<cost_type> cost;
         std::string error;
-        easylocal::detail::atomic_run_progress progress;
+        easylocal::shared_run_progress progress;
     };
 
     [[nodiscard]] static std::string_view state_name(const run_state state) noexcept

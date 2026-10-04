@@ -42,7 +42,8 @@ program:
 
 The concepts `readable_input<Input>`, `readable_solution<Input, Solution>`,
 `writable_solution<Input, Solution>` and `describable<T>` tell whether a
-hook exists. The functions throw `std::runtime_error` when a stream fails (or
+hook exists; `has_describe<T>` whether `T` has a `describe` of its own, member
+or free, not just `operator<<`. The functions throw `std::runtime_error` when a stream fails (or
 what a hook throws); the file functions report errors as
 `std::runtime_error` naming the file.
 
