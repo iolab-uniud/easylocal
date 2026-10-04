@@ -9,7 +9,7 @@ reviewed by hand before tagging.
 
 ## [Unreleased]
 
-## [4.0.0-alpha.1] — not yet released
+## [4.0.0-alpha.1] — 2026-10-04
 
 A pre-release: the API, header paths included, may still change before 4.0.0
 ([API stability](docs/stability.md#pre-releases)).
