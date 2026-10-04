@@ -177,7 +177,7 @@ public:
 
             auto move = run.random_move(current->solution, rng);
             if (!move.has_value())
-                break;
+                return finish(run, termination_reason::local_optimum);
 
             run.next_iteration();
             auto candidate =

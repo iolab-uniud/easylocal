@@ -1793,7 +1793,11 @@ public:
             auto move = run.random_move(solution, rng);
             if (!move.has_value())
             {
-                break;
+                // No move to try: as Hill Climbing, a local optimum.
+                return run.finish(
+                    std::move(best.solution),
+                    std::move(best.cost),
+                    termination_reason::local_optimum);
             }
 
             run.next_iteration();

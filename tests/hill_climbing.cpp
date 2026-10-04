@@ -1,8 +1,11 @@
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
+#include <easylocal/runners/great_deluge.hpp>
 #include <easylocal/runners/hill_climbing.hpp>
+#include <easylocal/runners/late_acceptance_hill_climbing.hpp>
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/runners/runner.hpp>
+#include <easylocal/runners/simulated_annealing.hpp>
 #include <easylocal/trace.hpp>
 
 #include <algorithm>
@@ -204,6 +207,32 @@ int main()
             result.termination == termination_reason::local_optimum
                 && result.iterations == 10 && result.evaluations == 11,
             "hill climbing ends at a solution without moves");
+    }
+
+    // The other runners that draw random moves end the same way when the
+    // neighborhood proposes none: here the solution is the end of the chain.
+    {
+        const auto chain = [](auto runner) {
+            return std::move(runner)
+                | (solution_manager<ChainSolutionManager>() | component<UphillCost>())
+                | neighborhood<ChainNeighborhood>();
+        };
+        const auto ends_at_local_optimum = [&](auto runner, const std::string_view name) {
+            std::mt19937 rng{7U};
+            const auto result = runner.bind(instance).run(
+                ChainSolution{.value = ChainNeighborhood::end},
+                rng);
+            return expect(result.termination == termination_reason::local_optimum, name);
+        };
+        ok &= ends_at_local_optimum(
+            chain(make_runner<LateAcceptanceHillClimbing>({})),
+            "late acceptance ends at a solution without moves");
+        ok &= ends_at_local_optimum(
+            chain(make_runner<GreatDeluge>({})),
+            "great deluge ends at a solution without moves");
+        ok &= ends_at_local_optimum(
+            chain(make_runner<SimulatedAnnealing<>>({})),
+            "simulated annealing ends at a solution without moves");
     }
 
     {

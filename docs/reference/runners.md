@@ -60,6 +60,9 @@ the current one, so it moves across plateaus where a descent stops. It ends
 with `idle_limit_reached` after `max_idle_iterations` consecutive proposals
 without a strict improvement, or with `local_optimum` when the neighborhood
 proposes no move. Its cost never worsens, so the final solution is the best.
+Every runner that draws random moves (Late Acceptance, Great Deluge, Simulated
+Annealing, Pareto Late Acceptance) also ends with `local_optimum` when the
+neighborhood proposes none.
 
 Late Acceptance Hill Climbing (Burke and Bykov) also accepts a move whose cost
 is better than or equivalent to the cost the current solution had
