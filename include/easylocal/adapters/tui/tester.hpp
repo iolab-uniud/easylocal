@@ -56,8 +56,11 @@ enum class path_display_mode
     both,
 };
 
-/// The options of the interactive tester. input_path and solution_path are the
-/// initial paths of the Input/Output page; run() loads the Input from input_path.
+/// The options of the interactive tester.
+///
+/// input_path and solution_path are the initial paths of the Input/Output page,
+/// and run() loads the Input from input_path; a relative path is relative to
+/// path_base, or to the working directory when path_base is empty.
 struct options
 {
     std::string title{"EasyLocal Tester"};
@@ -451,6 +454,15 @@ struct file_entry
         return path.lexically_normal();
     }
     return (effective_base / path).lexically_normal();
+}
+
+// The Input file the tester loads at start: options.input_path, relative to
+// options.path_base as every path of the Input/Output page.
+[[nodiscard]] inline std::filesystem::path initial_input_file(const options& settings)
+{
+    return absolute_path_from(
+        std::filesystem::path{settings.input_path},
+        settings.path_base);
 }
 
 [[nodiscard]] inline std::filesystem::path relative_path_from(
@@ -3307,7 +3319,7 @@ void run(App application, tui::options settings = {})
     if constexpr (session_type::supports_input_loading)
     {
         if (!settings.input_path.empty())
-            session.load_input(std::filesystem::path{settings.input_path});
+            session.load_input(detail::initial_input_file(settings));
     }
     detail::tester_frontend<App>{session, std::move(settings)}.run();
 }

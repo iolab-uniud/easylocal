@@ -15,7 +15,6 @@
 
 #include <concepts>
 #include <cstddef>
-#include <filesystem>
 #include <ftxui/ftxui.hpp>
 #include <memory>
 #include <optional>
@@ -113,7 +112,7 @@ public:
             if (!options_.tester.input_path.empty())
                 input_ =
                     std::make_shared<const input_type>(easylocal::load_input<input_type>(
-                        std::filesystem::path{options_.tester.input_path}));
+                        detail::initial_input_file(options_.tester)));
         }
 
         while (const auto selected = choose_application())

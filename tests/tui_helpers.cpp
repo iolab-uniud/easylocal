@@ -82,8 +82,14 @@ struct unnamed_value
 int main()
 {
     using easylocal::tui::path_display_mode;
-    using easylocal::tui::detail::page_available;
+    using easylocal::tui::detail::context_pages_available;
+    using easylocal::tui::detail::directory_entries;
+    using easylocal::tui::detail::display_path;
+    using easylocal::tui::detail::editable_path;
+    using easylocal::tui::detail::initial_input_file;
+    using easylocal::tui::detail::object_name;
     using easylocal::tui::detail::page_after_solution_change;
+    using easylocal::tui::detail::page_available;
     using easylocal::tui::detail::page_index;
     using easylocal::tui::detail::page_scroll_selection;
     using easylocal::tui::detail::path_basename;
@@ -93,14 +99,9 @@ int main()
     using easylocal::tui::detail::solution_stage;
     using easylocal::tui::detail::solution_stage_of;
     using easylocal::tui::detail::split_text_lines;
-    using easylocal::tui::detail::wrap_text_lines;
     using easylocal::tui::detail::tester_page;
-    using easylocal::tui::detail::context_pages_available;
-    using easylocal::tui::detail::directory_entries;
-    using easylocal::tui::detail::display_path;
-    using easylocal::tui::detail::editable_path;
-    using easylocal::tui::detail::object_name;
     using easylocal::tui::detail::value_text;
+    using easylocal::tui::detail::wrap_text_lines;
 
     assert(value_text(member_described{}) == "member");
     assert(value_text(adl_case::value{}) == "adl");
@@ -222,6 +223,12 @@ int main()
     assert(editable_path(target, path_display_mode::both, fixture) == "a.txt");
     assert(editable_path(target, path_display_mode::absolute, fixture) ==
            target.lexically_normal().string());
+    assert(
+        initial_input_file({.input_path = "a.txt", .path_base = fixture})
+        == target.lexically_normal());
+    assert(
+        initial_input_file({.input_path = target.string(), .path_base = "elsewhere"})
+        == target.lexically_normal());
 
     std::filesystem::remove_all(fixture);
 
