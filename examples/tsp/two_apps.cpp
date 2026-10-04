@@ -5,8 +5,8 @@
 
 #include <iostream>
 
-#ifndef EASYLOCAL_TSP_MWE_INSTANCE_FILE
-#error "EASYLOCAL_TSP_MWE_INSTANCE_FILE must name the example instance"
+#ifndef EASYLOCAL_TSP_INSTANCE_FILE
+#error "EASYLOCAL_TSP_INSTANCE_FILE must name the example instance"
 #endif
 
 int main()
@@ -17,7 +17,7 @@ int main()
     auto swap = tsp::swap_app();
 
     const auto instance =
-        easylocal::load_input<tsp::TspInstance>(EASYLOCAL_TSP_MWE_INSTANCE_FILE);
+        easylocal::load_input<tsp::TspInstance>(EASYLOCAL_TSP_INSTANCE_FILE);
 
     // The 2-opt local optimum is the starting point of the swap search.
     auto two_opt_bound = two_opt.bind(instance);

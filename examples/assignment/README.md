@@ -7,7 +7,7 @@
 `instances/small.assignment`:
 
 ```sh
-./build/<preset>/examples/assignment/easylocal_assignment_mwe
+./build/<preset>/examples/assignment/easylocal_assignment
 ```
 
 It prints the cost, the running time, the effort of the run (iterations,
@@ -16,7 +16,7 @@ evaluations, termination) and the solution. `--help` lists the switches:
 `--target`, `--report` and the runners' parameters, for example:
 
 ```sh
-./build/<preset>/examples/assignment/easylocal_assignment_mwe \
+./build/<preset>/examples/assignment/easylocal_assignment \
   --runners.fi.max_evaluations=25
 ```
 
@@ -28,7 +28,7 @@ The same configuration can be supplied from a compact file. File values are
 applied before CLI values, so explicit CLI options win:
 
 ```sh
-./build/<preset>/examples/assignment/easylocal_assignment_mwe \
+./build/<preset>/examples/assignment/easylocal_assignment \
   --config examples/assignment/configs/small.cfg \
   --runners.fi.max_evaluations=25
 ```
@@ -369,7 +369,7 @@ The current MWE deliberately does not define:
 ## TextUI run-control demo
 
 When the optional TextUI component is enabled,
-`easylocal_assignment_tui_mwe` starts from
+`easylocal_assignment_tui` starts from
 `instances/large.assignment` (250 jobs, 16 machines) and registers two runners:
 
 - `fi`, the ordinary first-improvement runner;
@@ -386,10 +386,10 @@ The ordinary Assignment MWE continues to use `instances/small.assignment`.
 
 ## REST MWE
 
-When the optional REST component is enabled, `easylocal_assignment_rest_mwe`
+When the optional REST component is enabled, `easylocal_assignment_rest`
 mounts the generic EasyLocal Crow Blueprint at `/assignment` and listens on port
 18080 by default. Optional arguments are the port and completed-run retention
-capacity, for example `easylocal_assignment_rest_mwe 18081 16`. The retention
+capacity, for example `easylocal_assignment_rest 18081 16`. The retention
 default is 64. The server registers both `fi` and the demo-only `slow-fi`.
 
 Run creation uses the generic REST envelope. The Assignment codec accepts either

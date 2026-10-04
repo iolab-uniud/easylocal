@@ -163,8 +163,8 @@ easylocal::tui::run_launcher(
         .tester =
             {
                 .seed = 0,
-                .input_path = EASYLOCAL_TSP_MWE_INSTANCE_FILE,
-                .solution_path = EASYLOCAL_TSP_MWE_SOLUTION_FILE,
+                .input_path = EASYLOCAL_TSP_INSTANCE_FILE,
+                .solution_path = EASYLOCAL_TSP_SOLUTION_FILE,
             },
     },
     tsp::two_opt_app(),

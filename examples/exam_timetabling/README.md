@@ -34,14 +34,14 @@ it with `easylocal::cli::run`, on `instances/small.exam` from the
 SolutionManager's `initial_solution()`, with the seed 2026 by default:
 
 ```sh
-./build/<preset>/examples/exam_timetabling/easylocal_exam_timetabling_mwe
+./build/<preset>/examples/exam_timetabling/easylocal_exam_timetabling
 ```
 
 `--help` lists the switches; the runner's parameters are
 `--runners.sa.temperature.*` and the cost's weights `--cost.weights`:
 
 ```sh
-./build/<preset>/examples/exam_timetabling/easylocal_exam_timetabling_mwe \
+./build/<preset>/examples/exam_timetabling/easylocal_exam_timetabling \
   --runners.sa.temperature.max_iterations=10 \
   --seed=42
 ```
@@ -52,7 +52,7 @@ value, `--target=0` at the first one with no penalty.
 A compact configuration file can provide the same dotted paths:
 
 ```sh
-./build/<preset>/examples/exam_timetabling/easylocal_exam_timetabling_mwe \
+./build/<preset>/examples/exam_timetabling/easylocal_exam_timetabling \
   --config examples/exam_timetabling/configs/small.cfg
 ```
 

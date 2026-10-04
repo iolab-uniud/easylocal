@@ -79,14 +79,14 @@ evaluation for that component. Nested unions preserve the same rule.
 With the default top-level build, run it as:
 
 ```text
-./build/<preset>/examples/tsp/easylocal_tsp_sa_mwe
+./build/<preset>/examples/tsp/easylocal_tsp_sa
 ```
 
 For example, the same executable can override both SA parameters and union
 biases without changing the MWE source:
 
 ```sh
-./build/<preset>/examples/tsp/easylocal_tsp_sa_mwe \
+./build/<preset>/examples/tsp/easylocal_tsp_sa \
   --runners.sa.temperature.max_iterations=50 \
   --neighborhood.random_biases='[1, 4]'
 ```
@@ -97,13 +97,13 @@ biases without changing the MWE source:
 known optimum for example:
 
 ```sh
-./build/<preset>/examples/tsp/easylocal_tsp_sa_mwe --target=26
+./build/<preset>/examples/tsp/easylocal_tsp_sa --target=26
 ```
 
 The example also accepts a compact configuration file:
 
 ```sh
-./build/<preset>/examples/tsp/easylocal_tsp_sa_mwe \
+./build/<preset>/examples/tsp/easylocal_tsp_sa \
   --config examples/tsp/configs/small.cfg \
   --runners.sa.temperature.max_iterations=50
 ```

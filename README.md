@@ -213,7 +213,7 @@ uses the std-only `easylocal::run_control` capability, passed as
 contract: the framework-owned `search_run` checks the control and reports
 progress, so adapters can stop any registered runner. TextUI background runs use
 the same isolation and control rules.
-The Assignment examples include `easylocal_assignment_rest_mwe`, which mounts
+The Assignment examples include `easylocal_assignment_rest`, which mounts
 the generic Blueprint at `/assignment` while leaving Crow server configuration
 fully visible to the application. REST run creation uses a stable envelope whose
 `input` and optional `initial_solution` members are opaque JSON values interpreted
@@ -346,9 +346,9 @@ identity outside the framework types while making the effective runner
 configuration introspectable.
 
 The Assignment executable is
-`./build/<preset>/examples/assignment/easylocal_assignment_mwe`; Exam
-Timetabling adds `easylocal_exam_timetabling_mwe`; and the TSP executable is
-`easylocal_tsp_sa_mwe`. The TSP example composes 2-opt and swap neighborhoods
+`./build/<preset>/examples/assignment/easylocal_assignment`; Exam
+Timetabling adds `easylocal_exam_timetabling`; and the TSP executable is
+`easylocal_tsp_sa`. The TSP example composes 2-opt and swap neighborhoods
 through `neighborhood_union(...)`, applies the bias values held by its
 `NeighborhoodUnionParameters<2>` block, attaches child-local tour-length deltas,
 and passes an explicit RNG to `run()`. A neighborhood union propagates a

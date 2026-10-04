@@ -141,7 +141,7 @@ ServerOptions parse_server_options(int argc, char** argv)
     if (argc < 1 || argc > 3)
     {
         throw std::invalid_argument{
-            "usage: easylocal_assignment_rest_mwe [port [completed-run-capacity]]"};
+            "usage: easylocal_assignment_rest [port [completed-run-capacity]]"};
     }
 
     ServerOptions options;

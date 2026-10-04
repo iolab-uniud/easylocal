@@ -3,8 +3,8 @@
 
 #include <easylocal/adapters/tui/tester.hpp>
 
-#ifndef EASYLOCAL_ASSIGNMENT_MWE_INSTANCE_FILE
-#error "EASYLOCAL_ASSIGNMENT_MWE_INSTANCE_FILE must name the example instance"
+#ifndef EASYLOCAL_ASSIGNMENT_INSTANCE_FILE
+#error "EASYLOCAL_ASSIGNMENT_INSTANCE_FILE must name the example instance"
 #endif
 
 int main()
@@ -15,6 +15,6 @@ int main()
         {
             .title = "EasyLocal Assignment Tester",
             .seed = 0,
-            .input_path = EASYLOCAL_ASSIGNMENT_MWE_INSTANCE_FILE,
+            .input_path = EASYLOCAL_ASSIGNMENT_INSTANCE_FILE,
         });
 }

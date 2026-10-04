@@ -218,7 +218,7 @@ easylocal_add_test(
     SOURCES
         run_control.cpp
     LIBRARIES
-        easylocal_assignment_mwe_model
+        easylocal_assignment_model
 )
 
 easylocal_add_test(
@@ -312,7 +312,7 @@ easylocal_add_test(
     SOURCES
         testing_checks.cpp
     LIBRARIES
-        easylocal_assignment_mwe_model
+        easylocal_assignment_model
 )
 
 easylocal_add_test(
@@ -320,7 +320,7 @@ easylocal_add_test(
     SOURCES
         assignment_model.cpp
     LIBRARIES
-        easylocal_assignment_mwe_model
+        easylocal_assignment_model
 )
 
 easylocal_add_test(
@@ -328,7 +328,7 @@ easylocal_add_test(
     SOURCES
         assignment_neighborhood.cpp
     LIBRARIES
-        easylocal_assignment_mwe_model
+        easylocal_assignment_model
 )
 
 easylocal_add_test(
@@ -336,7 +336,7 @@ easylocal_add_test(
     SOURCES
         assignment_search.cpp
     LIBRARIES
-        easylocal_assignment_mwe_model
+        easylocal_assignment_model
 )
 
 easylocal_add_test(
@@ -344,7 +344,7 @@ easylocal_add_test(
     SOURCES
         tsp_model.cpp
     LIBRARIES
-        easylocal_tsp_mwe_model
+        easylocal_tsp_model
 )
 
 easylocal_add_test(
@@ -352,7 +352,7 @@ easylocal_add_test(
     SOURCES
         tsp_neighborhood.cpp
     LIBRARIES
-        easylocal_tsp_mwe_model
+        easylocal_tsp_model
 )
 
 easylocal_add_test(
@@ -360,7 +360,7 @@ easylocal_add_test(
     SOURCES
         tsp_swap_neighborhood.cpp
     LIBRARIES
-        easylocal_tsp_mwe_model
+        easylocal_tsp_model
 )
 
 easylocal_add_test(
@@ -376,7 +376,7 @@ easylocal_add_test(
     SOURCES
         tsp_evaluation.cpp
     LIBRARIES
-        easylocal_tsp_mwe_model
+        easylocal_tsp_model
 )
 
 easylocal_add_test(
@@ -384,7 +384,7 @@ easylocal_add_test(
     SOURCES
         tsp_delta.cpp
     LIBRARIES
-        easylocal_tsp_mwe_model
+        easylocal_tsp_model
 )
 
 easylocal_add_test(
@@ -400,7 +400,7 @@ easylocal_add_test(
     SOURCES
         tsp_floating_point.cpp
     LIBRARIES
-        easylocal_tsp_mwe_model
+        easylocal_tsp_model
 )
 
 easylocal_add_test(
@@ -408,7 +408,7 @@ easylocal_add_test(
     SOURCES
         exam_timetabling.cpp
     LIBRARIES
-        easylocal_exam_timetabling_mwe_model
+        easylocal_exam_timetabling_model
 )
 
 easylocal_add_test(
@@ -416,7 +416,7 @@ easylocal_add_test(
     SOURCES
         simulated_annealing.cpp
     LIBRARIES
-        easylocal_exam_timetabling_mwe_model
+        easylocal_exam_timetabling_model
 )
 
 easylocal_add_test(
@@ -500,7 +500,7 @@ easylocal_add_test(
     SOURCES
         cost_semantics.cpp
     LIBRARIES
-        easylocal_assignment_mwe_model
+        easylocal_assignment_model
 )
 
 easylocal_add_test(
@@ -508,7 +508,7 @@ easylocal_add_test(
     SOURCES
         runner_composition.cpp
     LIBRARIES
-        easylocal_assignment_mwe_model
+        easylocal_assignment_model
 )
 
 easylocal_add_test(
@@ -516,7 +516,7 @@ easylocal_add_test(
     SOURCES
         service_composition.cpp
     LIBRARIES
-        easylocal_assignment_mwe_model
+        easylocal_assignment_model
 )
 
 easylocal_add_test(
@@ -524,7 +524,7 @@ easylocal_add_test(
     SOURCES
         parameters.cpp
     LIBRARIES
-        easylocal_tsp_mwe_model
+        easylocal_tsp_model
 )
 
 easylocal_add_test(
@@ -541,7 +541,7 @@ easylocal_add_test(
     SOURCES
         configuration_overrides.cpp
     LIBRARIES
-        easylocal_tsp_mwe_model
+        easylocal_tsp_model
 )
 
 easylocal_add_test(
@@ -573,7 +573,7 @@ easylocal_add_test(
     SOURCES
         neighborhood_composition.cpp
     LIBRARIES
-        easylocal_assignment_mwe_model
+        easylocal_assignment_model
 )
 
 
@@ -583,7 +583,7 @@ if(TARGET EasyLocal::TUI)
         SOURCES
             tui_tester_compile.cpp
         LIBRARIES
-            easylocal_assignment_mwe_model
+            easylocal_assignment_model
             EasyLocal::TUI
     )
 
@@ -865,10 +865,10 @@ if(TARGET easylocal_pfsp_tabu)
         PROPERTIES PASS_REGULAR_EXPRESSION "\niterations 50\n")
 endif()
 
-if(TARGET easylocal_assignment_mwe)
+if(TARGET easylocal_assignment)
     add_test(
         NAME easylocal.example.assignment-cli-help
-        COMMAND easylocal_assignment_mwe --help
+        COMMAND easylocal_assignment --help
     )
     set_tests_properties(
         easylocal.example.assignment-cli-help
@@ -878,7 +878,7 @@ if(TARGET easylocal_assignment_mwe)
 
     add_test(
         NAME easylocal.example.assignment-cli-override
-        COMMAND easylocal_assignment_mwe --runners.fi.max_evaluations=1
+        COMMAND easylocal_assignment --runners.fi.max_evaluations=1
     )
     set_tests_properties(
         easylocal.example.assignment-cli-override
@@ -888,7 +888,7 @@ if(TARGET easylocal_assignment_mwe)
 
     add_test(
         NAME easylocal.example.assignment-config-file
-        COMMAND easylocal_assignment_mwe
+        COMMAND easylocal_assignment
             --config ${PROJECT_SOURCE_DIR}/examples/assignment/configs/small.cfg
     )
     set_tests_properties(
@@ -898,10 +898,10 @@ if(TARGET easylocal_assignment_mwe)
     )
 endif()
 
-if(TARGET easylocal_exam_timetabling_mwe)
+if(TARGET easylocal_exam_timetabling)
     add_test(
         NAME easylocal.example.exam-cli-help
-        COMMAND easylocal_exam_timetabling_mwe --help
+        COMMAND easylocal_exam_timetabling --help
     )
     set_tests_properties(
         easylocal.example.exam-cli-help
@@ -911,7 +911,7 @@ if(TARGET easylocal_exam_timetabling_mwe)
 
     add_test(
         NAME easylocal.example.exam-cli-override
-        COMMAND easylocal_exam_timetabling_mwe --runners.sa.temperature.max_iterations=1
+        COMMAND easylocal_exam_timetabling --runners.sa.temperature.max_iterations=1
     )
     set_tests_properties(
         easylocal.example.exam-cli-override
@@ -921,7 +921,7 @@ if(TARGET easylocal_exam_timetabling_mwe)
 
     add_test(
         NAME easylocal.example.exam-config-file
-        COMMAND easylocal_exam_timetabling_mwe
+        COMMAND easylocal_exam_timetabling
             --config ${PROJECT_SOURCE_DIR}/examples/exam_timetabling/configs/small.cfg
     )
     set_tests_properties(
@@ -931,10 +931,10 @@ if(TARGET easylocal_exam_timetabling_mwe)
     )
 endif()
 
-if(TARGET easylocal_tsp_sa_mwe)
+if(TARGET easylocal_tsp_sa)
     add_test(
         NAME easylocal.example.tsp-cli-help
-        COMMAND easylocal_tsp_sa_mwe --help
+        COMMAND easylocal_tsp_sa --help
     )
     set_tests_properties(
         easylocal.example.tsp-cli-help
@@ -944,7 +944,7 @@ if(TARGET easylocal_tsp_sa_mwe)
 
     add_test(
         NAME easylocal.example.tsp-cli-override
-        COMMAND easylocal_tsp_sa_mwe --runners.sa.temperature.max_iterations=1
+        COMMAND easylocal_tsp_sa --runners.sa.temperature.max_iterations=1
     )
     set_tests_properties(
         easylocal.example.tsp-cli-override
@@ -954,7 +954,7 @@ if(TARGET easylocal_tsp_sa_mwe)
 
     add_test(
         NAME easylocal.example.tsp-config-file
-        COMMAND easylocal_tsp_sa_mwe
+        COMMAND easylocal_tsp_sa
             --config ${PROJECT_SOURCE_DIR}/examples/tsp/configs/small.cfg
     )
     set_tests_properties(
@@ -965,7 +965,7 @@ if(TARGET easylocal_tsp_sa_mwe)
 
     add_test(
         NAME easylocal.example.tsp-config-precedence
-        COMMAND easylocal_tsp_sa_mwe
+        COMMAND easylocal_tsp_sa
             --config ${PROJECT_SOURCE_DIR}/examples/tsp/configs/small.cfg
             --runners.sa.temperature.max_iterations=2
     )
@@ -977,7 +977,7 @@ if(TARGET easylocal_tsp_sa_mwe)
 
     add_test(
         NAME easylocal.example.tsp-config-error
-        COMMAND easylocal_tsp_sa_mwe
+        COMMAND easylocal_tsp_sa
             --config ${PROJECT_SOURCE_DIR}/examples/tsp/configs/invalid.cfg
     )
     set_tests_properties(
@@ -988,7 +988,7 @@ if(TARGET easylocal_tsp_sa_mwe)
 
     add_test(
         NAME easylocal.example.tsp-cli-error
-        COMMAND easylocal_tsp_sa_mwe
+        COMMAND easylocal_tsp_sa
             --runners.sa.temperature.cooling_rate=1.5
     )
     set_tests_properties(
@@ -1045,10 +1045,10 @@ easylocal_add_test(
         EasyLocal::Core
 )
 
-if(TARGET easylocal_tsp_two_apps_mwe)
+if(TARGET easylocal_tsp_two_apps)
     add_test(
         NAME easylocal.example.tsp-two-apps
-        COMMAND easylocal_tsp_two_apps_mwe
+        COMMAND easylocal_tsp_two_apps
     )
 endif()
 
@@ -1115,7 +1115,7 @@ if(TARGET EasyLocal::REST)
             rest_blueprint_compile.cpp
         LIBRARIES
             EasyLocal::REST
-            easylocal_assignment_mwe_model
+            easylocal_assignment_model
     )
 
     easylocal_add_test(
@@ -1124,7 +1124,7 @@ if(TARGET EasyLocal::REST)
             rest_blueprint_requests.cpp
         LIBRARIES
             EasyLocal::REST
-            easylocal_assignment_mwe_model
+            easylocal_assignment_model
     )
     set_tests_properties(
         easylocal.rest-blueprint-requests
@@ -1133,12 +1133,12 @@ if(TARGET EasyLocal::REST)
     )
 
     find_program(EASYLOCAL_CURL_EXECUTABLE NAMES curl)
-    if(UNIX AND EASYLOCAL_CURL_EXECUTABLE AND TARGET easylocal_assignment_rest_mwe)
+    if(UNIX AND EASYLOCAL_CURL_EXECUTABLE AND TARGET easylocal_assignment_rest)
         add_test(
             NAME easylocal.rest-http
             COMMAND
                 "${CMAKE_CURRENT_SOURCE_DIR}/rest_http_integration.sh"
-                "$<TARGET_FILE:easylocal_assignment_rest_mwe>"
+                "$<TARGET_FILE:easylocal_assignment_rest>"
                 "${EASYLOCAL_CURL_EXECUTABLE}"
         )
         set_tests_properties(
@@ -1188,13 +1188,13 @@ if(UNIX AND TARGET easylocal_tutorial_tui)
     if(easylocal_tui_e2e_python)
         set(easylocal_tui_e2e_environment
             "EASYLOCAL_TUTORIAL_TUI=$<TARGET_FILE:easylocal_tutorial_tui>")
-        if(TARGET easylocal_tsp_tui_mwe)  # the launcher of two apps
+        if(TARGET easylocal_tsp_tui)  # the launcher of two apps
             list(APPEND easylocal_tui_e2e_environment
-                "EASYLOCAL_TSP_TUI=$<TARGET_FILE:easylocal_tsp_tui_mwe>")
+                "EASYLOCAL_TSP_TUI=$<TARGET_FILE:easylocal_tsp_tui>")
         endif()
-        if(TARGET easylocal_assignment_tui_mwe)  # its slow-fi runner can be stopped
+        if(TARGET easylocal_assignment_tui)  # its slow-fi runner can be stopped
             list(APPEND easylocal_tui_e2e_environment
-                "EASYLOCAL_ASSIGNMENT_TUI=$<TARGET_FILE:easylocal_assignment_tui_mwe>")
+                "EASYLOCAL_ASSIGNMENT_TUI=$<TARGET_FILE:easylocal_assignment_tui>")
         endif()
         add_test(
             NAME easylocal.tui-e2e

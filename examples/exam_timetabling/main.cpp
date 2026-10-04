@@ -10,8 +10,8 @@
 #include <easylocal/cost.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
 
-#ifndef EASYLOCAL_EXAM_MWE_INSTANCE_FILE
-#error "EASYLOCAL_EXAM_MWE_INSTANCE_FILE must name the example instance"
+#ifndef EASYLOCAL_EXAM_INSTANCE_FILE
+#error "EASYLOCAL_EXAM_INSTANCE_FILE must name the example instance"
 #endif
 
 int main(int argc, char* argv[])
@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
         argc,
         argv,
         {.defaults = {
-             .instance = EASYLOCAL_EXAM_MWE_INSTANCE_FILE,
+             .instance = EASYLOCAL_EXAM_INSTANCE_FILE,
              .seed = 2026,
              .start = "initial",
          }});

@@ -7,8 +7,8 @@ CTest runs them as `easylocal.tui-e2e` when the TUI component and uv are
 available; by hand:
 
     EASYLOCAL_TUTORIAL_TUI=build/<preset>/examples/tutorial/easylocal_tutorial_tui \
-    EASYLOCAL_TSP_TUI=build/<preset>/examples/tsp/easylocal_tsp_tui_mwe \
-    EASYLOCAL_ASSIGNMENT_TUI=build/<preset>/examples/assignment/easylocal_assignment_tui_mwe \
+    EASYLOCAL_TSP_TUI=build/<preset>/examples/tsp/easylocal_tsp_tui \
+    EASYLOCAL_ASSIGNMENT_TUI=build/<preset>/examples/assignment/easylocal_assignment_tui \
         uv run pytest tests/tui
 """
 

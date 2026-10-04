@@ -2,12 +2,12 @@
 
 #include <easylocal/adapters/tui/launcher.hpp>
 
-#ifndef EASYLOCAL_TSP_MWE_INSTANCE_FILE
-#error "EASYLOCAL_TSP_MWE_INSTANCE_FILE must name the example instance"
+#ifndef EASYLOCAL_TSP_INSTANCE_FILE
+#error "EASYLOCAL_TSP_INSTANCE_FILE must name the example instance"
 #endif
 
-#ifndef EASYLOCAL_TSP_MWE_SOLUTION_FILE
-#error "EASYLOCAL_TSP_MWE_SOLUTION_FILE must name the example solution"
+#ifndef EASYLOCAL_TSP_SOLUTION_FILE
+#error "EASYLOCAL_TSP_SOLUTION_FILE must name the example solution"
 #endif
 
 int main()
@@ -19,8 +19,8 @@ int main()
             .tester =
                 {
                     .seed = 0,
-                    .input_path = EASYLOCAL_TSP_MWE_INSTANCE_FILE,
-                    .solution_path = EASYLOCAL_TSP_MWE_SOLUTION_FILE,
+                    .input_path = EASYLOCAL_TSP_INSTANCE_FILE,
+                    .solution_path = EASYLOCAL_TSP_SOLUTION_FILE,
                 },
         },
         tsp::two_opt_app(),
