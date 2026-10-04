@@ -549,14 +549,37 @@ public:
     [[nodiscard]]
     auto solve(const input_type& input, const Options&... options)
     {
-        check_names();
-        std::vector<stage_report> reports;
-        reports.reserve(stage_count);
-        easylocal::detail::search_effort effort;
-        auto last = run_from<0>(input, std::nullopt, reports, effort, options...);
-        effort.assign_to(last);
-        using result_type = pipeline_result<decltype(last)>;
-        return result_type{std::move(last), std::move(reports)};
+        return execute(
+            input,
+            [this](const auto& bound_runner) {
+                return this->make_initial_solution(bound_runner, rng_);
+            },
+            rng_,
+            options...);
+    }
+
+    /// Runs the stages in order on `input` from `solution`, with the caller's
+    /// RNG, and returns the last stage's result with the effort and the report
+    /// of every stage.
+    ///
+    /// The first stage starts from `solution`, and so do its further attempts;
+    /// the pipeline's own RNG and initialization are not used. This is how an
+    /// app runs a pipeline registered by name. The run options and the
+    /// exceptions are those of solve().
+    template<std::uniform_random_bit_generator Rng, class... Options>
+        requires easylocal::detail::solve_options<Options...>
+    [[nodiscard]]
+    auto run(
+        const input_type& input,
+        const solution_type& solution,
+        Rng& rng,
+        const Options&... options) const
+    {
+        return execute(
+            input,
+            [&solution](const auto&) { return solution; },
+            rng,
+            options...);
     }
 
     /// The parameters of every stage under its name: its runner's and its own
@@ -629,52 +652,85 @@ private:
         }
     }
 
+    // The stages from the first one, whose attempts start from
+    // first_start(bound runner); the result with every stage's effort and
+    // report.
+    template<class FirstStart, class Rng, class... Options>
+    [[nodiscard]]
+    auto execute(
+        const input_type& input,
+        const FirstStart& first_start,
+        Rng& rng,
+        const Options&... options) const
+    {
+        check_names();
+        std::vector<stage_report> reports;
+        reports.reserve(stage_count);
+        easylocal::detail::search_effort effort;
+        auto last = run_from<
+            0>(input, std::nullopt, first_start, rng, reports, effort, options...);
+        effort.assign_to(last);
+        using result_type = pipeline_result<decltype(last)>;
+        return result_type{std::move(last), std::move(reports)};
+    }
+
     // The stage at Index from `incoming` (none for the first stage), then the
     // following ones from its solution; the last stage's result. Each stage
     // binds its runner when it starts.
-    template<std::size_t Index, class... Options>
+    template<std::size_t Index, class FirstStart, class Rng, class... Options>
     [[nodiscard]]
     auto run_from(
         const input_type& input,
         std::optional<solution_type> incoming,
+        const FirstStart& first_start,
+        Rng& rng,
         std::vector<stage_report>& reports,
         easylocal::detail::search_effort& effort,
-        const Options&... options)
+        const Options&... options) const
     {
         auto bound_runner = std::get<Index>(stages_).runner().bind(input);
-        auto result =
-            run_stage<Index>(bound_runner, incoming, reports, effort, options...);
+        auto result = run_stage<
+            Index>(bound_runner, incoming, first_start, rng, reports, effort, options...);
         if constexpr (Index + 1 == stage_count)
             return result;
         else
             return run_from<Index + 1>(
                 input,
                 std::optional<solution_type>{std::move(result.solution)},
+                first_start,
+                rng,
                 reports,
                 effort,
                 options...);
     }
 
     // The attempts of the stage at Index, keeping the best.
-    template<std::size_t Index, class BoundRunner, class... Options>
+    template<
+        std::size_t Index,
+        class BoundRunner,
+        class FirstStart,
+        class Rng,
+        class... Options>
     [[nodiscard]]
     auto run_stage(
         BoundRunner& bound_runner,
         const std::optional<solution_type>& incoming,
+        const FirstStart& first_start,
+        Rng& rng,
         std::vector<stage_report>& reports,
         easylocal::detail::search_effort& effort,
-        const Options&... options)
+        const Options&... options) const
     {
         const auto& stage = std::get<Index>(stages_);
-        const auto start = [&] {
+        const auto start = [&]() -> solution_type {
             if constexpr (Index == 0)
-                return this->make_initial_solution(bound_runner, rng_);
+                return first_start(bound_runner);
             else
                 return *incoming;
         };
 
         easylocal::detail::search_effort stage_effort;
-        auto best = run_once<Index>(bound_runner, start(), options...);
+        auto best = run_once<Index>(bound_runner, start(), rng, options...);
         stage_effort.add(best);
         bool ended = detail::ends_stage(bound_runner, best, stage.target());
         std::size_t attempts = 1;
@@ -682,7 +738,7 @@ private:
             && !easylocal::detail::stop_requested(options...);
             ++attempts)
         {
-            auto candidate = run_once<Index>(bound_runner, start(), options...);
+            auto candidate = run_once<Index>(bound_runner, start(), rng, options...);
             stage_effort.add(candidate);
             ended = detail::ends_stage(bound_runner, candidate, stage.target());
             if (bound_runner.better(candidate.cost, best.cost))
@@ -707,12 +763,13 @@ private:
 
     // One run of the stage at Index: its target if it has one, the solve's
     // target for the last stage, none otherwise.
-    template<std::size_t Index, class BoundRunner, class... Options>
+    template<std::size_t Index, class BoundRunner, class Rng, class... Options>
     [[nodiscard]]
     auto run_once(
         BoundRunner& bound_runner,
         solution_type solution,
-        const Options&... options)
+        Rng& rng,
+        const Options&... options) const
     {
         const auto& stage = std::get<Index>(stages_);
         if (stage.target().has_value())
@@ -720,7 +777,7 @@ private:
             return easylocal::detail::run_with_solver_rng(
                 bound_runner,
                 std::move(solution),
-                rng_,
+                rng,
                 easylocal::detail::with_target(*stage.target(), options...));
         }
         if constexpr (Index + 1 == stage_count)
@@ -728,7 +785,7 @@ private:
             return easylocal::detail::run_with_solver_rng(
                 bound_runner,
                 std::move(solution),
-                rng_,
+                rng,
                 options...);
         }
         else
@@ -736,7 +793,7 @@ private:
             return easylocal::detail::run_with_solver_rng(
                 bound_runner,
                 std::move(solution),
-                rng_,
+                rng,
                 detail::without_target(options)...);
         }
     }

@@ -709,6 +709,21 @@ int main()
             && result.stages[2].termination == el::termination_reason::completed,
         "the last stage's report");
 
+    // run() starts from a given solution, with the caller's RNG: the first
+    // stage's attempts restart from it, so from 4 the second run reaches 0.
+    const Countdown from_given;
+    const auto given = solvers::pipeline(
+        solvers::stage("feasible", el::Runner{from_given} | sm | nhe)
+            & solvers::until_feasible() & solvers::attempts(5),
+        solvers::stage("polish", el::Runner{SoftDown{}} | sm | nhe));
+    std::mt19937_64 caller_rng{11};
+    const auto from_solution =
+        given.run(instance, Solution{.hard = 4, .soft = 6}, caller_rng);
+    ok &= expect(
+        *from_given.runs == 2 && from_solution.stages[0].attempts == 2
+            && from_solution.solution.hard == 0 && from_solution.solution.soft == 2,
+        "run() starts every attempt of the first stage from the given solution");
+
     // Without a target, a stage runs all its attempts and keeps the best.
     const Noisy noisy;
     auto best_of = solvers::pipeline(

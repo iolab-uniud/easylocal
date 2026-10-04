@@ -80,6 +80,10 @@ A caller's target applies to the last stage, unless that stage has its own.
 After a cancellation the remaining stages stop at once, so the result still
 has the last stage's cost.
 
+`pipeline.run(input, solution, rng, options...)` runs the stages from a given
+solution with the caller's RNG: the first stage's attempts all start from that
+solution. It is how an app runs a pipeline registered by name.
+
 The result is the last stage's, with the effort of every stage and attempt,
 and `result.stages`: per stage its name, attempts, evaluations, iterations,
 termination and cost (as `cost::to_text` writes it).
