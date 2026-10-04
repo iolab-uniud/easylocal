@@ -73,7 +73,7 @@ jobs:
           cmake --build "$build_dir" --parallel 2 --verbose \
             2>&1 | tee "${build_dir}.build.log"
 
-          ctest --test-dir "$build_dir" --output-on-failure \
+          ctest --test-dir "$build_dir" --output-on-failure --parallel 4 \
             --output-junit "$PWD/${build_dir}.junit.xml" \
             2>&1 | tee "${build_dir}.ctest.log"
 
@@ -147,7 +147,7 @@ jobs:
           build_dir="build/optional-fetch"
           cmake --build "$build_dir" --parallel 3 --verbose \
             2>&1 | tee "${build_dir}.build.log"
-          ctest --test-dir "$build_dir" --output-on-failure \
+          ctest --test-dir "$build_dir" --output-on-failure --parallel 4 \
             --output-junit "$PWD/${build_dir}.junit.xml" \
             2>&1 | tee "${build_dir}.ctest.log"
 
@@ -226,7 +226,7 @@ jobs:
           cmake --build "$build_dir" --parallel 4 --verbose \
             2>&1 | tee "${build_dir}.build.log"
 
-          ctest --test-dir "$build_dir" --output-on-failure \
+          ctest --test-dir "$build_dir" --output-on-failure --parallel 4 \
             --output-junit "$PWD/${build_dir}.junit.xml" \
             2>&1 | tee "${build_dir}.ctest.log"
 
