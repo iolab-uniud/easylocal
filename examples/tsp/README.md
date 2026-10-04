@@ -1,137 +1,75 @@
-# TSP MWE
+# TSP example
 
-This is the second concrete EasyLocal pressure-test model. It is deliberately
-outside `include/easylocal/` and does not introduce new public framework API.
+The symmetric Travelling Salesman Problem: visit every city once and come back
+to the start, along the shortest tour. The example solves it with two
+neighborhoods, 2-opt and swap, each with a delta cost component, and runs them
+with Simulated Annealing and with First Improvement.
 
-The model is a symmetric TSP with a dense `double` distance matrix, a `Tour`
-represented by a permutation of city ids, and a deterministic lazy 2-opt
-neighborhood. A `TwoOptMove{i, j}` cuts tour edges `(i, i+1)` and `(j, j+1)`
-and reverses the segment `[i+1, j]`.
+## The files
 
-Deterministic 2-opt traversal is authored through `first_move`/`next_move` and
-exposed to consumers through the unified `easylocal::moves(...)` customization
-point, which adapts the cursor protocol to a lazy `input_range`.
-A random 2-opt proposal is drawn uniformly in expected constant time, by
-rejection: two edges drawn independently and drawn again while they do not
-form a valid move.
+| Component | File | Class |
+| --- | --- | --- |
+| Input | `instance.hpp` | `TspInstance`: the number of cities and the distance matrix |
+| Solution | `solution.hpp` | `Tour`: the order in which the cities are visited |
+| Solution manager | `solution_manager.hpp` | `TspSolutionManager`: the initial tour (0, 1, 2, ...), a random tour, validity |
+| Cost component | `tour_length_component.hpp` | `TourLengthComponent`: the length of the tour, a `double` |
+| Move | `move.hpp` | `TwoOptMove`: remove two edges, reverse the segment between them |
+| Neighborhood explorer | `neighborhood_explorer.hpp` | `TwoOptNeighborhoodExplorer` |
+| Delta cost component | `tour_length_delta.hpp` | `TwoOptTourLengthDelta`: the two edges removed and the two added |
+| Move | `swap_move.hpp` | `SwapCitiesMove`: exchange the cities at two positions |
+| Neighborhood explorer | `swap_neighborhood_explorer.hpp` | `SwapCitiesNeighborhoodExplorer` |
+| Delta cost component | `swap_tour_length_delta.hpp` | `SwapTourLengthDelta`: the at most four edges around the two positions |
 
-`TourLengthComponent` returns the structured materialized value
-`TourLengthValue{total}`. Because it is a domain value, the recipes map it with
-`cost::apply(TourLengthCost{}, component<TourLengthComponent>())` to the
-algorithm-facing scalar `double` cost. This intentionally exercises a partially ordered
-floating-point `cost_type` without introducing an epsilon or approximate-
-comparison policy into the framework.
+The programs put the components together:
 
-`TwoOptTourLengthDeltaEvaluator` provides a recipe-local incremental evaluator
-for `TourLengthComponent`. Its structured `TourLengthDelta{change}` follows the
-same semantic law used by the Assignment MWE:
+- `apps.hpp`: two apps over the same solution manager and cost, one for each
+  neighborhood, with a First Improvement runner `fi`;
+- `sa_main.cpp` (`easylocal_tsp_sa`): Simulated Annealing on the union of the
+  two neighborhoods, which draws a 2-opt move three times as often as a swap
+  (`random_biases(3.0, 1.0)`), run from the command line by `cli::run`;
+- `two_apps.cpp` (`easylocal_tsp_two_apps`): First Improvement with 2-opt
+  moves from the initial tour, then with swaps from the tour it found;
+- `tui_main.cpp` (`easylocal_tsp_tui`): the two apps in the interactive
+  terminal tester, built only with the TUI component
+  (`-DEASYLOCAL_ENABLE_TUI=ON`).
 
-```text
-value_after == value_before + delta
-```
+## What to look at first
 
-For a symmetric TSP, 2-opt changes only the two cut edges, so the evaluator
-computes the added edge cost minus the removed edge cost without materializing a
-candidate `Tour`. Tests compare this incremental value against full component
-evaluation for every move in the deterministic small neighborhood. Runner-level
-tests retain the no-delta fallback case and separately verify that rejected
-all-delta candidates perform no `make_move`, while accepted all-delta candidates
-perform exactly one.
+1. `instance.hpp`, `solution.hpp` and `solution_manager.hpp`: the problem and
+   its solutions.
+2. `tour_length_component.hpp`: the cost, a sum over the edges of the tour.
+3. `move.hpp` and `neighborhood_explorer.hpp`: `moves()` lists every 2-opt
+   move with `co_yield`, `random_move()` draws one, `make_move()` applies it.
+4. `tour_length_delta.hpp`: how much a move changes the length, computed from
+   the edges it replaces, without building the new tour.
+5. `sa_main.cpp`: how the pieces become a program.
 
-The current test matrices still use only values exactly representable in binary
-floating point, such as halves and quarters. Non-binary-exact values and
-approximate comparisons remain deliberately reserved for a following iteration,
-so floating-point comparison policy can be examined independently from delta
-integration.
+## Building and running
 
-## Command line and external instance
-
-`sa_main.cpp` registers its Simulated Annealing as the runner `sa` of an app
-and runs it with `easylocal::cli::run`, which reads the instance, the seed and
-the parameters from the command line: `--instance` (by default
-`instances/small.tsp`), `--seed` (2026), the temperature schedule under
-`--runners.sa.temperature.*` and the union's biases under
-`--neighborhood.random_biases`. The run starts from the SolutionManager's
-`initial_solution()`.
-
-## Runnable composite-neighborhood SA example
-
-`sa_main.cpp` is a runnable end-to-end Simulated Annealing example using two
-heterogeneous TSP neighborhoods: the existing 2-opt explorer and a
-`SwapCitiesNeighborhoodExplorer`. The runner composes them with
-`neighborhood_union(...)` and configures child-selection weights with
-`random_biases(3.0, 1.0)`. A fixed `std::mt19937` seed makes repeated runs
-reproducible within the same standard-library implementation.
-
-Both child neighborhoods attach a `TourLengthComponent` delta cost component. The
-union exposes that component delta because every child provides it, then
-dispatches incrementally to the evaluator belonging to the tagged child move.
-`SwapTourLengthDeltaEvaluator` covers the four tour edges potentially affected
-by a position swap, deduplicating them for adjacent and wrap-around cases. The
-resulting SA path is therefore all-delta and does not materialize rejected
-candidate tours.
-
-Delta propagation is deliberately conservative per component: if any child of
-a union lacks a delta for an active component, that component is omitted from
-the union's delta set and the existing evaluation machinery falls back to full
-evaluation for that component. Nested unions preserve the same rule.
-
-With the default top-level build, run it as:
-
-```text
-./build/<preset>/examples/tsp/easylocal_tsp_sa
-```
-
-For example, the same executable can override both SA parameters and union
-biases without changing the MWE source:
+From the repository root:
 
 ```sh
-./build/<preset>/examples/tsp/easylocal_tsp_sa \
+cmake --preset dev && cmake --build build/dev
+./build/dev/examples/tsp/easylocal_tsp_sa
+```
+
+The program reads `instances/small.tsp` (6 cities: the count, then the
+distance matrix row by row), starts from the initial tour and prints the best
+tour found and its length. Its parameters are switches:
+
+```sh
+./build/dev/examples/tsp/easylocal_tsp_sa --help    # every switch
+./build/dev/examples/tsp/easylocal_tsp_sa \
   --runners.sa.temperature.max_iterations=50 \
   --neighborhood.random_biases='[1, 4]'
+./build/dev/examples/tsp/easylocal_tsp_sa --target=26   # stop at length 26
+./build/dev/examples/tsp/easylocal_tsp_sa --config examples/tsp/configs/small.cfg
 ```
 
-`--help` lists all the switches with descriptions and current values.
+`--instance` reads another instance and `--seed` changes the random seed
+(2026 by default). A value in a `--config` file overrides the default, and a
+switch overrides both.
 
-`--target` stops the search at the first tour that reaches a length, a
-known optimum for example:
-
-```sh
-./build/<preset>/examples/tsp/easylocal_tsp_sa --target=26
-```
-
-The example also accepts a compact configuration file:
-
-```sh
-./build/<preset>/examples/tsp/easylocal_tsp_sa \
-  --config examples/tsp/configs/small.cfg \
-  --runners.sa.temperature.max_iterations=50
-```
-
-The precedence is C++ defaults, then file overrides, then CLI overrides. Any
-file/CLI diagnostic causes a non-zero exit (2) before the instance is read.
-
-## Floating-point pressure test
-
-A separate test iteration also uses decimal distances such as `0.1`, `0.2`, and
-`0.039`, which are not generally exactly representable as binary floating-point
-values. The production MWE deliberately keeps exact `double` value semantics:
-`TourLengthValue::operator==`, aggregation, and the framework remain unchanged.
-Approximate comparison is explicit and test-local, with separately supplied
-relative and absolute tolerances rather than a framework-wide implicit epsilon.
-
-The tests exercise two distinct numerical questions. First, the delta law is
-checked over the complete deterministic five-city 2-opt neighborhood using an
-approximate comparison, while also requiring that at least one move genuinely
-fails exact equality between full and incremental evaluation. Second, a
-mathematically neutral 2-opt move demonstrates that raw `double` ordering can
-make the incremental path appear microscopically better even when full
-evaluation is unchanged. The test-local comparison must suppress that numerical
-artifact without suppressing a nearby but real improvement.
-
-The comparison helper is also tested independently for absolute and relative
-tolerance, symmetry, finite/non-finite values, adjacent representable values,
-and the deliberately non-transitive nature of approximate equality. This last
-property is important evidence for the later API discussion: approximate
-equality must not be silently treated as an ordinary equivalence relation or
-assumed suitable for a three-way ordering.
+The tests `tests/tsp_*.cpp` check the moves of both neighborhoods, the delta
+cost components against a full evaluation of the cost, and the runners on
+this model.
