@@ -3,14 +3,19 @@ cmake_minimum_required(VERSION 3.25)
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" EASYLOCAL_VERSION)
 string(STRIP "${EASYLOCAL_VERSION}" EASYLOCAL_VERSION)
 
-if(NOT EASYLOCAL_VERSION MATCHES "^[0-9]+\.[0-9]+\.[0-9]+$")
+# VERSION holds the full SemVer string (4.0.0 or 4.0.0-alpha.1): project()
+# takes only its numeric part, the pre-release goes in its own variable.
+if(NOT EASYLOCAL_VERSION MATCHES
+        "^([0-9]+\\.[0-9]+\\.[0-9]+)(-([0-9A-Za-z.-]+))?$")
     message(FATAL_ERROR
-        "VERSION must contain MAJOR.MINOR.PATCH, got '${EASYLOCAL_VERSION}'")
+        "VERSION must contain MAJOR.MINOR.PATCH[-PRERELEASE], got '${EASYLOCAL_VERSION}'")
 endif()
+set(EASYLOCAL_VERSION_NUMBER "${CMAKE_MATCH_1}")
+set(EASYLOCAL_VERSION_PRERELEASE "${CMAKE_MATCH_3}")
 
 project(
     EasyLocal
-    VERSION "${EASYLOCAL_VERSION}"
+    VERSION "${EASYLOCAL_VERSION_NUMBER}"
     DESCRIPTION "A modern header-only C++ framework for local search"
     HOMEPAGE_URL "https://github.com/iolab-uniud/easylocal"
     LANGUAGES CXX

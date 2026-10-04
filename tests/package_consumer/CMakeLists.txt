@@ -61,6 +61,11 @@ else()
     )
 endif()
 
+if(NOT EasyLocal_VERSION_PRERELEASE STREQUAL "${EASYLOCAL_EXPECTED_VERSION_PRERELEASE}")
+    message(FATAL_ERROR
+        "installed package declares pre-release '${EasyLocal_VERSION_PRERELEASE}', expected '${EASYLOCAL_EXPECTED_VERSION_PRERELEASE}'")
+endif()
+
 foreach(_required_target IN ITEMS EasyLocal::Core EasyLocal::EasyLocal)
     if(NOT TARGET ${_required_target})
         message(FATAL_ERROR

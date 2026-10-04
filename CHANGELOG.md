@@ -9,7 +9,10 @@ reviewed by hand before tagging.
 
 ## [Unreleased]
 
-## [4.0.0] — not yet released
+## [4.0.0-alpha.1] — not yet released
+
+A pre-release: the API, header paths included, may still change before 4.0.0
+([API stability](docs/stability.md#pre-releases)).
 
 First release of **EasyLocal 4**, a complete redesign of EasyLocal++, the
 object-oriented local search framework first described in 2003. The design
@@ -249,5 +252,5 @@ old concepts onto the new ones.
   covers the matrix, every optional component with
   installed and fetched dependencies, and reports test coverage.
 
-[Unreleased]: https://github.com/iolab-uniud/easylocal/compare/v4.0.0...HEAD
-[4.0.0]: https://github.com/iolab-uniud/easylocal/releases/tag/v4.0.0
+[Unreleased]: https://github.com/iolab-uniud/easylocal/compare/v4.0.0-alpha.1...HEAD
+[4.0.0-alpha.1]: https://github.com/iolab-uniud/easylocal/releases/tag/v4.0.0-alpha.1

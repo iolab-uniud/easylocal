@@ -37,6 +37,7 @@ function(easylocal_configure_build_test_consumer name use_core_component use_con
         "-DCMAKE_CXX_COMPILER=${EASYLOCAL_CXX_COMPILER}"
         "-DEasyLocal_DIR=${_package_dir}"
         "-DEASYLOCAL_EXPECTED_VERSION=${EASYLOCAL_VERSION}"
+        "-DEASYLOCAL_EXPECTED_VERSION_PRERELEASE=${EASYLOCAL_VERSION_PRERELEASE}"
         "-DEASYLOCAL_EXPECTED_INSTALL_PREFIX=${_install_prefix}"
         "-DEASYLOCAL_FIND_CORE_COMPONENT=${use_core_component}"
         "-DEASYLOCAL_FIND_CONFIG_TOML_COMPONENT=${use_config_toml_component}"
@@ -272,6 +273,7 @@ execute_process(
         "-DCMAKE_CXX_COMPILER=${EASYLOCAL_CXX_COMPILER}"
         "-DEasyLocal_DIR=${_package_dir}"
         "-DEASYLOCAL_EXPECTED_VERSION=${EASYLOCAL_VERSION}"
+        "-DEASYLOCAL_EXPECTED_VERSION_PRERELEASE=${EASYLOCAL_VERSION_PRERELEASE}"
         "-DEASYLOCAL_EXPECTED_INSTALL_PREFIX=${_install_prefix}"
         "-DEASYLOCAL_FIND_MISSING_COMPONENT=ON"
     RESULT_VARIABLE _missing_component_result

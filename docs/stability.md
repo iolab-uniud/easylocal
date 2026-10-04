@@ -3,6 +3,19 @@
 EasyLocal follows [Semantic Versioning](https://semver.org/). This page states
 what the version number promises in the 4.x series.
 
+## Pre-releases
+
+The versions `4.0.0-alpha.N` and `4.0.0-beta.N` promise nothing: any part of
+the library, header paths included, may change between one pre-release and the
+next, and every incompatible change is noted in the
+[changelog](https://github.com/iolab-uniud/easylocal/blob/main/CHANGELOG.md).
+The levels below apply from 4.0.0.
+
+The installed CMake package reports the numeric version in `EasyLocal_VERSION`
+(`find_package(EasyLocal 4.0)` accepts a pre-release of 4.0.0) and the
+pre-release in `EasyLocal_VERSION_PRERELEASE` (`alpha.1`, empty for a
+release).
+
 ## Levels
 
 | Level | What | Promise |

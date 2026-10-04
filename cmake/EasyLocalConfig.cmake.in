@@ -1,5 +1,8 @@
 @PACKAGE_INIT@
 
+# The pre-release of the installed version (alpha.1), empty for a release.
+set(EasyLocal_VERSION_PRERELEASE "@EASYLOCAL_VERSION_PRERELEASE@")
+
 include("${CMAKE_CURRENT_LIST_DIR}/EasyLocalTargets.cmake")
 
 # Core is always installed and intentionally has no third-party dependencies.
