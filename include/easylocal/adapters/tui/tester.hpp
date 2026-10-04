@@ -659,8 +659,7 @@ public:
           options_{std::move(options)},
           role_{role},
           seed_{options_.seed},
-          seed_text_{std::to_string(options_.seed)},
-          rng_{options_.seed}
+          seed_text_{std::to_string(options_.seed)}
     {
         if (!options_.input_path.empty())
         {
@@ -1709,7 +1708,7 @@ private:
             return;
         }
         perform("Random solution", [this] {
-            tester_.use_random_solution(rng_);
+            tester_.use_random_solution(tester_.rng());
             after_solution_change();
             set_status(status_kind::success, solution_status("Random solution selected"));
         });
@@ -1949,7 +1948,7 @@ private:
             return;
         }
         perform("Random move", [this] {
-            if (tester_.use_random_move(rng_))
+            if (tester_.use_random_move(tester_.rng()))
             {
                 last_move_result_.clear();
                 set_status(status_kind::success, move_status("Selected random move"));
@@ -2054,7 +2053,8 @@ private:
             return;
         perform("Check random distribution", [this] {
             const auto result = tester_.check_random_move_distribution(
-                rng_, options_.random_distribution_rounds);
+                tester_.rng(),
+                options_.random_distribution_rounds);
             show_diagnostic(
                 "Random move distribution",
                 "Neighborhood size: " + std::to_string(result.neighborhood_size) + "\n" +
@@ -2211,9 +2211,9 @@ private:
 
             const auto progress_state = run_progress_state_;
             // Each background run gets its own generator, seeded from the
-            // frontend RNG (itself seeded by options.seed), so runs are
+            // session's RNG (itself seeded by options.seed), so runs are
             // reproducible and never share state with the UI thread.
-            typename tester_type::rng_type run_rng{rng_()};
+            typename tester_type::rng_type run_rng{tester_.rng()()};
             run_worker_ = std::jthread(
                 [application = std::move(application),
                     input = std::move(input),
@@ -2309,7 +2309,7 @@ private:
         }
 
         seed_ = seed;
-        rng_.seed(seed);
+        tester_.set_seed(seed);
         set_status(
             status_kind::info,
             "Seed set to " + std::to_string(seed) +
@@ -3193,7 +3193,6 @@ private:
     std::uint64_t seed_{};
     std::string seed_text_;
     std::string target_text_;
-    typename tester_type::rng_type rng_;
 
     std::string input_path_;
     std::string solution_path_;
