@@ -20,8 +20,6 @@ int main(int argc, char* argv[])
     using easylocal::runners::SimulatedAnnealing;
     using easylocal::runners::temperature::FixedLength;
 
-    // TourLengthValue is a domain value: tsp_solution_manager() maps it to the
-    // scalar cost with TourLengthCost (apps.hpp).
     auto application = easylocal::app("tsp-sa") | tsp_solution_manager()
         | (easylocal::neighborhood_union(
                neighborhood<TwoOptNeighborhoodExplorer>()

@@ -3,8 +3,6 @@
 #include "instance.hpp"
 #include "solution.hpp"
 #include "swap_move.hpp"
-#include "tour_length_component.hpp"
-#include "tour_length_delta.hpp"
 
 #include <array>
 #include <cassert>
@@ -21,16 +19,13 @@ public:
     {
     }
 
-    TourLengthDelta delta_evaluate(const Tour& solution, const SwapCitiesMove& move) const
+    double delta_evaluate(const Tour& solution, const SwapCitiesMove& move) const
     {
         assert(solution.tour.size() == instance_.city_count);
         assert(move.first_position < move.second_position);
         assert(move.second_position < solution.tour.size());
 
         const auto size = solution.tour.size();
-        if (size < 2)
-            return {};
-
         const std::array<std::size_t, 4> affected_edges{
             (move.first_position + size - 1) % size,
             move.first_position,
@@ -38,8 +33,8 @@ public:
             move.second_position,
         };
 
-        distance_type removed = 0.0;
-        distance_type added = 0.0;
+        double removed = 0.0;
+        double added = 0.0;
 
         for (std::size_t index = 0; index < affected_edges.size(); ++index)
         {
@@ -59,9 +54,7 @@ public:
                 city_after_swap(solution, move, next));
         }
 
-        return TourLengthDelta{
-            .change = added - removed,
-        };
+        return added - removed;
     }
 
 private:

@@ -8,7 +8,7 @@
 #include "tour_length_delta.hpp"
 
 #include <easylocal/app/app.hpp>
-#include <easylocal/cost.hpp>
+#include <easylocal/helpers/recipes.hpp>
 #include <easylocal/runners/first_improvement.hpp>
 
 namespace tsp
@@ -21,9 +21,7 @@ namespace tsp
 inline auto tsp_solution_manager()
 {
     return easylocal::solution_manager<TspSolutionManager>()
-        | easylocal::cost::apply(
-            TourLengthCost{},
-            easylocal::component<TourLengthComponent>());
+        | easylocal::component<TourLengthComponent>();
 }
 
 // Two apps over the same SolutionManager, one per neighborhood. The type of an

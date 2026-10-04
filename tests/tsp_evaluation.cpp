@@ -135,9 +135,7 @@ int main()
     };
 
     const auto manager_recipe =
-        solution_manager<TspSolutionManager>()
-        | easylocal::cost::apply(
-              TourLengthCost{}, component<TourLengthComponent>());
+        solution_manager<TspSolutionManager>() | component<TourLengthComponent>();
 
     auto fallback_runner =
         Runner{ProbeOneMove{improving_move, true}}
@@ -148,7 +146,7 @@ int main()
 
     ok &= expect(
         fallback_result.initial_cost == 8.0,
-        "runner evaluates the initial structured component to scalar double cost");
+        "runner evaluates the initial tour length as a scalar double cost");
     ok &= expect(
         fallback_result.candidate_cost == 6.0,
         "evaluate_move uses full component fallback for the 2-opt candidate");

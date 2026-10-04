@@ -50,9 +50,7 @@ int main()
     };
 
     const auto manager_recipe =
-        solution_manager<TspSolutionManager>()
-        | easylocal::cost::apply(
-              TourLengthCost{}, component<TourLengthComponent>());
+        solution_manager<TspSolutionManager>() | component<TourLengthComponent>();
     const auto manager = manager_recipe.construct(instance);
 
     static_assert(std::same_as<typename decltype(manager)::cost_type, double>);
@@ -71,11 +69,11 @@ int main()
 
     const auto component_values = manager.evaluate_components(initial);
     ok &= expect(
-        std::get<0>(component_values) == TourLengthValue{8.0},
-        "tour length is materialized as a structured component value");
+        std::get<0>(component_values) == 8.0,
+        "tour length is the component value");
     ok &= expect(
         manager.cost_from_components(component_values) == 8.0,
-        "structured tour length aggregates to scalar double cost");
+        "tour length is the scalar double cost");
     ok &= expect(
         manager.evaluate(initial) == 8.0,
         "configured manager evaluates the complete tour cost");

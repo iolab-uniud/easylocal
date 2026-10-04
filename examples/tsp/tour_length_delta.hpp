@@ -3,27 +3,12 @@
 #include "instance.hpp"
 #include "move.hpp"
 #include "solution.hpp"
-#include "tour_length_component.hpp"
 
 #include <cassert>
 #include <cstddef>
 
 namespace tsp
 {
-
-struct TourLengthDelta
-{
-    distance_type change{};
-
-    bool operator==(const TourLengthDelta&) const = default;
-};
-
-constexpr TourLengthValue operator+(TourLengthValue value, TourLengthDelta delta)
-{
-    return TourLengthValue{
-        .total = value.total + delta.change,
-    };
-}
 
 class TwoOptTourLengthDeltaEvaluator
 {
@@ -33,7 +18,7 @@ public:
     {
     }
 
-    TourLengthDelta delta_evaluate(const Tour& solution, const TwoOptMove& move) const
+    double delta_evaluate(const Tour& solution, const TwoOptMove& move) const
     {
         assert(solution.tour.size() == instance_.city_count);
         assert(move.first_edge < move.second_edge);
@@ -53,9 +38,7 @@ public:
         const auto added = instance_.distance(first, second)
             + instance_.distance(first_next, second_next);
 
-        return TourLengthDelta{
-            .change = added - removed,
-        };
+        return added - removed;
     }
 
 private:

@@ -132,9 +132,7 @@ the swaps, over the same SolutionManager recipe:
 inline auto tsp_solution_manager()
 {
     return easylocal::solution_manager<TspSolutionManager>()
-        | easylocal::cost::apply(
-            TourLengthCost{},
-            easylocal::component<TourLengthComponent>());
+        | easylocal::component<TourLengthComponent>();
 }
 
 // Two apps over the same SolutionManager, one per neighborhood. The type of an

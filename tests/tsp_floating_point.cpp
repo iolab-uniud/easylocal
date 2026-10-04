@@ -89,10 +89,9 @@ auto evaluate_move(
     neighborhood.make_move(candidate, move);
 
     return EvaluatedMove{
-        .current = current.total,
-        .full_candidate = component.evaluate(candidate).total,
-        .incremental_candidate =
-            (current + delta_evaluator.delta_evaluate(solution, move)).total,
+        .current = current,
+        .full_candidate = component.evaluate(candidate),
+        .incremental_candidate = current + delta_evaluator.delta_evaluate(solution, move),
     };
 }
 
@@ -134,7 +133,7 @@ int main()
         ++checked_moves;
         observed_exact_delta_mismatch |= incremental != full;
         ok &= expect(
-            approximately_equal(incremental.total, full.total, tsp_tolerance),
+            approximately_equal(incremental, full, tsp_tolerance),
             "approximate delta law holds for every non-binary-exact 2-opt move");
     }
 

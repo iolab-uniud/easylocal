@@ -70,8 +70,7 @@ int main()
         .second_edge = 2,
     };
     ok &= expect(
-        delta_evaluator.delta_evaluate(solution, improving_move) ==
-            TourLengthDelta{.change = -2.0},
+        delta_evaluator.delta_evaluate(solution, improving_move) == -2.0,
         "known improving 2-opt move has the expected exact delta");
 
     return ok ? 0 : 1;
