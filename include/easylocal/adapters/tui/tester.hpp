@@ -2689,7 +2689,7 @@ private:
             last_run_result_ =
                 run_name_ + ": " + run_before_ + " -> " + value_text(after) +
                 " (stopped)";
-            set_status(status_kind::warning, "Runner stopped: " + run_name_);
+            set_status(status_kind::warning, "Runner stopped: " + last_run_result_);
             return;
         }
 
@@ -2702,7 +2702,7 @@ private:
             last_run_result_ += " (time limit reached)";
         else if (completion.budget_exhausted)
             last_run_result_ += " (evaluation budget exhausted)";
-        set_status(status_kind::success, "Runner completed: " + run_name_);
+        set_status(status_kind::success, "Runner completed: " + last_run_result_);
     }
 
     [[nodiscard]] std::string solution_status(std::string prefix) const
@@ -2878,6 +2878,17 @@ private:
         return vbox(std::move(lines));
     }
 
+    // Below this width the Move page puts its actions above the move.
+    static constexpr int narrow_move_page = 64;
+
+    // The controls of a page in the lines left to them: they scroll to keep
+    // the focused one in view.
+    [[nodiscard]] static ftxui::Element scrolling(ftxui::Element controls)
+    {
+        using namespace ftxui;
+        return std::move(controls) | vscroll_indicator | yframe | yflex;
+    }
+
     [[nodiscard]] std::string_view status_prefix() const
     {
         switch (status_kind_)
@@ -2938,7 +2949,7 @@ private:
         }
 
         summary.push_back(separator());
-        summary.push_back(controls->Render() | flex);
+        summary.push_back(scrolling(controls->Render()));
         return window(text(" Input / Output "), vbox(std::move(summary))) | flex;
     }
 
@@ -2948,8 +2959,6 @@ private:
     {
         using namespace ftxui;
         const auto neighborhood = detail::object_name(tester_.bound_app().neighborhood());
-        auto actions = window(text(" Actions "), controls->Render()) |
-                       size(WIDTH, LESS_THAN, 30);
         auto details = window(
                            text(" Move - " + neighborhood + " "),
                            render_move_summary()) |
@@ -2958,14 +2967,24 @@ private:
                                       text(" Diagnostics "),
                                       diagnostics->Render()) |
                                   size(HEIGHT, EQUAL, 3);
-        if (ftxui::Terminal::Size().dimx < 90)
+        // Narrow terminals put the actions in rows above the move, wrapped to
+        // the width.
+        if (ftxui::Terminal::Size().dimx < narrow_move_page)
         {
+            Elements buttons;
+            for (std::size_t i = 0; i < controls->ChildCount(); ++i)
+                buttons.push_back(controls->ChildAt(i)->Render());
+            auto rows = flexbox(std::move(buttons), FlexboxConfig{}.SetGap(2, 0));
             return vbox({
-                actions,
-                details | flex,
-                diagnostic_actions,
-            }) | flex;
+                       window(text(" Actions "), scrolling(std::move(rows)))
+                           | size(HEIGHT, LESS_THAN, 5),
+                       details,
+                       diagnostic_actions,
+                   })
+                | flex;
         }
+        auto actions = window(text(" Actions "), scrolling(controls->Render()))
+            | size(WIDTH, LESS_THAN, 30);
         return vbox({
             hbox({actions, details}) | flex,
             diagnostic_actions,
@@ -2975,13 +2994,19 @@ private:
     [[nodiscard]] ftxui::Element render_run_page(const ftxui::Component& controls) const
     {
         using namespace ftxui;
-        Elements body{controls->Render()};
+        // The controls scroll; the changed parameters (their first lines) and
+        // the last run stay below them.
+        Elements body{scrolling(controls->Render())};
         if (!changed_parameter_lines_.empty())
         {
+            Elements lines;
+            for (const auto& line : changed_parameter_lines_)
+                lines.push_back(paragraph(line));
             body.push_back(separator());
             body.push_back(text("Changed parameters") | bold);
-            for (const auto& line : changed_parameter_lines_)
-                body.push_back(paragraph(line));
+            body.push_back(
+                vbox(std::move(lines)) | vscroll_indicator | yframe
+                | size(HEIGHT, LESS_THAN, 3));
         }
         if (!last_run_result_.empty())
         {

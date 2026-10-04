@@ -98,8 +98,8 @@ old concepts onto the new ones.
   name). A solve's limits bound all its runs together, and a pipeline stage
   may have its own (`& timeout(d)`, `& max_evaluations(n)`, `<name>.timeout`,
   `<name>.max_evaluations`); `cli::run --timeout` and `--max_evaluations`, a
-  REST run's `"timeout"` and `"max_evaluations"` and the TextUI's *Time limit*
-  and *Evaluations* fields set them.
+  REST run's `"timeout"` and `"max_evaluations"` and the TextUI's *Stop after*
+  fields (seconds, evaluations) set them.
 - Solvers: **LocalSearch**, **MultiStart** and **Pipeline**, with pluggable
   initialization. A pipeline (`stage(name, runner) | ...`, or
   `pipeline(stages...)`, or `.then(stage)`) runs runners with their own
@@ -131,7 +131,8 @@ old concepts onto the new ones.
   current solution changed by hand, move by move, or by a runner chosen by
   name, and checks of its neighborhood. The interactive tester,
   `tui::run(app, options)`, is a view on a Session, and every REST run has a
-  Session of its own.
+  Session of its own. Its pages scroll to the focused control in a terminal
+  too small for them, and the result of a run is also in its status line.
   Tools give stochastic runners an RNG they own, seeded reproducibly.
 - **Command-line programs**: `cli::run(app, argc, argv)`
   (`<easylocal/app/cli.hpp>`) runs an app from the command line: the instance,

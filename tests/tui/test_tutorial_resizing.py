@@ -1,6 +1,7 @@
 """The tutorial's tester in small terminals, and in terminals resized while it
-runs: each page shows its content, the text windows wrap their text again, a
-run goes on, and the original size gives back the original screen."""
+runs: each page shows its content, or scrolls to it, the text windows wrap
+their text again, a run goes on, and the original size gives back the original
+screen."""
 
 import os
 import re
@@ -11,11 +12,6 @@ from tui_driver import BACKSPACE, DOWN, ENTER, ESCAPE, F1, F2, F3, F4, F5, TAB, 
 
 INITIAL_COST = 29  # the initial tour 0-1-2-3-4 of five.tsp
 FI_COST = 26  # where First Improvement stops from it
-
-NO_SCROLLING = (
-    "the pages do not scroll: a page taller than the terminal is cut at its "
-    "bottom, and the focused control may be among the hidden lines")
-
 
 def small(columns: int, lines: int, *, cut: str | None = None):
     """A terminal size as a test parameter; `cut` marks a size known to hide
@@ -78,6 +74,18 @@ def evaluations(tui: Tui) -> int:
     return int(match.group(1))
 
 
+def shown_while_going_down(tui: Tui, contents: tuple[str, ...], presses: int = 15) -> None:
+    """Each content is on screen at some point while Down moves the focus
+    through the page, which scrolls to the focused control."""
+    missing = set(contents)
+    for _ in range(presses):
+        missing = {content for content in missing if content not in tui.text()}
+        if not missing:
+            return
+        tui.press(DOWN)
+    assert not missing, f"never shown: {sorted(missing)}\n{tui.text()}"
+
+
 def run_selected(tui: Tui) -> None:
     """Run the selected runner with its parameters as they are."""
     tui.press("G")
@@ -88,26 +96,21 @@ def run_selected(tui: Tui) -> None:
 # -- small terminals ----------------------------------------------------------
 
 
-@pytest.mark.parametrize("columns, lines", [
-    small(80, 24),
-    small(60, 20, cut=NO_SCROLLING + " (Solutions and Diagnostics are below line 12)"),
-])
-def test_the_input_output_page_fits(terminal, columns, lines):
+@pytest.mark.parametrize("columns, lines", [small(80, 24), small(60, 20)])
+def test_the_input_output_page_shows_its_controls(terminal, columns, lines):
     tui = terminal(columns, lines)
     tui.press("I", F3)
     tui.expect("Setup complete")
     assert_framed(tui)
-    for content in ("> five.tsp", "L Load selected", "I Initial  R Random",
-                    "Shift-L Load  W Save", "C Check"):
-        tui.expect(content, timeout=1)
+    shown_while_going_down(tui, ("> five.tsp", "L Load selected", "I Initial  R Random",
+                                 "Shift-L Load  W Save", "C Check"))
 
 
 @pytest.mark.parametrize("columns, lines", [
     small(80, 40),
-    small(80, 24, cut="below 90 columns the move window is stacked under the "
-                      "actions and gets no lines left"),
-    small(60, 20, cut="below 90 columns the move window is stacked under the "
-                      "actions and gets no lines left; " + NO_SCROLLING),
+    small(80, 24),
+    small(60, 20, cut="the page gets 8 lines: the actions and the diagnostics "
+                      "leave none to the move window"),
 ])
 def test_the_move_page_fits(terminal, columns, lines):
     tui = terminal(columns, lines)
@@ -118,37 +121,32 @@ def test_the_move_page_fits(terminal, columns, lines):
         tui.expect(content, timeout=1)
 
 
-@pytest.mark.parametrize("columns, lines", [
-    small(80, 24, cut=NO_SCROLLING + " (the target hint and the time limit)"),
-    small(60, 20, cut=NO_SCROLLING + " (the runner list keeps only its first "
-                                     "line; seed, target and time limit are hidden)"),
-])
-def test_the_run_page_fits(terminal, columns, lines):
+@pytest.mark.parametrize("columns, lines", [small(80, 24), small(60, 20)])
+def test_the_run_page_shows_its_controls(terminal, columns, lines):
     tui = terminal(columns, lines)
     tui.press("I", F5)
     tui.expect("G Run selected")
     assert_framed(tui)
-    for content in ("> fi", "  sa", "P Problem parameters", "Apply seed", "Target cost",
-                    f"current cost: {INITIAL_COST}", "Time limit (s)"):
-        tui.expect(content, timeout=1)
+    tui.expect("> fi", timeout=1)
+    tui.expect("  sa", timeout=1)  # the runner list keeps its lines
+    shown_while_going_down(tui, ("P Problem parameters", "Apply seed", "Target cost",
+                                 f"current cost: {INITIAL_COST}", "Stop after",
+                                 "evaluations"))
+    tui.select("fi", key=UP)  # out of the fields, where q is typed, not quit
 
 
-@pytest.mark.parametrize("columns, lines", [
-    small(100, 30),
-    small(80, 24, cut=NO_SCROLLING + " (the Last run box gets its title only)"),
-    small(60, 20, cut=NO_SCROLLING + " (the Last run box is hidden)"),
-])
+@pytest.mark.parametrize("columns, lines", [small(100, 30), small(80, 24), small(60, 20)])
 def test_the_result_of_a_run_is_shown(terminal, columns, lines):
     tui = terminal(columns, lines)
     tui.press("I", F5)
     run_selected(tui)
-    tui.expect("Runner completed: fi")  # in the status line, always visible
+    # In the status line, always visible, and below the controls.
+    tui.expect(f"Runner completed: fi: {INITIAL_COST} -> {FI_COST}")
     assert_framed(tui)
-    tui.expect(f"fi: {INITIAL_COST} -> {FI_COST}", timeout=1)
+    rows = [row for row in tui.text().split("\n") if f"fi: {INITIAL_COST} -> {FI_COST}" in row]
+    assert len(rows) == 2, tui.text()
 
 
-@pytest.mark.xfail(strict=True, reason=NO_SCROLLING + ": with Changed parameters "
-                   "above it, the Last run box loses its result even in 100x30")
 def test_the_result_of_a_run_is_shown_after_changed_parameters(tui):
     tui.press("I", F5)
     tui.select("sa")
@@ -159,22 +157,23 @@ def test_the_result_of_a_run_is_shown_after_changed_parameters(tui):
     tui.press(ENTER)
     tui.expect("Runner completed: sa", timeout=60)
     tui.expect("runners.sa.temperature.cooling_rate = 0.9 (was 0.95)")
-    tui.expect(re.compile(rf"sa: {INITIAL_COST} -> \d+"), timeout=1)
+    rows = [row for row in tui.text().split("\n")
+            if re.search(rf"sa: {INITIAL_COST} -> \d+", row)]
+    assert len(rows) == 2, tui.text()  # the Last run box and the status line
 
 
-def test_the_hidden_target_field_is_reachable(terminal):
-    # In 80x24 the target field is below the last line, yet the focus reaches
-    # it: the value typed is there once the terminal is taller.
+def test_the_focus_scrolls_to_the_target_field(terminal):
+    # In 80x24 the target field is below the last line until the focus
+    # reaches it.
     tui = terminal(80, 24)
     tui.press("I", F5)
+    tui.expect_absent("current cost")
     tui.focus("P Problem parameters")  # through the runner list
-    tui.press(*[DOWN] * 8, UP)  # to the time limit, then the target above it
+    tui.press(*[DOWN] * 8, UP)  # to the limits, then the target above them
+    tui.expect(f"current cost: {INITIAL_COST}", timeout=1)
     tui.type(str(INITIAL_COST))
     tui.select("fi", key=UP)
     run_selected(tui)
-    tui.expect("Runner completed: fi")
-
-    tui.resize(100, 30)
     assert_framed(tui)
     tui.expect(f"fi: {INITIAL_COST} -> {INITIAL_COST} (target {INITIAL_COST} reached)")
 
@@ -262,10 +261,6 @@ def test_a_run_goes_on_while_the_terminal_is_resized(tui):
 
     tui.expect("Runner completed: sa", timeout=120)
     tui.expect_absent(" Progress ")
-    # The Changed parameters box pushes the result below line 30 (see
-    # test_the_result_of_a_run_is_shown_after_changed_parameters): a taller
-    # terminal shows it.
-    tui.resize(100, 40)
     assert_framed(tui)
     final = int(tui.expect(re.compile(rf"sa: {INITIAL_COST} -> (\d+)")).group(1))
     assert final <= INITIAL_COST

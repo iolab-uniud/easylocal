@@ -99,11 +99,13 @@ opens the selected runner's (`runners.<name>.*`) before running it, `P` the
 problem's (`cost.*`, `neighborhood.*`). Values are checked before anything
 changes and stay for the rest of the session. Its *Target cost* field, when
 filled, stops each run at the first solution that reaches it; below it, the
-current cost is shown in the same syntax. Its *Time limit (s)* field, when
-filled, stops each run after that many seconds; the progress shows the time
-elapsed, and the result says "(time limit reached)". Its *Evaluations* field
-does the same with a number of evaluations ("(evaluation budget
-exhausted)").
+current cost is shown in the same syntax. Its *Stop after* row has two
+fields: *seconds*, when filled, stops each run after that many seconds (the
+progress shows the time elapsed, and the result says "(time limit reached)");
+*evaluations* does the same with a number of evaluations ("(evaluation budget
+exhausted)"). The result of the last run is shown below the controls and in
+the status line. In a terminal too small for a page, the page scrolls to the
+focused control (Tab, arrows).
 
 `cli::run` parses the command line and a `--config` file with
 `config::load_and_apply`: its own block `cli::parameters` at the root
