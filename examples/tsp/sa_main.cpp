@@ -23,9 +23,9 @@ int main(int argc, char* argv[])
     auto application = easylocal::app("tsp-sa") | tsp_solution_manager()
         | (easylocal::neighborhood_union(
                neighborhood<TwoOptNeighborhoodExplorer>()
-                   | delta<TourLengthComponent, TwoOptTourLengthDeltaEvaluator>(),
+                   | delta<TourLengthComponent, TwoOptTourLengthDelta>(),
                neighborhood<SwapCitiesNeighborhoodExplorer>()
-                   | delta<TourLengthComponent, SwapTourLengthDeltaEvaluator>())
+                   | delta<TourLengthComponent, SwapTourLengthDelta>())
             | easylocal::random_biases(3.0, 1.0))
         | easylocal::runner<SimulatedAnnealing<FixedLength>>(
             "sa",

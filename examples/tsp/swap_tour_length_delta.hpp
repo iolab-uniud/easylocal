@@ -11,13 +11,10 @@
 namespace tsp
 {
 
-class SwapTourLengthDeltaEvaluator
+class SwapTourLengthDelta
 {
 public:
-    explicit SwapTourLengthDeltaEvaluator(const TspInstance& instance)
-        : instance_{instance}
-    {
-    }
+    explicit SwapTourLengthDelta(const TspInstance& instance) : instance_{instance} {}
 
     double delta_evaluate(const Tour& solution, const SwapCitiesMove& move) const
     {

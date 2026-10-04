@@ -47,7 +47,7 @@ int main()
     const TspSolutionManager solution_manager{instance};
     const TwoOptNeighborhoodExplorer neighborhood{solution_manager};
     const TourLengthComponent component{instance};
-    const TwoOptTourLengthDeltaEvaluator delta_evaluator{instance};
+    const TwoOptTourLengthDelta delta_evaluator{instance};
 
     const auto current = component.evaluate(solution);
 

@@ -59,7 +59,7 @@ int main()
     const TspSolutionManager solution_manager{instance};
     const SwapCitiesNeighborhoodExplorer neighborhood{solution_manager};
     const TourLengthComponent tour_length{instance};
-    const SwapTourLengthDeltaEvaluator delta_evaluator{instance};
+    const SwapTourLengthDelta delta_evaluator{instance};
     const Tour solution{
         .tour = {0, 2, 1, 3},
     };

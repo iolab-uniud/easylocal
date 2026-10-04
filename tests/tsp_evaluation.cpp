@@ -158,14 +158,10 @@ int main()
         "accept promotes the materialized 2-opt candidate solution");
 
     int rejected_make_moves = 0;
-    auto rejected_delta_runner =
-        Runner{ProbeOneMove{improving_move, false}}
+    auto rejected_delta_runner = Runner{ProbeOneMove{improving_move, false}}
         | manager_recipe
-        | (neighborhood<CountingNeighborhoodExplorer>(
-               std::ref(rejected_make_moves))
-           | delta<
-                 TourLengthComponent,
-                 TwoOptTourLengthDeltaEvaluator>());
+        | (neighborhood<CountingNeighborhoodExplorer>(std::ref(rejected_make_moves))
+            | delta<TourLengthComponent, TwoOptTourLengthDelta>());
 
     const auto rejected_delta_result =
         rejected_delta_runner.bind(instance).run(initial);
@@ -184,14 +180,10 @@ int main()
         "rejected all-delta candidate does not materialize the moved solution");
 
     int accepted_make_moves = 0;
-    auto accepted_delta_runner =
-        Runner{ProbeOneMove{improving_move, true}}
+    auto accepted_delta_runner = Runner{ProbeOneMove{improving_move, true}}
         | manager_recipe
-        | (neighborhood<CountingNeighborhoodExplorer>(
-               std::ref(accepted_make_moves))
-           | delta<
-                 TourLengthComponent,
-                 TwoOptTourLengthDeltaEvaluator>());
+        | (neighborhood<CountingNeighborhoodExplorer>(std::ref(accepted_make_moves))
+            | delta<TourLengthComponent, TwoOptTourLengthDelta>());
 
     const auto accepted_delta_result =
         accepted_delta_runner.bind(instance).run(initial);

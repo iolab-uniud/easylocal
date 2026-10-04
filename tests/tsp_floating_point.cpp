@@ -81,7 +81,7 @@ auto evaluate_move(
     const TspSolutionManager solution_manager{instance};
     const TwoOptNeighborhoodExplorer neighborhood{solution_manager};
     const TourLengthComponent component{instance};
-    const TwoOptTourLengthDeltaEvaluator delta_evaluator{instance};
+    const TwoOptTourLengthDelta delta_evaluator{instance};
 
     const auto current = component.evaluate(solution);
 
@@ -115,7 +115,7 @@ int main()
     const TspSolutionManager drift_manager{drift_instance};
     const TwoOptNeighborhoodExplorer drift_neighborhood{drift_manager};
     const TourLengthComponent drift_component{drift_instance};
-    const TwoOptTourLengthDeltaEvaluator drift_delta{drift_instance};
+    const TwoOptTourLengthDelta drift_delta{drift_instance};
     const auto drift_current = drift_component.evaluate(solution);
 
     bool observed_exact_delta_mismatch = false;

@@ -30,7 +30,7 @@ inline auto two_opt_app()
 {
     auto application = easylocal::app("tsp-two-opt") | tsp_solution_manager()
         | (easylocal::neighborhood<TwoOptNeighborhoodExplorer>()
-            | easylocal::delta<TourLengthComponent, TwoOptTourLengthDeltaEvaluator>())
+            | easylocal::delta<TourLengthComponent, TwoOptTourLengthDelta>())
         | easylocal::runner<easylocal::runners::FirstImprovement>("fi");
     application.runner_config<easylocal::runners::FirstImprovement>().max_evaluations =
         100;
@@ -41,7 +41,7 @@ inline auto swap_app()
 {
     auto application = easylocal::app("tsp-swap") | tsp_solution_manager()
         | (easylocal::neighborhood<SwapCitiesNeighborhoodExplorer>()
-            | easylocal::delta<TourLengthComponent, SwapTourLengthDeltaEvaluator>())
+            | easylocal::delta<TourLengthComponent, SwapTourLengthDelta>())
         | easylocal::runner<easylocal::runners::FirstImprovement>("fi");
     application.runner_config<easylocal::runners::FirstImprovement>().max_evaluations =
         100;

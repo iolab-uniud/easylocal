@@ -10,13 +10,10 @@
 namespace tsp
 {
 
-class TwoOptTourLengthDeltaEvaluator
+class TwoOptTourLengthDelta
 {
 public:
-    explicit TwoOptTourLengthDeltaEvaluator(const TspInstance& instance)
-        : instance_{instance}
-    {
-    }
+    explicit TwoOptTourLengthDelta(const TspInstance& instance) : instance_{instance} {}
 
     double delta_evaluate(const Tour& solution, const TwoOptMove& move) const
     {
