@@ -702,6 +702,11 @@ function(easylocal_add_compile_failure_test name source expected_diagnostic)
 endfunction()
 
 easylocal_add_compile_failure_test(
+    pipeline-different-solutions
+    pipeline_different_solutions.cpp
+    "the stages of a pipeline must have the same Solution"
+)
+easylocal_add_compile_failure_test(
     duplicate-component
     duplicate_component.cpp
     "a SolutionManager recipe may contain each component type at most once"
@@ -1013,6 +1018,13 @@ target_compile_definitions(
     PRIVATE EASYLOCAL_TUTORIAL_INSTANCE="${PROJECT_SOURCE_DIR}/examples/tutorial/five.tsp")
 add_test(NAME easylocal.cli-run COMMAND easylocal_cli_run_test)
 
+easylocal_add_test(
+    pipeline
+    SOURCES
+        pipeline.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
 add_executable(easylocal_two_stage_solver_test two_stage_solver.cpp)
 target_link_libraries(easylocal_two_stage_solver_test PRIVATE EasyLocal::Core)
 add_test(NAME easylocal.two-stage-solver COMMAND easylocal_two_stage_solver_test)
