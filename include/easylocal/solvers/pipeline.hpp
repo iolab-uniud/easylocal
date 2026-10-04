@@ -565,7 +565,7 @@ public:
             RNG>
     Pipeline& initialization(const Initialization initialization) &
     {
-        this->initialization_mode(to_mode(initialization));
+        this->initialization_mode(initialization_support::to_mode(initialization));
         return *this;
     }
 
@@ -580,7 +580,7 @@ public:
     [[nodiscard]]
     Pipeline&& initialization(const Initialization initialization) &&
     {
-        this->initialization_mode(to_mode(initialization));
+        this->initialization_mode(initialization_support::to_mode(initialization));
         return std::move(*this);
     }
 
@@ -697,22 +697,6 @@ private:
     Pipeline(std::tuple<Stages...> stages, RNG rng, const initialization::Mode mode)
         : initialization_support{mode}, stages_{std::move(stages)}, rng_{std::move(rng)}
     {
-    }
-
-    static constexpr initialization::Mode to_mode(const initialization::Initial) noexcept
-    {
-        return initialization::Mode::initial;
-    }
-
-    static constexpr initialization::Mode to_mode(const initialization::Random) noexcept
-    {
-        return initialization::Mode::random;
-    }
-
-    static constexpr initialization::Mode to_mode(
-        const initialization::Mode mode) noexcept
-    {
-        return mode;
     }
 
     template<class Stage>

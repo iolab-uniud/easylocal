@@ -130,7 +130,7 @@ protected:
         throw std::logic_error{"unsupported Solver initialization mode"};
     }
 
-private:
+    // The mode of an initialization tag, or the mode itself.
     static constexpr initialization::Mode to_mode(const initialization::Initial) noexcept
     {
         return initialization::Mode::initial;
@@ -147,6 +147,7 @@ private:
         return mode;
     }
 
+private:
     static void validate(const initialization::Mode mode)
     {
         if (!supports(mode))
