@@ -723,16 +723,62 @@ public:
         using namespace ftxui;
 
         auto app = ftxui::App::Fullscreen();
-
-        Component seed_input_component;
-        Component target_input_component;
-
-        const auto section_label = [](std::string label) {
-            return Renderer([label = std::move(label)] {
-                return text(label) | bold;
+        auto input_viewer = viewer_component(
+            input_viewer_,
+            input_visible_,
+            [this](const Component& menu, const Component& close) {
+                return render_input_viewer(menu, close);
+            },
+            [](const Event& event) {
+                return event == Event::Escape || event == Event::F1;
             });
-        };
+        auto solution_viewer = viewer_component(
+            solution_viewer_,
+            solution_visible_,
+            [this](const Component& menu, const Component& close) {
+                return render_solution_viewer(menu, close);
+            },
+            [](const Event& event) {
+                return event == Event::Escape || event == Event::F2 || event == Event::s
+                    || event == Event::S;
+            });
 
+        Component root = Modal(main_window(), browser_window(), &browser_visible_);
+        root = Modal(root, help_window(), &help_visible_);
+        root = Modal(root, diagnostic_window(), &diagnostic_visible_);
+        root = Modal(root, progress_window(), &progress_visible_);
+        root = Modal(root, input_viewer, &input_visible_);
+        root = Modal(root, solution_viewer, &solution_visible_);
+        root = Modal(root, parameters_window(), &parameters_visible_);
+        root = CatchEvent(root, [this, &app](const Event& event) {
+            return handle_key(app, event);
+        });
+
+        event_app_ = &app;
+        app.Loop(root);
+        event_app_ = nullptr;
+
+        // The progress modal normally keeps the frontend alive until the run
+        // completes.  Joining here also makes exceptional/event-loop exits
+        // deterministic and prevents a worker from outliving the frontend.
+        if (run_worker_.joinable())
+            run_worker_.join();
+    }
+
+private:
+    // A bold label over a group of controls.
+    [[nodiscard]] static ftxui::Component section_label(std::string label)
+    {
+        return ftxui::Renderer([label = std::move(label)] {
+            return ftxui::text(label) | ftxui::bold;
+        });
+    }
+
+    // The Solution page: the instances, the solutions created, loaded and
+    // saved, and the check.
+    [[nodiscard]] ftxui::Component solution_page()
+    {
+        using namespace ftxui;
         auto solution_controls = Container::Vertical({});
         if constexpr (tester_type::supports_input_loading)
         {
@@ -823,6 +869,16 @@ public:
             [this] { check(); },
             ButtonOption::Ascii()));
 
+        return Renderer(solution_controls, [this, solution_controls] {
+            return render_solution_page(solution_controls);
+        });
+    }
+
+    // The Move page: the selection and application of a move, and the
+    // neighborhood diagnostics.
+    [[nodiscard]] ftxui::Component move_page()
+    {
+        using namespace ftxui;
         auto move_controls = Container::Vertical({});
         move_controls->Add(section_label("Select move"));
         if constexpr (tester_type::supports_improvement_selection)
@@ -895,15 +951,24 @@ public:
                 ButtonOption::Ascii()));
         }
 
+        auto move_page_controls = Container::Vertical({move_controls, move_diagnostics});
+        return Renderer(move_page_controls, [this, move_controls, move_diagnostics] {
+            return render_move_page(move_controls, move_diagnostics);
+        });
+    }
+
+    // The Run page: the runners, the problem's parameters, the seed and the
+    // target cost.
+    [[nodiscard]] ftxui::Component run_page()
+    {
+        using namespace ftxui;
         auto run_controls = Container::Vertical({});
-        Component runner_menu;
         if (!runner_names_.empty())
         {
             run_controls->Add(section_label("Runner"));
             auto menu_option = MenuOption::Vertical();
             menu_option.on_enter = [this] { run_runner(); };
-            runner_menu = Menu(&runner_names_, &runner_selected_, menu_option);
-            run_controls->Add(runner_menu);
+            run_controls->Add(Menu(&runner_names_, &runner_selected_, menu_option));
             run_controls->Add(section_label("Execute"));
             run_controls->Add(Button(
                 "G Run selected",
@@ -934,14 +999,15 @@ public:
         auto seed_input_option = InputOption::Default();
         seed_input_option.multiline = false;
         seed_input_option.on_enter = [this] { apply_seed(); };
-        seed_input_component = Input(&seed_text_, "seed", seed_input_option);
-        run_controls->Add(Container::Horizontal({
-            seed_input_component,
-            Button(
-                "Apply seed",
-                [this] { apply_seed(); },
-                ButtonOption::Ascii()),
-        }));
+        seed_input_ = Input(&seed_text_, "seed", seed_input_option);
+        run_controls->Add(
+            Container::Horizontal({
+                seed_input_,
+                Button(
+                    "Apply seed",
+                    [this] { apply_seed(); },
+                    ButtonOption::Ascii()),
+            }));
 
         // A run stops when its solution reaches the target cost; empty: none.
         if constexpr (supports_target)
@@ -949,8 +1015,8 @@ public:
             run_controls->Add(section_label("Target cost"));
             auto target_input_option = InputOption::Default();
             target_input_option.multiline = false;
-            target_input_component = Input(&target_text_, "none", target_input_option);
-            run_controls->Add(target_input_component);
+            target_input_ = Input(&target_text_, "none", target_input_option);
+            run_controls->Add(target_input_);
             // The current cost as the field reads it, as an example of the syntax.
             if constexpr (easylocal::cost::text_readable<typename tester_type::cost_type>)
             {
@@ -965,22 +1031,17 @@ public:
             }
         }
 
-        auto solution_page = Renderer(solution_controls, [this, solution_controls] {
-            return render_solution_page(solution_controls);
-        });
-        auto move_page_controls = Container::Vertical({move_controls, move_diagnostics});
-        auto move_page = Renderer(
-            move_page_controls,
-            [this, move_controls, move_diagnostics] {
-                return render_move_page(move_controls, move_diagnostics);
-            });
-        auto run_page = Renderer(run_controls, [this, run_controls] {
+        return Renderer(run_controls, [this, run_controls] {
             return render_run_page(run_controls);
         });
+    }
 
-        auto pages = Container::Tab(
-            {solution_page, move_page, run_page},
-            &page_selected_);
+    // The three pages under their menu.
+    [[nodiscard]] ftxui::Component main_window()
+    {
+        using namespace ftxui;
+        auto pages =
+            Container::Tab({solution_page(), move_page(), run_page()}, &page_selected_);
         refresh_page_labels();
         auto page_menu_option = MenuOption::Horizontal();
         page_menu_option.on_change = [this] {
@@ -997,10 +1058,15 @@ public:
         auto page_menu = Menu(&page_labels_, &page_selected_, page_menu_option);
         auto main_controls = Container::Vertical({page_menu, pages});
 
-        auto main_renderer = Renderer(main_controls, [this, page_menu, pages] {
+        return Renderer(main_controls, [this, page_menu, pages] {
             return render_main(page_menu, pages);
         });
+    }
 
+    // The file browser of the Input/Output page.
+    [[nodiscard]] ftxui::Component browser_window()
+    {
+        using namespace ftxui;
         auto browser_menu_option = MenuOption::Vertical();
         browser_menu_option.on_enter = [this] { accept_browser_selection(); };
         auto browser_menu = Menu(
@@ -1039,7 +1105,12 @@ public:
             }
             return false;
         });
+        return browser_renderer;
+    }
 
+    [[nodiscard]] ftxui::Component help_window()
+    {
+        using namespace ftxui;
         auto help_controls = Container::Vertical({
             Button(
                 "Close",
@@ -1058,7 +1129,13 @@ public:
             }
             return false;
         });
+        return help_renderer;
+    }
 
+    // The result of a diagnostic, one line per row.
+    [[nodiscard]] ftxui::Component diagnostic_window()
+    {
+        using namespace ftxui;
         auto diagnostic_menu_option = MenuOption::Vertical();
         auto diagnostic_menu = Menu(
             &diagnostic_lines_,
@@ -1094,7 +1171,13 @@ public:
             }
             return false;
         });
+        return diagnostic_renderer;
+    }
 
+    // The progress of a running runner, with its Stop button.
+    [[nodiscard]] ftxui::Component progress_window()
+    {
+        using namespace ftxui;
         auto progress_stop = Button(
             "X Stop",
             [this] { stop_runner(); },
@@ -1113,27 +1196,13 @@ public:
             }
             return false;
         });
+        return progress_renderer;
+    }
 
-        auto input_viewer = viewer_component(
-            input_viewer_,
-            input_visible_,
-            [this](const Component& menu, const Component& close) {
-                return render_input_viewer(menu, close);
-            },
-            [](const Event& event) {
-                return event == Event::Escape || event == Event::F1;
-            });
-        auto solution_viewer = viewer_component(
-            solution_viewer_,
-            solution_visible_,
-            [this](const Component& menu, const Component& close) {
-                return render_solution_viewer(menu, close);
-            },
-            [](const Event& event) {
-                return event == Event::Escape || event == Event::F2 || event == Event::s
-                    || event == Event::S;
-            });
-
+    // The parameters window, filled when it opens.
+    [[nodiscard]] ftxui::Component parameters_window()
+    {
+        using namespace ftxui;
         parameter_inputs_ = Container::Vertical({});
         auto parameter_submit = Button(
             &parameter_action_,
@@ -1158,111 +1227,82 @@ public:
             }
             return false;
         });
-
-        Component root = Modal(main_renderer, browser_renderer, &browser_visible_);
-        root = Modal(root, help_renderer, &help_visible_);
-        root = Modal(root, diagnostic_renderer, &diagnostic_visible_);
-        root = Modal(root, progress_renderer, &progress_visible_);
-        root = Modal(root, input_viewer, &input_visible_);
-        root = Modal(root, solution_viewer, &solution_visible_);
-        root = Modal(root, parameter_renderer, &parameters_visible_);
-        root = CatchEvent(
-            root,
-            [this,
-                &app,
-                seed_input_component,
-                target_input_component](Event event) {
-                if (event == Event::Custom && run_future_.valid())
-                {
-                    refresh_runner_progress();
-                    if (run_future_.wait_for(std::chrono::seconds{0}) ==
-                        std::future_status::ready)
-                    {
-                        finish_runner_run();
-                    }
-                    return true;
-                }
-                if (parameters_visible_)
-                    return false;
-                if (event == Event::Character('?') || event == Event::h || event == Event::H)
-                {
-                    help_visible_ = !help_visible_;
-                    return true;
-                }
-                if (browser_visible_ || help_visible_ || diagnostic_visible_ ||
-                    progress_visible_)
-                {
-                    return false;
-                }
-
-                if (input_visible_ || solution_visible_)
-                {
-                    return false;
-                }
-
-                const bool editing_path =
-                    (seed_input_component && seed_input_component->Focused())
-                    || (target_input_component && target_input_component->Focused());
-
-                if (event == Event::F1)
-                {
-                    show_input();
-                    return true;
-                }
-                if (event == Event::F2)
-                {
-                    show_solution();
-                    return true;
-                }
-                if (event == Event::F3)
-                {
-                    select_page(tester_page::solution);
-                    return true;
-                }
-                if (event == Event::F4)
-                {
-                    select_page(tester_page::move);
-                    return true;
-                }
-                if (event == Event::F5)
-                {
-                    select_page(tester_page::run);
-                    return true;
-                }
-
-                if (editing_path)
-                {
-                    return false;
-                }
-
-                if (event == Event::q || event == Event::Q)
-                {
-                    app.Exit();
-                    return true;
-                }
-                if (event == Event::s || event == Event::S)
-                {
-                    show_solution();
-                    return true;
-                }
-
-                return handle_page_shortcut(event);
-            });
-
-        event_app_ = &app;
-        app.Loop(root);
-        event_app_ = nullptr;
-
-        // The progress modal normally keeps the frontend alive until the run
-        // completes.  Joining here also makes exceptional/event-loop exits
-        // deterministic and prevents a worker from outliving the frontend.
-        if (run_worker_.joinable())
-        {
-            run_worker_.join();
-        }
+        return parameter_renderer;
     }
 
-private:
+    // The keys of the whole tester: progress events, help, the windows (F1,
+    // F2), the pages (F3-F5), quit, and the shortcuts of the current page.
+    bool handle_key(ftxui::App& app, const ftxui::Event& event)
+    {
+        using namespace ftxui;
+        if (event == Event::Custom && run_future_.valid())
+        {
+            refresh_runner_progress();
+            if (run_future_.wait_for(std::chrono::seconds{0})
+                == std::future_status::ready)
+            {
+                finish_runner_run();
+            }
+            return true;
+        }
+        if (parameters_visible_)
+            return false;
+        if (event == Event::Character('?') || event == Event::h || event == Event::H)
+        {
+            help_visible_ = !help_visible_;
+            return true;
+        }
+        if (browser_visible_ || help_visible_ || diagnostic_visible_ || progress_visible_)
+            return false;
+
+        if (input_visible_ || solution_visible_)
+            return false;
+
+        const bool editing_path = (seed_input_ && seed_input_->Focused())
+            || (target_input_ && target_input_->Focused());
+
+        if (event == Event::F1)
+        {
+            show_input();
+            return true;
+        }
+        if (event == Event::F2)
+        {
+            show_solution();
+            return true;
+        }
+        if (event == Event::F3)
+        {
+            select_page(tester_page::solution);
+            return true;
+        }
+        if (event == Event::F4)
+        {
+            select_page(tester_page::move);
+            return true;
+        }
+        if (event == Event::F5)
+        {
+            select_page(tester_page::run);
+            return true;
+        }
+
+        if (editing_path)
+            return false;
+
+        if (event == Event::q || event == Event::Q)
+        {
+            app.Exit();
+            return true;
+        }
+        if (event == Event::s || event == Event::S)
+        {
+            show_solution();
+            return true;
+        }
+
+        return handle_page_shortcut(event);
+    }
     void add_known_path(file_target target, const std::string& path)
     {
         if (path.empty())
@@ -3224,6 +3264,10 @@ private:
     bool progress_visible_{};
     progress_snapshot progress_{};
     ftxui::App* event_app_{};
+    // The text fields of the Run page: while one is focused, letters are typed
+    // rather than shortcuts.
+    ftxui::Component seed_input_;
+    ftxui::Component target_input_;
     std::jthread run_worker_{};
     std::future<async_runner_result<typename tester_type::solution_type>> run_future_{};
     std::shared_ptr<easylocal::detail::atomic_run_progress> run_progress_state_;
