@@ -273,17 +273,11 @@ public:
     }
 
     /// The runner.
+    template<class Self>
     [[nodiscard]]
-    Runner& runner() noexcept
+    auto& runner(this Self&& self) noexcept
     {
-        return runner_;
-    }
-
-    /// The runner.
-    [[nodiscard]]
-    const Runner& runner() const noexcept
-    {
-        return runner_;
+        return self.runner_;
     }
 
     /// The target cost, if any.
@@ -294,17 +288,11 @@ public:
     }
 
     /// The stage's own parameters (attempts).
+    template<class Self>
     [[nodiscard]]
-    StageParameters& parameters() noexcept
+    auto& parameters(this Self&& self) noexcept
     {
-        return parameters_;
-    }
-
-    /// The stage's own parameters (attempts).
-    [[nodiscard]]
-    const StageParameters& parameters() const noexcept
-    {
-        return parameters_;
+        return self.parameters_;
     }
 
 private:
@@ -639,33 +627,19 @@ public:
     }
 
     /// The RNG, which feeds the initial solutions and the runs.
+    template<class Self>
     [[nodiscard]]
-    RNG& rng() noexcept
+    auto& rng(this Self&& self) noexcept
     {
-        return rng_;
-    }
-
-    /// The RNG, which feeds the initial solutions and the runs.
-    [[nodiscard]]
-    const RNG& rng() const noexcept
-    {
-        return rng_;
+        return self.rng_;
     }
 
     /// The stage at `Index`.
-    template<std::size_t Index>
+    template<std::size_t Index, class Self>
     [[nodiscard]]
-    auto& stage() noexcept
+    auto& stage(this Self&& self) noexcept
     {
-        return std::get<Index>(stages_);
-    }
-
-    /// The stage at `Index`.
-    template<std::size_t Index>
-    [[nodiscard]]
-    const auto& stage() const noexcept
-    {
-        return std::get<Index>(stages_);
+        return std::get<Index>(self.stages_);
     }
 
     /// Runs the stages in order on `input`, and returns the last stage's result
@@ -721,7 +695,7 @@ public:
     /// one has none.
     template<class Self>
     [[nodiscard]]
-    config::parameter_set configuration(this Self& self)
+    config::parameter_set configuration(this Self&& self)
     {
         self.check_names();
         config::parameter_set parameters;

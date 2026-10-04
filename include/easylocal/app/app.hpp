@@ -315,28 +315,18 @@ public:
         return input_;
     }
 
+    template<class Self>
     [[nodiscard]]
-    solution_manager_type& solution_manager() noexcept
+    auto& solution_manager(this Self&& self) noexcept
     {
-        return solution_manager_;
+        return self.solution_manager_;
     }
 
+    template<class Self>
     [[nodiscard]]
-    const solution_manager_type& solution_manager() const noexcept
+    auto& neighborhood(this Self&& self) noexcept
     {
-        return solution_manager_;
-    }
-
-    [[nodiscard]]
-    neighborhood_explorer_type& neighborhood() noexcept
-    {
-        return neighborhood_;
-    }
-
-    [[nodiscard]]
-    const neighborhood_explorer_type& neighborhood() const noexcept
-    {
-        return neighborhood_;
+        return self.neighborhood_;
     }
 
     template<class Algorithm>
@@ -598,7 +588,7 @@ public:
     template<class Algorithm, class Self>
         requires(app_runner_count_v<Algorithm, Registrations...> == 1)
     [[nodiscard]]
-    auto& runner_config(this Self& self) noexcept
+    auto& runner_config(this Self&& self) noexcept
     {
         constexpr auto index = app_runner_index<Algorithm, Registrations...>();
         return std::get<index>(self.registrations_).config;
@@ -609,7 +599,7 @@ public:
     template<class Algorithm, class Self>
         requires(app_runner_count_v<Algorithm, Registrations...> > 0)
     [[nodiscard]]
-    auto& runner_config(this Self& self, const std::string_view name)
+    auto& runner_config(this Self&& self, const std::string_view name)
     {
         return app_runner_registration_by_name<Algorithm>(self.registrations_, name)
             .config;
@@ -632,7 +622,7 @@ public:
     // while it is used.
     template<class Self>
     [[nodiscard]]
-    config::parameter_set configuration(this Self& self)
+    config::parameter_set configuration(this Self&& self)
     {
         config::parameter_set parameters;
         config::add_configuration(parameters, "cost", self.solution_manager_spec_);

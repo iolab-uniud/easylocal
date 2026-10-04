@@ -72,8 +72,9 @@ the uv environment: `uv sync`, then `uv run ...`.
 - Variants on a hot path (an inverse, a move evaluation) are chosen at compile
   time, with templates, rather than by runtime parameters.
 - A member with a const and a mutable version of the same body is written once,
-  with an explicit object parameter (`template<class Self> auto& f(this Self&
-  self)`), not as two overloads.
+  with an explicit object parameter (`template<class Self> auto& f(this Self&&
+  self)`, which also takes a temporary, as the two overloads did), not as two
+  overloads.
 - Prefer `struct` for transparent value types; prefer `class` for
   encapsulated abstractions. A type with an invariant (fields that must stay
   consistent, state changed only through its members) is a `class`, with its

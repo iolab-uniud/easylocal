@@ -175,24 +175,14 @@ public:
         return std::get<Index>(components_).evaluate(solution);
     }
 
-    template<class Component>
+    template<class Component, class Self>
     [[nodiscard]]
-    Component& component() noexcept
+    auto& component(this Self&& self) noexcept
     {
         static_assert(
             tuple_contains_type_v<Component, component_types>,
             "the requested cost component is not active in this SolutionManager");
-        return std::get<tuple_type_index_v<Component, component_types>>(components_);
-    }
-
-    template<class Component>
-    [[nodiscard]]
-    const Component& component() const noexcept
-    {
-        static_assert(
-            tuple_contains_type_v<Component, component_types>,
-            "the requested cost component is not active in this SolutionManager");
-        return std::get<tuple_type_index_v<Component, component_types>>(components_);
+        return std::get<tuple_type_index_v<Component, component_types>>(self.components_);
     }
 
 private:
@@ -293,18 +283,11 @@ public:
         return cost_from_components(evaluate_components(solution));
     }
 
-    template<class Component>
+    template<class Component, class Self>
     [[nodiscard]]
-    Component& component() noexcept
+    auto& component(this Self&& self) noexcept
     {
-        return this->inner().template component<Component>();
-    }
-
-    template<class Component>
-    [[nodiscard]]
-    const Component& component() const noexcept
-    {
-        return this->inner().template component<Component>();
+        return self.inner().template component<Component>();
     }
 
     [[nodiscard]]

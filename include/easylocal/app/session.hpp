@@ -300,17 +300,11 @@ public:
     }
 
     /// The app.
+    template<class Self>
     [[nodiscard]]
-    App& app() noexcept
+    auto& app(this Self&& self) noexcept
     {
-        return app_;
-    }
-
-    /// The app.
-    [[nodiscard]]
-    const App& app() const noexcept
-    {
-        return app_;
+        return self.app_;
     }
 
     /// Whether the session has an Input.
@@ -382,19 +376,13 @@ public:
     }
 
     /// The app bound to the Input; the session must have one.
+    template<class Self>
     [[nodiscard]]
-    bound_app_type& bound_app() noexcept
+    auto& bound_app(this Self&& self) noexcept
     {
-        assert(bound_);
-        return *bound_;
-    }
-
-    /// The app bound to the Input; the session must have one.
-    [[nodiscard]]
-    const bound_app_type& bound_app() const noexcept
-    {
-        assert(bound_);
-        return *bound_;
+        assert(self.bound_);
+        // const when the session is: a unique_ptr does not carry it over.
+        return std::forward_like<Self&>(*self.bound_);
     }
 
     /// Whether the session has a current solution.

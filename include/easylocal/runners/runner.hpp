@@ -419,14 +419,10 @@ public:
         return std::move(algorithm_);
     }
 
-    void add_configuration(config::parameter_set& parameters)
+    template<class Self>
+    void add_configuration(this Self&& self, config::parameter_set& parameters)
     {
-        config::add_configuration(parameters, "search", algorithm_);
-    }
-
-    void add_configuration(config::parameter_set& parameters) const
-    {
-        config::add_configuration(parameters, "search", algorithm_);
+        config::add_configuration(parameters, "search", self.algorithm_);
     }
 
 private:
@@ -451,26 +447,17 @@ public:
         return Algorithm{parameters_};
     }
 
+    template<class Self>
     [[nodiscard]]
-    parameters_type& parameters() noexcept
+    auto& parameters(this Self&& self) noexcept
     {
-        return parameters_;
+        return self.parameters_;
     }
 
-    [[nodiscard]]
-    const parameters_type& parameters() const noexcept
+    template<class Self>
+    void add_configuration(this Self&& self, config::parameter_set& parameters)
     {
-        return parameters_;
-    }
-
-    void add_configuration(config::parameter_set& parameters)
-    {
-        parameters.add("search", parameters_);
-    }
-
-    void add_configuration(config::parameter_set& parameters) const
-    {
-        parameters.add("search", parameters_);
+        parameters.add("search", self.parameters_);
     }
 
 private:
@@ -667,23 +654,14 @@ public:
     ///
     /// The set refers to this runner, which must stay in place while it is
     /// used.
+    template<class Self>
     [[nodiscard]]
-    config::parameter_set configuration()
+    config::parameter_set configuration(this Self&& self)
     {
         config::parameter_set parameters;
-        algorithm_.add_configuration(parameters);
-        config::add_configuration(parameters, "cost", solution_manager_spec_);
-        config::add_configuration(parameters, "neighborhood", neighborhood_spec_);
-        return parameters;
-    }
-
-    [[nodiscard]]
-    config::parameter_set configuration() const
-    {
-        config::parameter_set parameters;
-        algorithm_.add_configuration(parameters);
-        config::add_configuration(parameters, "cost", solution_manager_spec_);
-        config::add_configuration(parameters, "neighborhood", neighborhood_spec_);
+        self.algorithm_.add_configuration(parameters);
+        config::add_configuration(parameters, "cost", self.solution_manager_spec_);
+        config::add_configuration(parameters, "neighborhood", self.neighborhood_spec_);
         return parameters;
     }
 

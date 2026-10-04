@@ -893,21 +893,13 @@ public:
 
     // The biases, at the root, and the parameters of the children under their
     // positions ("0", "1"): a runner puts them under "neighborhood".
+    template<class Self>
     [[nodiscard]]
-    config::parameter_set configuration()
+    config::parameter_set configuration(this Self&& self)
     {
         config::parameter_set parameters;
-        parameters.add(*this);
-        add_child_configurations(parameters, specs_);
-        return parameters;
-    }
-
-    [[nodiscard]]
-    config::parameter_set configuration() const
-    {
-        config::parameter_set parameters;
-        parameters.add(*this);
-        add_child_configurations(parameters, specs_);
+        parameters.add(self);
+        add_child_configurations(parameters, self.specs_);
         return parameters;
     }
 

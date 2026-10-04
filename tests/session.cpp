@@ -238,6 +238,13 @@ static_assert(std::is_copy_assignable_v<app_type>);
 static_assert(std::move_constructible<app_type>);
 static_assert(std::is_move_assignable_v<app_type>);
 static_assert(std::constructible_from<easylocal::Session<app_type>, app_type>);
+// A const session gives its app and bound app read-only.
+static_assert(std::is_const_v<std::remove_reference_t<
+        decltype(std::declval<const easylocal::Session<app_type>&>().app())>>);
+static_assert(std::is_const_v<std::remove_reference_t<
+        decltype(std::declval<const easylocal::Session<app_type>&>().bound_app())>>);
+static_assert(!std::is_const_v<std::remove_reference_t<
+        decltype(std::declval<easylocal::Session<app_type>&>().bound_app())>>);
 static_assert(std::same_as<
     decltype(std::declval<easylocal::Session<app_type>&>().input()),
     const AssignmentInstance&>);

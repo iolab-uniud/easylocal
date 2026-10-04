@@ -351,21 +351,13 @@ public:
     }
 
     // The weights, and the parameters of the terms under their positions.
+    template<class Self>
     [[nodiscard]]
-    config::parameter_set configuration()
+    config::parameter_set configuration(this Self&& self)
     {
         config::parameter_set parameters;
-        parameters.add(parameters_);
-        add_indexed_configurations(parameters, children_);
-        return parameters;
-    }
-
-    [[nodiscard]]
-    config::parameter_set configuration() const
-    {
-        config::parameter_set parameters;
-        parameters.add(parameters_);
-        add_indexed_configurations(parameters, children_);
+        parameters.add(self.parameters_);
+        add_indexed_configurations(parameters, self.children_);
         return parameters;
     }
 
@@ -431,14 +423,10 @@ public:
         }(std::index_sequence_for<Children...>{});
     }
 
-    void add_configurations(config::parameter_set& parameters)
+    template<class Self>
+    void add_configurations(this Self&& self, config::parameter_set& parameters)
     {
-        add_indexed_configurations(parameters, children_);
-    }
-
-    void add_configurations(config::parameter_set& parameters) const
-    {
-        add_indexed_configurations(parameters, children_);
+        add_indexed_configurations(parameters, self.children_);
     }
 
 private:

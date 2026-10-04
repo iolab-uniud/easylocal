@@ -94,17 +94,11 @@ public:
     }
 
     /// The RNG, which feeds initialization and runs.
+    template<class Self>
     [[nodiscard]]
-    RNG& rng() noexcept
+    auto& rng(this Self&& self) noexcept
     {
-        return rng_;
-    }
-
-    /// The RNG, which feeds initialization and runs.
-    [[nodiscard]]
-    const RNG& rng() const noexcept
-    {
-        return rng_;
+        return self.rng_;
     }
 
     /// Solves from one initial solution.
