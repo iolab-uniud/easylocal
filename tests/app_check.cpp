@@ -168,6 +168,36 @@ private:
     AssignmentSolutionManager& manager_;
 };
 
+// A neighborhood with a parameter that declares no domain.
+struct ProbeParameters
+{
+    int probes{1};
+
+    static consteval auto parameter_schema()
+    {
+        return easylocal::config::fields(
+            easylocal::config::field<"probes", &ProbeParameters::probes>("Probes"));
+    }
+
+    [[nodiscard]] easylocal::config::validation_result validate() const
+    {
+        return easylocal::config::validation_result::success();
+    }
+};
+
+class ProbingNeighborhoodExplorer : public ReassignJobNeighborhoodExplorer
+{
+public:
+    using parameters_type = ProbeParameters;
+
+    ProbingNeighborhoodExplorer(
+        const AssignmentSolutionManager& manager,
+        const ProbeParameters&)
+        : ReassignJobNeighborhoodExplorer{manager}
+    {
+    }
+};
+
 void real_app_graph_is_checked_with_full_coverage()
 {
     const AssignmentInstance instance{
@@ -226,6 +256,31 @@ void check_fails_on_a_broken_realized_graph()
     assert(attributed_to_move_application);
 }
 
+void check_fails_on_a_parameter_without_a_domain()
+{
+    auto application =
+        easylocal::app("probing-assignment")
+            .with_solution_manager(
+                easylocal::solution_manager<AssignmentSolutionManager>()
+                | assignment::assignment_cost())
+            .with_neighborhood(easylocal::neighborhood<ProbingNeighborhoodExplorer>())
+            .with_runner<easylocal::runners::FirstImprovement>("fi");
+
+    const AssignmentInstance instance{
+        .demand = {4, 4, 2},
+        .capacity = {5, 5},
+    };
+    const auto report = easylocal::check(application, instance);
+    assert(!report.passed());
+    bool reported = false;
+    for (const auto& failure : report.failures())
+    {
+        reported = reported
+            || (failure.check == "parameter domain"
+                && failure.message.starts_with("neighborhood.probes declares no domain"));
+    }
+    assert(reported);
+}
 
 } // namespace
 
@@ -233,5 +288,6 @@ int main()
 {
     real_app_graph_is_checked_with_full_coverage();
     check_fails_on_a_broken_realized_graph();
+    check_fails_on_a_parameter_without_a_domain();
     return 0;
 }

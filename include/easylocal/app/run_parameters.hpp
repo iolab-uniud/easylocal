@@ -77,13 +77,16 @@ struct RunParameters
         return config::fields(
             config::field<"target", &RunParameters::target>(
                 "Stop a run when its solution reaches this cost, such as 0 or "
-                "[0, 120]; empty: no target"));
+                "[0, 120]; empty: no target",
+                easylocal::unlimited));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         return config::validation_result::success();
     }
 

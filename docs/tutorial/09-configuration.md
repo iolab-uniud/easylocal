@@ -125,7 +125,10 @@ static consteval auto parameter_schema()
 - A **domain**, the second argument of `field`, is the set of valid values:
   `config::range(low, high)`, closed unless `.open()`, `.open_low()` or
   `.open_high()` says otherwise, with `.log()` when its values span orders of
-  magnitude, or `config::one_of("fixed", "random")`.
+  magnitude, `config::range(0.0, easylocal::unlimited)` for no upper bound,
+  `config::one_of("fixed", "random")`, or `easylocal::unlimited` for any value
+  (a seed, a file name). Every field declares one, a boolean excepted:
+  `check(app, ...)` (chapter 13) fails for a parameter without a domain.
 - A **condition**, `.only_if(...)`, says when a field matters: the initial
   acceptance is used only to estimate the initial temperature, from
   `calibration_samples` moves. When the condition is false, the field's

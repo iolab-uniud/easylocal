@@ -529,7 +529,8 @@ requirements between parameters (`config::require(...)`); a program built with
 cd tuning && irace                  # the best configurations, as switches of ./solver
 ```
 
-The parameters with a domain become irace parameters, their conditions irace
+Every parameter declares its domain (`check(app, ...)` fails otherwise); those
+with a finite one become irace parameters, their conditions irace
 conditions and the requirements `[forbidden]` combinations; the others are
 written commented out, with a range to start from. The files are a stub to
 edit, which the program never overwrites. Each run prints its cost as one

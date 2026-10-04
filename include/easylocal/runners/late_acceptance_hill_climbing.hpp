@@ -39,22 +39,27 @@ struct LateAcceptanceHillClimbingParameters
             config::field<
                 "history_length",
                 &LateAcceptanceHillClimbingParameters::history_length>(
-                "Number of past costs a candidate is compared with"),
+                "Number of past costs a candidate is compared with",
+                config::range(1, easylocal::unlimited)),
             config::field<
                 "max_idle_iterations",
                 &LateAcceptanceHillClimbingParameters::max_idle_iterations>(
                 "Maximum number of consecutive proposals without improving "
-                "the best cost"),
+                "the best cost",
+                config::range(1, easylocal::unlimited)),
             config::field<
                 "max_evaluations",
                 &LateAcceptanceHillClimbingParameters::max_evaluations>(
-                "Maximum number of solution evaluations, or unlimited"));
+                "Maximum number of solution evaluations, or unlimited",
+                config::range(0, easylocal::unlimited)));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         if (history_length == 0)
             return config::validation_result::failure("history_length must be positive");
         if (max_idle_iterations == 0)

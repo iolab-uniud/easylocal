@@ -283,12 +283,12 @@ program accepts.
 irace is an R package: install [R](https://www.r-project.org/), then
 `Rscript -e 'install.packages("irace")'`.
 
-**What is tuned.** A parameter is tuned when it has a domain: the values it may
-take, declared in the schema of its block (chapter 9). The built-in runners
+**What is tuned.** A parameter is tuned when it has a finite domain: the values
+it may take, declared in the schema of its block (chapter 9). The built-in runners
 declare the domains of their rates and probabilities, such as Simulated
-Annealing's `cooling_rate` in (0, 1). A program narrows a domain, or gives one
-to a parameter that has none, such as a temperature, whose good values depend
-on the scale of the costs. The conditions and requirements of the schema
+Annealing's `cooling_rate` in (0, 1). A temperature's domain is every positive
+number, since its good values depend on the scale of the costs: a program
+gives it a finite range for tuning, as it may narrow any domain. The conditions and requirements of the schema
 (chapter 9) come along: a parameter is tuned only when it matters, and irace
 never proposes values that break a requirement. `examples/tsp/sa_main.cpp`
 gives a range to the initial temperature:
@@ -342,7 +342,7 @@ updated tuning/configurations.txt
 runners.sa.temperature.cooling_rate "--runners.sa.temperature.cooling_rate=" r (0.0001, 0.9999)
 
 # Maximum number of annealing iterations (default 20000)
-# no domain: a range around the default to start from
+# no finite domain: a range around the default to start from
 # runners.sa.temperature.max_iterations "--runners.sa.temperature.max_iterations=" i,log (2000, 200000)
 ```
 

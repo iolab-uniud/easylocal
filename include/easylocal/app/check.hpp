@@ -18,6 +18,7 @@
 #include <memory>
 #include <ostream>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
@@ -338,6 +339,28 @@ template<class App, class Instance, class Solution>
             false,
             "app configuration",
             "a registered pipeline has unnamed or duplicate stages");
+    }
+
+    // Every parameter declares its domain, for validation and tuning: a
+    // range, one_of, or easylocal::unlimited for any value.
+    try
+    {
+        const auto undeclared = config::undeclared_domains(application.configuration());
+        for (const auto& path : undeclared)
+        {
+            report.check(
+                false,
+                "parameter domain",
+                path
+                    + " declares no domain: give it a range, one_of, or "
+                      "easylocal::unlimited for any value");
+        }
+        if (undeclared.empty())
+            report.check(true, "parameter domain", "every parameter declares its domain");
+    }
+    catch (const std::invalid_argument&)
+    {
+        // Reported above, as an invalid app configuration.
     }
 
     return report;

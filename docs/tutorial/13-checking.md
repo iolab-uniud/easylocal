@@ -30,6 +30,8 @@ solution (or the one passed as third argument) and verifies:
 | incremental evaluation | a delta disagreeing with the full re-evaluation |
 | random proposal, random proposal application | a sampled move that is not valid, or that breaks the solution |
 | runner configuration, runner construction | invalid registered parameters, or a runner that cannot be built |
+| app configuration | invalid parameters of the app, or pipeline stages without distinct names |
+| parameter domain | a parameter of the app that declares no domain (chapter 9): give it a range, `one_of`, or `easylocal::unlimited` for any value |
 
 The report converts to `bool`, lists the failures (`failures()`), and its
 `coverage()` says how many components, delta bindings and registrations were

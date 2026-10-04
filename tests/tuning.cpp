@@ -284,7 +284,9 @@ void cli_prints_only_the_cost()
 
     const auto invalid = run({"--instance", instance, "--tuning.print=all"});
     assert(invalid.status == 2);
-    assert(invalid.err == "error: tuning: print must be cost or cost_time\n");
+    assert(
+        invalid.err
+        == "error: tuning.print: expected a value in {\"\", cost, cost_time}, got all\n");
 }
 
 void cli_writes_the_stub_without_an_instance()

@@ -187,7 +187,9 @@ int main()
 
     const auto bad_start = run({"--instance", instance, "--start", "greedy"});
     assert(bad_start.status == 2);
-    assert(bad_start.err == "error: start must be random or initial\n");
+    assert(
+        bad_start.err
+        == "error: start: expected a value in {\"\", random, initial}, got greedy\n");
 
     // A run that fails: exit status 1.
     const auto unreadable = run({"--instance", "no-such-instance.tsp"});

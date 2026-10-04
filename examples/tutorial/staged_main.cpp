@@ -28,10 +28,15 @@ struct MainParameters
     {
         namespace config = easylocal::config;
         return config::fields(
-            config::field<"instance", &MainParameters::instance>("Input instance"),
-            config::field<"seed", &MainParameters::seed>("Random seed"),
+            config::field<"instance", &MainParameters::instance>(
+                "Input instance",
+                easylocal::unlimited),
+            config::field<"seed", &MainParameters::seed>(
+                "Random seed",
+                easylocal::unlimited),
             config::field<"evaluations_per_city", &MainParameters::evaluations_per_city>(
-                "Descent budget per city (0: until a local optimum)"));
+                "Descent budget per city (0: until a local optimum)",
+                config::range(0, easylocal::unlimited)));
     }
 
     easylocal::config::validation_result validate() const

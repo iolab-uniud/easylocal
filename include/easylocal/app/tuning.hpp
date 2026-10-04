@@ -56,18 +56,23 @@ struct TuningParameters
     {
         return config::fields(
             config::field<"irace", &TuningParameters::irace>(
-                "Write the files of an irace scenario to this directory, and exit"),
+                "Write the files of an irace scenario to this directory, and exit",
+                easylocal::unlimited),
             config::field<"print", &TuningParameters::print>(
                 "Print only the cost as one number (cost), or the cost and the "
-                "running time (cost_time); empty: the usual report"),
+                "running time (cost_time); empty: the usual report",
+                config::one_of("", "cost", "cost_time")),
             config::field<"hard_weight", &TuningParameters::hard_weight>(
-                "Weight of the hard cost over the soft one in the printed number"));
+                "Weight of the hard cost over the soft one in the printed number",
+                config::range(0.0, easylocal::unlimited).open_low()));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         if (!print.empty() && print != "cost" && print != "cost_time")
             return config::validation_result::failure("print must be cost or cost_time");
         if (!std::isfinite(hard_weight) || hard_weight <= 0.0)
@@ -315,7 +320,8 @@ inline void set_irace_domain(
 // around a positive default, on a logarithmic scale.
 inline void suggest_irace_domain(
     irace_parameter& parameter,
-    const config::parameter_info& info)
+    const config::parameter_info& info,
+    const config::domain_info* bound)
 {
     double value{};
     try
@@ -332,11 +338,14 @@ inline void suggest_irace_domain(
         parameter.values = {"true", "false"};
         return;
     }
+    // The lower bound of a range with no upper one, which a range to start
+    // from keeps.
+    const bool bounded_below = bound && bound->kind == config::domain_info::shape::range;
     if (!(value > 0.0))
     {
         parameter.type = info.kind == config::parameter_kind::real ? 'r' : 'i';
-        parameter.values = {"LOW", "HIGH"};
-        parameter.note = "no domain: give its range";
+        parameter.values = {bounded_below ? bound->low_text : "LOW", "HIGH"};
+        parameter.note = "no finite domain: give its range";
         return;
     }
     config::domain_info suggested;
@@ -346,8 +355,14 @@ inline void suggest_irace_domain(
     suggested.logarithmic = true;
     if (info.kind != config::parameter_kind::real)
         suggested.low = std::max(1.0, suggested.low);
+    if (bounded_below && suggested.low <= bound->low)
+    {
+        suggested.low = bound->low;
+        suggested.low_open = bound->low_open;
+        suggested.logarithmic = bound->low > 0.0;
+    }
     set_irace_domain(parameter, info.kind, suggested);
-    parameter.note = "no domain: a range around the default to start from";
+    parameter.note = "no finite domain: a range around the default to start from";
 }
 
 // A parameter as parameters.txt declares it: what configurations.txt must
@@ -519,6 +534,14 @@ inline std::vector<irace_parameter> irace_parameters(
         const config::domain_info* domain = info.domain ? &info.domain : nullptr;
         if (range != stub.ranges.end())
         {
+            if (range->domain.kind == config::domain_info::shape::unbounded
+                || range->domain.high_unlimited)
+            {
+                errors.push_back(
+                    "tuning range " + range->domain.text() + " of " + info.path
+                    + " is not finite");
+                continue;
+            }
             if (!info.domain.contains(range->domain))
             {
                 errors.push_back(
@@ -538,23 +561,27 @@ inline std::vector<irace_parameter> irace_parameters(
             result.push_back(std::move(parameter));
             continue;
         }
+        // A domain irace can sample: finite, of a kind it types.
+        const bool finite = domain
+            && domain->kind != config::domain_info::shape::unbounded
+            && !domain->high_unlimited
+            && !(
+                domain->kind == config::domain_info::shape::range
+                && info.kind == config::parameter_kind::boolean);
         if (info.kind == config::parameter_kind::limit && info.value == "unlimited"
-            && !domain)
+            && !finite)
         {
             parameter.note = "unlimited: every run needs a budget";
             result.push_back(std::move(parameter));
             continue;
         }
-        if (domain
-            && !(
-                domain->kind == config::domain_info::shape::range
-                && info.kind == config::parameter_kind::boolean))
+        if (finite)
         {
             set_irace_domain(parameter, info.kind, *domain);
             parameter.active = true;
         }
         else
-            suggest_irace_domain(parameter, info);
+            suggest_irace_domain(parameter, info, domain);
         result.push_back(std::move(parameter));
     }
     return result;

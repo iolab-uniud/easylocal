@@ -41,16 +41,20 @@ struct GreatDelugeParameters
     {
         return config::fields(
             config::field<"initial_level", &GreatDelugeParameters::initial_level>(
-                "Initial water level, as a factor of the initial cost"),
+                "Initial water level, as a factor of the initial cost",
+                config::range(0.0, easylocal::unlimited).open_low()),
             config::field<"min_level", &GreatDelugeParameters::min_level>(
-                "Final water level, as a factor of the best cost"),
+                "Final water level, as a factor of the best cost",
+                config::range(0.0, easylocal::unlimited).open_low()),
             config::field<"level_rate", &GreatDelugeParameters::level_rate>(
                 "Multiplicative decrease of the water level",
                 config::range(0.0, 1.0).open()),
             config::field<"neighbors_sampled", &GreatDelugeParameters::neighbors_sampled>(
-                "Number of proposals at each water level"),
+                "Number of proposals at each water level",
+                config::range(1, easylocal::unlimited)),
             config::field<"max_evaluations", &GreatDelugeParameters::max_evaluations>(
-                "Maximum number of solution evaluations, or unlimited"),
+                "Maximum number of solution evaluations, or unlimited",
+                config::range(0, easylocal::unlimited)),
             config::require(
                 config::value<"min_level"> < config::value<"initial_level">,
                 "min_level must be smaller than initial_level"));

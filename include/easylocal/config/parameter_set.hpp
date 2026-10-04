@@ -614,6 +614,19 @@ inline configuration_validation_result validate(const parameter_set& parameters)
     return parameters.validate();
 }
 
+/// The paths of the parameters of a set that declare no domain, but the
+/// booleans, whose domain is true and false: each should declare a range,
+/// one_of, or easylocal::unlimited for any value.
+[[nodiscard]]
+inline std::vector<std::string> undeclared_domains(const parameter_set& parameters)
+{
+    std::vector<std::string> result;
+    for (const auto& info : parameters.parameters())
+        if (!info.domain && info.kind != parameter_kind::boolean)
+            result.push_back(info.path);
+    return result;
+}
+
 /// Something whose parameters a set can hold: configuration() gives them, with
 /// paths relative to it.
 template<class T>

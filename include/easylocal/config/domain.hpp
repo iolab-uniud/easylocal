@@ -30,7 +30,8 @@ struct no_domain
 };
 
 /// A range of numbers, closed unless open(), open_low() or open_high() says
-/// otherwise, and sampled on a logarithmic scale by a configurator after log().
+/// otherwise, and sampled on a logarithmic scale by a configurator after log();
+/// its upper bound may be unlimited.
 ///
 /// It is made with config::range.
 template<class Number>
@@ -46,6 +47,9 @@ struct range_domain
     bool high_open{false};
     /// Whether a configurator samples the range on a logarithmic scale.
     bool logarithmic{false};
+    /// Whether the range has no upper bound: high is then not used, and a
+    /// limit may be unlimited.
+    bool unbounded{false};
 
     /// The same range without its bounds.
     [[nodiscard]]
@@ -106,6 +110,31 @@ constexpr range_domain<Number> range(const Number low, const Number high)
     return {.low = low, .high = high};
 }
 
+/// The numbers from low up, with no upper bound: `config::range(0.0,
+/// easylocal::unlimited).open_low()` is the positive numbers (infinity
+/// included), `range(1, unlimited)` a count of at least one, or unlimited for
+/// a limit.
+///
+/// Throws std::invalid_argument when high is a count rather than unlimited (a
+/// compilation error in a schema).
+template<class Number>
+    requires(std::integral<Number> || std::floating_point<Number>)
+    && (!std::same_as<Number, bool>)
+[[nodiscard]]
+constexpr range_domain<Number> range(const Number low, const easylocal::limit high)
+{
+    if (!high.is_unlimited())
+        throw std::invalid_argument{"a range's upper bound is a number or unlimited"};
+    return {.low = low, .high = Number{}, .unbounded = true};
+}
+
+/// Any value: the domain of a field whose values are all valid, such as a
+/// seed, free text or a number that may be negative. It is declared as
+/// easylocal::unlimited: `field<"seed", &P::seed>("...", easylocal::unlimited)`.
+struct unbounded_domain
+{
+};
+
 /// A set of values, as the domain of a text or numeric field.
 ///
 /// It is made with config::one_of.
@@ -141,9 +170,11 @@ constexpr auto one_of(const First& first, const Rest&... rest)
         .values = {value_type(first), value_type(rest)...}};
 }
 
-/// Whether a type is a domain: no_domain, a range_domain or a choice_domain.
+/// Whether a type is a domain: no_domain, unbounded_domain, a range_domain or a
+/// choice_domain.
 template<class Domain>
-inline constexpr bool is_domain_v = std::same_as<Domain, no_domain>;
+inline constexpr bool is_domain_v =
+    std::same_as<Domain, no_domain> || std::same_as<Domain, unbounded_domain>;
 
 /// A range_domain is one.
 template<class Number>
@@ -223,8 +254,9 @@ constexpr bool range_contains(
 {
     if constexpr (std::same_as<Value, easylocal::limit>)
     {
-        return !value.is_unlimited()
-            && range_contains(domain, static_cast<std::size_t>(value));
+        if (value.is_unlimited())
+            return domain.unbounded;
+        return range_contains(domain, static_cast<std::size_t>(value));
     }
     else
     {
@@ -236,6 +268,8 @@ constexpr bool range_contains(
         const bool above = domain.low_open
             ? number_less(domain.low, value)
             : !number_less(value, domain.low);
+        if (domain.unbounded)
+            return above;
         const bool below = domain.high_open
             ? number_less(value, domain.high)
             : !number_less(domain.high, value);
@@ -268,7 +302,8 @@ constexpr bool choice_contains(
 /// number or a limit, a set of text values for text, a set of numbers for a
 /// number; for an array or a vector, the domain of its elements.
 template<class Domain, class Value>
-concept domain_for = std::same_as<Domain, no_domain>
+concept domain_for =
+    std::same_as<Domain, no_domain> || std::same_as<Domain, unbounded_domain>
     || (detail::is_range_domain_v<Domain>
         && (detail::is_number_v<detail::domain_element_t<Value>>
             || std::same_as<detail::domain_element_t<Value>, easylocal::limit>))
@@ -285,7 +320,8 @@ template<class Domain, class Value>
 [[nodiscard]]
 constexpr bool domain_contains(const Domain& domain, const Value& value) noexcept
 {
-    if constexpr (std::same_as<Domain, no_domain>)
+    if constexpr (std::same_as<Domain, no_domain>
+        || std::same_as<Domain, unbounded_domain>)
         return true;
     else if constexpr (!std::same_as<detail::domain_element_t<Value>, Value>)
     {
@@ -354,6 +390,8 @@ struct domain_info
         range,
         /// A set of values.
         choice,
+        /// Any value.
+        unbounded,
     };
 
     /// The shape of the domain.
@@ -372,6 +410,8 @@ struct domain_info
     bool high_open{false};
     /// Whether a configurator samples the range on a logarithmic scale.
     bool logarithmic{false};
+    /// Whether a range has no upper bound.
+    bool high_unlimited{false};
     /// The values of a set, as text.
     std::vector<std::string> choices{};
 
@@ -382,8 +422,8 @@ struct domain_info
         return kind != shape::none;
     }
 
-    /// The domain as text: "(0, 1]", "[1, 1000] log", "{tabu, random}"; empty
-    /// for no domain.
+    /// The domain as text: "(0, 1]", "[1, 1000] log", "[1, unlimited)",
+    /// "{tabu, random}", "unlimited" for any value; empty for no domain.
     [[nodiscard]]
     std::string text() const
     {
@@ -393,11 +433,13 @@ struct domain_info
             result += low_open ? '(' : '[';
             result += low_text;
             result += ", ";
-            result += high_text;
-            result += high_open ? ')' : ']';
+            result += high_unlimited ? "unlimited" : high_text;
+            result += high_open || high_unlimited ? ')' : ']';
             if (logarithmic)
                 result += " log";
         }
+        else if (kind == shape::unbounded)
+            result = "unlimited";
         else if (kind == shape::choice)
         {
             result += '{';
@@ -405,7 +447,7 @@ struct domain_info
             {
                 if (index != 0)
                     result += ", ";
-                result += choices[index];
+                result += choices[index].empty() ? "\"\"" : choices[index];
             }
             result += '}';
         }
@@ -418,13 +460,14 @@ struct domain_info
     [[nodiscard]]
     bool contains(const domain_info& other) const
     {
-        if (kind == shape::none)
+        if (kind == shape::none || kind == shape::unbounded)
             return true;
-        if (other.kind == shape::none)
+        if (other.kind == shape::none || other.kind == shape::unbounded)
             return false;
         const auto contains_number = [this](const double value) {
             const bool above = low_open ? low < value : low <= value;
-            const bool below = high_open ? value < high : value <= high;
+            const bool below =
+                high_unlimited || (high_open ? value < high : value <= high);
             return above && below;
         };
         if (kind == shape::range)
@@ -433,8 +476,10 @@ struct domain_info
             {
                 const bool above = low < other.low
                     || (low == other.low && (!low_open || other.low_open));
-                const bool below = other.high < high
-                    || (other.high == high && (!high_open || other.high_open));
+                const bool below = high_unlimited
+                    || (!other.high_unlimited
+                        && (other.high < high
+                            || (other.high == high && (!high_open || other.high_open))));
                 return above && below;
             }
             for (const auto& choice : other.choices)
@@ -482,7 +527,12 @@ domain_info describe_domain(const Domain& domain)
         result.low_open = domain.low_open;
         result.high_open = domain.high_open;
         result.logarithmic = domain.logarithmic;
+        result.high_unlimited = domain.unbounded;
+        if (domain.unbounded)
+            result.high_text = "unlimited";
     }
+    else if constexpr (std::same_as<Domain, unbounded_domain>)
+        result.kind = domain_info::shape::unbounded;
     else if constexpr (detail::is_choice_domain_v<Domain>)
     {
         result.kind = domain_info::shape::choice;

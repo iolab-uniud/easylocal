@@ -72,23 +72,33 @@ struct parameters
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"instance", &parameters::instance>("Input file"),
-            config::field<"seed", &parameters::seed>("Seed of the random generator"),
+            config::field<"instance", &parameters::instance>(
+                "Input file",
+                easylocal::unlimited),
+            config::field<"seed", &parameters::seed>(
+                "Seed of the random generator",
+                easylocal::unlimited),
             config::field<"runner", &parameters::runner>(
-                "Name of the runner (empty: the first registered)"),
+                "Name of the runner (empty: the first registered)",
+                easylocal::unlimited),
             config::field<"start", &parameters::start>(
                 "Starting solution: random or initial (empty: random when the "
-                "problem has random solutions)"),
+                "problem has random solutions)",
+                config::one_of("", "random", "initial")),
             config::field<"solution", &parameters::solution>(
-                "Starting solution read from this file, instead of start"),
+                "Starting solution read from this file, instead of start",
+                easylocal::unlimited),
             config::field<"output", &parameters::output>(
-                "Solution file (empty: standard output)"),
+                "Solution file (empty: standard output)",
+                easylocal::unlimited),
             config::field<"target", &parameters::target>(
                 "Stop when the solution reaches this cost, such as 0 or "
-                "[0, 120] (empty: no target)"),
+                "[0, 120] (empty: no target)",
+                easylocal::unlimited),
             config::field<"timeout", &parameters::timeout>(
                 "Stop the run after this many seconds, such as 10 or 2.5 (empty: no "
-                "limit)"),
+                "limit)",
+                easylocal::unlimited),
             config::field<"report", &parameters::report>(
                 "Print the value of each cost component, and its description"));
     }
@@ -97,6 +107,8 @@ struct parameters
     [[nodiscard]]
     config::validation_result validate() const
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         if (!start.empty() && start != "random" && start != "initial")
             return config::validation_result::failure("start must be random or initial");
         if (!timeout_seconds())

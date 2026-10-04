@@ -56,16 +56,17 @@ struct NeighborhoodUnionParameters
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<
-                "random_biases",
-                &NeighborhoodUnionParameters::random_biases>(
-                    "Relative weights for random child-neighborhood selection"));
+            config::field<"random_biases", &NeighborhoodUnionParameters::random_biases>(
+                "Relative weights for random child-neighborhood selection",
+                config::range(0.0, easylocal::unlimited)));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         for (const auto bias : random_biases)
         {
             if (!std::isfinite(bias) || bias < 0.0)

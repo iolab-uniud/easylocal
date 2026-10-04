@@ -178,9 +178,12 @@ old concepts onto the new ones.
   config::value<"b">, "message")`, also on fields of nested groups); they are
   checked when the parameters are validated and by `config::check_schema` in a
   block's `validate()`. A parameter set lists the kind, the domain and the
-  condition of each parameter, and the requirements. The built-in runners
-  declare the domains of their rates and probabilities, and Simulated
-  Annealing and Great Deluge their conditions and requirements.
+  condition of each parameter, and the requirements. Every parameter declares
+  its domain, a range with no upper bound (`config::range(1,
+  easylocal::unlimited)`) or any value (`easylocal::unlimited`) included:
+  `check(app, ...)` fails for one without, and so do the library's tests for
+  the built-in blocks, whose validate() checks their schema. Simulated
+  Annealing and Great Deluge declare their conditions and requirements.
   Costs are read as text (`cost::from_text`, or a problem's `read_cost`) and
   written back (`cost::to_text`) in one form, `[hard, soft]` for a
   hierarchical cost: for targets on the command line (`RunParameters`,

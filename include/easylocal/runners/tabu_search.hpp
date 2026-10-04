@@ -360,13 +360,16 @@ struct FixedLengthParameters
         using self = FixedLengthParameters;
         return config::fields(
             config::field<"tenure", &self::tenure>(
-                "Number of iterations a move stays tabu"));
+                "Number of iterations a move stays tabu",
+                config::range(1, easylocal::unlimited)));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         if (tenure == 0)
             return config::validation_result::failure("tenure must be positive");
         return config::validation_result::success();
@@ -473,15 +476,19 @@ struct RandomTenureParameters
         using self = RandomTenureParameters;
         return config::fields(
             config::field<"min_tenure", &self::min_tenure>(
-                "Minimum number of iterations a move stays tabu"),
+                "Minimum number of iterations a move stays tabu",
+                config::range(1, easylocal::unlimited)),
             config::field<"max_tenure", &self::max_tenure>(
-                "Maximum number of iterations a move stays tabu"));
+                "Maximum number of iterations a move stays tabu",
+                config::range(1, easylocal::unlimited)));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         if (min_tenure == 0)
             return config::validation_result::failure("min_tenure must be positive");
         if (max_tenure < min_tenure)
@@ -571,14 +578,19 @@ struct CyclicParameters
         using self = CyclicParameters;
         return config::fields(
             config::field<"period", &self::period>(
-                "Number of iterations each tenure is used for"),
-            config::field<"tenures", &self::tenures>("The tenures, used in turn"));
+                "Number of iterations each tenure is used for",
+                config::range(1, easylocal::unlimited)),
+            config::field<"tenures", &self::tenures>(
+                "The tenures, used in turn",
+                config::range(1, easylocal::unlimited)));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         if (period == 0)
             return config::validation_result::failure("period must be positive");
         if (tenures.empty())
@@ -690,16 +702,23 @@ struct ReactiveParameters
         using self = ReactiveParameters;
         return config::fields(
             config::field<"increase", &self::increase>(
-                "Factor of the tenure when a solution is revisited within cycle_length"),
+                "Factor of the tenure when a solution is revisited within cycle_length",
+                config::range(1.0, easylocal::unlimited).open_low()),
             config::field<"decrease", &self::decrease>(
-                "Factor of the tenure when no cycle is seen for the average cycle length"),
+                "Factor of the tenure when no cycle is seen for the average cycle length",
+                config::range(0.0, 1.0).open()),
             config::field<"repetitions", &self::repetitions>(
-                "Visits of a solution after which further visits count as chaos"),
+                "Visits of a solution after which further visits count as chaos",
+                config::range(0, easylocal::unlimited)),
             config::field<"chaos", &self::chaos>(
-                "Chaos counts after which the search escapes with random moves"),
+                "Chaos counts after which the search escapes with random moves",
+                config::range(0, easylocal::unlimited)),
             config::field<"cycle_length", &self::cycle_length>(
-                "Revisits closer than this many iterations are cycles"),
-            config::field<"max_tenure", &self::max_tenure>("The largest tenure"),
+                "Revisits closer than this many iterations are cycles",
+                config::range(1, easylocal::unlimited)),
+            config::field<"max_tenure", &self::max_tenure>(
+                "The largest tenure",
+                config::range(1, easylocal::unlimited)),
             config::field<"verify_equality", &self::verify_equality>(
                 "Confirm revisits by comparing solutions with equal hashes"));
     }
@@ -708,6 +727,8 @@ struct ReactiveParameters
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         if (!std::isfinite(increase) || increase <= 1.0)
             return config::validation_result::failure("increase must be greater than 1");
         if (!std::isfinite(decrease) || decrease <= 0.0 || decrease >= 1.0)
@@ -929,13 +950,16 @@ struct FrequencyParameters
         using self = FrequencyParameters;
         return config::fields(
             config::field<"threshold", &self::threshold>(
-                "Relative frequency of an attribute above which its moves are tabu"));
+                "Relative frequency of an attribute above which its moves are tabu",
+                config::range(0.0, 1.0).open_low()));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         if (!std::isfinite(threshold) || threshold <= 0.0 || threshold > 1.0)
             return config::validation_result::failure(
                 "threshold must be in the interval (0, 1]");
@@ -1032,13 +1056,16 @@ struct ObjectiveBasedParameters
         using self = ObjectiveBasedParameters;
         return config::fields(
             config::field<"tenure", &self::tenure>(
-                "Number of iterations a reached cost stays tabu"));
+                "Number of iterations a reached cost stays tabu",
+                config::range(1, easylocal::unlimited)));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         if (tenure == 0)
             return config::validation_result::failure("tenure must be positive");
         return config::validation_result::success();
@@ -1132,17 +1159,22 @@ struct LimDynamicParameters
         using self = LimDynamicParameters;
         return config::fields(
             config::field<"min_tenure", &self::min_tenure>(
-                "The tenure after an improvement of the best cost"),
+                "The tenure after an improvement of the best cost",
+                config::range(1, easylocal::unlimited)),
             config::field<"max_tenure", &self::max_tenure>(
-                "The tenure at which it falls back to min_tenure"),
+                "The tenure at which it falls back to min_tenure",
+                config::range(1, easylocal::unlimited)),
             config::field<"idle_threshold", &self::idle_threshold>(
-                "Iterations without improvement after which the tenure grows"));
+                "Iterations without improvement after which the tenure grows",
+                config::range(0, easylocal::unlimited)));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         if (min_tenure == 0)
             return config::validation_result::failure("min_tenure must be positive");
         if (max_tenure <= min_tenure)
@@ -1331,17 +1363,22 @@ struct FooParameters
         using self = FooParameters;
         return config::fields(
             config::field<"window", &self::window>(
-                "Iterations between two tenure changes"),
+                "Iterations between two tenure changes",
+                config::range(1, easylocal::unlimited)),
             config::field<"increment", &self::increment>(
-                "Growth of the tenure when the costs fluctuate little (the initial tenure)"),
+                "Growth of the tenure when the costs fluctuate little (the initial tenure)",
+                config::range(1, easylocal::unlimited)),
             config::field<"fluctuation", &self::fluctuation>(
-                "Spread of the costs in a window below which the tenure grows"));
+                "Spread of the costs in a window below which the tenure grows",
+                config::range(0.0, easylocal::unlimited)));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         if (window == 0)
             return config::validation_result::failure("window must be positive");
         if (increment == 0)
@@ -1452,20 +1489,32 @@ struct RandomFooParameters
     {
         using self = RandomFooParameters;
         return config::fields(
-            config::field<"min_window", &self::min_window>("Smallest window"),
-            config::field<"max_window", &self::max_window>("Largest window"),
-            config::field<"min_increment", &self::min_increment>("Smallest increment"),
-            config::field<"max_increment", &self::max_increment>("Largest increment"),
+            config::field<"min_window", &self::min_window>(
+                "Smallest window",
+                config::range(1, easylocal::unlimited)),
+            config::field<"max_window", &self::max_window>(
+                "Largest window",
+                config::range(1, easylocal::unlimited)),
+            config::field<"min_increment", &self::min_increment>(
+                "Smallest increment",
+                config::range(1, easylocal::unlimited)),
+            config::field<"max_increment", &self::max_increment>(
+                "Largest increment",
+                config::range(1, easylocal::unlimited)),
             config::field<"min_fluctuation", &self::min_fluctuation>(
-                "Smallest fluctuation threshold"),
+                "Smallest fluctuation threshold",
+                config::range(0.0, easylocal::unlimited)),
             config::field<"max_fluctuation", &self::max_fluctuation>(
-                "Largest fluctuation threshold"));
+                "Largest fluctuation threshold",
+                config::range(0.0, easylocal::unlimited)));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         if (min_window == 0 || max_window < min_window)
             return config::validation_result::failure(
                 "the windows must be positive, min_window not above max_window");
@@ -1634,11 +1683,14 @@ struct TabuSearchParameters
         using self = TabuSearchParameters;
         return config::fields(
             config::field<"max_idle_iterations", &self::max_idle_iterations>(
-                "Maximum number of iterations without improving the best cost"),
+                "Maximum number of iterations without improving the best cost",
+                config::range(1, easylocal::unlimited)),
             config::field<"max_iterations", &self::max_iterations>(
-                "Maximum number of iterations, or unlimited"),
+                "Maximum number of iterations, or unlimited",
+                config::range(0, easylocal::unlimited)),
             config::field<"max_evaluations", &self::max_evaluations>(
-                "Maximum number of solution evaluations, or unlimited"),
+                "Maximum number of solution evaluations, or unlimited",
+                config::range(0, easylocal::unlimited)),
             config::group<"tabu_list", &self::tabu_list>("The tabu list"));
     }
 
@@ -1646,6 +1698,8 @@ struct TabuSearchParameters
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         if (max_idle_iterations == 0)
         {
             return config::validation_result::failure(
@@ -1679,11 +1733,14 @@ struct FirstImprovementTabuSearchParameters
         using self = FirstImprovementTabuSearchParameters;
         return config::fields(
             config::field<"max_idle_iterations", &self::max_idle_iterations>(
-                "Maximum number of iterations without improving the best cost"),
+                "Maximum number of iterations without improving the best cost",
+                config::range(1, easylocal::unlimited)),
             config::field<"max_iterations", &self::max_iterations>(
-                "Maximum number of iterations, or unlimited"),
+                "Maximum number of iterations, or unlimited",
+                config::range(0, easylocal::unlimited)),
             config::field<"max_evaluations", &self::max_evaluations>(
-                "Maximum number of solution evaluations, or unlimited"),
+                "Maximum number of solution evaluations, or unlimited",
+                config::range(0, easylocal::unlimited)),
             config::field<"improve_on_best", &self::improve_on_best>(
                 "Stop the scan at a move improving the best cost, not the current one"),
             config::group<"tabu_list", &self::tabu_list>("The tabu list"));
@@ -1693,6 +1750,8 @@ struct FirstImprovementTabuSearchParameters
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         if (max_idle_iterations == 0)
         {
             return config::validation_result::failure(
@@ -2212,19 +2271,26 @@ struct AspirationPlusTabuSearchParameters
         using self = AspirationPlusTabuSearchParameters;
         return config::fields(
             config::field<"max_idle_iterations", &self::max_idle_iterations>(
-                "Maximum number of iterations without improving the best cost"),
+                "Maximum number of iterations without improving the best cost",
+                config::range(1, easylocal::unlimited)),
             config::field<"max_iterations", &self::max_iterations>(
-                "Maximum number of iterations, or unlimited"),
+                "Maximum number of iterations, or unlimited",
+                config::range(0, easylocal::unlimited)),
             config::field<"max_evaluations", &self::max_evaluations>(
-                "Maximum number of solution evaluations, or unlimited"),
+                "Maximum number of solution evaluations, or unlimited",
+                config::range(0, easylocal::unlimited)),
             config::field<"min_moves", &self::min_moves>(
-                "Admissible moves examined at least in each scan"),
+                "Admissible moves examined at least in each scan",
+                config::range(1, easylocal::unlimited)),
             config::field<"max_moves", &self::max_moves>(
-                "Admissible moves examined at most in each scan"),
+                "Admissible moves examined at most in each scan",
+                config::range(1, easylocal::unlimited)),
             config::field<"plus", &self::plus>(
-                "Admissible moves examined after the first under the aspiration level"),
+                "Admissible moves examined after the first under the aspiration level",
+                config::range(0, easylocal::unlimited)),
             config::field<"aspiration_level", &self::aspiration_level>(
-                "The aspiration level, as a factor of the best cost"),
+                "The aspiration level, as a factor of the best cost",
+                config::range(1.0, easylocal::unlimited)),
             config::group<"tabu_list", &self::tabu_list>("The tabu list"));
     }
 
@@ -2232,6 +2298,8 @@ struct AspirationPlusTabuSearchParameters
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         if (max_idle_iterations == 0)
             return config::validation_result::failure(
                 "max_idle_iterations must be positive");
@@ -2342,15 +2410,20 @@ struct EliteCandidateTabuSearchParameters
         using self = EliteCandidateTabuSearchParameters;
         return config::fields(
             config::field<"max_idle_iterations", &self::max_idle_iterations>(
-                "Maximum number of iterations without improving the best cost"),
+                "Maximum number of iterations without improving the best cost",
+                config::range(1, easylocal::unlimited)),
             config::field<"max_iterations", &self::max_iterations>(
-                "Maximum number of iterations, or unlimited"),
+                "Maximum number of iterations, or unlimited",
+                config::range(0, easylocal::unlimited)),
             config::field<"max_evaluations", &self::max_evaluations>(
-                "Maximum number of solution evaluations, or unlimited"),
+                "Maximum number of solution evaluations, or unlimited",
+                config::range(0, easylocal::unlimited)),
             config::field<"elite_size", &self::elite_size>(
-                "The moves kept from a full scan"),
+                "The moves kept from a full scan",
+                config::range(1, easylocal::unlimited)),
             config::field<"quality", &self::quality>(
-                "Cost, as a factor of the best, up to which a kept move is applied"),
+                "Cost, as a factor of the best, up to which a kept move is applied",
+                config::range(1.0, easylocal::unlimited)),
             config::group<"tabu_list", &self::tabu_list>("The tabu list"));
     }
 
@@ -2358,6 +2431,8 @@ struct EliteCandidateTabuSearchParameters
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         if (max_idle_iterations == 0)
             return config::validation_result::failure(
                 "max_idle_iterations must be positive");

@@ -49,15 +49,18 @@ struct ParetoLateAcceptanceHillClimbingParameters
             config::field<
                 "history_length",
                 &ParetoLateAcceptanceHillClimbingParameters::history_length>(
-                "Number of solutions in the history"),
+                "Number of solutions in the history",
+                config::range(1, easylocal::unlimited)),
             config::field<
                 "max_iterations",
                 &ParetoLateAcceptanceHillClimbingParameters::max_iterations>(
-                "Iterations after which the search may stop when mostly idle"),
+                "Iterations after which the search may stop when mostly idle",
+                config::range(0, easylocal::unlimited)),
             config::field<
                 "idle_ratio",
                 &ParetoLateAcceptanceHillClimbingParameters::idle_ratio>(
-                "Share of idle iterations that ends the search after max_iterations"),
+                "Share of idle iterations that ends the search after max_iterations",
+                config::range(0.0, 1.0)),
             config::field<
                 "second_chance",
                 &ParetoLateAcceptanceHillClimbingParameters::second_chance>(
@@ -65,13 +68,16 @@ struct ParetoLateAcceptanceHillClimbingParameters
             config::field<
                 "max_evaluations",
                 &ParetoLateAcceptanceHillClimbingParameters::max_evaluations>(
-                "Maximum number of solution evaluations, or unlimited"));
+                "Maximum number of solution evaluations, or unlimited",
+                config::range(0, easylocal::unlimited)));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         if (history_length == 0)
             return config::validation_result::failure("history_length must be positive");
         if (!std::isfinite(idle_ratio) || idle_ratio < 0.0 || idle_ratio > 1.0)

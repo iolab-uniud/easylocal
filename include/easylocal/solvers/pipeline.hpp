@@ -62,15 +62,19 @@ struct StageParameters
     {
         return config::fields(
             config::field<"attempts", &StageParameters::attempts>(
-                "Runs of the stage while its target is not reached; the best is kept"),
+                "Runs of the stage while its target is not reached; the best is kept",
+                config::range(1, easylocal::unlimited)),
             config::field<"timeout", &StageParameters::timeout>(
-                "Seconds the stage may run, its attempts together; inf: no limit"));
+                "Seconds the stage may run, its attempts together; inf: no limit",
+                config::range(0.0, easylocal::unlimited)));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         if (attempts == 0)
             return config::validation_result::failure(
                 "a stage needs at least one attempt");

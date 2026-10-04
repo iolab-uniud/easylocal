@@ -219,18 +219,22 @@ struct ClassicParameters
     {
         return config::fields(
             config::field<"initial_temperature", &ClassicParameters::initial_temperature>(
-                "Initial annealing temperature"),
+                "Initial annealing temperature",
+                config::range(0.0, easylocal::unlimited).open_low()),
             config::field<"final_temperature", &ClassicParameters::final_temperature>(
-                "Final annealing temperature"),
+                "Final annealing temperature",
+                config::range(0.0, easylocal::unlimited).open_low()),
             config::field<"cooling_rate", &ClassicParameters::cooling_rate>(
                 "Multiplicative cooling factor",
                 config::range(0.0, 1.0).open()),
             config::field<
                 "samples_per_temperature",
                 &ClassicParameters::samples_per_temperature>(
-                "Proposals evaluated at each temperature"),
+                "Proposals evaluated at each temperature",
+                config::range(1, easylocal::unlimited)),
             config::field<"calibration_samples", &ClassicParameters::calibration_samples>(
-                "Moves sampled to estimate the initial temperature (0: none)"),
+                "Moves sampled to estimate the initial temperature (0: none)",
+                config::range(0, easylocal::unlimited)),
             config::field<"initial_acceptance", &ClassicParameters::initial_acceptance>(
                 "Acceptance probability of an average worsening move at the "
                 "estimated initial temperature",
@@ -373,18 +377,22 @@ struct FixedLengthParameters
             config::field<
                 "initial_temperature",
                 &FixedLengthParameters::initial_temperature>(
-                "Initial annealing temperature"),
+                "Initial annealing temperature",
+                config::range(0.0, easylocal::unlimited).open_low()),
             config::field<"final_temperature", &FixedLengthParameters::final_temperature>(
-                "Final annealing temperature"),
+                "Final annealing temperature",
+                config::range(0.0, easylocal::unlimited).open_low()),
             config::field<"cooling_rate", &FixedLengthParameters::cooling_rate>(
                 "Multiplicative cooling factor",
                 config::range(0.0, 1.0).open()),
             config::field<"max_iterations", &FixedLengthParameters::max_iterations>(
-                "Maximum number of annealing iterations"),
+                "Maximum number of annealing iterations",
+                config::range(1, easylocal::unlimited)),
             config::field<
                 "calibration_samples",
                 &FixedLengthParameters::calibration_samples>(
-                "Moves sampled to estimate the initial temperature (0: none)"),
+                "Moves sampled to estimate the initial temperature (0: none)",
+                config::range(0, easylocal::unlimited)),
             config::field<
                 "initial_acceptance",
                 &FixedLengthParameters::initial_acceptance>(
@@ -552,19 +560,23 @@ struct CutoffParameters
     {
         return config::fields(
             config::field<"initial_temperature", &CutoffParameters::initial_temperature>(
-                "Initial annealing temperature"),
+                "Initial annealing temperature",
+                config::range(0.0, easylocal::unlimited).open_low()),
             config::field<"final_temperature", &CutoffParameters::final_temperature>(
-                "Final annealing temperature"),
+                "Final annealing temperature",
+                config::range(0.0, easylocal::unlimited).open_low()),
             config::field<"cooling_rate", &CutoffParameters::cooling_rate>(
                 "Multiplicative cooling factor",
                 config::range(0.0, 1.0).open()),
             config::field<"max_iterations", &CutoffParameters::max_iterations>(
-                "Maximum number of annealing iterations"),
+                "Maximum number of annealing iterations",
+                config::range(1, easylocal::unlimited)),
             config::field<"accepted_ratio", &CutoffParameters::accepted_ratio>(
                 "Fraction of accepted proposals that triggers cooling",
                 config::range(0.0, 1.0).open_low()),
             config::field<"calibration_samples", &CutoffParameters::calibration_samples>(
-                "Moves sampled to estimate the initial temperature (0: none)"),
+                "Moves sampled to estimate the initial temperature (0: none)",
+                config::range(0, easylocal::unlimited)),
             config::field<"initial_acceptance", &CutoffParameters::initial_acceptance>(
                 "Acceptance probability of an average worsening move at the "
                 "estimated initial temperature",
@@ -891,16 +903,19 @@ struct FixedTemperatureParameters
     {
         return config::fields(
             config::field<"temperature", &FixedTemperatureParameters::temperature>(
-                "Constant annealing temperature"),
+                "Constant annealing temperature",
+                config::range(0.0, easylocal::unlimited).open_low()),
             config::field<"max_iterations", &FixedTemperatureParameters::max_iterations>(
-                "Maximum number of annealing iterations"),
+                "Maximum number of annealing iterations",
+                config::range(1, easylocal::unlimited)),
             config::field<"accepted_ratio", &FixedTemperatureParameters::accepted_ratio>(
                 "Fraction of max_iterations accepted proposals that ends the search",
                 config::range(0.0, 1.0).open_low()),
             config::field<
                 "calibration_samples",
                 &FixedTemperatureParameters::calibration_samples>(
-                "Moves sampled to estimate the initial temperature (0: none)"),
+                "Moves sampled to estimate the initial temperature (0: none)",
+                config::range(0, easylocal::unlimited)),
             config::field<
                 "initial_acceptance",
                 &FixedTemperatureParameters::initial_acceptance>(
@@ -1058,24 +1073,29 @@ struct TimeBasedParameters
             config::field<
                 "initial_temperature",
                 &TimeBasedParameters::initial_temperature>(
-                "Initial annealing temperature"),
+                "Initial annealing temperature",
+                config::range(0.0, easylocal::unlimited).open_low()),
             config::field<"final_temperature", &TimeBasedParameters::final_temperature>(
-                "Final annealing temperature"),
+                "Final annealing temperature",
+                config::range(0.0, easylocal::unlimited).open_low()),
             config::field<"cooling_rate", &TimeBasedParameters::cooling_rate>(
                 "Multiplicative cooling factor",
                 config::range(0.0, 1.0).open()),
             config::field<
                 "allowed_running_time",
                 &TimeBasedParameters::allowed_running_time>(
-                "Running time of the annealing, in seconds"),
+                "Running time of the annealing, in seconds",
+                config::range(0.0, easylocal::unlimited).open_low()),
             config::field<
                 "accepted_per_temperature",
                 &TimeBasedParameters::accepted_per_temperature>(
-                "Accepted proposals that trigger cooling (unlimited: cool only on time)"),
+                "Accepted proposals that trigger cooling (unlimited: cool only on time)",
+                config::range(0, easylocal::unlimited)),
             config::field<
                 "calibration_samples",
                 &TimeBasedParameters::calibration_samples>(
-                "Moves sampled to estimate the initial temperature (0: none)"),
+                "Moves sampled to estimate the initial temperature (0: none)",
+                config::range(0, easylocal::unlimited)),
             config::field<"initial_acceptance", &TimeBasedParameters::initial_acceptance>(
                 "Acceptance probability of an average worsening move at the "
                 "estimated initial temperature",
@@ -1313,23 +1333,33 @@ struct ReheatingParameters
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
+        // Only a descent with an iteration or time budget shares it.
+        constexpr bool budgeted = detail::iteration_budget<DescentParameters>
+            || detail::time_budget<DescentParameters>;
         return config::fields(
             config::group<"descent", &ReheatingParameters::descent>(
                 "The schedule of each descent"),
             config::field<"max_reheats", &ReheatingParameters::max_reheats>(
-                "Number of reheats after the first descent"),
+                "Number of reheats after the first descent",
+                config::range(0, easylocal::unlimited)),
             config::field<"reheat_ratio", &ReheatingParameters::reheat_ratio>(
-                "Restart temperature of a reheat, as a factor of the initial one"),
+                "Restart temperature of a reheat, as a factor of the initial one",
+                config::range(0.0, easylocal::unlimited).open_low())
+                .only_if(config::value<"max_reheats"> > 0),
             config::field<
                 "first_descent_share",
                 &ReheatingParameters::first_descent_share>(
-                "Share of the budget spent by the first descent"));
+                "Share of the budget spent by the first descent",
+                config::range(0.0, 1.0).open())
+                .only_if(config::value<"max_reheats"> > 0 && budgeted));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         const auto schedule = descent.validate();
         if (!schedule)
             return schedule;
@@ -1632,6 +1662,8 @@ struct SimulatedAnnealingParameters
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         return config::validation_result::success();
     }
 };

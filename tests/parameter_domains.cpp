@@ -175,6 +175,71 @@ void an_invalid_default_can_be_overridden()
     assert(parameters.rate == 0.25);
 }
 
+// A range may have no upper bound, and easylocal::unlimited alone is any value.
+struct OpenParameters
+{
+    double positive{1.0};
+    easylocal::limit budget{easylocal::unlimited};
+    int offset{-3};
+    double timeout{std::numeric_limits<double>::infinity()};
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return config::fields(
+            config::field<"positive", &OpenParameters::positive>(
+                "Positive",
+                config::range(0.0, easylocal::unlimited).open_low()),
+            config::field<"budget", &OpenParameters::budget>(
+                "Budget",
+                config::range(1, easylocal::unlimited)),
+            config::field<"offset", &OpenParameters::offset>(
+                "Offset",
+                easylocal::unlimited),
+            config::field<"timeout", &OpenParameters::timeout>(
+                "Timeout",
+                config::range(0.0, easylocal::unlimited)));
+    }
+
+    [[nodiscard]]
+    config::validation_result validate() const noexcept
+    {
+        return config::check_schema(*this);
+    }
+};
+
+void ranges_may_be_unlimited()
+{
+    OpenParameters parameters;
+    assert(parameters.validate()); // unlimited budget, infinite timeout
+    parameters.positive = 0.0;
+    assert(!parameters.validate());
+    parameters = {};
+    parameters.budget = 0;
+    assert(!parameters.validate());
+
+    config::parameter_set set;
+    set.add("open", parameters);
+    const auto listed = set.parameters();
+    assert(listed[0].domain.text() == "(0, unlimited)");
+    assert(listed[1].domain.text() == "[1, unlimited)");
+    assert(listed[2].domain.text() == "unlimited");
+    assert(listed[2].domain.kind == config::domain_info::shape::unbounded);
+    assert(config::undeclared_domains(set).empty());
+
+    TunedParameters tuned;
+    config::parameter_set with_free;
+    with_free.add("tuned", tuned);
+    assert(
+        config::undeclared_domains(with_free) == std::vector<std::string>{"tuned.free"});
+
+    // Every range lies within unlimited, and only an unlimited range within one.
+    const auto any = config::describe_domain(config::unbounded_domain{});
+    assert(any.contains(listed[0].domain));
+    assert(listed[0].domain.contains(config::describe_domain(config::range(1.0, 2.0))));
+    assert(!config::describe_domain(config::range(0.0, 10.0)).contains(listed[0].domain));
+}
+
 // The built-in runners declare the domains their validate() checks.
 void built_in_validate_checks_the_declared_domains()
 {
@@ -209,5 +274,6 @@ int main()
     parameters_list_their_kind_and_domain();
     domains_contain_narrower_domains();
     an_invalid_default_can_be_overridden();
+    ranges_may_be_unlimited();
     built_in_validate_checks_the_declared_domains();
 }

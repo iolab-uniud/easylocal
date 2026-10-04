@@ -551,6 +551,14 @@ easylocal_add_test(
         EasyLocal::Core
 )
 
+easylocal_add_test(
+    builtin-parameter-domains
+    SOURCES
+        builtin_parameter_domains.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
+
 
 easylocal_add_test(
     configuration-overrides

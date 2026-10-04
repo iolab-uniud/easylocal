@@ -257,12 +257,15 @@ struct sum_parameters
     {
         return config::fields(
             config::field<"weights", &sum_parameters::weights>(
-                "Weights of the terms of the sum"));
+                "Weights of the terms of the sum",
+                easylocal::unlimited));
     }
 
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         return config::validation_result::success();
     }
 };

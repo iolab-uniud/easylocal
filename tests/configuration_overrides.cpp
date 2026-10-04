@@ -269,8 +269,8 @@ void diagnostics_accumulate_across_independent_failures()
             saw_temperature_validation = true;
             assert(diagnostic.value.empty());
         }
-        else if (diagnostic.error == override_error::validation_error &&
-                 diagnostic.path == "solver.neighborhood")
+        else if (diagnostic.error == override_error::validation_error
+            && diagnostic.path == "solver.neighborhood.random_biases")
         {
             saw_neighborhood_validation = true;
             assert(diagnostic.value.empty());

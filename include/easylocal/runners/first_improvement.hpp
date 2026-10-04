@@ -33,13 +33,16 @@ struct FirstImprovementParameters
                 "max_evaluations",
                 &FirstImprovementParameters::max_evaluations>(
                 "Maximum number of solution evaluations "
-                "(unlimited: until a local optimum)"));
+                "(unlimited: until a local optimum)",
+                config::range(0, easylocal::unlimited)));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         return config::validation_result::success();
     }
 };

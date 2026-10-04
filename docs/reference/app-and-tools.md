@@ -143,7 +143,7 @@ lie within the declared domain and name a parameter of the app or of
 
 `write_irace_stub(irace_stub) -> irace_stub_result` writes the scenario:
 
-- `parameters.txt`: the parameters with a domain, as `path "--path=" type
+- `parameters.txt`: the parameters with a finite domain, as `path "--path=" type
   (values)`, with `r`, `i` (`,log` on a logarithmic range), `o` for a set of
   numbers and `c` for text and the runner; an open bound moves inward by one
   step of irace's 4 digits. With several runners a categorical `runner` is
@@ -156,8 +156,10 @@ lie within the declared domain and name a parameter of the app or of
   becomes a `[forbidden]` expression, `!(...)`, after its message; with values
   in place of some names, the expression with every name follows as a comment,
   and so does the condition of a commented-out line. The other
-  parameters are commented out, with a range of a factor of ten around a
-  positive value to start from, or `(LOW, HIGH)`; lists, paths, text and
+  parameters, whose domain has no upper bound or is any value, are commented
+  out, with a range of a factor of ten around a positive value, within the
+  lower bound, to start from, or `(LOW, HIGH)` with the lower bound when it has
+  one; lists, paths, text and
   `unlimited` limits are noted, not written. `cost.*` is never written: it
   defines the cost that irace compares.
 - `fixed.conf`: the parameters the command line changed when the stub was

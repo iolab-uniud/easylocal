@@ -46,9 +46,11 @@ config::field<"policy", &P::policy>("Tabu list", config::one_of("fixed", "random
 | Domain | Values |
 | --- | --- |
 | `range(low, high)` | the numbers from `low` to `high`, both included; for a number or a `limit` (never `unlimited`) |
+| `range(low, easylocal::unlimited)` | the numbers from `low` up, with no upper bound: infinity for a floating-point field, `unlimited` for a `limit` |
 | `.open()`, `.open_low()`, `.open_high()` | the same range without both bounds, the lower or the upper one |
 | `.log()` | the same range, which a configurator samples on a logarithmic scale; `low` must be positive |
 | `one_of(a, b, ...)` | the values given: text for a `std::string`, numbers for a number |
+| `easylocal::unlimited` | any value of the field's type: a seed, free text, a path, a number that may be negative |
 
 For an array or a vector the domain applies to each element. A domain that
 does not fit the field's type, a range whose bounds are not in order or a
@@ -96,9 +98,14 @@ config::validation_result validate() const
 }
 ```
 
-A field without a domain takes any value of its type. Automatic configurators
-read the domains: a domain is where the values are valid, not necessarily where
-they are worth trying, and a program can narrow it for tuning.
+Every field declares a domain: `check(app, ...)` fails for a parameter of the
+app without one, and the library's tests for a built-in one; a boolean's
+domain is true and false. A field that takes any value says so with
+`easylocal::unlimited`. `config::undeclared_domains(set)` lists the paths of
+the parameters of a set that declare none. Automatic configurators read the
+domains: a domain is where the values are valid, not necessarily where they
+are worth trying, and a program can narrow it for tuning; a range with no
+upper bound, or any value, is not tuned until it is given a finite range.
 
 ## Parameter sets
 

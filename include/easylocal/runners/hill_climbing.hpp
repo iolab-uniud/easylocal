@@ -36,15 +36,19 @@ struct HillClimbingParameters
                 "max_idle_iterations",
                 &HillClimbingParameters::max_idle_iterations>(
                 "Maximum number of consecutive proposals without "
-                "improvement"),
+                "improvement",
+                config::range(1, easylocal::unlimited)),
             config::field<"max_evaluations", &HillClimbingParameters::max_evaluations>(
-                "Maximum number of solution evaluations, or unlimited"));
+                "Maximum number of solution evaluations, or unlimited",
+                config::range(0, easylocal::unlimited)));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         if (max_idle_iterations == 0)
         {
             return config::validation_result::failure(
