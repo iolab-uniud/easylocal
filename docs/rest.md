@@ -179,6 +179,17 @@ encoded by `encode_cost`.
 }
 ```
 
+A `timeout`, in seconds (a non-negative JSON number), stops the run once it has
+passed (`timeout` in C++); run resources repeat it. Any other value is rejected
+with `422`.
+
+```json
+{
+  "input": { "...": "..." },
+  "timeout": 2.5
+}
+```
+
 A run may change the app's `parameters`, for itself only: the same paths as
 the command line and the TextUI (`runners.<name>.*`, `cost.*`,
 `neighborhood.*`), listed by `GET /parameters`. Nested objects and dotted keys

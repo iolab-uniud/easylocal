@@ -32,8 +32,14 @@ const auto observed = descent_search.run(
 - A target cost ends the run as soon as the best cost is at least as good:
   `el::stop_at(cost)` alone, or `el::with(control, tracer).stop_at(cost)`. The
   result reports `termination_reason::target_reached`.
+- A time limit ends the run once it has passed: `el::timeout(5s)` (any
+  `std::chrono` duration) or `el::timeout(2.5)` (seconds), alone or as
+  `el::with(control).timeout(5s).stop_at(cost)`. The result reports
+  `termination_reason::time_limit_reached`; no thread is started, the run
+  reads the clock among its other checks.
 - Solvers take the same options, `solver.solve(input, el::with(control))`, and
-  pass them to every run they make.
+  pass them to every run they make; a solve's time limit bounds all its runs
+  together, and a pipeline stage may have its own (`& el::timeout(10s)`).
 
 Recorders include `trace::memory_recorder`, `trace::jsonl_recorder` and the
 binary `buffered_binary_recorder` and `async_binary_recorder`, whose ELTR traces

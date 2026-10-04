@@ -20,11 +20,14 @@
 #include <easylocal/cost/text.hpp>
 
 #include <algorithm>
+#include <charconv>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <exception>
 #include <filesystem>
 #include <iostream>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
@@ -36,7 +39,7 @@ namespace easylocal::cli
 {
 
 /// The command line of cli::run: --instance, --seed, --runner, --start,
-/// --solution, --output, --target and --report.
+/// --solution, --output, --target, --timeout and --report.
 ///
 /// The app's parameters come next to them: `--runners.<name>.*`, `--cost.*` and
 /// `--neighborhood.*`. Every field has an initializer, so that designated
@@ -59,6 +62,8 @@ struct parameters
     /// The cost at which the run stops, such as 0 or [0, 120]; empty: no
     /// target.
     std::string target{};
+    /// The seconds the run may last, such as 10 or 2.5; empty: no limit.
+    std::string timeout{};
     /// Whether to print the value of each cost component, and its description.
     bool report{false};
 
@@ -81,6 +86,9 @@ struct parameters
             config::field<"target", &parameters::target>(
                 "Stop when the solution reaches this cost, such as 0 or "
                 "[0, 120] (empty: no target)"),
+            config::field<"timeout", &parameters::timeout>(
+                "Stop the run after this many seconds, such as 10 or 2.5 (empty: no "
+                "limit)"),
             config::field<"report", &parameters::report>(
                 "Print the value of each cost component, and its description"));
     }
@@ -91,7 +99,33 @@ struct parameters
     {
         if (!start.empty() && start != "random" && start != "initial")
             return config::validation_result::failure("start must be random or initial");
+        if (!timeout_seconds())
+        {
+            return config::validation_result::failure(
+                "timeout must be a non-negative number of seconds");
+        }
         return config::validation_result::success();
+    }
+
+    /// The time limit in seconds: empty without one, std::nullopt inside when
+    /// the text is not a non-negative number.
+    [[nodiscard]]
+    std::optional<std::optional<double>> timeout_seconds() const
+    {
+        const auto first = timeout.find_first_not_of(" \t");
+        if (first == std::string::npos)
+            return std::optional<double>{};
+        const auto last = timeout.find_last_not_of(" \t");
+        double seconds{};
+        const auto* const begin = timeout.data() + first;
+        const auto* const end = timeout.data() + last + 1;
+        const auto [parsed, error] = std::from_chars(begin, end, seconds);
+        if (error != std::errc{} || parsed != end || !(seconds >= 0.0)
+            || !std::isfinite(seconds))
+        {
+            return std::nullopt;
+        }
+        return std::optional<double>{seconds};
     }
 };
 
@@ -358,10 +392,23 @@ int run(App application, const int argc, char* argv[], options settings = {})
         }
 
         const auto begin = std::chrono::steady_clock::now();
-        // Blank text is no target, as RunParameters reads it.
-        const bool ran = command_line.target.find_first_not_of(" \t") == std::string::npos
-            ? session.run(runner)
-            : session.run(runner, stop_at(session.read_cost(command_line.target)));
+        // Blank text is no target, as RunParameters reads it, and no time limit.
+        const bool has_target =
+            command_line.target.find_first_not_of(" \t") != std::string::npos;
+        const auto seconds = *command_line.timeout_seconds();
+        bool ran = false;
+        if (has_target && seconds)
+        {
+            ran = session.run(
+                runner,
+                stop_at(session.read_cost(command_line.target)).timeout(*seconds));
+        }
+        else if (has_target)
+            ran = session.run(runner, stop_at(session.read_cost(command_line.target)));
+        else if (seconds)
+            ran = session.run(runner, easylocal::timeout(*seconds));
+        else
+            ran = session.run(runner);
         const std::chrono::duration<double> elapsed =
             std::chrono::steady_clock::now() - begin;
         if (!ran)

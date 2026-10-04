@@ -158,6 +158,20 @@ int main()
     assert(unknown.status == 2);
     assert(unknown.err == "unknown runner sa; the runners are: fi cascade\n");
 
+    // A time limit: none left, the run stops at its first check.
+    const auto timed_out =
+        run({"--instance", instance, "--seed", "1", "--runner", "fi", "--timeout", "0"});
+    assert(timed_out.status == 0);
+    assert(timed_out.out.find("\ntermination time limit reached\n") != std::string::npos);
+    const auto with_target = run(
+        {"--instance", instance, "--runner", "fi", "--timeout", "30", "--target", "26"});
+    assert(with_target.status == 0);
+    assert(with_target.out.find("\ntermination target reached\n") != std::string::npos);
+    const auto negative = run({"--instance", instance, "--timeout", "-1"});
+    assert(negative.status == 2);
+    assert(
+        negative.err.find("timeout must be a non-negative number") != std::string::npos);
+
     // A pipeline is run by name, and configured under runners.<name>.
     const auto cascaded = run(
         {"--instance",

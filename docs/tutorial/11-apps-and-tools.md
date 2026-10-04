@@ -195,6 +195,7 @@ termination completed
 | `--solution <file>` | the starting solution read from a file, with `read_solution` |
 | `--output <file>` | where the solution goes, with `write_solution`; standard output by default |
 | `--target <cost>` | stop at the first solution that reaches this cost, as `session.read_cost` reads it |
+| `--timeout <seconds>` | stop the run after this many seconds, such as `10` or `2.5`; the termination is then `time limit reached` |
 | `--runners.<name>.*`, `--cost.*`, `--neighborhood.*` | the app's parameters, as `configuration()` lists them |
 | `--report true` | also print the value of each cost component, see below |
 | `--config <file>` | the same settings from a file (chapter 9); `--help` lists them all |

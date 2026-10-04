@@ -217,7 +217,7 @@ defaults that pass validation.
 Built-in algorithms return `search_result<Solution, Cost>`: `solution`, `cost`,
 `evaluations`, `iterations`, `termination` (`termination_reason::completed`,
 `local_optimum`, `evaluation_budget_exhausted`, `cancelled`, `target_reached`,
-`idle_limit_reached`). With a `cost::pareto` cost they return
+`idle_limit_reached`, `time_limit_reached`). With a `cost::pareto` cost they return
 `pareto_search_result<Solution, Cost>`, which adds `front`: the non-dominated
 solutions the run reached, as `pareto_point{solution, cost}`, ordered by their
 objectives. The `search_run` keeps them in a `pareto_archive` as the run starts,
@@ -291,9 +291,17 @@ Great Deluge, Simulated Annealing and the tabu searches use it.
 | `with(tracer)` | semantic trace events |
 | `with(control, tracer)` | both |
 | `stop_at(target)`, `with(...).stop_at(target)` | stop as soon as the best cost is at least as good as `target` |
+| `timeout(5s)`, `timeout(2.5)`, `with(...).timeout(...)` | stop once the time limit has passed since the run started: a `std::chrono` duration or a number of seconds; termination `time_limit_reached` |
 
 `run_control{stop_token, observer}` calls `observer(const run_progress&)` with
 `evaluations`, `iterations` and `evaluation_limit`.
+
+The options combine in any order: `with(control).timeout(30s).stop_at(0)`. A
+negative or non-finite time limit throws `std::invalid_argument`. `search_run`
+checks the deadline with the other stopping conditions, reading the clock at
+an interval of checks that adapts so that readings come about a millisecond
+apart: a loop that checks at every move reads it rarely, one that checks once
+per long iteration reads it every time. There is no timer thread.
 
 The target converts to the runner's cost type and is compared with its cost
 semantics (`better_or_equivalent`). `search_run` checks the costs reached in

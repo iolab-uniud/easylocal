@@ -339,6 +339,23 @@ void a_pipeline_runs_by_name(crow::SimpleApp& server)
     assert(text(done["parameters"]["runners.cascade.second.attempts"]) == "2");
 }
 
+void a_run_has_a_time_limit(crow::SimpleApp& server)
+{
+    // No time left: the run ends at once, and its status keeps the limit.
+    const auto submitted = submit(server, "fi", R"({"input": {}, "timeout": 0})");
+    assert(submitted.code == 202);
+    const auto done = wait_for(server, text(submitted.body["id"]), "succeeded");
+    assert(done["timeout"].d() == 0.0);
+
+    for (const auto* const body :
+        {R"({"input": {}, "timeout": -1})", R"({"input": {}, "timeout": "soon"})"})
+    {
+        const auto rejected = submit(server, "fi", body);
+        assert(rejected.code == 422);
+        assert(text(rejected.body["error"]["message"]).starts_with("'timeout' must be"));
+    }
+}
+
 void a_run_starts_from_the_given_initial_solution(crow::SimpleApp& server)
 {
     const auto submitted =
@@ -545,6 +562,7 @@ int main()
     a_run_failing_without_a_standard_exception_reports_an_unknown_error(server);
     a_codec_failure_is_an_internal_error(server);
     a_run_starts_from_the_given_initial_solution(server);
+    a_run_has_a_time_limit(server);
     a_pipeline_runs_by_name(server);
     a_run_stops_at_its_target(server);
     a_run_has_its_own_parameters(server);

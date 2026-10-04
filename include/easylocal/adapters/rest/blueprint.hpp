@@ -19,6 +19,7 @@
 #include <crow.h>
 
 #include <atomic>
+#include <cmath>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -333,6 +334,7 @@ private:
         std::shared_ptr<const input_type> input;
         std::uint64_t seed{};
         std::optional<cost_type> target;
+        std::optional<double> timeout;                       // seconds
         std::vector<config::owned_text_override> parameters; // as requested
         mutable std::mutex mutex;
         std::stop_source stop_source;
@@ -430,6 +432,18 @@ private:
         return codec_.decode_initial_solution(input, payload);
     }
 
+    // The time limit of a run, in seconds: a non-negative number.
+    [[nodiscard]] static double decode_timeout(const crow::json::rvalue& payload)
+    {
+        if (payload.t() != crow::json::type::Number)
+            throw std::invalid_argument{"'timeout' must be a number of seconds"};
+        const double seconds = payload.d();
+        if (!(seconds >= 0.0) || !std::isfinite(seconds))
+            throw std::invalid_argument{
+                "'timeout' must be a non-negative number of seconds"};
+        return seconds;
+    }
+
     // The target of a run: a string in the textual syntax of costs, read by
     // the problem's read_cost or cost::from_text; otherwise by the codec's
     // decode_cost, or as a number for an arithmetic cost.
@@ -499,6 +513,8 @@ private:
         body["seed"] = record->seed;
         if (record->target)
             body["target"] = encode_cost(*record->target);
+        if (record->timeout)
+            body["timeout"] = *record->timeout;
         add_parameters(body, *record);
         body["status"] = std::string{state_name(record->state)};
         body["cancellation_requested"] = record->stop_source.stop_requested();
@@ -689,6 +705,9 @@ private:
             std::optional<cost_type> target;
             if (payload.has("target"))
                 target.emplace(decode_target(payload["target"], *input));
+            std::optional<double> timeout;
+            if (payload.has("timeout"))
+                timeout.emplace(decode_timeout(payload["timeout"]));
 
             const auto run_number = next_run_id_.fetch_add(1);
             const auto id = std::to_string(run_number);
@@ -700,6 +719,7 @@ private:
             record->runner = runner;
             record->input = input;
             record->target = target;
+            record->timeout = timeout;
             record->parameters = std::move(parameters);
             session.set_seed(record->seed);
             {
@@ -739,11 +759,12 @@ private:
 
                     try
                     {
+                        auto options = easylocal::with(control);
+                        if (record->timeout)
+                            options = options.timeout(*record->timeout);
                         const bool ran = record->target
-                            ? session.run(
-                                  runner,
-                                  easylocal::with(control).stop_at(*record->target))
-                            : session.run(runner, easylocal::with(control));
+                            ? session.run(runner, options.stop_at(*record->target))
+                            : session.run(runner, options);
 
                         const std::lock_guard lock{record->mutex};
                         if (ran)
@@ -861,6 +882,8 @@ private:
         body["seed"] = record->seed;
         if (record->target)
             body["target"] = encode_cost(*record->target);
+        if (record->timeout)
+            body["timeout"] = *record->timeout;
         add_parameters(body, *record);
         body["status"] = std::string{state_name(record->state)};
         body["cost"] = encode_cost(*record->cost);

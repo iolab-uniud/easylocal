@@ -105,16 +105,17 @@ every runner that draws random moves could use it.
 
 **When.** Not scheduled.
 
-## A budget for the whole solve
+## An evaluation budget for the whole solve
 
-**Why.** Each stage of a pipeline, like each runner, has its own budget
-(evaluations, iterations): there is no time or effort budget for the whole
-solve, shared among the stages, which a stage that ends early would leave to
-the following ones.
+**Why.** A run, a solve and a pipeline stage stop at a time limit
+(`timeout`), which a solve shares among its runs. Evaluations have no such
+budget: each runner has its own `max_evaluations`, and a pipeline cannot give
+its stages a share of one number of evaluations, which a stage that ends early
+would leave to the following ones.
 
-**What.** A budget of the solve (a time limit, or a number of evaluations),
-with a share per stage, reported in the result; the same budget for a runner
-run by name, so that the command line and the tools can bound a run in time.
+**What.** An evaluation budget among the run options, beside `timeout`:
+shared by a solve's runs, with a share per pipeline stage, and reported in the
+result; the command line and the tools set it as they set the time limit.
 
 **When.** Not scheduled.
 

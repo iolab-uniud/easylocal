@@ -88,8 +88,12 @@ old concepts onto the new ones.
   command line and in the TextUI. They are unlimited by default, and 0 is a
   limit of zero.
 - Every runner is cancellable through a `std::stop_token`, reports progress,
-  can stop at a target cost (`stop_at(cost)`) and returns a `search_result`
-  with its `termination_reason` (`to_string` gives a readable name).
+  can stop at a target cost (`stop_at(cost)`) or after a time limit
+  (`timeout(5s)`, or `timeout(2.5)` seconds) and returns a `search_result`
+  with its `termination_reason` (`to_string` gives a readable name). A
+  solve's time limit bounds all its runs, and a pipeline stage may have its
+  own (`& timeout(d)`, `<name>.timeout`); `cli::run --timeout`, a REST run's
+  `"timeout"` and the TextUI's *Time limit* field set it.
 - Solvers: **LocalSearch**, **MultiStart** and **Pipeline**, with pluggable
   initialization. A pipeline (`stage(name, runner) | ...`, or
   `pipeline(stages...)`, or `.then(stage)`) runs runners with their own

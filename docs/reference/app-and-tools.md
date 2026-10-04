@@ -99,19 +99,22 @@ opens the selected runner's (`runners.<name>.*`) before running it, `P` the
 problem's (`cost.*`, `neighborhood.*`). Values are checked before anything
 changes and stay for the rest of the session. Its *Target cost* field, when
 filled, stops each run at the first solution that reaches it; below it, the
-current cost is shown in the same syntax.
+current cost is shown in the same syntax. Its *Time limit (s)* field, when
+filled, stops each run after that many seconds; the progress shows the time
+elapsed, and the result says "(time limit reached)".
 
 `cli::run` parses the command line and a `--config` file with
 `config::load_and_apply`: its own block `cli::parameters` at the root
 (`instance`, `seed`, `runner`, `start`, `solution`, `output`, `target`,
-`report`), the
+`timeout`, `report`), the
 app's `configuration()`, and `options.parameters`, the program's own set;
 `options.defaults`, a `cli::parameters`, gives the values of its switches
 before the command line. It
 then builds a `Session` with the seed, loads the Input, takes the starting
 solution (`--solution`, else `--start`: `random` by default when the problem
 has `random_solution`, `initial` otherwise), runs the runner by name, with
-`stop_at` when `--target` is set, and writes `cost`, `time`, the session's
+`stop_at` when `--target` is set and `timeout` when `--timeout` is (seconds),
+and writes `cost`, `time`, the session's
 `last_run_effort()` when the runner reports it (`iterations`, `evaluations`,
 `termination`), with `--report`
 the session's `cost_report()` (a line `component <name> <value>` for each

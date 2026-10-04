@@ -98,7 +98,8 @@ def set_target(tui: Tui, target: str) -> None:
     """On the Run page, type the target cost and select fi again."""
     tui.press(F5)
     tui.focus("P Problem parameters")  # through the runner list
-    tui.press(*[DOWN] * 6)  # to the last field, past the seed
+    # To the last field, the time limit, then up to the target above it.
+    tui.press(*[DOWN] * 8, UP)
     tui.type(target)
     tui.select("fi", key=UP)
 
@@ -121,6 +122,33 @@ def test_an_invalid_target_runs_nothing(tui):
     tui.expect("Parameters of fi")
     tui.press(ENTER)
     tui.expect("Target cost: expected a number, found 'abc'")
+    tui.expect_absent("Runner executing")
+
+
+def test_a_time_limit_stops_the_run(tui):
+    # No time at all: First Improvement stops at its first check, from the
+    # initial tour.
+    tui.press("I", F5)
+    tui.focus("P Problem parameters")  # through the runner list
+    tui.press(*[DOWN] * 8)  # to the last field, the time limit
+    tui.type("0")
+    tui.select("fi", key=UP)
+    tui.press("G")
+    tui.expect("Parameters of fi")
+    tui.press(ENTER)
+    tui.expect(f"fi: {INITIAL_COST} -> {INITIAL_COST} (time limit reached)")
+
+
+def test_an_invalid_time_limit_runs_nothing(tui):
+    tui.press("I", F5)
+    tui.focus("P Problem parameters")
+    tui.press(*[DOWN] * 8)
+    tui.type("soon")
+    tui.select("fi", key=UP)
+    tui.press("G")
+    tui.expect("Parameters of fi")
+    tui.press(ENTER)
+    tui.expect("Time limit: give a non-negative number of seconds, or nothing")
     tui.expect_absent("Runner executing")
 
 

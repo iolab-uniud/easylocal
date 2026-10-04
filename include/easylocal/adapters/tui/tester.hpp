@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <charconv>
 #include <chrono>
+#include <cmath>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -28,6 +29,7 @@
 #include <ftxui/screen/string.hpp>
 #include <functional>
 #include <future>
+#include <iomanip>
 #include <map>
 #include <memory>
 #include <optional>
@@ -576,9 +578,34 @@ template<class Solution>
 struct async_runner_result
 {
     bool cancelled{};
+    bool timed_out{};
     std::optional<Solution> solution;
     std::string error;
 };
+
+// A number of seconds as text: empty when it is not a non-negative number.
+[[nodiscard]] inline std::optional<double> seconds_text(const std::string_view text)
+{
+    const auto first = text.find_first_not_of(" \t");
+    if (first == std::string_view::npos)
+        return std::nullopt;
+    const auto last = text.find_last_not_of(" \t");
+    double seconds{};
+    const auto* const end = text.data() + last + 1;
+    const auto [parsed, error] = std::from_chars(text.data() + first, end, seconds);
+    if (error != std::errc{} || parsed != end || !(seconds >= 0.0)
+        || !std::isfinite(seconds))
+        return std::nullopt;
+    return seconds;
+}
+
+// Seconds as the progress label shows them: one decimal, such as 12.3s.
+[[nodiscard]] inline std::string seconds_label(const double seconds)
+{
+    std::ostringstream out;
+    out << std::fixed << std::setprecision(1) << seconds << 's';
+    return out.str();
+}
 
 // A scrollable text wrapped to a width: the Input and solution windows. The
 // lines are wrapped again only when the width changes.
@@ -1049,6 +1076,13 @@ private:
             }
         }
 
+        // A run stops after this many seconds; empty: no limit.
+        run_controls->Add(section_label("Time limit (s)"));
+        auto timeout_input_option = InputOption::Default();
+        timeout_input_option.multiline = false;
+        timeout_input_ = Input(&timeout_text_, "none", timeout_input_option);
+        run_controls->Add(timeout_input_);
+
         return Renderer(run_controls, [this, run_controls] {
             return render_run_page(run_controls);
         });
@@ -1277,7 +1311,8 @@ private:
             return false;
 
         const bool editing_path = (seed_input_ && seed_input_->Focused())
-            || (target_input_ && target_input_->Focused());
+            || (target_input_ && target_input_->Focused())
+            || (timeout_input_ && timeout_input_->Focused());
 
         if (event == Event::F1)
         {
@@ -2213,6 +2248,18 @@ private:
                 }
             }
             run_target_ = target;
+            std::optional<double> seconds;
+            if (timeout_text_.find_first_not_of(" \t") != std::string::npos)
+            {
+                seconds = detail::seconds_text(timeout_text_);
+                if (!seconds)
+                {
+                    set_status(
+                        status_kind::error,
+                        "Time limit: give a non-negative number of seconds, or nothing");
+                    return;
+                }
+            }
             auto application = tester_.app();
             auto input = tester_.input_handle();
             auto solution = tester_.solution();
@@ -2229,6 +2276,7 @@ private:
             }
 
             run_name_ = selected_name;
+            run_started_ = std::chrono::steady_clock::now();
             run_before_ = value_text(tester_.evaluate());
             progress_ = progress_snapshot{
                 .mode = progress_mode::indeterminate,
@@ -2259,6 +2307,7 @@ private:
                     run_rng,
                     name,
                     target,
+                    seconds,
                     promise = std::move(promise),
                     event_app,
                     progress_state](std::stop_token stop_token) mutable {
@@ -2280,23 +2329,29 @@ private:
 
                     try
                     {
+                        auto options = easylocal::with(control);
+                        if (seconds)
+                            options = options.timeout(*seconds);
                         auto result = target
                             ? application.run(
                                   name,
                                   *input,
                                   std::move(solution),
                                   run_rng,
-                                  easylocal::with(control).stop_at(*target))
+                                  options.stop_at(*target))
                             : application.run(
                                   name,
                                   *input,
                                   std::move(solution),
                                   run_rng,
-                                  easylocal::with(control));
+                                  options);
                         if (result)
                         {
                             completion.solution.emplace(std::move(result->solution));
                             completion.cancelled = stop_token.stop_requested();
+                            completion.timed_out = result->effort
+                                && result->effort->termination
+                                    == easylocal::termination_reason::time_limit_reached;
                         }
                     }
                     catch (const std::exception& error)
@@ -2530,9 +2585,12 @@ private:
             : progress_mode::indeterminate;
         if (!run_worker_.get_stop_token().stop_requested())
         {
+            const std::chrono::duration<double> elapsed =
+                std::chrono::steady_clock::now() - run_started_;
             progress_.label = "Running " + run_name_
                 + " [eval=" + std::to_string(progress.evaluations)
-                + ", iter=" + std::to_string(progress.iterations) + "]";
+                + ", iter=" + std::to_string(progress.iterations) + ", "
+                + detail::seconds_label(elapsed.count()) + "]";
         }
     }
 
@@ -2593,6 +2651,8 @@ private:
             run_name_ + ": " + run_before_ + " -> " + value_text(after);
         if (run_target_ && !(*run_target_ < after))
             last_run_result_ += " (target " + value_text(*run_target_) + " reached)";
+        else if (completion.timed_out)
+            last_run_result_ += " (time limit reached)";
         set_status(status_kind::success, "Runner completed: " + run_name_);
     }
 
@@ -3231,6 +3291,8 @@ private:
     std::uint64_t seed_{};
     std::string seed_text_;
     std::string target_text_;
+    std::string timeout_text_;
+    std::chrono::steady_clock::time_point run_started_{};
 
     std::string input_path_;
     std::string solution_path_;
@@ -3286,6 +3348,7 @@ private:
     // rather than shortcuts.
     ftxui::Component seed_input_;
     ftxui::Component target_input_;
+    ftxui::Component timeout_input_;
     std::jthread run_worker_{};
     std::future<async_runner_result<typename tester_type::solution_type>> run_future_{};
     std::shared_ptr<easylocal::detail::atomic_run_progress> run_progress_state_;
