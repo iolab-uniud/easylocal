@@ -1,8 +1,9 @@
 #pragma once
 
-// Logging (easylocal::logging): records with a level and an origin
-// (framework or application) sent to one process-wide sink, stderr unless
-// set_sink replaces it (docs/logging.md).
+/// \file
+/// Logging (easylocal::logging): records with a level and an origin
+/// (framework or application) sent to one process-wide sink, stderr unless
+/// set_sink replaces it (docs/logging.md).
 
 #include <atomic>
 #include <cstdint>
@@ -37,8 +38,8 @@ struct record
     std::source_location location{};
 };
 
-// A sink is invoked synchronously. String views in a record are guaranteed to
-// remain valid only for the duration of the call. Sinks must not throw.
+/// A sink is invoked synchronously. String views in a record are guaranteed to
+/// remain valid only for the duration of the call. Sinks must not throw.
 using sink = void (*)(const record&) noexcept;
 
 [[nodiscard]]

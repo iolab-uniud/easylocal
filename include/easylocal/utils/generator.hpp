@@ -1,11 +1,12 @@
 #pragma once
 
-// easylocal::generator<T>: a coroutine that yields values of type T, lazily,
-// as an input range. It is std::generator<T> where the standard library
-// provides it, and a minimal equivalent otherwise (libc++ does not ship
-// <generator> yet). Its intended use is NeighborhoodExplorer::moves(): the
-// moves are produced one at a time, while the runner consumes them, instead
-// of being materialized in a container.
+/// \file
+/// easylocal::generator<T>: a coroutine that yields values of type T, lazily,
+/// as an input range. It is std::generator<T> where the standard library
+/// provides it, and a minimal equivalent otherwise (libc++ does not ship
+/// `<generator>` yet). Its intended use is NeighborhoodExplorer::moves(): the
+/// moves are produced one at a time, while the runner consumes them, instead
+/// of being materialized in a container.
 
 #include <version>
 
@@ -35,10 +36,10 @@ using generator = std::generator<T>;
 namespace easylocal
 {
 
-// The subset of std::generator<T> the framework relies on: co_yield of a
-// value, a single pass over the yielded values, exceptions propagated to the
-// consumer. Unlike std::generator, values are always copied or moved into the
-// coroutine frame and co_yield ranges::elements_of(...) is not supported.
+/// The subset of std::generator<T> the framework relies on: co_yield of a
+/// value, a single pass over the yielded values, exceptions propagated to the
+/// consumer. Unlike std::generator, values are always copied or moved into the
+/// coroutine frame and co_yield ranges::elements_of(...) is not supported.
 template<class T>
 class generator : public std::ranges::view_interface<generator<T>>
 {
@@ -72,7 +73,7 @@ public:
             return {};
         }
 
-        // A generator only yields: co_await is not allowed in its body.
+        /// A generator only yields: co_await is not allowed in its body.
         template<class Awaitable>
         std::suspend_never await_transform(Awaitable&&) = delete;
 
@@ -149,7 +150,7 @@ public:
         }
     }
 
-    // Starts the coroutine: like std::generator, begin() may be called once.
+    /// Starts the coroutine: like std::generator, begin() may be called once.
     iterator begin()
     {
         advance(coroutine_);

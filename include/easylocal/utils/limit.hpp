@@ -1,7 +1,8 @@
 #pragma once
 
-// limit: the bound of a search on a count (evaluations, iterations), a number
-// or easylocal::unlimited; in text, the number or "unlimited".
+/// \file
+/// limit: the bound of a search on a count (evaluations, iterations), a number
+/// or easylocal::unlimited; in text, the number or "unlimited".
 
 #include <cstddef>
 #include <limits>
@@ -9,9 +10,9 @@
 namespace easylocal
 {
 
-// A count that may be unlimited. It converts to and from std::size_t, so a
-// limit is set with a number and compared with a count as one; unlimited is
-// the largest std::size_t, which no count reaches. Zero is a limit of zero.
+/// A count that may be unlimited. It converts to and from std::size_t, so a
+/// limit is set with a number and compared with a count as one; unlimited is
+/// the largest std::size_t, which no count reaches. Zero is a limit of zero.
 class limit
 {
 public:
@@ -37,7 +38,7 @@ private:
     std::size_t count_{std::numeric_limits<std::size_t>::max()};
 };
 
-// No limit: what a default-constructed limit is.
+/// No limit: what a default-constructed limit is.
 inline constexpr limit unlimited{};
 
 } // namespace easylocal
