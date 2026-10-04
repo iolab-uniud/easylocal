@@ -22,9 +22,9 @@ namespace easylocal::testing
 struct check_options
 {
     /// The random moves and solutions drawn per check (default 32).
-    std::size_t random_samples{32};         // random moves and solutions drawn per check
+    std::size_t random_samples{32};
     /// The enumerated moves visited per traversal (default 1024).
-    std::size_t max_enumerated_moves{1024}; // enumerated moves visited per traversal
+    std::size_t max_enumerated_moves{1024};
 };
 
 /// The data every component check runs on: an Input, a valid Solution and the
