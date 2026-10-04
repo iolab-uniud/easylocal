@@ -22,7 +22,7 @@ namespace easylocal::cost
 {
 
 /// A hierarchical cost: the hard cost has strict priority, the soft cost is
-/// compared only when the hard costs are equal.
+/// compared only when the hard costs are equivalent (neither is less).
 ///
 /// Each branch may itself be scalar or structured. Its `delta` never accepts a
 /// hard degradation: minus infinity when the hard cost improves, plus infinity

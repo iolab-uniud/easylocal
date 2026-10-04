@@ -170,7 +170,7 @@ Simulated Annealing returns the best solution found. Temperature policies in
 | --- | --- | --- |
 | `Classic` | initial/final temperature, cooling rate, samples per temperature | the final temperature is reached |
 | `FixedLength` | initial/final temperature, cooling rate, max iterations | max iterations are spent, spread over the levels |
-| `Cutoff` | as FixedLength, plus accepted ratio | max iterations; cools early after enough acceptances |
+| `Cutoff` | as FixedLength, plus accepted ratio | max iterations; cools only after `accepted_ratio` of a level's share of them have been accepted, never on samples |
 | `Hybrid` | as Cutoff | max iterations; cools on samples or acceptances |
 | `FixedTemperature` | temperature, max iterations, accepted ratio | max iterations, or enough acceptances; never cools |
 | `TimeBased` | initial/final temperature, cooling rate, running time, accepted per temperature (unlimited: cools only on time) | the running time is over or the final temperature is reached; levels share the time |
