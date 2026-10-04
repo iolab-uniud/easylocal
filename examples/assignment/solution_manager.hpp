@@ -1,6 +1,8 @@
 #pragma once
 
-#include "cost.hpp"
+// The solution manager of the assignment problem: the initial solution and
+// the validity check.
+
 #include "instance.hpp"
 #include "solution.hpp"
 

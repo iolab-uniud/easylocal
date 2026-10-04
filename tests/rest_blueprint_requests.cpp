@@ -2,6 +2,7 @@
 // runs that fail, a codec that fails, a run from a given initial solution, a
 // run with a target cost, runs with their own parameters, a full queue and a
 // run cancelled while still queued.
+#include "../examples/assignment/cost.hpp"
 #include "../examples/assignment/cost_components.hpp"
 #include "../examples/assignment/instance.hpp"
 #include "../examples/assignment/neighborhood_explorer.hpp"

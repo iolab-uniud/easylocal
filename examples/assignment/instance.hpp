@@ -1,5 +1,8 @@
 #pragma once
 
+// The input of the assignment problem: the demand of each job and the
+// capacity of each machine.
+
 #include <cstdint>
 #include <string>
 #include <vector>

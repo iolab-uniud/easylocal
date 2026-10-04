@@ -1,3 +1,5 @@
+// The assignment problem as a REST service: the app of application.hpp at
+// /assignment, with a codec that reads an instance from JSON.
 #include "application.hpp"
 #include "instance_io.hpp" // IWYU pragma: keep (the read_input hook, found by ADL)
 

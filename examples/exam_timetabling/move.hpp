@@ -1,5 +1,7 @@
 #pragma once
 
+// The move of exam timetabling: an exam and its new timeslot.
+
 #include "instance.hpp"
 
 namespace exam_timetabling

@@ -1,5 +1,8 @@
 #pragma once
 
+// The cost components of the assignment problem: the capacity violation
+// (hard) and the load imbalance (soft).
+
 #include "instance.hpp"
 #include "solution.hpp"
 
@@ -12,7 +15,7 @@
 namespace assignment
 {
 
-// Typed component values are useful when the type itself carries domain meaning.
+// The value of CapacityCostComponent: a component value may be a struct.
 struct CapacityValue
 {
     std::int64_t overloaded_machines{};
@@ -78,8 +81,7 @@ public:
     {
     }
 
-    // A component value does not need a wrapper: plain arithmetic types are
-    // equally valid when a distinct semantic type would add no useful signal.
+    // The largest machine load minus the smallest one: a plain number.
     std::int64_t evaluate(const AssignmentSolution& solution) const
     {
         assert(solution.assignment.size() == instance_.demand.size());

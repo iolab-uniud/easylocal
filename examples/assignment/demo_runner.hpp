@@ -1,5 +1,8 @@
 #pragma once
 
+// SlowFirstImprovement, a runner for the demos: First Improvement that waits
+// before each evaluation, so that a run can be watched and stopped.
+
 #include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/utils/limit.hpp>
 
@@ -12,6 +15,8 @@
 namespace assignment::demo
 {
 
+// The parameters of SlowFirstImprovement: its evaluation budget and the wait
+// before each evaluation, in milliseconds.
 struct SlowFirstImprovementParameters
 {
     easylocal::limit max_evaluations{2000};

@@ -1,5 +1,8 @@
 #pragma once
 
+// The solution manager of exam timetabling: the initial timetable and the
+// validity check.
+
 #include "instance.hpp"
 #include "solution.hpp"
 

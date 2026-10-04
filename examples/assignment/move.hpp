@@ -1,5 +1,7 @@
 #pragma once
 
+// The move of the assignment problem: a job and its new machine.
+
 #include "solution.hpp"
 
 #include <cstddef>

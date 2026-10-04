@@ -1,3 +1,4 @@
+#include "cost.hpp"
 #include "move.hpp"
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"

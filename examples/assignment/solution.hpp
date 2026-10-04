@@ -1,5 +1,7 @@
 #pragma once
 
+// The solution of the assignment problem: the machine of each job.
+
 #include "instance.hpp"
 
 #include <cstddef>

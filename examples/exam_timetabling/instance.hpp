@@ -1,6 +1,8 @@
 #pragma once
 
-#include <cassert>
+// The input of exam timetabling: the exams, the timeslots and the students
+// that pairs of exams share.
+
 #include <cstddef>
 #include <cstdint>
 #include <istream>

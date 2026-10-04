@@ -1,11 +1,13 @@
 #pragma once
 
+// The cost components of exam timetabling: the students with two exams at the
+// same time, those with exams in consecutive timeslots, and the timeslot loads.
+
 #include "instance.hpp"
 #include "move.hpp"
 #include "solution.hpp"
 
 #include <cassert>
-#include <cstddef>
 #include <vector>
 
 namespace exam_timetabling
@@ -36,8 +38,8 @@ public:
         return penalty;
     }
 
-    // A delta cost component may be co-located with its component when that is the
-    // clearest expression. Separate evaluator types remain the primary model.
+    // The delta cost component, written as a member: the change of the penalty
+    // when the move is made, from the conflicts of the moved exam only.
     penalty_type delta_evaluate(const ExamTimetable& solution, const MoveExam& move) const
     {
         assert(move.exam < solution.timeslot_by_exam.size());

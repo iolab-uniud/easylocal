@@ -1,5 +1,7 @@
 #pragma once
 
+// The solution of exam timetabling: the timeslot of each exam.
+
 #include "instance.hpp"
 
 #include <cstddef>

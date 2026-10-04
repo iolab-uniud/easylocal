@@ -1,7 +1,11 @@
 #pragma once
 
-#include "cost_components.hpp"
+// The delta cost component of ConsecutiveExamComponent, written as a class of
+// its own.
+
+#include "instance.hpp"
 #include "move.hpp"
+#include "solution.hpp"
 
 #include <cassert>
 #include <vector>

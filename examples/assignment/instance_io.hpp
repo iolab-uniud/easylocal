@@ -1,5 +1,7 @@
 #pragma once
 
+// How an assignment instance is read from a text file.
+
 #include "instance.hpp"
 
 #include <cstddef>
@@ -10,8 +12,9 @@
 namespace assignment
 {
 
-// The read_input hook, found by ADL: easylocal::read_input and load_input, the
-// Session and the TextUI read an AssignmentInstance with it.
+// The number of jobs and of machines, then the demands, then the capacities.
+// EasyLocal finds this function by its name and arguments (ADL) when it reads
+// an AssignmentInstance.
 inline AssignmentInstance read_input(
     std::type_identity<AssignmentInstance>,
     std::istream& input)

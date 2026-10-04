@@ -1,5 +1,8 @@
 #pragma once
 
+// The cost of the assignment problem: its types, and the cost expression that
+// puts the capacity violation above the load imbalance.
+
 #include "cost_components.hpp"
 
 #include <easylocal/cost.hpp>

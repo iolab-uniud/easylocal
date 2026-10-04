@@ -1,3 +1,4 @@
+#include "../examples/assignment/cost.hpp"
 #include "../examples/assignment/cost_components.hpp"
 #include "../examples/assignment/demo_runner.hpp"
 #include "../examples/assignment/instance_io.hpp"

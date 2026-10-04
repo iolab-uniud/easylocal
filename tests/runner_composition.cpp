@@ -1,3 +1,4 @@
+#include "cost.hpp"
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 #include "support/assignment_capacity_delta.hpp"
