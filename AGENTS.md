@@ -73,10 +73,32 @@ the uv environment: `uv sync`, then `uv run ...`.
   time, with templates, rather than by runtime parameters.
 - Comments match the surrounding code: a short description of each class or
   function, no narration of the change.
-- In `include/`, the comment of a public declaration (a class, a function, an
+
+## API comments
+
+The generated API reference (`scripts/api-docs.py`, MrDocs) is made of the
+`///` comments of `include/`.
+
+- The comment of a public declaration (a class, a concept, a function, an
   alias, a public field) and the leading comment of a header (`/// \file`) are
-  written with `///`, which MrDocs reads for the generated API reference;
-  every other comment (in `detail`, in a body, on a private member) with `//`.
+  written with `///`; every other comment (in `detail`, in a body, on a private
+  member) with `//`.
+- The first paragraph is the brief, shown in the indexes: one sentence, then a
+  `///` line before the rest. Wrap the text at 80 columns.
+- A class says what it does and how it ends or what it returns; a parameter
+  block is "The parameters of X.", and each field says what it bounds or sets
+  (its unit, what its default or `unlimited` means).
+- A template constrained by concepts of `detail` says what the user must
+  provide, in user terms, as the last sentence: "Requires a neighborhood
+  explorer with random_move() and a cost with better()." The `detail` concepts
+  are not in the reference, so their names alone tell the reader nothing.
+- An algorithm's `run(run, solution, ...)` says that the bound runner calls it;
+  a member of a policy interface is described once, on its concept.
+- Code and paths with angle brackets go in backticks (`` `runners.<name>.*` ``),
+  or MrDocs reads them as HTML; a code example is a paragraph indented by four
+  spaces.
+- Parameters, return values and enum values need no comment of their own: a
+  missing comment is not a warning, a malformed one is, and fails the build.
 
 ## Formatting
 
