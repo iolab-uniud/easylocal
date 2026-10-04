@@ -43,10 +43,13 @@ endfunction()
 # A test program: the executable easylocal_<name>_test (dashes as underscores),
 # built from SOURCES and linked with LIBRARIES, run as the test easylocal.<name>.
 function(easylocal_add_test name)
-    cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "SOURCES;LIBRARIES")
+    cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "SOURCES;LIBRARIES;DEFINITIONS")
     string(REPLACE "-" "_" target "easylocal_${name}_test")
     add_executable(${target} ${arg_SOURCES})
     target_link_libraries(${target} PRIVATE ${arg_LIBRARIES})
+    if(arg_DEFINITIONS)
+        target_compile_definitions(${target} PRIVATE ${arg_DEFINITIONS})
+    endif()
     add_test(NAME easylocal.${name} COMMAND ${target})
 endfunction()
 
@@ -171,20 +174,6 @@ set_tests_properties(
     easylocal.tuple-types-catches-deduced
     PROPERTIES PASS_REGULAR_EXPRESSION "deduced\\.hpp:2")
 
-add_executable(
-    easylocal_toolchain_smoke
-    toolchain_smoke.cpp
-)
-target_link_libraries(
-    easylocal_toolchain_smoke
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.toolchain
-    COMMAND easylocal_toolchain_smoke
-)
-
 
 
 if(TARGET EasyLocal::ConfigTOML)
@@ -229,34 +218,23 @@ easylocal_add_test(
         EasyLocal::Core
 )
 
-add_executable(
-    easylocal_multi_tu
-    odr_main.cpp
-    odr_a.cpp
-    odr_b.cpp
-)
-target_link_libraries(
-    easylocal_multi_tu
-    PRIVATE
+# The library in two translation units of one program: no ODR violation.
+easylocal_add_test(
+    multi-tu
+    SOURCES
+        odr_main.cpp
+        odr_a.cpp
+        odr_b.cpp
+    LIBRARIES
         EasyLocal::Core
-)
-add_test(
-    NAME easylocal.multi-tu
-    COMMAND easylocal_multi_tu
 )
 
-add_executable(
-    easylocal_cost_expression_test
-    cost_expression.cpp
-)
-target_link_libraries(
-    easylocal_cost_expression_test
-    PRIVATE
+easylocal_add_test(
+    cost-expression
+    SOURCES
+        cost_expression.cpp
+    LIBRARIES
         EasyLocal::Core
-)
-add_test(
-    NAME easylocal.cost_expression
-    COMMAND easylocal_cost_expression_test
 )
 
 easylocal_add_test(
@@ -475,24 +453,15 @@ easylocal_add_test(
         EasyLocal::Core
 )
 
-add_executable(
-    easylocal_pfsp_test
-    pfsp.cpp
-)
-target_link_libraries(
-    easylocal_pfsp_test
-    PRIVATE
+easylocal_add_test(
+    pfsp
+    SOURCES
+        pfsp.cpp
+    LIBRARIES
         easylocal_pfsp_model
-)
-target_compile_definitions(
-    easylocal_pfsp_test
-    PRIVATE
+    DEFINITIONS
         EASYLOCAL_PFSP_SMALL_INSTANCE="${PROJECT_SOURCE_DIR}/examples/pfsp/instances/small.pfsp"
         EASYLOCAL_PFSP_MEDIUM_INSTANCE="${PROJECT_SOURCE_DIR}/examples/pfsp/instances/medium.pfsp"
-)
-add_test(
-    NAME easylocal.pfsp
-    COMMAND easylocal_pfsp_test
 )
 
 easylocal_add_test(
@@ -1058,27 +1027,41 @@ if(TARGET easylocal_tsp_sa)
     )
 endif()
 
-add_executable(easylocal_solver_test solver.cpp)
-target_link_libraries(easylocal_solver_test PRIVATE EasyLocal::Core)
-add_test(NAME easylocal.solver COMMAND easylocal_solver_test)
+easylocal_add_test(
+    solver
+    SOURCES
+        solver.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
 
-add_executable(easylocal_multi_start_solver_test multi_start_solver.cpp)
-target_link_libraries(easylocal_multi_start_solver_test PRIVATE EasyLocal::Core)
-add_test(NAME easylocal.multi-start-solver COMMAND easylocal_multi_start_solver_test)
+easylocal_add_test(
+    multi-start-solver
+    SOURCES
+        multi_start_solver.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
 
-add_executable(easylocal_cli_run_test cli_run.cpp)
-target_link_libraries(easylocal_cli_run_test PRIVATE EasyLocal::Core)
-target_compile_definitions(
-    easylocal_cli_run_test
-    PRIVATE EASYLOCAL_TUTORIAL_INSTANCE="${PROJECT_SOURCE_DIR}/examples/tutorial/five.tsp")
-add_test(NAME easylocal.cli-run COMMAND easylocal_cli_run_test)
+easylocal_add_test(
+    cli-run
+    SOURCES
+        cli_run.cpp
+    LIBRARIES
+        EasyLocal::Core
+    DEFINITIONS
+        EASYLOCAL_TUTORIAL_INSTANCE="${PROJECT_SOURCE_DIR}/examples/tutorial/five.tsp"
+)
 
-add_executable(easylocal_tuning_test tuning.cpp)
-target_link_libraries(easylocal_tuning_test PRIVATE EasyLocal::Core)
-target_compile_definitions(
-    easylocal_tuning_test
-    PRIVATE EASYLOCAL_TUTORIAL_INSTANCE="${PROJECT_SOURCE_DIR}/examples/tutorial/five.tsp")
-add_test(NAME easylocal.tuning COMMAND easylocal_tuning_test)
+easylocal_add_test(
+    tuning
+    SOURCES
+        tuning.cpp
+    LIBRARIES
+        EasyLocal::Core
+    DEFINITIONS
+        EASYLOCAL_TUTORIAL_INSTANCE="${PROJECT_SOURCE_DIR}/examples/tutorial/five.tsp"
+)
 
 # irace on the TSP example: the scenario it writes, checked and run briefly.
 # Skipped without R and its irace package, and on Windows, where the target
@@ -1095,7 +1078,8 @@ if(TARGET easylocal_tsp_sa AND NOT WIN32)
         easylocal.irace-smoke
         PROPERTIES
             LABELS "integration;irace"
-            SKIP_REGULAR_EXPRESSION "SKIPPED: irace is not available")
+            SKIP_REGULAR_EXPRESSION "SKIPPED: irace is not available"
+            TIMEOUT 600)
 endif()
 
 easylocal_add_test(
@@ -1113,9 +1097,13 @@ easylocal_add_test(
         EasyLocal::Core
 )
 
-add_executable(easylocal_run_target_test run_target.cpp)
-target_link_libraries(easylocal_run_target_test PRIVATE EasyLocal::Core)
-add_test(NAME easylocal.run-target COMMAND easylocal_run_target_test)
+easylocal_add_test(
+    run-target
+    SOURCES
+        run_target.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
 
 easylocal_add_test(
     app
@@ -1343,3 +1331,13 @@ if(Python3_Interpreter_FOUND)
             ${CMAKE_CURRENT_SOURCE_DIR}/eltr_decode.py
             $<TARGET_FILE:easylocal_eltr_fixture>)
 endif()
+
+# A test that hangs fails after two minutes, under its own name, rather than
+# at the CI job's time limit; the tests that take longer set their own.
+get_property(easylocal_tests DIRECTORY PROPERTY TESTS)
+foreach(easylocal_test IN LISTS easylocal_tests)
+    get_test_property(${easylocal_test} TIMEOUT easylocal_timeout)
+    if(NOT easylocal_timeout)
+        set_tests_properties(${easylocal_test} PROPERTIES TIMEOUT 120)
+    endif()
+endforeach()

@@ -1,5 +1,7 @@
-auto easylocal_odr_a() -> int;
-auto easylocal_odr_b() -> int;
+int easylocal_odr_a();
+int easylocal_odr_b();
+
+static_assert(__cplusplus >= 202302L, "EasyLocal needs C++23");
 
 int main()
 {
