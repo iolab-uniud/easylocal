@@ -1,31 +1,32 @@
 #pragma once
 
-// Cost expressions: the structure of a cost, written over the cost components
-// of a SolutionManager recipe.
-//
-//   solution_manager<SM>()
-//       | cost::hard_soft(
-//             cost::sum(component<A>(), component<B>() * 10),
-//             component<C>())
-//
-// A leaf is a cost component (component<C>(args...)); a node combines the
-// costs of its children:
-// - cost::sum(terms...)          Σ wᵢ · costᵢ over arithmetic costs, weights
-//                                configurable as `weights` (1 unless
-//                                cost::weighted(child, w), or its shorthand
-//                                child * w, gives one);
-// - cost::in_order(children...)  cost::lexicographic of the children's costs;
-// - cost::objectives(children...) cost::pareto of the children's costs,
-//                                compared by Pareto dominance;
-// - cost::hard_soft(hard, soft)  cost::hierarchical; TwoStage evaluates only
-//                                the components under `hard` in its first stage;
-// - cost::apply(f, children...)  f(costs...), any user function; f may also
-//                                define better / equivalent /
-//                                better_or_equivalent (at the root) and
-//                                configuration().
-//
-// The expression types below only record the structure; they are given meaning
-// by the SolutionManager recipe, which knows the components' value types.
+/// \file
+/// Cost expressions: the structure of a cost, written over the cost components
+/// of a SolutionManager recipe.
+///
+///   solution_manager<SM>()
+///       | cost::hard_soft(
+///             cost::sum(component<A>(), component<B>() * 10),
+///             component<C>())
+///
+/// A leaf is a cost component (component<C>(args...)); a node combines the
+/// costs of its children:
+/// - cost::sum(terms...)          Σ wᵢ · costᵢ over arithmetic costs, weights
+///                                configurable as `weights` (1 unless
+///                                cost::weighted(child, w), or its shorthand
+///                                child * w, gives one);
+/// - cost::in_order(children...)  cost::lexicographic of the children's costs;
+/// - cost::objectives(children...) cost::pareto of the children's costs,
+///                                compared by Pareto dominance;
+/// - cost::hard_soft(hard, soft)  cost::hierarchical; TwoStage evaluates only
+///                                the components under `hard` in its first stage;
+/// - cost::apply(f, children...)  f(costs...), any user function; f may also
+///                                define better / equivalent /
+///                                better_or_equivalent (at the root) and
+///                                configuration().
+///
+/// The expression types below only record the structure; they are given meaning
+/// by the SolutionManager recipe, which knows the components' value types.
 
 #include <easylocal/cost/concepts.hpp>
 
@@ -161,7 +162,7 @@ template<class T>
 inline constexpr bool is_expression_v =
     is_expression<std::remove_cvref_t<T>>::value;
 
-// child * w and w * child are cost::weighted(child, w).
+/// child * w and w * child are cost::weighted(child, w).
 template<class Child, arithmetic Weight>
     requires is_expression_v<Child>
 [[nodiscard]]

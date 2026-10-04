@@ -1,10 +1,11 @@
 #pragma once
 
-// Multi-objective cost ordered by Pareto dominance: a cost is better than
-// another when it is no worse in every objective and better in at least one.
-// Two costs better in different objectives are unordered, so a search with a
-// pareto cost keeps the non-dominated solutions it reaches (search_run's
-// archive). A pareto cost has no numeric delta.
+/// \file
+/// Multi-objective cost ordered by Pareto dominance: a cost is better than
+/// another when it is no worse in every objective and better in at least one.
+/// Two costs better in different objectives are unordered, so a search with a
+/// pareto cost keeps the non-dominated solutions it reaches (search_run's
+/// archive). A pareto cost has no numeric delta.
 
 #include <easylocal/cost/concepts.hpp>
 
@@ -33,9 +34,9 @@ public:
         return std::get<Index>(values_);
     }
 
-    // less: lhs dominates rhs; greater: rhs dominates lhs; equivalent: equal
-    // in every objective; unordered otherwise. So < is dominance and <= weak
-    // dominance.
+    /// less: lhs dominates rhs; greater: rhs dominates lhs; equivalent: equal
+    /// in every objective; unordered otherwise. So < is dominance and <= weak
+    /// dominance.
     [[nodiscard]]
     friend constexpr std::partial_ordering operator<=>(
         const pareto& lhs,

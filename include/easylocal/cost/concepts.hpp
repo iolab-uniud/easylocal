@@ -1,8 +1,9 @@
 #pragma once
 
-// The cost value contract. Algorithms that need a numeric difference between
-// two already-computed costs use cost::delta(candidate, current); operator- is
-// convenience syntax only and cost types may provide delta via ADL.
+/// \file
+/// The cost value contract. Algorithms that need a numeric difference between
+/// two already-computed costs use cost::delta(candidate, current); operator- is
+/// convenience syntax only and cost types may provide delta via ADL.
 
 #include <concepts>
 #include <type_traits>
@@ -30,10 +31,10 @@ concept has_delta =
         { delta(candidate, current) } -> std::convertible_to<long double>;
     };
 
-// The zero of a cost type: no violation, no penalty. It is Cost{} for types
-// that can be value-initialized (0 for arithmetic costs), the zero of every
-// level for lexicographic and hierarchical costs, and can be given for other
-// types by specializing zero_cost with a static value().
+/// The zero of a cost type: no violation, no penalty. It is Cost{} for types
+/// that can be value-initialized (0 for arithmetic costs), the zero of every
+/// level for lexicographic and hierarchical costs, and can be given for other
+/// types by specializing zero_cost with a static value().
 template<class Cost>
 struct zero_cost
 {

@@ -1,9 +1,10 @@
 #pragma once
 
-// Costs written as text, for targets given on the command line, in files or in
-// the TextUI, and written back in the same form (to_text): a number for an arithmetic
-// cost, [hard, soft] for a cost::hierarchical, [v1, v2, ...] for a cost::lexicographic
-// or a cost::pareto, nested as the types are (for example [0, [3, 1.5]]).
+/// \file
+/// Costs written as text, for targets given on the command line, in files or in
+/// the TextUI, and written back in the same form (to_text): a number for an arithmetic
+/// cost, [hard, soft] for a cost::hierarchical, [v1, v2, ...] for a cost::lexicographic
+/// or a cost::pareto, nested as the types are (for example [0, [3, 1.5]]).
 
 #include <easylocal/cost/concepts.hpp>
 #include <easylocal/cost/hierarchical.hpp>
@@ -98,13 +99,13 @@ inline constexpr bool text_readable_v<pareto<Values...>> =
 
 } // namespace detail
 
-// Costs that from_text reads: arithmetic ones, and hierarchical,
-// lexicographic and pareto costs of them. Others need the problem's read_cost.
+/// Costs that from_text reads: arithmetic ones, and hierarchical,
+/// lexicographic and pareto costs of them. Others need the problem's read_cost.
 template<class Cost>
 concept text_readable = detail::text_readable_v<std::remove_cv_t<Cost>>;
 
-// The cost written by text: throws std::invalid_argument, with the reason,
-// when the text does not describe a value of the type.
+/// The cost written by text: throws std::invalid_argument, with the reason,
+/// when the text does not describe a value of the type.
 template<text_readable Cost>
 [[nodiscard]]
 Cost from_text(std::string_view text)
@@ -158,8 +159,8 @@ Cost from_text(std::string_view text)
     }
 }
 
-// A cost in the text from_text reads back: numbers in their shortest exact
-// form, [hard, soft] and [v1, v2, ...] for structured costs.
+/// A cost in the text from_text reads back: numbers in their shortest exact
+/// form, [hard, soft] and [v1, v2, ...] for structured costs.
 template<text_readable Cost>
 [[nodiscard]]
 std::string to_text(const Cost& value)
