@@ -23,11 +23,15 @@ struct Initial
 {
 };
 
+/// The tag for a random initial solution, from `random_solution(rng)`.
 struct Random
 {
 };
 
+/// Starts from the SolutionManager's `initial_solution()`.
 inline constexpr Initial initial{};
+/// Starts from the SolutionManager's `random_solution(rng)`, with the solver's
+/// RNG.
 inline constexpr Random random{};
 
 /// Mode is the runtime-facing counterpart, suitable for CLI/configuration.
@@ -36,7 +40,10 @@ inline constexpr Random random{};
 /// implicit fallback from one initialization mode to another.
 enum class Mode
 {
+    /// From the SolutionManager's `initial_solution()`.
     initial,
+    /// From the SolutionManager's `random_solution(rng)`, with the solver's
+    /// RNG.
     random,
 };
 

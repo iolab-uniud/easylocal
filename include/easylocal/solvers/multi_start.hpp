@@ -20,10 +20,13 @@
 namespace easylocal::solvers
 {
 
+/// The parameters of MultiStart.
 struct MultiStartParameters
 {
+    /// The total number of runs, at least 1 (not the runs after the first one).
     std::size_t starts{1};
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -32,6 +35,7 @@ struct MultiStartParameters
                 "Independent runs; the best result is kept"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
@@ -41,11 +45,16 @@ struct MultiStartParameters
     }
 };
 
+/// The configuration of MultiStart: its parameters, the initialization and the
+/// seed of the RNG.
 template<class Initialization = initialization::Random>
 struct MultiStartConfig
 {
+    /// The parameters.
     MultiStartParameters parameters{};
+    /// How each initial solution is built: a tag or an initialization::Mode.
     Initialization initialization{initialization::random};
+    /// The seed of the solver's RNG.
     std::uint64_t seed{0};
 };
 
@@ -65,14 +74,22 @@ class MultiStart
         RNG>;
 
 public:
+    /// The runner it binds to each Input.
     using runner_type = RunnerType;
+    /// The random number generator it owns.
     using rng_type = RNG;
+    /// The Input of the runner.
     using input_type = typename runner_type::input_type;
+    /// The runner bound to an Input.
     using bound_runner_type = easylocal::detail::bound_runner_t<RunnerType>;
+    /// The solution of the runner.
     using solution_type = typename bound_runner_type::solution_type;
+    /// The cost of the runner.
     using cost_type = typename bound_runner_type::cost_type;
 
+    /// Whether the runner can build an initial solution (`initial_solution()`).
     using initialization_support::supports_initial;
+    /// Whether the runner can build a random solution (`random_solution(rng)`).
     using initialization_support::supports_random;
 
     /// initialization: initialization::initial or random, rejected at compile
@@ -94,6 +111,9 @@ public:
         validate_parameters();
     }
 
+    /// From a runner and a MultiStartConfig.
+    ///
+    /// Throws `std::invalid_argument` when the parameters are not valid.
     template<class Initialization>
         requires std::constructible_from<RNG, std::uint64_t>
     MultiStart(
@@ -107,12 +127,14 @@ public:
     {
     }
 
+    /// The RNG, which feeds initialization and runs.
     [[nodiscard]]
     RNG& rng() noexcept
     {
         return rng_;
     }
 
+    /// The RNG, which feeds initialization and runs.
     [[nodiscard]]
     const RNG& rng() const noexcept
     {
@@ -222,10 +244,13 @@ private:
     RNG rng_;
 };
 
+/// `MultiStart{runner, parameters, initialization, rng}` deduces the runner and
+/// RNG types.
 template<class RunnerType, class Initialization, class RNG>
 MultiStart(RunnerType, MultiStartParameters, Initialization, RNG)
     -> MultiStart<RunnerType, RNG>;
 
+/// `MultiStart{runner, config}` deduces the runner type, with the default RNG.
 template<class RunnerType, class Initialization>
 MultiStart(RunnerType, MultiStartConfig<Initialization>)
     -> MultiStart<RunnerType>;

@@ -16,10 +16,13 @@
 namespace easylocal::solvers
 {
 
+/// The configuration of LocalSearch: the initialization and the RNG seed.
 template<class Initialization = initialization::Random>
 struct LocalSearchConfig
 {
+    /// How the initial solution is built: a tag or an initialization::Mode.
     Initialization initialization{initialization::random};
+    /// The seed of the solver's RNG.
     std::uint64_t seed{0};
 };
 
@@ -44,13 +47,20 @@ class LocalSearch
         RNG>;
 
 public:
+    /// The runner it binds to each Input.
     using runner_type = RunnerType;
+    /// The random number generator it owns.
     using rng_type = RNG;
+    /// The Input of the runner.
     using input_type = typename runner_type::input_type;
+    /// The runner bound to an Input.
     using bound_runner_type = easylocal::detail::bound_runner_t<RunnerType>;
+    /// The solution of the runner.
     using solution_type = typename bound_runner_type::solution_type;
 
+    /// Whether the runner can build an initial solution (`initial_solution()`).
     using initialization_support::supports_initial;
+    /// Whether the runner can build a random solution (`random_solution(rng)`).
     using initialization_support::supports_random;
 
     /// initialization: initialization::initial or random, rejected at compile
@@ -65,6 +75,7 @@ public:
     {
     }
 
+    /// From a runner, an initialization, and a seed that constructs the RNG.
     template<class Initialization, class Seed>
         requires std::constructible_from<RNG, Seed>
         && easylocal::detail::
@@ -74,6 +85,7 @@ public:
     {
     }
 
+    /// From a runner and a LocalSearchConfig.
     template<class Initialization>
         requires std::constructible_from<RNG, std::uint64_t>
     LocalSearch(RunnerType runner, LocalSearchConfig<Initialization> config)
@@ -81,12 +93,14 @@ public:
     {
     }
 
+    /// The RNG, which feeds initialization and runs.
     [[nodiscard]]
     RNG& rng() noexcept
     {
         return rng_;
     }
 
+    /// The RNG, which feeds initialization and runs.
     [[nodiscard]]
     const RNG& rng() const noexcept
     {
@@ -127,10 +141,12 @@ private:
     RNG rng_;
 };
 
+/// `LocalSearch{runner, initialization, rng}` deduces the runner and RNG types.
 template<class RunnerType, class Initialization, class RNG>
 LocalSearch(RunnerType, Initialization, RNG)
     -> LocalSearch<RunnerType, RNG>;
 
+/// `LocalSearch{runner, config}` deduces the runner type, with the default RNG.
 template<class RunnerType, class Initialization>
 LocalSearch(RunnerType, LocalSearchConfig<Initialization>)
     -> LocalSearch<RunnerType>;

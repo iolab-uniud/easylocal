@@ -17,10 +17,14 @@
 namespace easylocal::solvers
 {
 
+/// The configuration of TwoStage: the initialization and the seed of the RNG.
 template<class Initialization = initialization::Random>
 struct TwoStageConfig
 {
+    /// How the initial solution of the first stage is built: a tag or an
+    /// initialization::Mode.
     Initialization initialization{initialization::random};
+    /// The seed of the solver's RNG.
     std::uint64_t seed{0};
 };
 
@@ -53,6 +57,13 @@ struct two_stage_first_bound<FirstRunner, false>
 
 } // namespace detail
 
+/// For hierarchical costs, a first runner on the hard cost until it reaches
+/// zero, then a second one on the full cost from its solution.
+///
+/// It takes one runner, used for both stages, or two; the first one is
+/// projected onto the hard cost with `with_hard_cost()`, and its
+/// SolutionManager builds the initial solution. Requires runners with the same
+/// Input and Solution, whose costs are hierarchical (`cost::hierarchical`).
 template<
     class FirstRunnerType,
     class SecondRunnerType,
@@ -67,8 +78,11 @@ class TwoStage
         RNG>;
 
 public:
+    /// The runner of the first stage, as given.
     using first_runner_type = FirstRunnerType;
+    /// The runner of the second stage.
     using second_runner_type = SecondRunnerType;
+    /// The random number generator it owns.
     using rng_type = RNG;
 
     static_assert(
@@ -80,20 +94,31 @@ public:
             typename second_runner_type::solution_manager_type>,
         "TwoStage requires a hierarchical cost on its second runner");
 
+    /// The first runner projected onto the hard cost, for the first stage.
     using hard_runner_type = decltype(
         std::declval<first_runner_type>().with_hard_cost());
+    /// The Input of the runners.
     using input_type = typename hard_runner_type::input_type;
+    /// The Input of the second runner, the same as input_type.
     using second_input_type = typename second_runner_type::input_type;
     static_assert(std::same_as<input_type, second_input_type>);
 
+    /// The first-stage runner, on the hard cost, bound to an Input.
     using bound_first_runner_type = easylocal::detail::bound_runner_t<hard_runner_type>;
+    /// The second runner bound to an Input.
     using bound_second_runner_type =
         easylocal::detail::bound_runner_t<second_runner_type>;
+    /// The solution of the runners.
     using solution_type = typename bound_first_runner_type::solution_type;
+    /// The solution of the second runner, the same as solution_type.
     using second_solution_type = typename bound_second_runner_type::solution_type;
     static_assert(std::same_as<solution_type, second_solution_type>);
 
+    /// Whether the first runner can build an initial solution
+    /// (`initial_solution()`).
     using initialization_support::supports_initial;
+    /// Whether the first runner can build a random solution
+    /// (`random_solution(rng)`).
     using initialization_support::supports_random;
 
     /// initialization: initialization::initial or random, rejected at compile
@@ -113,6 +138,7 @@ public:
     {
     }
 
+    /// From two runners and a TwoStageConfig.
     template<class Initialization>
         requires std::constructible_from<RNG, std::uint64_t>
     TwoStage(
@@ -140,18 +166,21 @@ public:
     {
     }
 
+    /// The RNG, which feeds initialization and runs.
     [[nodiscard]]
     RNG& rng() noexcept
     {
         return rng_;
     }
 
+    /// The RNG, which feeds initialization and runs.
     [[nodiscard]]
     const RNG& rng() const noexcept
     {
         return rng_;
     }
 
+    /// The hard cost, which the first stage drives to zero.
     using hard_cost_type = typename bound_first_runner_type::cost_type;
 
     /// Stage 1 runs on the hard cost until it reaches
@@ -230,14 +259,20 @@ private:
     RNG rng_;
 };
 
+/// `TwoStage{first, second, initialization, rng}` deduces the runner and RNG
+/// types.
 template<class FirstRunnerType, class SecondRunnerType, class Initialization, class RNG>
 TwoStage(FirstRunnerType, SecondRunnerType, Initialization, RNG)
     -> TwoStage<FirstRunnerType, SecondRunnerType, RNG>;
 
+/// `TwoStage{first, second, config}` deduces the runner types, with the default
+/// RNG.
 template<class FirstRunnerType, class SecondRunnerType, class Initialization>
 TwoStage(FirstRunnerType, SecondRunnerType, TwoStageConfig<Initialization>)
     -> TwoStage<FirstRunnerType, SecondRunnerType>;
 
+/// `TwoStage{runner, config}` uses the runner for both stages, with the default
+/// RNG.
 template<class RunnerType, class Initialization>
 TwoStage(RunnerType, TwoStageConfig<Initialization>)
     -> TwoStage<RunnerType, RunnerType>;
