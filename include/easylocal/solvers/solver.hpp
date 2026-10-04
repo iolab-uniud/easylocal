@@ -116,64 +116,107 @@ auto with_target(Target target, const Options&... options)
     }
 }
 
-// The deadline of a solve: its start plus the time limit of its options; none
-// without a limit.
-template<class... Options>
-[[nodiscard]]
-std::optional<std::chrono::steady_clock::time_point> solve_deadline(
-    const Options&... options)
+// What is left of a solve's limits: its deadline and its evaluations (none:
+// not bounded). A solve gives each run what is left, and counts what the run
+// used.
+struct solve_budget
 {
     std::optional<std::chrono::steady_clock::time_point> deadline;
-    ((options.time_limit
-             ? static_cast<void>(deadline = deadline_after(*options.time_limit))
-             : static_cast<void>(0)),
-        ...);
-    return deadline;
-}
+    std::optional<std::size_t> evaluations;
 
-// The earlier of two deadlines; none when neither is set.
-[[nodiscard]]
-inline std::optional<std::chrono::steady_clock::time_point> earliest(
-    const std::optional<std::chrono::steady_clock::time_point> first,
-    const std::optional<std::chrono::steady_clock::time_point> second)
-{
-    if (!first)
-        return second;
-    if (!second)
-        return first;
-    return std::min(*first, *second);
-}
-
-// Whether a deadline has passed.
-[[nodiscard]]
-inline bool time_is_up(
-    const std::optional<std::chrono::steady_clock::time_point> deadline)
-{
-    return deadline.has_value() && std::chrono::steady_clock::now() >= *deadline;
-}
-
-// The run options of a run within a solve: the solve's own (or none), with the
-// time left until `deadline` as their time limit.
-template<class... Options>
-[[nodiscard]]
-auto within_deadline(
-    const std::optional<std::chrono::steady_clock::time_point> deadline,
-    const Options&... options)
-{
-    auto timed = [&] {
-        if constexpr (sizeof...(Options) == 0)
-            return run_options<trace::null_tracer>{};
-        else
-            return (options, ...);
-    }();
-    if (deadline)
+    // The budget of a solve starting now, from its run options.
+    template<class... Options>
+    [[nodiscard]]
+    static solve_budget of(const Options&... options)
     {
-        timed.time_limit = std::max(
-            std::chrono::steady_clock::duration::zero(),
-            *deadline - std::chrono::steady_clock::now());
+        solve_budget budget;
+        (budget.take(options), ...);
+        return budget;
     }
-    return timed;
-}
+
+    // This budget, at most `limits`: the earlier deadline, the fewer
+    // evaluations.
+    [[nodiscard]]
+    solve_budget within(const solve_budget& limits) const
+    {
+        solve_budget tighter = *this;
+        if (limits.deadline
+            && (!tighter.deadline || *limits.deadline < *tighter.deadline))
+            tighter.deadline = limits.deadline;
+        if (limits.evaluations
+            && (!tighter.evaluations || *limits.evaluations < *tighter.evaluations))
+        {
+            tighter.evaluations = limits.evaluations;
+        }
+        return tighter;
+    }
+
+    [[nodiscard]]
+    bool time_is_up() const
+    {
+        return deadline.has_value() && std::chrono::steady_clock::now() >= *deadline;
+    }
+
+    [[nodiscard]]
+    bool evaluations_spent() const noexcept
+    {
+        return evaluations.has_value() && *evaluations == 0;
+    }
+
+    // Why the budget is spent, if it is.
+    [[nodiscard]]
+    std::optional<termination_reason> spent() const
+    {
+        if (evaluations_spent())
+            return termination_reason::evaluation_budget_exhausted;
+        if (time_is_up())
+            return termination_reason::time_limit_reached;
+        return std::nullopt;
+    }
+
+    // Counts the evaluations a run used, for results that report them.
+    template<class Result>
+    void consume(const Result& result) noexcept
+    {
+        if constexpr (requires { std::size_t{result.evaluations}; })
+        {
+            if (evaluations)
+                *evaluations -= std::min(*evaluations, std::size_t{result.evaluations});
+        }
+    }
+
+    // The run options of a run within the budget: the solve's own (or none),
+    // with the time and the evaluations left as their limits.
+    template<class... Options>
+    [[nodiscard]]
+    auto options_for_run(const Options&... options) const
+    {
+        auto limited = [&] {
+            if constexpr (sizeof...(Options) == 0)
+                return run_options<trace::null_tracer>{};
+            else
+                return (options, ...);
+        }();
+        if (deadline)
+        {
+            limited.time_limit = std::max(
+                std::chrono::steady_clock::duration::zero(),
+                *deadline - std::chrono::steady_clock::now());
+        }
+        limited.evaluation_budget = evaluations;
+        return limited;
+    }
+
+private:
+    template<class Options>
+    void take(const Options& options)
+    {
+        if (options.time_limit)
+            deadline = deadline_after(*options.time_limit);
+        if (options.evaluation_budget)
+            evaluations = *options.evaluation_budget;
+    }
+};
 
 // The effort of several runs, for results that report it (search_result
 // does; a custom result may not).

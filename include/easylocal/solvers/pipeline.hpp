@@ -55,6 +55,9 @@ struct StageParameters
     /// The seconds the stage may run, all its attempts together; inf: no
     /// limit of its own (the solve's still applies).
     double timeout{std::numeric_limits<double>::infinity()};
+    /// The evaluations the stage may make, all its attempts together;
+    /// unlimited: no budget of its own (the solve's still applies).
+    limit max_evaluations{unlimited};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -66,7 +69,10 @@ struct StageParameters
                 config::range(1, easylocal::unlimited)),
             config::field<"timeout", &StageParameters::timeout>(
                 "Seconds the stage may run, its attempts together; inf: no limit",
-                config::range(0.0, easylocal::unlimited)));
+                config::range(0.0, easylocal::unlimited)),
+            config::field<"max_evaluations", &StageParameters::max_evaluations>(
+                "Evaluations the stage may make, its attempts together",
+                config::range(0, easylocal::unlimited)));
     }
 
     /// Whether the parameters are valid, and why not.
@@ -200,15 +206,37 @@ public:
         return pipeline_stage{*this}.with_timeout(seconds);
     }
 
-    /// The deadline of the stage started now: none without a timeout of its
-    /// own.
+    /// The same stage, stopped once it has made `count` evaluations, all its
+    /// attempts together.
     [[nodiscard]]
-    std::optional<std::chrono::steady_clock::time_point> deadline() const
+    pipeline_stage with_max_evaluations(const std::size_t count) &&
     {
-        if (!std::isfinite(parameters_.timeout))
-            return std::nullopt;
-        return easylocal::detail::deadline_after(
-            easylocal::detail::steady_time_limit(parameters_.timeout));
+        parameters_.max_evaluations = count;
+        return std::move(*this);
+    }
+
+    /// The same stage, stopped once it has made `count` evaluations, all its
+    /// attempts together.
+    [[nodiscard]]
+    pipeline_stage with_max_evaluations(const std::size_t count) const&
+    {
+        return pipeline_stage{*this}.with_max_evaluations(count);
+    }
+
+    /// The limits of the stage started now: its deadline and its evaluations,
+    /// none when it has no limit of its own.
+    [[nodiscard]]
+    easylocal::detail::solve_budget limits() const
+    {
+        easylocal::detail::solve_budget budget;
+        if (std::isfinite(parameters_.timeout))
+        {
+            budget.deadline = easylocal::detail::deadline_after(
+                easylocal::detail::steady_time_limit(parameters_.timeout));
+        }
+        if (!parameters_.max_evaluations.is_unlimited())
+            budget.evaluations = parameters_.max_evaluations;
+        return budget;
     }
 
     /// The same stage on the hard cost only, until it is zero: a feasible
@@ -384,19 +412,25 @@ auto operator&(pipeline_stage<Runner> stage, stage_until_feasible)
     return std::move(stage).until_feasible();
 }
 
-/// The stage with a time limit: `stage & timeout(10s)`, as
-/// `stage.with_timeout(10s)`. The options given carry only the time limit.
+/// The stage with a time limit or an evaluation budget: `stage & timeout(10s)`,
+/// as `stage.with_timeout(10s)`, and `stage & max_evaluations(5000)`, as
+/// `stage.with_max_evaluations(5000)`. The options given carry only limits.
 template<class Runner>
 [[nodiscard]]
 pipeline_stage<Runner> operator&(
     pipeline_stage<Runner> stage,
     const run_options<trace::null_tracer>& options)
 {
-    if (!options.time_limit)
-        return stage;
-    return std::move(stage).with_timeout(*options.time_limit);
+    if (options.time_limit)
+        stage = std::move(stage).with_timeout(*options.time_limit);
+    if (options.evaluation_budget)
+        stage = std::move(stage).with_max_evaluations(*options.evaluation_budget);
+    return stage;
 }
 
+/// The evaluation budget of a run, `max_evaluations(n)`, here for a stage:
+/// `stage & max_evaluations(5000)`.
+using easylocal::max_evaluations;
 /// The time limit of a run, `timeout(10s)` or `timeout(2.5)` seconds, here for
 /// a stage: `stage & timeout(10s)`.
 using easylocal::timeout;
@@ -443,11 +477,14 @@ template<class Tracer, class Target>
 [[nodiscard]]
 run_options<Tracer> without_target(const run_options<Tracer, Target>& options) noexcept
 {
+    // Every option but the target: the time limit and the evaluation budget
+    // apply to every stage.
     return {
         .control = options.control,
         .tracer = options.tracer,
         .target = std::nullopt,
         .time_limit = options.time_limit,
+        .evaluation_budget = options.evaluation_budget,
     };
 }
 
@@ -789,14 +826,15 @@ private:
         std::vector<stage_report> reports;
         reports.reserve(stage_count);
         easylocal::detail::search_effort effort;
-        // The solve's time limit bounds all the stages together.
-        const auto deadline = easylocal::detail::solve_deadline(options...);
+        // The solve's time limit and evaluation budget bound all the stages
+        // together.
+        auto budget = easylocal::detail::solve_budget::of(options...);
         auto last = run_from<0>(
             input,
             std::nullopt,
             first_start,
             rng,
-            deadline,
+            budget,
             reports,
             effort,
             options...);
@@ -815,7 +853,7 @@ private:
         std::optional<solution_type> incoming,
         const FirstStart& first_start,
         Rng& rng,
-        const std::optional<std::chrono::steady_clock::time_point> deadline,
+        easylocal::detail::solve_budget& budget,
         std::vector<stage_report>& reports,
         easylocal::detail::search_effort& effort,
         const Options&... options) const
@@ -826,7 +864,7 @@ private:
             incoming,
             first_start,
             rng,
-            deadline,
+            budget,
             reports,
             effort,
             options...);
@@ -838,7 +876,7 @@ private:
                 std::optional<solution_type>{std::move(result.solution)},
                 first_start,
                 rng,
-                deadline,
+                budget,
                 reports,
                 effort,
                 options...);
@@ -857,15 +895,14 @@ private:
         const std::optional<solution_type>& incoming,
         const FirstStart& first_start,
         Rng& rng,
-        const std::optional<std::chrono::steady_clock::time_point> deadline,
+        easylocal::detail::solve_budget& budget,
         std::vector<stage_report>& reports,
         easylocal::detail::search_effort& effort,
         const Options&... options) const
     {
         const auto& stage = std::get<Index>(stages_);
-        // The earlier of the solve's deadline and the stage's own.
-        const auto stage_deadline =
-            easylocal::detail::earliest(deadline, stage.deadline());
+        // What is left of the solve's budget, at most the stage's own limits.
+        auto stage_budget = budget.within(stage.limits());
         const auto start = [&]() -> solution_type {
             if constexpr (Index == 0)
                 return first_start(bound_runner);
@@ -874,19 +911,21 @@ private:
         };
 
         easylocal::detail::search_effort stage_effort;
-        auto best =
-            run_once<Index>(bound_runner, start(), rng, stage_deadline, options...);
+        auto best = run_once<Index>(bound_runner, start(), rng, stage_budget, options...);
         stage_effort.add(best);
+        stage_budget.consume(best);
+        budget.consume(best);
         bool ended = detail::ends_stage(bound_runner, best, stage.target());
         std::size_t attempts = 1;
         for (; attempts < stage.parameters().attempts && !ended
-            && !easylocal::detail::stop_requested(options...)
-            && !easylocal::detail::time_is_up(stage_deadline);
+            && !easylocal::detail::stop_requested(options...) && !stage_budget.spent();
             ++attempts)
         {
             auto candidate =
-                run_once<Index>(bound_runner, start(), rng, stage_deadline, options...);
+                run_once<Index>(bound_runner, start(), rng, stage_budget, options...);
             stage_effort.add(candidate);
+            stage_budget.consume(candidate);
+            budget.consume(candidate);
             ended = detail::ends_stage(bound_runner, candidate, stage.target());
             if (bound_runner.better(candidate.cost, best.cost))
                 best = std::move(candidate);
@@ -908,20 +947,20 @@ private:
         return best;
     }
 
-    // One run of the stage at Index, with the time left until the stage's
-    // deadline: its target if it has one, the solve's target for the last
-    // stage, none otherwise.
+    // One run of the stage at Index, with what is left of the stage's budget:
+    // its target if it has one, the solve's target for the last stage, none
+    // otherwise.
     template<std::size_t Index, class BoundRunner, class Rng, class... Options>
     [[nodiscard]]
     auto run_once(
         BoundRunner& bound_runner,
         solution_type solution,
         Rng& rng,
-        const std::optional<std::chrono::steady_clock::time_point> deadline,
+        const easylocal::detail::solve_budget& budget,
         const Options&... options) const
     {
         const auto& stage = std::get<Index>(stages_);
-        const auto timed = easylocal::detail::within_deadline(deadline, options...);
+        const auto timed = budget.options_for_run(options...);
         if (stage.target().has_value())
         {
             return easylocal::detail::run_with_solver_rng(

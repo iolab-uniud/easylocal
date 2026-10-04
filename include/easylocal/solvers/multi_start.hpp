@@ -172,10 +172,12 @@ public:
                  }
     {
         auto bound_runner = runner_.bind(input);
-        // The solve's time limit bounds all the starts together.
-        const auto deadline = easylocal::detail::solve_deadline(options...);
+        // The solve's time limit and evaluation budget bound all the starts
+        // together.
+        auto budget = easylocal::detail::solve_budget::of(options...);
 
-        auto best = run_once(bound_runner, deadline, options...);
+        auto best = run_once(bound_runner, budget, options...);
+        budget.consume(best);
         auto termination = ended_by(best);
         easylocal::detail::search_effort effort;
         effort.add(best);
@@ -183,12 +185,13 @@ public:
              start < parameters_.starts && !termination.has_value();
              ++start)
         {
-            if (easylocal::detail::time_is_up(deadline))
+            if (const auto spent = budget.spent())
             {
-                termination = termination_reason::time_limit_reached;
+                termination = spent;
                 break;
             }
-            auto candidate = run_once(bound_runner, deadline, options...);
+            auto candidate = run_once(bound_runner, budget, options...);
+            budget.consume(candidate);
             termination = ended_by(candidate);
             effort.add(candidate);
             if (bound_runner.better(candidate.cost, best.cost))
@@ -224,19 +227,19 @@ private:
         }
     }
 
-    // One start, with the time left until the solve's deadline.
+    // One start, with what is left of the solve's time and evaluations.
     template<class... Options>
     [[nodiscard]]
     auto run_once(
         bound_runner_type& bound_runner,
-        const std::optional<std::chrono::steady_clock::time_point> deadline,
+        const easylocal::detail::solve_budget& budget,
         const Options&... options)
     {
         return easylocal::detail::run_with_solver_rng(
             bound_runner,
             this->make_initial_solution(bound_runner, rng_),
             rng_,
-            easylocal::detail::within_deadline(deadline, options...));
+            budget.options_for_run(options...));
     }
 
     // Why a start ends the whole solve, if it does.

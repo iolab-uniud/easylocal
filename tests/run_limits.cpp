@@ -331,5 +331,35 @@ int main()
         std::vector<el::config::text_override>{{"second.timeout", "-1"}});
     ok &= expect(!invalid, "a negative stage time limit is rejected");
 
+    // A solve's evaluation budget is shared by its runs: MultiStart's starts
+    // and a pipeline's stages together make at most that many.
+    const auto shared = restarts.solve(instance, el::max_evaluations(25));
+    ok &= expect(
+        shared.evaluations == 25
+            && shared.termination == el::termination_reason::evaluation_budget_exhausted,
+        "a MultiStart shares the solve's evaluation budget");
+    auto budgeted_pipeline = solvers::pipeline(
+        solvers::stage("first", runner) & solvers::max_evaluations(10),
+        solvers::stage("second", runner));
+    const auto budgeted_stages =
+        budgeted_pipeline.initialization(el::initialization::initial)
+            .solve(instance, el::max_evaluations(40));
+    ok &= expect(
+        budgeted_stages.stages[0].evaluations == 10
+            && budgeted_stages.stages[1].evaluations == 30
+            && budgeted_stages.evaluations == 40,
+        "a stage's own budget ends it, and the next one has what is left");
+    ok &= expect(
+        solvers::stage("s", runner).with_max_evaluations(7).parameters().max_evaluations
+            == 7,
+        "with_max_evaluations sets the stage's budget");
+    auto budget_parameters = budgeted_pipeline.configuration();
+    const auto budget_set = el::config::apply_overrides(
+        budget_parameters,
+        std::vector<el::config::text_override>{{"second.max_evaluations", "5"}});
+    ok &= expect(
+        budget_set && budgeted_pipeline.stage<1>().parameters().max_evaluations == 5,
+        "a stage's budget is set through the parameters");
+
     return ok ? 0 : 1;
 }
