@@ -451,6 +451,12 @@ class app_builder : public app_input_type<SMSpec>
         "app graph specifications and runner registrations must be copy constructible");
 
 public:
+    // Whether the app, with Spec as its solution manager recipe, can be bound
+    // and run: a solution manager, a neighborhood and a runner at least.
+    template<class Spec>
+    static constexpr bool complete = !std::same_as<Spec, unconfigured_t>
+        && !std::same_as<NHESpec, unconfigured_t> && (sizeof...(Registrations) > 0);
+
     static constexpr bool has_solution_manager =
         !std::same_as<SMSpec, unconfigured_t>;
     static constexpr bool has_neighborhood =
@@ -726,9 +732,7 @@ public:
     }
 
     template<class Spec = SMSpec>
-        requires(!std::same_as<Spec, unconfigured_t>)
-        && (!std::same_as<NHESpec, unconfigured_t>) && (sizeof...(Registrations) > 0)
-        && Spec::template
+        requires complete<Spec> && Spec::template
     constructible_from<const typename service_t<Spec>::input_type>&& NHESpec::
         template constructible_from<service_t<Spec>> [[nodiscard]]
         auto bind(const typename service_t<Spec>::input_type& input) const
@@ -744,13 +748,11 @@ public:
     // A bound app stores a reference to its Input. Reject temporaries at the
     // boundary instead of permitting a bound app with a dangling reference.
     template<class Spec = SMSpec>
-        requires(!std::same_as<Spec, unconfigured_t>)
-        && (!std::same_as<NHESpec, unconfigured_t>) && (sizeof...(Registrations) > 0)
+        requires complete<Spec>
     auto bind(typename service_t<Spec>::input_type&&) const = delete;
 
     template<class Spec = SMSpec>
-        requires(!std::same_as<Spec, unconfigured_t>)
-        && (!std::same_as<NHESpec, unconfigured_t>) && (sizeof...(Registrations) > 0)
+        requires complete<Spec>
     auto bind(const typename service_t<Spec>::input_type&&) const = delete;
 
     // Execute one runner against a freshly bound app.  The app graph and
@@ -760,9 +762,7 @@ public:
     // therefore schedule independent runs without making bound_app itself
     // thread-safe.
     template<class Algorithm, class Spec = SMSpec, class... RunArgs>
-        requires (!std::same_as<Spec, unconfigured_t>) &&
-                 (!std::same_as<NHESpec, unconfigured_t>) &&
-                 (sizeof...(Registrations) > 0)
+        requires complete<Spec>
     [[nodiscard]]
     auto run(
         const typename service_t<Spec>::input_type& input,
@@ -776,9 +776,7 @@ public:
     }
 
     template<std::size_t Index, class Spec = SMSpec, class... RunArgs>
-        requires (!std::same_as<Spec, unconfigured_t>) &&
-                 (!std::same_as<NHESpec, unconfigured_t>) &&
-                 (Index < sizeof...(Registrations))
+        requires complete<Spec> && (Index < sizeof...(Registrations))
     [[nodiscard]]
     auto run_at(
         const typename service_t<Spec>::input_type& input,
@@ -798,9 +796,7 @@ public:
         std::uniform_random_bit_generator RNG,
         class Spec = SMSpec,
         class... Options>
-        requires (!std::same_as<Spec, unconfigured_t>) &&
-                 (!std::same_as<NHESpec, unconfigured_t>) &&
-                 (Index < sizeof...(Registrations))
+        requires complete<Spec> && (Index < sizeof...(Registrations))
     [[nodiscard]]
     auto run_at_with_rng(
         const typename service_t<Spec>::input_type& input,
@@ -821,8 +817,7 @@ public:
     // with(control, tracer). Empty when nothing has that name. This is how tools
     // run the runner a user picks.
     template<std::uniform_random_bit_generator RNG, class Spec = SMSpec, class... Options>
-        requires(!std::same_as<Spec, unconfigured_t>)
-        && (!std::same_as<NHESpec, unconfigured_t>) && (sizeof...(Registrations) > 0)
+        requires complete<Spec>
     [[nodiscard]]
     auto run(
         const std::string_view name,
