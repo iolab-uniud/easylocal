@@ -1326,9 +1326,11 @@ private:
         }
         if (parameters_visible_)
             return false;
-        if (event == Event::Character('?') || event == Event::h || event == Event::H)
+        const bool help_key =
+            event == Event::Character('?') || event == Event::h || event == Event::H;
+        if (help_visible_ && help_key)
         {
-            help_visible_ = !help_visible_;
+            help_visible_ = false;
             return true;
         }
         if (browser_visible_ || help_visible_ || diagnostic_visible_ || progress_visible_)
@@ -1337,10 +1339,17 @@ private:
         if (input_visible_ || solution_visible_)
             return false;
 
-        const bool editing_path = (seed_input_ && seed_input_->Focused())
+        const bool editing_text = (seed_input_ && seed_input_->Focused())
             || (target_input_ && target_input_->Focused())
             || (timeout_input_ && timeout_input_->Focused())
             || (evaluations_input_ && evaluations_input_->Focused());
+
+        // In a text field, ? and h are characters of the text.
+        if (help_key && !editing_text)
+        {
+            help_visible_ = true;
+            return true;
+        }
 
         if (event == Event::F1)
         {
@@ -1368,7 +1377,7 @@ private:
             return true;
         }
 
-        if (editing_path)
+        if (editing_text)
             return false;
 
         if (event == Event::q || event == Event::Q)
@@ -2419,6 +2428,9 @@ private:
         }
         catch (const std::exception& error)
         {
+            // No thread will complete the promise: the next run must not wait
+            // for it.
+            run_future_ = {};
             progress_visible_ = false;
             progress_ = {};
             run_progress_state_.reset();
@@ -2426,6 +2438,7 @@ private:
         }
         catch (...)
         {
+            run_future_ = {};
             progress_visible_ = false;
             progress_ = {};
             run_progress_state_.reset();
