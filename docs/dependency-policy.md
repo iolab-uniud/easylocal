@@ -57,6 +57,21 @@ REST first tries `find_package(Crow 1.3 CONFIG)` and, when explicitly allowed to
 fetch dependencies, uses pinned Crow `v1.3.3` plus standalone Asio `1.38.2`. All
 fallbacks require `EASYLOCAL_FETCH_DEPENDENCIES=ON`.
 
+## CMake options
+
+| Option | Default | Effect |
+| --- | --- | --- |
+| `EASYLOCAL_BUILD_EXAMPLES` | `ON` at the top level | builds the example programs |
+| `EASYLOCAL_BUILD_TESTS` | `ON` at the top level | builds the test suite |
+| `EASYLOCAL_STRICT_WARNINGS` | `ON` at the top level | compiles the tests and examples with `-Wall -Wextra -Wpedantic` (`/W4 /permissive-` with MSVC) |
+| `EASYLOCAL_WARNINGS_AS_ERRORS` | `OFF` | makes those warnings errors (the presets set it) |
+| `EASYLOCAL_ENABLE_COVERAGE` | `OFF` | instruments the tests and examples for coverage (GCC and Clang) |
+| `EASYLOCAL_ENABLE_CONFIG_TOML`, `EASYLOCAL_ENABLE_TUI`, `EASYLOCAL_ENABLE_REST` | `OFF` | build the optional components |
+| `EASYLOCAL_FETCH_DEPENDENCIES` | `OFF` | lets a component fetch its pinned dependency when it is not installed |
+
+The warning and coverage options apply only to EasyLocal's own tests and
+examples, never to a project that consumes the headers.
+
 ## Installation and consumers
 
 The installed package supports component-aware discovery. The dependency-free

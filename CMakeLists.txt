@@ -125,7 +125,7 @@ option(
 # targets in the calling directory; consumers of the header-only library are
 # never affected. Coverage of the headers comes from the translation units
 # that instantiate them.
-function(easylocal_enable_strict_warnings)
+function(easylocal_configure_own_targets)
     if(EASYLOCAL_ENABLE_COVERAGE AND NOT MSVC)
         add_compile_options(--coverage -O0)
         add_link_options(--coverage)

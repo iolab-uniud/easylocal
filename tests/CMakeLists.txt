@@ -1,4 +1,4 @@
-easylocal_enable_strict_warnings()
+easylocal_configure_own_targets()
 
 # The tests check with assert(): keep it active in every configuration, so a
 # Release build still verifies something.

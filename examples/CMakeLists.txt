@@ -1,4 +1,4 @@
-easylocal_enable_strict_warnings()
+easylocal_configure_own_targets()
 
 add_subdirectory(quickstart)
 add_subdirectory(tutorial)
