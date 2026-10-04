@@ -125,6 +125,9 @@ inline bool block_has_direct_override(
     for (const auto& candidate : overrides)
     {
         const std::string_view path{candidate.path};
+        // A field outside its domain, which the batch overrides.
+        if (path == block_path)
+            return true;
         // A block at the root of the set: its fields are the paths without a dot.
         if (block_path.empty())
         {

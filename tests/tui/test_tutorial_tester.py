@@ -77,7 +77,7 @@ def test_runner_parameters_are_checked_and_kept(tui):
     tui.press(TAB, TAB, *[BACKSPACE] * 4)
     tui.type("2")
     tui.press(ENTER)
-    tui.expect("cooling_rate must be finite and in the open interval (0, 1)")
+    tui.expect("cooling_rate: expected a value in (0, 1), got 2")
     tui.expect_absent("Runner executing")
 
     tui.press(BACKSPACE)

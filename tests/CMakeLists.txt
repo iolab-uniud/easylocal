@@ -535,6 +535,14 @@ easylocal_add_test(
         EasyLocal::Core
 )
 
+easylocal_add_test(
+    parameter-domains
+    SOURCES
+        parameter_domains.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
+
 
 easylocal_add_test(
     configuration-overrides
@@ -818,6 +826,12 @@ easylocal_add_compile_failure_test(
     duplicate_parameter_field_name.cpp
     "parameter fields must have unique names within a block"
     "duplicate"
+)
+easylocal_add_compile_failure_test(
+    parameter-domain-mismatch
+    parameter_domain_mismatch.cpp
+    "the domain does not fit the field"
+    "policy"
 )
 
 # The code of docs/quick-start.md and docs/tutorial is built and run here, so

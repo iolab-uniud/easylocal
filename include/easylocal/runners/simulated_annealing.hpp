@@ -223,7 +223,8 @@ struct ClassicParameters
             config::field<"final_temperature", &ClassicParameters::final_temperature>(
                 "Final annealing temperature"),
             config::field<"cooling_rate", &ClassicParameters::cooling_rate>(
-                "Multiplicative cooling factor"),
+                "Multiplicative cooling factor",
+                config::range(0.0, 1.0).open()),
             config::field<
                 "samples_per_temperature",
                 &ClassicParameters::samples_per_temperature>(
@@ -232,13 +233,16 @@ struct ClassicParameters
                 "Moves sampled to estimate the initial temperature (0: none)"),
             config::field<"initial_acceptance", &ClassicParameters::initial_acceptance>(
                 "Acceptance probability of an average worsening move at the "
-                "estimated initial temperature"));
+                "estimated initial temperature",
+                config::range(0.0, 1.0).open()));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        if (const auto domains = config::check_domains(*this); !domains)
+            return domains;
         const auto calibration = detail::validate_calibration(initial_acceptance);
         if (!calibration)
             return calibration;
@@ -369,7 +373,8 @@ struct FixedLengthParameters
             config::field<"final_temperature", &FixedLengthParameters::final_temperature>(
                 "Final annealing temperature"),
             config::field<"cooling_rate", &FixedLengthParameters::cooling_rate>(
-                "Multiplicative cooling factor"),
+                "Multiplicative cooling factor",
+                config::range(0.0, 1.0).open()),
             config::field<"max_iterations", &FixedLengthParameters::max_iterations>(
                 "Maximum number of annealing iterations"),
             config::field<
@@ -380,13 +385,16 @@ struct FixedLengthParameters
                 "initial_acceptance",
                 &FixedLengthParameters::initial_acceptance>(
                 "Acceptance probability of an average worsening move at the "
-                "estimated initial temperature"));
+                "estimated initial temperature",
+                config::range(0.0, 1.0).open()));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        if (const auto domains = config::check_domains(*this); !domains)
+            return domains;
         const auto calibration = detail::validate_calibration(initial_acceptance);
         if (!calibration)
             return calibration;
@@ -540,22 +548,27 @@ struct CutoffParameters
             config::field<"final_temperature", &CutoffParameters::final_temperature>(
                 "Final annealing temperature"),
             config::field<"cooling_rate", &CutoffParameters::cooling_rate>(
-                "Multiplicative cooling factor"),
+                "Multiplicative cooling factor",
+                config::range(0.0, 1.0).open()),
             config::field<"max_iterations", &CutoffParameters::max_iterations>(
                 "Maximum number of annealing iterations"),
             config::field<"accepted_ratio", &CutoffParameters::accepted_ratio>(
-                "Fraction of accepted proposals that triggers cooling"),
+                "Fraction of accepted proposals that triggers cooling",
+                config::range(0.0, 1.0).open_low()),
             config::field<"calibration_samples", &CutoffParameters::calibration_samples>(
                 "Moves sampled to estimate the initial temperature (0: none)"),
             config::field<"initial_acceptance", &CutoffParameters::initial_acceptance>(
                 "Acceptance probability of an average worsening move at the "
-                "estimated initial temperature"));
+                "estimated initial temperature",
+                config::range(0.0, 1.0).open()));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        if (const auto domains = config::check_domains(*this); !domains)
+            return domains;
         const auto calibration = detail::validate_calibration(initial_acceptance);
         if (!calibration)
             return calibration;
@@ -870,7 +883,8 @@ struct FixedTemperatureParameters
             config::field<"max_iterations", &FixedTemperatureParameters::max_iterations>(
                 "Maximum number of annealing iterations"),
             config::field<"accepted_ratio", &FixedTemperatureParameters::accepted_ratio>(
-                "Fraction of max_iterations accepted proposals that ends the search"),
+                "Fraction of max_iterations accepted proposals that ends the search",
+                config::range(0.0, 1.0).open_low()),
             config::field<
                 "calibration_samples",
                 &FixedTemperatureParameters::calibration_samples>(
@@ -879,13 +893,16 @@ struct FixedTemperatureParameters
                 "initial_acceptance",
                 &FixedTemperatureParameters::initial_acceptance>(
                 "Acceptance probability of an average worsening move at the "
-                "estimated initial temperature"));
+                "estimated initial temperature",
+                config::range(0.0, 1.0).open()));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        if (const auto domains = config::check_domains(*this); !domains)
+            return domains;
         const auto calibration = detail::validate_calibration(initial_acceptance);
         if (!calibration)
             return calibration;
@@ -1032,7 +1049,8 @@ struct TimeBasedParameters
             config::field<"final_temperature", &TimeBasedParameters::final_temperature>(
                 "Final annealing temperature"),
             config::field<"cooling_rate", &TimeBasedParameters::cooling_rate>(
-                "Multiplicative cooling factor"),
+                "Multiplicative cooling factor",
+                config::range(0.0, 1.0).open()),
             config::field<
                 "allowed_running_time",
                 &TimeBasedParameters::allowed_running_time>(
@@ -1047,13 +1065,16 @@ struct TimeBasedParameters
                 "Moves sampled to estimate the initial temperature (0: none)"),
             config::field<"initial_acceptance", &TimeBasedParameters::initial_acceptance>(
                 "Acceptance probability of an average worsening move at the "
-                "estimated initial temperature"));
+                "estimated initial temperature",
+                config::range(0.0, 1.0).open()));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        if (const auto domains = config::check_domains(*this); !domains)
+            return domains;
         const auto calibration = detail::validate_calibration(initial_acceptance);
         if (!calibration)
             return calibration;

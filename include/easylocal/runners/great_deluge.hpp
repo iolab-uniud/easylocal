@@ -45,7 +45,8 @@ struct GreatDelugeParameters
             config::field<"min_level", &GreatDelugeParameters::min_level>(
                 "Final water level, as a factor of the best cost"),
             config::field<"level_rate", &GreatDelugeParameters::level_rate>(
-                "Multiplicative decrease of the water level"),
+                "Multiplicative decrease of the water level",
+                config::range(0.0, 1.0).open()),
             config::field<"neighbors_sampled", &GreatDelugeParameters::neighbors_sampled>(
                 "Number of proposals at each water level"),
             config::field<"max_evaluations", &GreatDelugeParameters::max_evaluations>(
@@ -56,6 +57,8 @@ struct GreatDelugeParameters
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
+        if (const auto domains = config::check_domains(*this); !domains)
+            return domains;
         if (!std::isfinite(initial_level) || initial_level <= 0.0)
         {
             return config::validation_result::failure(

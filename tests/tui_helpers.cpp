@@ -269,7 +269,7 @@ int main()
         const auto rejected = set.apply(changes);
         assert(!rejected);
         assert(parameter_errors(rejected, "runners.sa.")
-                .starts_with("temperature: cooling_rate"));
+                .starts_with("temperature.cooling_rate: expected a value in (0, 1)"));
         assert(parameters.temperature.cooling_rate == 0.95);
 
         cooling.text = "abc";

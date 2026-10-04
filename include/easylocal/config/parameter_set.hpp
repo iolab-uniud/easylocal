@@ -8,6 +8,7 @@
 /// It lists, validates and changes them transactionally (all overrides or none)
 /// on the objects it refers to.
 
+#include <easylocal/config/domain.hpp>
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/parameters.hpp>
 
@@ -27,7 +28,8 @@ namespace easylocal::config
 {
 
 /// One parameter of a set: its full path, its description, its value as text
-/// (format_value), and whether it can be changed.
+/// (format_value), whether it can be changed, the kind of its value and its
+/// domain.
 struct parameter_info
 {
     /// The full path of the parameter.
@@ -38,6 +40,11 @@ struct parameter_info
     std::string value;
     /// Whether the parameter cannot be changed.
     bool read_only{};
+    /// The kind of the value.
+    parameter_kind kind{parameter_kind::text};
+    /// The values the parameter may take, as its schema declares them; empty
+    /// when it declares none.
+    domain_info domain{};
 };
 
 /// A block whose validate() fails, with the reason.
@@ -108,19 +115,64 @@ void walk_schema(Block& block, const std::string& prefix, Leaf& leaf, Group& gro
         std::remove_cvref_t<Block>::parameter_schema());
 }
 
-// The diagnostics of a block's validate() and of its nested groups'.
+// The fields of a block, not of its nested groups, that lie outside the
+// domain of their schema, one diagnostic each, with the field's path.
+template<class Block>
+bool check_field_domains(
+    const Block& block,
+    const std::string& prefix,
+    std::vector<configuration_validation_diagnostic>& diagnostics)
+{
+    bool valid = true;
+    std::apply(
+        [&](const auto&... descriptors) {
+            (
+                [&] {
+                    using descriptor_type = std::remove_cvref_t<decltype(descriptors)>;
+                    if constexpr (!is_parameter_group_v<descriptor_type>)
+                    {
+                        const auto& value = block.*descriptor_type::member;
+                        if (!domain_contains(descriptors.domain, value))
+                        {
+                            valid = false;
+                            diagnostics.push_back(
+                                {join_path(prefix, descriptor_type::name()),
+                                    "expected a value in "
+                                        + describe_domain(descriptors.domain).text()
+                                        + ", got " + format_value(value)});
+                        }
+                    }
+                }(),
+                ...);
+        },
+        std::remove_cvref_t<Block>::parameter_schema());
+    return valid;
+}
+
+// The diagnostics of a block: the fields outside their domains, or else its
+// validate(), which should check them too; then the same for its nested groups.
+template<class Block>
+void validate_one_block(
+    const Block& block,
+    const std::string& prefix,
+    std::vector<configuration_validation_diagnostic>& diagnostics)
+{
+    if (!check_field_domains(block, prefix, diagnostics))
+        return;
+    if (const auto validation = block.validate(); !validation)
+        diagnostics.push_back({prefix, std::string{validation.message}});
+}
+
 template<class Block>
 void validate_block(
     const Block& block,
     const std::string& prefix,
     std::vector<configuration_validation_diagnostic>& diagnostics)
 {
-    if (const auto validation = block.validate(); !validation)
-        diagnostics.push_back({prefix, std::string{validation.message}});
+    validate_one_block(block, prefix, diagnostics);
     auto leaf = [](const std::string&, const auto&, const auto&) {};
     auto group = [&diagnostics](const std::string& path, const auto& nested) {
-        if (const auto validation = nested.validate(); !validation)
-            diagnostics.push_back({path, std::string{validation.message}});
+        validate_one_block(nested, path, diagnostics);
     };
     walk_schema(block, prefix, leaf, group);
 }
@@ -328,8 +380,14 @@ private:
                          std::vector<parameter_info>& result) {
             auto leaf =
                 [&](const std::string& path, const auto& descriptor, const auto& value) {
-                    result.push_back(
-                        {path, descriptor.description, format_value(value), read_only});
+                    result.push_back({
+                        .path = path,
+                        .description = descriptor.description,
+                        .value = format_value(value),
+                        .read_only = read_only,
+                        .kind = kind_of<decltype(value)>(),
+                        .domain = describe_domain(descriptor.domain),
+                    });
                 };
             auto group = [](const std::string&, const auto&) {};
             detail::walk_schema(get(), std::string{at}, leaf, group);

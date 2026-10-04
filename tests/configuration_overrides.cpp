@@ -133,7 +133,7 @@ void invalid_batch_is_globally_atomic()
     assert(result.applied_parameter_blocks == 0);
     assert(result.diagnostics.size() == 1);
     assert(result.diagnostics.front().error == override_error::validation_error);
-    assert(result.diagnostics.front().path == "solver.temperature");
+    assert(result.diagnostics.front().path == "solver.temperature.cooling_rate");
     assert(app.seed == 17U);
     assert(temperature.cooling_rate == 0.75);
 }
@@ -263,8 +263,8 @@ void diagnostics_accumulate_across_independent_failures()
         {
             saw_parse = diagnostic.value == "not-an-integer";
         }
-        else if (diagnostic.error == override_error::validation_error &&
-                 diagnostic.path == "solver.temperature")
+        else if (diagnostic.error == override_error::validation_error
+            && diagnostic.path == "solver.temperature.cooling_rate")
         {
             saw_temperature_validation = true;
             assert(diagnostic.value.empty());

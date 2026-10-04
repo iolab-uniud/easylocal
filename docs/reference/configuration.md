@@ -32,6 +32,46 @@ Fields may be integral and floating-point types, `bool`, `std::string`,
 block: its fields are under `schedule.`, and its `validate()` runs with the
 enclosing block's.
 
+### Domains
+
+A field may declare the values it takes as the second argument of `field`:
+
+```cpp
+config::field<"cooling_rate", &P::cooling_rate>(
+    "Multiplicative cooling factor", config::range(0.0, 1.0).open()),
+config::field<"samples", &P::samples>("Proposals", config::range(1, 1000).log()),
+config::field<"policy", &P::policy>("Tabu list", config::one_of("fixed", "random")),
+```
+
+| Domain | Values |
+| --- | --- |
+| `range(low, high)` | the numbers from `low` to `high`, both included; for a number or a `limit` (never `unlimited`) |
+| `.open()`, `.open_low()`, `.open_high()` | the same range without both bounds, the lower or the upper one |
+| `.log()` | the same range, which a configurator samples on a logarithmic scale; `low` must be positive |
+| `one_of(a, b, ...)` | the values given: text for a `std::string`, numbers for a number |
+
+For an array or a vector the domain applies to each element. A domain that
+does not fit the field's type, a range whose bounds are not in order or a
+logarithmic range from zero do not compile.
+
+A domain is a check of the parameters: the validation of a parameter set
+reports a field outside it with its path (`expected a value in (0, 1), got
+1.5`) and leaves the block's `validate()` out, and a `validate()` checks the
+domains of its block first, so that a block made in the code is checked too:
+
+```cpp
+config::validation_result validate() const
+{
+    if (const auto domains = config::check_domains(*this); !domains)
+        return domains; // "cooling_rate is out of its range"
+    // ... the checks that relate several fields
+}
+```
+
+A field without a domain takes any value of its type. Automatic configurators
+read the domains: a domain is where the values are valid, not necessarily where
+they are worth trying, and a program can narrow it for tuning.
+
 ## Parameter sets
 
 ```cpp
@@ -45,8 +85,8 @@ parameters.add("solver", runner.configuration());  // another set, under a prefi
 | `add([prefix,] block)` | the fields of a parameter block; read-only when the block is `const` |
 | `add([prefix,] object)` | an object with `parameters()` and `configure(block) -> validation_result`, for objects that rebuild something from their parameters |
 | `add([prefix,] set)` | the parameters of another set |
-| `parameters()` | every parameter: `path`, `description`, `value` (as text), `read_only` |
-| `validate()` | the diagnostics of every block's `validate()`, by path |
+| `parameters()` | every parameter: `path`, `description`, `value` (as text), `read_only`, `kind` (`boolean`, `integer`, `real`, `limit`, `text`, `path`, `list`) and `domain` (a `domain_info`, empty when none is declared) |
+| `validate()` | the fields outside their domains and the diagnostics of every block's `validate()`, by path |
 | `apply(text_overrides)` | apply `path = value` overrides, all or none |
 
 A set refers to the objects it was built from: they must outlive it and stay

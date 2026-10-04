@@ -2,12 +2,16 @@
 
 /// \file
 /// Parameter blocks: plain structs that describe their own fields with a
-/// compile-time schema (config::field, config::group, config::fields) and check
-/// them with validate().
+/// compile-time schema (config::field, config::group, config::fields), the
+/// values each field may take (config::range, config::one_of), and check them
+/// with validate().
 ///
 /// Runners, neighborhoods, cost expressions and programs declare their
 /// parameters this way.
 
+#include <easylocal/config/domain.hpp>
+
+#include <array>
 #include <concepts>
 #include <cstddef>
 #include <functional>
@@ -113,9 +117,9 @@ consteval bool unique_field_names() noexcept
 
 } // namespace detail
 
-/// The descriptor of a field of a parameter block: its name, its member and its
-/// description, made with field().
-template<fixed_string Name, auto Member>
+/// The descriptor of a field of a parameter block: its name, its member, its
+/// description and its domain, made with field().
+template<fixed_string Name, auto Member, class Domain = no_domain>
     requires std::is_member_object_pointer_v<decltype(Member)>
 struct parameter_field
 {
@@ -131,12 +135,22 @@ struct parameter_field
     /// The type of the member.
     using value_type = typename detail::member_pointer_traits<
         member_pointer_type>::value_type;
+    /// The type of the domain: no_domain, a range_domain or a choice_domain.
+    using domain_type = Domain;
+
+    static_assert(
+        domain_for<Domain, value_type>,
+        "the domain does not fit the field: a range needs a number or a limit, "
+        "one_of text values a string, one_of numbers a number");
 
     /// The pointer to the member.
     static constexpr auto member = Member;
 
     /// The description of the field.
     std::string_view description{};
+    /// The values the field may take, checked when the parameters are
+    /// validated; no_domain: any value of its type.
+    Domain domain{};
 
     /// The name of the field, the last component of its path.
     [[nodiscard]]
@@ -147,14 +161,17 @@ struct parameter_field
 };
 
 /// The descriptor of a field of a parameter block, e.g.
-/// `field<"size", &MyParameters::size>("Description")`.
-template<fixed_string Name, auto Member>
-    requires std::is_member_object_pointer_v<decltype(Member)>
+/// `field<"size", &MyParameters::size>("Description")`, with the values it may
+/// take as the second argument:
+/// `field<"cooling_rate", &P::cooling_rate>("...", range(0.0, 1.0).open())`.
+template<fixed_string Name, auto Member, class Domain = no_domain>
+    requires std::is_member_object_pointer_v<decltype(Member)> && is_domain_v<Domain>
 [[nodiscard]]
-constexpr parameter_field<Name, Member> field(
-    const std::string_view description = {}) noexcept
+constexpr parameter_field<Name, Member, Domain> field(
+    const std::string_view description = {},
+    const Domain domain = {}) noexcept
 {
-    return {.description = description};
+    return {.description = description, .domain = domain};
 }
 
 /// A member that is itself a parameter block, nested in the schema: its fields
@@ -310,6 +327,64 @@ constexpr void for_each_parameter(
                 ...);
         },
         std::move(schema));
+}
+
+namespace detail
+{
+
+// "name is out of its range" or "name is not one of its values", as static
+// text that a validation_result can refer to.
+template<class Descriptor>
+struct out_of_domain_message
+{
+    static constexpr std::string_view suffix =
+        is_range_domain_v<typename Descriptor::domain_type>
+        ? std::string_view{" is out of its range"}
+        : std::string_view{" is not one of its values"};
+    static constexpr auto text = [] {
+        constexpr auto name = Descriptor::name();
+        std::array<char, name.size() + suffix.size()> result{};
+        for (std::size_t index = 0; index < name.size(); ++index)
+            result[index] = name[index];
+        for (std::size_t index = 0; index < suffix.size(); ++index)
+            result[name.size() + index] = suffix[index];
+        return result;
+    }();
+    static constexpr std::string_view value{text.data(), text.size()};
+};
+
+} // namespace detail
+
+/// Whether each field of a block lies in the domain its schema declares, and
+/// the first that does not: the check a validate() makes for those domains.
+///
+/// The fields of nested groups are left to the groups' own validate().
+template<class Block>
+[[nodiscard]]
+constexpr validation_result check_domains(const Block& block) noexcept
+{
+    validation_result result;
+    std::apply(
+        [&](const auto&... descriptors) {
+            (
+                [&] {
+                    using descriptor_type = std::remove_cvref_t<decltype(descriptors)>;
+                    if constexpr (!is_parameter_group_v<descriptor_type>)
+                    {
+                        if (result
+                            && !domain_contains(
+                                descriptors.domain,
+                                block.*descriptor_type::member))
+                        {
+                            result = validation_result::failure(
+                                detail::out_of_domain_message<descriptor_type>::value);
+                        }
+                    }
+                }(),
+                ...);
+        },
+        Block::parameter_schema());
+    return result;
 }
 
 } // namespace easylocal::config

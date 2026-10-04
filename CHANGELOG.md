@@ -154,6 +154,11 @@ old concepts onto the new ones.
   a schema is configurable with no other member; solvers give theirs too.
   An app gives the parameters of its cost, neighborhood and runners
   (`cost.*`, `neighborhood.*`, `runners.<name>.*`), and a Session applies them.
+  A field may declare its **domain** (`config::range(0.0, 1.0).open()`,
+  `.log()`, `config::one_of("a", "b")`), checked when the parameters are
+  validated and by `config::check_domains` in a block's `validate()`; a
+  parameter set lists the kind and the domain of each parameter. The built-in
+  runners declare the domains of their rates and probabilities.
   Costs are read as text (`cost::from_text`, or a problem's `read_cost`) and
   written back (`cost::to_text`) in one form, `[hard, soft]` for a
   hierarchical cost: for targets on the command line (`RunParameters`,
