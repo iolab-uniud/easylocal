@@ -19,6 +19,10 @@ headers under --only (a path relative to include/easylocal, such as trace/):
 
     uv run scripts/api-docs.py build/api --undocumented --only trace/
 
+The pages have the look of the documentation site (docs/mrdocs/: the page
+layout and the stylesheet) and link to it as their parent directory, as the
+site serves them under api/.
+
 The MrDocs executable is $MRDOCS, or mrdocs on the PATH. Standard library
 only: `uv run scripts/api-docs.py` or `python3`.
 """

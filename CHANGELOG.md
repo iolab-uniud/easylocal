@@ -234,7 +234,9 @@ old concepts onto the new ones.
 - A [generated API reference](https://iolab-uniud.github.io/easylocal/api/)
   of every public class, function and concept, built by MrDocs from the `///`
   comments of the headers; every public declaration has its comment, and the
-  documentation build fails on one without.
+  documentation build fails on one without. Its pages have the look of the
+  documentation site: its header and tabs, fonts and colors, and the light or
+  dark mode chosen there.
 - Examples: TSP, Assignment, Exam Timetabling and PFSP (Tabu Search), each
   with its TUI or REST front-end where useful.
 - [API stability](docs/stability.md): what is stable, extensible, experimental

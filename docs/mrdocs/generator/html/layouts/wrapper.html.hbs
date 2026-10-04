@@ -1,0 +1,93 @@
+{{! The page of a symbol of the API reference, in the look of the MkDocs
+    Material site (mkdocs.yml) that serves it under api/: its header and tabs,
+    its fonts and palette, and the light/dark choice it stores. }}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{#if symbol.name}}{{symbol.name}} - {{/if}}API reference - EasyLocal</title>
+<link rel="icon" href="{{site_root (relativize "/index.html")}}assets/branding/favicon.svg">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+{{#each page.inlineStyles}}
+<style>
+{{{this}}}
+</style>
+{{/each}}
+{{#each page.stylesheets}}
+<link rel="stylesheet" href="{{#if external}}{{path}}{{else}}{{relativize (concat "/" path)}}{{/if}}">
+{{/each}}
+{{#each page.inlineScripts}}
+<script>
+{{{this}}}
+</script>
+{{/each}}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer onload="hljs.highlightAll()"></script>
+<script>
+// The scheme chosen on the site (Material stores it under the site's path),
+// else the system's.
+(function(){
+    var root = new URL("{{site_root (relativize "/index.html")}}", location);
+    var key = root.pathname + ".__palette";
+    var scheme;
+    try { scheme = JSON.parse(localStorage.getItem(key)).color.scheme; } catch (e) {}
+    if (!scheme)
+        scheme = matchMedia("(prefers-color-scheme: dark)").matches ? "slate" : "default";
+    document.documentElement.setAttribute("data-md-color-scheme", scheme);
+    window.easylocalPalette = function(){
+        var dark = document.documentElement.getAttribute("data-md-color-scheme") !== "slate";
+        var media = dark ? "(prefers-color-scheme: dark)" : "(prefers-color-scheme: light)";
+        var scheme = dark ? "slate" : "default";
+        document.documentElement.setAttribute("data-md-color-scheme", scheme);
+        try {
+            localStorage.setItem(key, JSON.stringify({index: dark ? 1 : 0, color: {
+                media: media, scheme: scheme, primary: "deep-purple", accent: "deep-purple"}}));
+        } catch (e) {}
+    };
+})();
+</script>
+</head>
+<body>
+<header class="el-header">
+<div class="el-header__inner">
+<a class="el-header__logo" href="{{site_root (relativize "/index.html")}}" title="EasyLocal">
+<img src="{{site_root (relativize "/index.html")}}assets/branding/easylocal-symbol-dark.svg" alt="EasyLocal">
+</a>
+<a class="el-header__title" href="{{relativize "/index.html"}}">EasyLocal<span>API reference</span></a>
+<button class="el-header__button" type="button" title="Switch light and dark mode" aria-label="Switch light and dark mode" onclick="easylocalPalette()">
+<svg class="el-icon--light" viewBox="0 0 24 24" aria-hidden="true"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+<svg class="el-icon--dark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+</button>
+<a class="el-header__source" href="https://github.com/iolab-uniud/easylocal" title="Go to repository">
+<svg viewBox="0 0 448 512" aria-hidden="true"><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+iolab-uniud/easylocal
+</a>
+</div>
+{{! The tabs of the nav of mkdocs.yml; the API reference is in Reference. }}
+<nav class="el-tabs" aria-label="Sections">
+<ul>
+<li><a href="{{site_root (relativize "/index.html")}}">Home</a></li>
+<li><a href="{{site_root (relativize "/index.html")}}quick-start/">Quick start</a></li>
+<li><a href="{{site_root (relativize "/index.html")}}from-easylocal-3/">Coming from EasyLocal 3</a></li>
+<li><a href="{{site_root (relativize "/index.html")}}tutorial/">Tutorial</a></li>
+<li class="el-tabs--active"><a href="{{site_root (relativize "/index.html")}}reference/">Reference</a></li>
+<li><a href="{{site_root (relativize "/index.html")}}rest/">Guides</a></li>
+<li><a href="{{site_root (relativize "/index.html")}}benchmarks/">Benchmarks</a></li>
+</ul>
+</nav>
+</header>
+<main class="el-main">
+<article class="el-content">
+<h1>{{> symbol/qualified-name-title symbol }}</h1>
+{{{contents}}}
+</article>
+</main>
+<footer class="el-footer">
+<div class="el-footer__inner">
+<span>Copyright &copy; 2001-2026 the EasyLocal authors, University of Udine. MIT License.</span>
+<span>Generated with <a href="https://www.mrdocs.com">MrDocs</a></span>
+</div>
+</footer>
+</body>
+</html>{{! Trim trailing newline ~}}

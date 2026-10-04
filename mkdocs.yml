@@ -21,6 +21,7 @@ hooks:
 
 exclude_docs: |
   mrdocs.yml
+  mrdocs/
   assets/branding/README.md
   assets/branding/generate.py
 

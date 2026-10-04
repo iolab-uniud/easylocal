@@ -17,6 +17,13 @@ exclude-symbols:
   - 'easylocal::**::detail::**'
 generator: html
 multipage: true
+# The look of the documentation site: mrdocs/ overrides the page layout and
+# replaces the default stylesheet.
+addons-supplemental:
+  - mrdocs
+no-default-styles: true
+stylesheets:
+  - mrdocs/easylocal.css
 linkcss: true
 copycss: true
 # A warning fails the build: a malformed comment, or a public declaration
