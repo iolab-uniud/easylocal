@@ -142,10 +142,10 @@ jobs:
         run: cmake --build --preset "$PRESET" --parallel 2 --verbose 2>&1 | tee "build/$PRESET/build.log"
 
       - name: Test (fast)
-        run: ctest --preset "$PRESET" --verbose -LE integration 2>&1 | tee "build/$PRESET/ctest.log"
+        run: ctest --preset "$PRESET" --verbose --parallel 4 -LE integration 2>&1 | tee "build/$PRESET/ctest.log"
 
       - name: Test integration
-        run: ctest --preset "$PRESET" --verbose -L integration 2>&1 | tee "build/$PRESET/ctest-integration.log"
+        run: ctest --preset "$PRESET" --verbose --parallel 4 -L integration 2>&1 | tee "build/$PRESET/ctest-integration.log"
 
       - name: Upload diagnostics
         if: ${{ always() && !env.ACT }}
@@ -291,10 +291,10 @@ jobs:
         run: cmake --build --preset "$PRESET" --parallel 2 --verbose 2>&1 | tee "build/$PRESET/build.log"
 
       - name: Test (fast)
-        run: ctest --preset "$PRESET" --verbose -LE integration 2>&1 | tee "build/$PRESET/ctest.log"
+        run: ctest --preset "$PRESET" --verbose --parallel 4 -LE integration 2>&1 | tee "build/$PRESET/ctest.log"
 
       - name: Test integration
-        run: ctest --preset "$PRESET" --verbose -L integration 2>&1 | tee "build/$PRESET/ctest-integration.log"
+        run: ctest --preset "$PRESET" --verbose --parallel 4 -L integration 2>&1 | tee "build/$PRESET/ctest-integration.log"
 
       - name: Upload diagnostics
         if: ${{ always() && !env.ACT }}
@@ -365,10 +365,10 @@ jobs:
         run: cmake --build --preset "$PRESET" --parallel 4 --verbose 2>&1 | tee "build/$PRESET/build.log"
 
       - name: Test (fast)
-        run: ctest --preset "$PRESET" --verbose -LE integration 2>&1 | tee "build/$PRESET/ctest.log"
+        run: ctest --preset "$PRESET" --verbose --parallel 4 -LE integration 2>&1 | tee "build/$PRESET/ctest.log"
 
       - name: Test integration
-        run: ctest --preset "$PRESET" --verbose -L integration 2>&1 | tee "build/$PRESET/ctest-integration.log"
+        run: ctest --preset "$PRESET" --verbose --parallel 4 -L integration 2>&1 | tee "build/$PRESET/ctest-integration.log"
 
       - name: Upload diagnostics
         if: ${{ always() && !env.ACT }}
