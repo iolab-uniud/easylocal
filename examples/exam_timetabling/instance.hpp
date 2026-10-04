@@ -74,4 +74,25 @@ struct ExamTimetablingInstance
     }
 };
 
+// An exam that shares students with a given one.
+struct ConflictingExam
+{
+    exam_id exam;
+    penalty_type students;
+};
+
+// For each exam, the exams it shares students with: a delta evaluator visits
+// only the conflicts of the exam a move changes.
+inline std::vector<std::vector<ConflictingExam>> conflicts_by_exam(
+    const ExamTimetablingInstance& instance)
+{
+    std::vector<std::vector<ConflictingExam>> conflicts(instance.exam_count);
+    for (const auto& conflict : instance.conflicts)
+    {
+        conflicts[conflict.first].push_back({conflict.second, conflict.students});
+        conflicts[conflict.second].push_back({conflict.first, conflict.students});
+    }
+    return conflicts;
+}
+
 } // namespace exam_timetabling

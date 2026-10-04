@@ -4,6 +4,7 @@
 #include "move.hpp"
 
 #include <cassert>
+#include <vector>
 
 namespace exam_timetabling
 {
@@ -12,7 +13,7 @@ class ConsecutiveExamDeltaEvaluator
 {
 public:
     explicit ConsecutiveExamDeltaEvaluator(const ExamTimetablingInstance& instance)
-        : instance_{instance}
+        : conflicts_by_exam_{conflicts_by_exam(instance)}
     {
     }
 
@@ -22,17 +23,9 @@ public:
         const auto source = solution.timeslot_by_exam[move.exam];
         penalty_type change = 0;
 
-        for (const auto& conflict : instance_.conflicts)
+        for (const auto& conflict : conflicts_by_exam_[move.exam])
         {
-            exam_id other{};
-            if (conflict.first == move.exam)
-                other = conflict.second;
-            else if (conflict.second == move.exam)
-                other = conflict.first;
-            else
-                continue;
-
-            const auto other_timeslot = solution.timeslot_by_exam[other];
+            const auto other_timeslot = solution.timeslot_by_exam[conflict.exam];
             const auto old_distance = source > other_timeslot
                 ? source - other_timeslot
                 : other_timeslot - source;
@@ -50,7 +43,7 @@ public:
     }
 
 private:
-    const ExamTimetablingInstance& instance_;
+    std::vector<std::vector<ConflictingExam>> conflicts_by_exam_;
 };
 
 // TimeslotLoadComponent has no delta evaluator: the change of a timeslot's

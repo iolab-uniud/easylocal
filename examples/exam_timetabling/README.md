@@ -15,7 +15,8 @@ spellings: `StudentConflictComponent` co-locates its `delta_evaluate(...)` and
 is attached with `delta<StudentConflictComponent>()`, while
 `ConsecutiveExamComponent` uses the separate-evaluator form
 `delta<Component, DeltaEvaluator>()`. Both look only at the conflicts of the
-moved exam. `TimeslotLoadComponent` has none: its change needs the load of two
+moved exam, which `conflicts_by_exam(instance)` lists once per exam when they
+are built. `TimeslotLoadComponent` has none: its change needs the load of two
 timeslots, and counting loads visits every exam, which is what a full
 evaluation does; the framework evaluates it on a candidate solution instead. The final `penalty_type` is therefore
 already the SA energy: no Cost-to-Energy adapter or projection is required by

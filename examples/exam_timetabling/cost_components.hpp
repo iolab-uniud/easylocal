@@ -15,7 +15,7 @@ class StudentConflictComponent
 {
 public:
     explicit StudentConflictComponent(const ExamTimetablingInstance& instance)
-        : instance_{instance}
+        : instance_{instance}, conflicts_by_exam_{conflicts_by_exam(instance)}
     {
     }
 
@@ -44,17 +44,9 @@ public:
         const auto source = solution.timeslot_by_exam[move.exam];
         penalty_type change = 0;
 
-        for (const auto& conflict : instance_.conflicts)
+        for (const auto& conflict : conflicts_by_exam_[move.exam])
         {
-            exam_id other{};
-            if (conflict.first == move.exam)
-                other = conflict.second;
-            else if (conflict.second == move.exam)
-                other = conflict.first;
-            else
-                continue;
-
-            const auto other_timeslot = solution.timeslot_by_exam[other];
+            const auto other_timeslot = solution.timeslot_by_exam[conflict.exam];
             if (source == other_timeslot)
                 change -= conflict.students;
             if (move.destination == other_timeslot)
@@ -66,6 +58,7 @@ public:
 
 private:
     const ExamTimetablingInstance& instance_;
+    std::vector<std::vector<ConflictingExam>> conflicts_by_exam_;
 };
 
 class ConsecutiveExamComponent
