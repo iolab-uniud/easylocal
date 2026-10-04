@@ -44,18 +44,103 @@ concept evaluable_solution_manager =
         } -> std::same_as<typename SM::cost_type>;
     };
 
-template<class BaseSM, class... ComponentSpecs>
-class cost_layer
+// A layer over a SolutionManager: it holds the layer below (Inner) and
+// forwards to it what does not depend on the cost (the Input, validity,
+// construction and solution identity); cost_layer, cost_layer_with_expression
+// and hard_cost_layer add the cost. Base is the user's SolutionManager, which
+// base() returns: Inner itself for the innermost layer.
+template<class Inner, class Base = Inner>
+class solution_manager_layer
 {
 public:
-    using base_type = BaseSM;
-    using input_type = typename BaseSM::input_type;
-    using solution_type = typename BaseSM::solution_type;
+    using base_type = Base;
+    using input_type = typename Inner::input_type;
+    using solution_type = typename Inner::solution_type;
+
+    explicit solution_manager_layer(Inner inner) : inner_{std::move(inner)} {}
+
+    [[nodiscard]] base_type& base() noexcept
+    {
+        if constexpr (std::same_as<Inner, Base>)
+            return inner_;
+        else
+            return inner_.base();
+    }
+    [[nodiscard]] const base_type& base() const noexcept
+    {
+        if constexpr (std::same_as<Inner, Base>)
+            return inner_;
+        else
+            return inner_.base();
+    }
+    [[nodiscard]] const input_type& input() const noexcept
+    {
+        return inner_.input();
+    }
+    [[nodiscard]] bool is_valid(const solution_type& solution) const
+        noexcept(noexcept(inner_.is_valid(solution)))
+    {
+        return inner_.is_valid(solution);
+    }
+
+    [[nodiscard]]
+    solution_type initial_solution() const noexcept(noexcept(inner_.initial_solution()))
+        requires has_initial_solution<Inner>
+    {
+        return inner_.initial_solution();
+    }
+
+    // The problem's solution identity, when it defines one (see
+    // has_solution_hash); otherwise the solution type's own applies.
+    [[nodiscard]]
+    std::uint64_t hash(const solution_type& solution) const
+        requires has_solution_hash_member<Inner>
+    {
+        return inner_.hash(solution);
+    }
+
+    [[nodiscard]]
+    bool equal(const solution_type& lhs, const solution_type& rhs) const
+        requires has_solution_equality_member<Inner>
+    {
+        return inner_.equal(lhs, rhs);
+    }
+
+    template<class RNG>
+    [[nodiscard]]
+    solution_type random_solution(RNG& rng) const
+        noexcept(noexcept(inner_.random_solution(rng)))
+        requires has_random_solution<Inner, RNG>
+    {
+        return inner_.random_solution(rng);
+    }
+
+protected:
+    // The layer below, for what the derived layer adds on it.
+    [[nodiscard]] Inner& inner() noexcept
+    {
+        return inner_;
+    }
+    [[nodiscard]] const Inner& inner() const noexcept
+    {
+        return inner_;
+    }
+
+private:
+    Inner inner_;
+};
+
+// The innermost cost layer: the user's SolutionManager with the cost
+// components of the recipe, built from its Input, which it evaluates into a
+// tuple of component values, one per component, in the order of the recipe.
+template<class BaseSM, class... ComponentSpecs>
+class cost_layer : public solution_manager_layer<BaseSM>
+{
+public:
+    using typename solution_manager_layer<BaseSM>::solution_type;
     using component_types = std::tuple<typename ComponentSpecs::component_type...>;
     using component_values_type = std::tuple<
-        component_value_t<
-            typename ComponentSpecs::component_type,
-            solution_type>...>;
+        component_value_t<typename ComponentSpecs::component_type, solution_type>...>;
 
     static_assert(
         unique_types_v<typename ComponentSpecs::component_type...>,
@@ -63,64 +148,13 @@ public:
         "the conflicting component type is shown in the template instantiation "
         "context");
 
-    cost_layer(
-        BaseSM base,
-        const ComponentSpecs&... component_specs)
-        : base_{std::move(base)},
-          components_{component_specs.construct(base_.input())...}
+    cost_layer(BaseSM base, const ComponentSpecs&... component_specs)
+        : solution_manager_layer<BaseSM>{std::move(base)},
+          components_{component_specs.construct(this->input())...}
     {
-        static_assert(sizeof...(ComponentSpecs) > 0,
+        static_assert(
+            sizeof...(ComponentSpecs) > 0,
             "a SolutionManager needs at least one cost component");
-    }
-
-    [[nodiscard]] BaseSM& base() noexcept
-    {
-        return base_;
-    }
-    [[nodiscard]] const BaseSM& base() const noexcept
-    {
-        return base_;
-    }
-    [[nodiscard]] const input_type& input() const noexcept
-    {
-        return base_.input();
-    }
-    [[nodiscard]] bool is_valid(const solution_type& solution) const
-        noexcept(noexcept(base_.is_valid(solution)))
-    {
-        return base_.is_valid(solution);
-    }
-
-    [[nodiscard]]
-    solution_type initial_solution() const noexcept(noexcept(base_.initial_solution()))
-        requires has_initial_solution<BaseSM>
-    {
-        return base_.initial_solution();
-    }
-
-    // The problem's solution identity, when it defines one (see
-    // has_solution_hash); otherwise the solution type's own applies.
-    [[nodiscard]]
-    std::uint64_t hash(const solution_type& solution) const
-        requires has_solution_hash_member<BaseSM>
-    {
-        return base_.hash(solution);
-    }
-
-    [[nodiscard]]
-    bool equal(const solution_type& lhs, const solution_type& rhs) const
-        requires has_solution_equality_member<BaseSM>
-    {
-        return base_.equal(lhs, rhs);
-    }
-
-    template<class RNG>
-    [[nodiscard]]
-    solution_type random_solution(RNG& rng) const
-        noexcept(noexcept(base_.random_solution(rng)))
-        requires has_random_solution<BaseSM, RNG>
-    {
-        return base_.random_solution(rng);
     }
 
     [[nodiscard]]
@@ -162,7 +196,6 @@ public:
     }
 
 private:
-    BaseSM base_;
     std::tuple<typename ComponentSpecs::component_type...> components_;
 };
 
@@ -171,11 +204,12 @@ private:
 // components of the inner layer, in the same order.
 template<class InnerSM, class Expression>
 class cost_layer_with_expression
+    : public solution_manager_layer<InnerSM, typename InnerSM::base_type>
 {
+    using layer = solution_manager_layer<InnerSM, typename InnerSM::base_type>;
+
 public:
-    using base_type = typename InnerSM::base_type;
-    using input_type = typename InnerSM::input_type;
-    using solution_type = typename InnerSM::solution_type;
+    using typename layer::solution_type;
     using component_types = typename InnerSM::component_types;
     using component_values_type = typename InnerSM::component_values_type;
     using cost_type = typename Expression::cost_type;
@@ -201,64 +235,14 @@ public:
         hard_component_count>;
 
     cost_layer_with_expression(InnerSM inner, Expression expression)
-        : inner_{std::move(inner)}, expression_{std::move(expression)}
+        : layer{std::move(inner)}, expression_{std::move(expression)}
     {
-    }
-
-    [[nodiscard]] base_type& base() noexcept
-    {
-        return inner_.base();
-    }
-    [[nodiscard]] const base_type& base() const noexcept
-    {
-        return inner_.base();
-    }
-    [[nodiscard]] const input_type& input() const noexcept
-    {
-        return inner_.input();
-    }
-    [[nodiscard]] bool is_valid(const solution_type& solution) const
-        noexcept(noexcept(inner_.is_valid(solution)))
-    {
-        return inner_.is_valid(solution);
-    }
-
-    [[nodiscard]]
-    solution_type initial_solution() const noexcept(noexcept(inner_.initial_solution()))
-        requires has_initial_solution<InnerSM>
-    {
-        return inner_.initial_solution();
-    }
-
-    // The problem's solution identity, when it defines one (see
-    // has_solution_hash); otherwise the solution type's own applies.
-    [[nodiscard]]
-    std::uint64_t hash(const solution_type& solution) const
-        requires has_solution_hash_member<InnerSM>
-    {
-        return inner_.hash(solution);
-    }
-
-    [[nodiscard]]
-    bool equal(const solution_type& lhs, const solution_type& rhs) const
-        requires has_solution_equality_member<InnerSM>
-    {
-        return inner_.equal(lhs, rhs);
-    }
-
-    template<class RNG>
-    [[nodiscard]]
-    solution_type random_solution(RNG& rng) const
-        noexcept(noexcept(inner_.random_solution(rng)))
-        requires has_random_solution<InnerSM, RNG>
-    {
-        return inner_.random_solution(rng);
     }
 
     [[nodiscard]]
     component_values_type evaluate_components(const solution_type& solution) const
     {
-        return inner_.evaluate_components(solution);
+        return this->inner().evaluate_components(solution);
     }
 
     [[nodiscard]]
@@ -268,7 +252,7 @@ public:
     {
         return [&]<std::size_t... Indices>(std::index_sequence<Indices...>) {
             return hard_component_values_type{
-                inner_.template evaluate_component<Indices>(solution)...,
+                this->inner().template evaluate_component<Indices>(solution)...,
             };
         }(std::make_index_sequence<hard_component_count>{});
     }
@@ -278,7 +262,7 @@ public:
     std::tuple_element_t<Index, component_values_type> evaluate_component(
         const solution_type& solution) const
     {
-        return inner_.template evaluate_component<Index>(solution);
+        return this->inner().template evaluate_component<Index>(solution);
     }
 
     template<std::size_t Index>
@@ -287,7 +271,7 @@ public:
         const solution_type& solution) const
         requires(has_hard_component_projection && Index < hard_component_count)
     {
-        return inner_.template evaluate_component<Index>(solution);
+        return this->inner().template evaluate_component<Index>(solution);
     }
 
     [[nodiscard]]
@@ -313,14 +297,14 @@ public:
     [[nodiscard]]
     Component& component() noexcept
     {
-        return inner_.template component<Component>();
+        return this->inner().template component<Component>();
     }
 
     template<class Component>
     [[nodiscard]]
     const Component& component() const noexcept
     {
-        return inner_.template component<Component>();
+        return this->inner().template component<Component>();
     }
 
     [[nodiscard]]
@@ -330,100 +314,61 @@ public:
     }
 
 private:
-    InnerSM inner_;
     EASYLOCAL_NO_UNIQUE_ADDRESS Expression expression_;
 };
+
+// A composed SolutionManager whose cost is hierarchical (hard and soft), the
+// cost TwoStage requires.
 template<class SM>
 concept hierarchical_solution_manager =
     requires { typename SM::cost_type; } &&
     cost::hierarchical_type<typename SM::cost_type>;
 
+// The user's SolutionManager under SM, what the hard layer's base() returns
+// (the neighborhood explorers are built from it): SM::base() when SM is a
+// composed layer, otherwise SM itself.
 template<class SM>
-class hard_cost_layer_base
+struct hard_layer_base
 {
+    using type = SM;
+};
+
+template<class SM>
+    requires requires(SM& solution_manager) { solution_manager.base(); }
+struct hard_layer_base<SM>
+{
+    using type = std::remove_cvref_t<decltype(std::declval<SM&>().base())>;
+};
+
+template<class SM>
+using hard_layer_base_t = typename hard_layer_base<SM>::type;
+
+// The hard-cost projection of a SolutionManager with a hierarchical cost, for
+// TwoStage's first stage: the same solutions, with the hard branch as cost.
+template<class SM>
+class hard_cost_layer_base : public solution_manager_layer<SM, hard_layer_base_t<SM>>
+{
+    using layer = solution_manager_layer<SM, hard_layer_base_t<SM>>;
+
 public:
-    using input_type = typename SM::input_type;
-    using solution_type = typename SM::solution_type;
+    using typename layer::solution_type;
     using full_cost_type = typename SM::cost_type;
     using cost_type = typename full_cost_type::hard_cost_type;
 
     explicit hard_cost_layer_base(SM solution_manager)
-        : solution_manager_{std::move(solution_manager)}
+        : layer{std::move(solution_manager)}
     {
-    }
-
-    [[nodiscard]]
-    const input_type& input() const noexcept
-    {
-        return solution_manager_.input();
-    }
-
-    [[nodiscard]]
-    bool is_valid(const solution_type& solution) const
-        noexcept(noexcept(solution_manager_.is_valid(solution)))
-    {
-        return solution_manager_.is_valid(solution);
-    }
-
-    [[nodiscard]]
-    solution_type initial_solution() const
-        requires has_initial_solution<SM>
-    {
-        return solution_manager_.initial_solution();
-    }
-
-    // The problem's solution identity, when it defines one (see
-    // has_solution_hash); otherwise the solution type's own applies.
-    [[nodiscard]]
-    std::uint64_t hash(const solution_type& solution) const
-        requires has_solution_hash_member<SM>
-    {
-        return solution_manager_.hash(solution);
-    }
-
-    [[nodiscard]]
-    bool equal(const solution_type& lhs, const solution_type& rhs) const
-        requires has_solution_equality_member<SM>
-    {
-        return solution_manager_.equal(lhs, rhs);
-    }
-
-    template<class RNG>
-    [[nodiscard]]
-    solution_type random_solution(RNG& rng) const
-        requires has_random_solution<SM, RNG>
-    {
-        return solution_manager_.random_solution(rng);
     }
 
     [[nodiscard]]
     cost_type evaluate(const solution_type& solution) const
     {
-        return solution_manager_.evaluate(solution).hard();
+        return this->inner().evaluate(solution).hard();
     }
-
-    [[nodiscard]]
-    decltype(auto) base() noexcept
-    {
-        if constexpr (requires { solution_manager_.base(); })
-            return solution_manager_.base();
-        else
-            return (solution_manager_);
-    }
-
-    [[nodiscard]]
-    decltype(auto) base() const noexcept
-    {
-        if constexpr (requires { solution_manager_.base(); })
-            return solution_manager_.base();
-        else
-            return (solution_manager_);
-    }
-
-protected:
-    SM solution_manager_;
 };
 
+// The hard-cost projection; when SM has cost components, it evaluates only the
+// hard ones (the leading leaves of a hard_soft expression) where it can.
 template<class SM, bool = requires {
     typename SM::component_types;
     typename SM::component_values_type;
@@ -472,9 +417,9 @@ public:
     component_values_type evaluate_components(const solution_type& solution) const
     {
         if constexpr (projected_components)
-            return this->solution_manager_.evaluate_hard_components(solution);
+            return this->inner().evaluate_hard_components(solution);
         else
-            return this->solution_manager_.evaluate_components(solution);
+            return this->inner().evaluate_components(solution);
     }
 
     template<std::size_t Index>
@@ -483,20 +428,18 @@ public:
         const solution_type& solution) const
     {
         if constexpr (projected_components)
-            return this->solution_manager_.template evaluate_hard_component<Index>(
-                solution);
+            return this->inner().template evaluate_hard_component<Index>(solution);
         else
-            return this->solution_manager_.template evaluate_component<Index>(
-                solution);
+            return this->inner().template evaluate_component<Index>(solution);
     }
 
     [[nodiscard]]
     cost_type cost_from_components(const component_values_type& values) const
     {
         if constexpr (projected_components)
-            return this->solution_manager_.hard_cost_from_components(values);
+            return this->inner().hard_cost_from_components(values);
         else
-            return this->solution_manager_.cost_from_components(values).hard();
+            return this->inner().cost_from_components(values).hard();
     }
 
     [[nodiscard]]
@@ -506,6 +449,8 @@ public:
     }
 };
 
+// The recipe of a hard-cost projection: it builds the full SolutionManager
+// from SMSpec and wraps it in a hard_cost_layer; its parameters are SMSpec's.
 template<class SMSpec>
 class hard_cost_layer_spec
 {
