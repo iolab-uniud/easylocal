@@ -340,6 +340,12 @@ struct pipeline_result : Result
 namespace detail
 {
 
+template<class T>
+inline constexpr bool is_pipeline_stage_v = false;
+
+template<class Runner>
+inline constexpr bool is_pipeline_stage_v<pipeline_stage<Runner>> = true;
+
 // Run options without their target cost: those of a stage whose cost may not
 // be the target's.
 template<class Tracer, class Target>
@@ -402,6 +408,8 @@ public:
     using input_type = typename first_stage_type::input_type;
     /// The solution of the stages.
     using solution_type = typename first_stage_type::solution_type;
+    /// The cost of the last stage, the cost of the result.
+    using cost_type = typename last_stage_type::cost_type;
 
     static_assert(
         (std::same_as<typename Stages::input_type, input_type> && ...),
@@ -594,6 +602,23 @@ public:
         config::parameter_set parameters;
         std::apply(
             [&parameters](auto&... stage) {
+                (add_stage_configuration(parameters, stage), ...);
+            },
+            stages_);
+        return parameters;
+    }
+
+    /// The parameters of every stage under its name, read-only.
+    ///
+    /// Throws `std::invalid_argument` when two stages have the same name, or
+    /// one has none.
+    [[nodiscard]]
+    config::parameter_set configuration() const
+    {
+        check_names();
+        config::parameter_set parameters;
+        std::apply(
+            [&parameters](const auto&... stage) {
                 (add_stage_configuration(parameters, stage), ...);
             },
             stages_);
@@ -833,7 +858,7 @@ template<class FirstRunner, class SecondRunner>
 [[nodiscard]]
 auto operator|(pipeline_stage<FirstRunner> first, pipeline_stage<SecondRunner> second)
 {
-    return pipeline(std::move(first), std::move(second));
+    return solvers::pipeline(std::move(first), std::move(second));
 }
 
 } // namespace easylocal::solvers

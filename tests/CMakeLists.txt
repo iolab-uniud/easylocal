@@ -702,6 +702,11 @@ function(easylocal_add_compile_failure_test name source expected_diagnostic)
 endfunction()
 
 easylocal_add_compile_failure_test(
+    app-pipeline-cost
+    app_pipeline_cost.cpp
+    "the last stage of a pipeline registered in an app must have the app's cost"
+)
+easylocal_add_compile_failure_test(
     pipeline-different-solutions
     pipeline_different_solutions.cpp
     "the stages of a pipeline must have the same Solution"

@@ -6,6 +6,7 @@
 /// neighborhood, delta evaluators, runners), with a report of what they cover.
 
 #include <easylocal/app/app.hpp>
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost/semantics.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/testing/check.hpp>
@@ -16,6 +17,7 @@
 #include <exception>
 #include <memory>
 #include <ostream>
+#include <stdexcept>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
@@ -319,6 +321,24 @@ template<class App, class Instance, class Solution>
             }
             (void)name;
         });
+
+    // The parameters of the whole app, among them those of its pipelines'
+    // stages: their values, and stage names that are distinct and non-empty.
+    try
+    {
+        const auto validation = config::validate(application.configuration());
+        report.check(
+            static_cast<bool>(validation),
+            "app configuration",
+            "the app's parameters are invalid");
+    }
+    catch (const std::invalid_argument&)
+    {
+        report.check(
+            false,
+            "app configuration",
+            "a registered pipeline has unnamed or duplicate stages");
+    }
 
     return report;
 }

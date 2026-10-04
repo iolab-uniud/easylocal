@@ -397,12 +397,9 @@ private:
     {
         bool found = false;
         const std::lock_guard lock{application_mutex_};
-        application_.for_each_runner_registration(
-            [&]<class Algorithm>(
-                const std::string_view name,
-                const typename Algorithm::parameters_type&) {
-                found = found || name == requested;
-            });
+        application_.for_each_registration_name([&](const std::string_view name) {
+            found = found || name == requested;
+        });
         return found;
     }
 
@@ -411,12 +408,9 @@ private:
         std::vector<std::string> names;
         const std::lock_guard lock{application_mutex_};
         names.reserve(App::runner_count);
-        application_.for_each_runner_registration(
-            [&]<class Algorithm>(
-                const std::string_view name,
-                const typename Algorithm::parameters_type&) {
-                names.emplace_back(name);
-            });
+        application_.for_each_registration_name([&](const std::string_view name) {
+            names.emplace_back(name);
+        });
         return names;
     }
 

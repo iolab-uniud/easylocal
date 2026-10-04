@@ -27,7 +27,7 @@ template<
 [[nodiscard]]
 auto two_stage(FirstRunner first, SecondRunner second)
 {
-    return pipeline<RNG>(
+    return solvers::pipeline<RNG>(
         stage("first", std::move(first)).until_feasible(),
         stage("second", std::move(second)));
 }

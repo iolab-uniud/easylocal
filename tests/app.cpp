@@ -5,9 +5,11 @@
 #include "support/assignment_capacity_delta.hpp"
 
 #include <easylocal/app/app.hpp>
+#include <easylocal/app/session.hpp>
 #include <easylocal/runners/best_improvement.hpp>
 #include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/runners/runner.hpp>
+#include <easylocal/solvers/pipeline.hpp>
 
 #include <cassert>
 #include <concepts>
@@ -16,8 +18,10 @@
 #include <random>
 #include <stdexcept>
 #include <stop_token>
+#include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace
 {
@@ -274,6 +278,102 @@ void registered_runners_can_be_run_by_name()
     assert(stopped->solution == initial);
 }
 
+void pipelines_are_registered_and_run_by_name()
+{
+    namespace solvers = easylocal::solvers;
+    using easylocal::runners::BestImprovement;
+    using easylocal::runners::FirstImprovement;
+    const AssignmentInstance instance{
+        .demand = {4, 4, 2},
+        .capacity = {5, 5},
+    };
+
+    auto sm = easylocal::solution_manager<AssignmentSolutionManager>()
+        | assignment::assignment_cost();
+    auto nhe = easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
+        | easylocal::delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>();
+    auto descent =
+        easylocal::make_runner<FirstImprovement>({.max_evaluations = 100}) | sm | nhe;
+    auto best =
+        easylocal::make_runner<BestImprovement>({.max_evaluations = 100}) | sm | nhe;
+    const auto stages = [&] {
+        return solvers::pipeline(
+            solvers::stage("feasible", descent) & solvers::until_feasible()
+                & solvers::attempts(3),
+            solvers::stage("best", best));
+    };
+
+    auto application = easylocal::app("assignment") | sm | nhe
+        | easylocal::runner<FirstImprovement>("fi")
+        | easylocal::pipeline(
+            "cascade",
+            solvers::stage("feasible", descent) & solvers::until_feasible()
+                & solvers::attempts(3),
+            solvers::stage("best", best))
+        | easylocal::runner<BestImprovement>("bi");
+
+    // The names of every registration, in order; the runners alone without the
+    // pipeline, which keeps the runners' lookup by algorithm.
+    std::vector<std::string_view> names;
+    application.for_each_registration_name([&](const std::string_view name) {
+        names.push_back(name);
+    });
+    assert((names == std::vector<std::string_view>{"fi", "cascade", "bi"}));
+    std::size_t runners = 0;
+    application.for_each_runner_registration(
+        [&]<class Algorithm>(
+            std::string_view,
+            const typename Algorithm::parameters_type&) { ++runners; });
+    assert(runners == 2);
+    application.runner_config<BestImprovement>().max_evaluations = 100;
+
+    // Run by name from a solution, as the pipeline runs it.
+    const auto initial = application.bind(instance).solution_manager().initial_solution();
+    std::mt19937_64 rng{3};
+    const auto by_name = application.run("cascade", instance, initial, rng);
+    assert(by_name && by_name->effort);
+    std::mt19937_64 same_rng{3};
+    const auto direct = stages().run(instance, initial, same_rng);
+    assert(by_name->solution == direct.solution);
+    assert(by_name->effort->evaluations == direct.evaluations);
+
+    // The stages' parameters under runners.<name>, also in the read-only set.
+    const auto has =
+        [](const easylocal::config::parameter_set& parameters, std::string_view path) {
+            for (const auto& parameter : parameters.parameters())
+                if (parameter.path == path)
+                    return true;
+            return false;
+        };
+    const auto parameters = application.configuration();
+    assert(has(parameters, "runners.cascade.feasible.attempts"));
+    assert(has(parameters, "runners.cascade.best.search.max_evaluations"));
+    assert(has(
+        std::as_const(application).configuration(),
+        "runners.cascade.feasible.attempts"));
+    const auto overridden = easylocal::config::apply_overrides(
+        parameters,
+        std::vector<easylocal::config::text_override>{
+            {"runners.cascade.best.search.max_evaluations", "5"}});
+    assert(overridden);
+
+    // A session lists and runs the pipeline as a runner.
+    easylocal::Session session{application, instance, 7};
+    session.use_initial_solution();
+    const auto session_names = session.runner_names();
+    assert(session_names.size() == 3 && session_names[1] == "cascade");
+    assert(session.run("cascade"));
+    assert(session.last_run_effort().has_value());
+
+    // An app with a pipeline only.
+    auto only = easylocal::app("only") | sm | nhe
+        | easylocal::pipeline(
+            "two",
+            (solvers::stage("feasible", descent) & solvers::until_feasible())
+                | solvers::stage("best", best));
+    assert(only.run("two", instance, initial, rng));
+}
+
 void app_can_materialize_standard_runners()
 {
     const AssignmentInstance instance{
@@ -422,6 +522,7 @@ int main()
     registered_runners_are_executable();
     direct_app_runs_use_fresh_bound_app_state();
     registered_runners_can_be_run_by_name();
+    pipelines_are_registered_and_run_by_name();
     app_can_materialize_standard_runners();
     app_can_make_and_equip_solvers();
     named_runner_registrations_can_be_selected_for_solver_creation();

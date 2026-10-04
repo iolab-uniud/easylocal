@@ -567,16 +567,16 @@ public:
         return result;
     }
 
-    /// The names of the registered runners, in the order of registration.
+    /// The names of the registered runners and pipelines, in the order of
+    /// registration.
     [[nodiscard]]
     std::vector<std::string_view> runner_names() const
     {
         std::vector<std::string_view> names;
         names.reserve(App::runner_count);
-        app_.for_each_runner_registration(
-            [&]<class Algorithm>(
-                const std::string_view name,
-                const typename Algorithm::parameters_type&) { names.push_back(name); });
+        app_.for_each_registration_name([&](const std::string_view name) {
+            names.push_back(name);
+        });
         return names;
     }
 
