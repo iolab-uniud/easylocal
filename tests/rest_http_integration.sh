@@ -9,8 +9,8 @@ fi
 
 server="$1"
 curl_bin="$2"
-port=$((20000 + ($$ % 20000)))
-base_url="http://127.0.0.1:${port}/assignment"
+port=""
+base_url=""
 tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/easylocal-rest.XXXXXX")"
 server_log="${tmp_dir}/server.log"
 server_pid=""
@@ -100,20 +100,36 @@ repeat_json_number() {
     printf '%s' "$result"
 }
 
+# Whether the server started is ready: false when it exited, as it does on a
+# port taken by another program, which may have answered in its place.
 wait_for_server() {
     local body="${tmp_dir}/ready.json"
     local attempt
     for ((attempt = 0; attempt < 100; ++attempt)); do
-        if ! kill -0 "$server_pid" >/dev/null 2>&1; then
-            fail "server exited before becoming ready"
-        fi
+        kill -0 "$server_pid" >/dev/null 2>&1 || return 1
         if "$curl_bin" --silent --show-error --max-time 1 \
                 --output "$body" "${base_url}/" >/dev/null 2>&1; then
-            return
+            sleep 0.1
+            kill -0 "$server_pid" >/dev/null 2>&1 || return 1
+            return 0
         fi
         sleep 0.05
     done
     fail "server did not become ready"
+}
+
+# The server on a random port, another one when it is taken.
+start_server() {
+    local attempt
+    for ((attempt = 0; attempt < 5; ++attempt)); do
+        port=$((20000 + RANDOM % 20000))
+        base_url="http://127.0.0.1:${port}/assignment"
+        "$server" "$port" "$completed_run_capacity" >"$server_log" 2>&1 &
+        server_pid=$!
+        wait_for_server && return
+        wait "$server_pid" >/dev/null 2>&1 || true
+    done
+    fail "the server could not start on a free port"
 }
 
 wait_for_status() {
@@ -161,9 +177,7 @@ wait_for_progress() {
 structured_input='{"input":{"demand":[4,4,2],"capacity":[5,5]}}'
 text_input='{"input":"3 2 4 3 2 5 5"}'
 
-"$server" "$port" "$completed_run_capacity" >"$server_log" 2>&1 &
-server_pid=$!
-wait_for_server
+start_server
 
 root_body="${tmp_dir}/root.json"
 request GET "${base_url}/" 200 "$root_body"
