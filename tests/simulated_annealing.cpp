@@ -492,6 +492,13 @@ int main()
         ok &= expect(
             cutoff.temperature() == 4.0 && cutoff.level_time() == milliseconds{1400},
             "time-based cutoff cools early and redistributes the time it saves");
+        // A time longer than the clock can count is as long as it can.
+        const temperature::TimeBased endless{
+            temperature::TimeBasedParameters{.allowed_running_time = 1e30}};
+        ok &= expect(
+            endless.level_time() > std::chrono::steady_clock::duration::zero()
+                && !endless.finished(),
+            "time-based SA holds an allowed time longer than the clock counts");
         ok &= expect(
             !temperature::TimeBasedParameters{.allowed_running_time = 0.0}.validate(),
             "time-based policy rejects a non-positive running time");

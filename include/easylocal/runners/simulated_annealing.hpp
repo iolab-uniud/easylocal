@@ -1091,7 +1091,7 @@ struct TimeBasedParameters
                 "accepted_per_temperature",
                 &TimeBasedParameters::accepted_per_temperature>(
                 "Accepted proposals that trigger cooling (unlimited: cool only on time)",
-                config::range(0, easylocal::unlimited)),
+                config::range(1, easylocal::unlimited)),
             config::field<
                 "calibration_samples",
                 &TimeBasedParameters::calibration_samples>(
@@ -1153,8 +1153,7 @@ public:
               parameters.initial_temperature,
               parameters.final_temperature,
               parameters.cooling_rate)},
-          running_time_{std::chrono::duration_cast<duration>(
-              std::chrono::duration<double>{parameters.allowed_running_time})}
+          running_time_{clock_duration(parameters.allowed_running_time)}
     {
         assert(parameters_.validate());
         reset();
@@ -1258,6 +1257,16 @@ public:
 
 private:
     using duration = typename Clock::duration;
+
+    // Seconds as the clock's duration, at most the longest it holds.
+    [[nodiscard]]
+    static duration clock_duration(const double seconds) noexcept
+    {
+        const std::chrono::duration<double> time{seconds};
+        if (time >= std::chrono::duration<double>{duration::max()})
+            return duration::max();
+        return std::chrono::duration_cast<duration>(time);
+    }
 
     TimeBasedParameters parameters_;
     std::size_t temperature_levels_{};
