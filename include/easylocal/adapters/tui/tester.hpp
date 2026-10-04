@@ -271,22 +271,6 @@ template<class T>
     return value;
 }
 
-inline ftxui::Element text_lines(const std::string& value)
-{
-    ftxui::Elements lines;
-    std::istringstream input{value};
-    std::string line;
-    while (std::getline(input, line))
-    {
-        lines.push_back(ftxui::paragraph(line));
-    }
-    if (lines.empty())
-    {
-        lines.push_back(ftxui::text(""));
-    }
-    return ftxui::vbox(std::move(lines));
-}
-
 [[nodiscard]] inline std::vector<std::string> split_text_lines(std::string_view value)
 {
     std::vector<std::string> lines;
@@ -304,6 +288,15 @@ inline ftxui::Element text_lines(const std::string& value)
         lines.emplace_back();
     }
     return lines;
+}
+
+// A text as a column of paragraphs, one per line.
+inline ftxui::Element text_lines(const std::string_view value)
+{
+    ftxui::Elements lines;
+    for (auto& line : split_text_lines(value))
+        lines.push_back(ftxui::paragraph(std::move(line)));
+    return ftxui::vbox(std::move(lines));
 }
 
 [[nodiscard]] inline std::vector<std::string> wrap_text_lines(
@@ -2463,9 +2456,7 @@ private:
         if (!parameter_error_.empty())
         {
             body.push_back(separator());
-            std::istringstream lines{parameter_error_};
-            for (std::string line; std::getline(lines, line);)
-                body.push_back(paragraph(line) | color(Color::Red));
+            body.push_back(text_lines(parameter_error_) | color(Color::Red));
         }
         body.push_back(separator());
         body.push_back(buttons->Render() | center);
@@ -2897,16 +2888,9 @@ private:
     void show_diagnostic(std::string title, std::string body)
     {
         diagnostic_title_ = std::move(title);
-        diagnostic_lines_.clear();
-        std::istringstream input{body};
-        for (std::string line; std::getline(input, line);)
-        {
-            diagnostic_lines_.push_back(std::move(line));
-        }
-        if (diagnostic_lines_.empty())
-        {
-            diagnostic_lines_.push_back("<no output>");
-        }
+        diagnostic_lines_ = body.empty()
+            ? std::vector<std::string>{"<no output>"}
+            : split_text_lines(body);
         diagnostic_selected_ = 0;
         diagnostic_visible_ = true;
     }
