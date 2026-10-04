@@ -807,7 +807,7 @@ easylocal_add_compile_failure_test(
 )
 easylocal_add_compile_failure_test(
     simulated-annealing-non-difference-cost
-    simulated_annealing_non_numeric_cost.cpp
+    simulated_annealing_non_difference_cost.cpp
     "MetropolisAcceptance requires candidate_cost - current_cost"
     "MetropolisAcceptance"
 )
