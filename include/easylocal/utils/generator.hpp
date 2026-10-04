@@ -19,6 +19,8 @@
 namespace easylocal
 {
 
+/// A coroutine that yields values of type T, lazily, as an input range:
+/// std::generator<T>, which the standard library provides.
 template<class T>
 using generator = std::generator<T>;
 
