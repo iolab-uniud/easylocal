@@ -28,9 +28,9 @@ comprehensive one. Run, the fastest first:
 - `scripts/format.sh --check`;
 - `ctest -j8` on `build/dev` (the platform's compiler, AppleClang with libc++
   on macOS);
-- when `include/` or `tests/` change, a GCC 16 build with its tests and a
-  GCC 15 Release build (`-O3` warnings): GCC covers libstdc++, so a local Clang
-  with libstdc++ build is not needed;
+- when `include/` or `tests/` change, `ctest -j8` on a GCC 15 Release build:
+  the oldest GCC, with libstdc++ and the `-O3` warnings; other GCC and Clang
+  versions are left to CI;
 - `scripts/tidy.sh build/dev` when `examples/` change, or the library they use;
 - `uv run mkdocs build --strict` when `docs/` changes.
 
@@ -50,8 +50,8 @@ gh workflow run ci.yml --ref main
 gh workflow run optional-components.yml --ref main
 ```
 
-CI covers Linux (GCC 15 and 16, Clang 22 and 23 with libstdc++ and libc++),
-macOS ARM64 (AppleClang, GCC 16) and Windows (clang-cl), with warnings as
+CI covers Linux (GCC 15 and 16, Clang 22 with libstdc++, Clang 23 with
+libc++), macOS ARM64 (AppleClang) and Windows (clang-cl), with warnings as
 errors. Code that builds with one compiler may not build with another: when CI
 fails, reproduce it with that compiler locally (for example a GCC 15 Release
 build).
