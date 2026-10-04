@@ -17,7 +17,9 @@ struct fixed_string
     /// The characters, with the terminating null.
     char value[Size]{};
 
-    /// From a string literal.
+    /// From a string literal, whose length it deduces: a deduction guide with
+    /// the same signature would make the deduction ambiguous for some
+    /// compilers.
     consteval fixed_string(const char (&text)[Size])
     {
         for (std::size_t index = 0; index < Size; ++index)
@@ -32,9 +34,5 @@ struct fixed_string
         return {value, Size - 1};
     }
 };
-
-/// Deduces the size from the string literal.
-template<std::size_t Size>
-fixed_string(const char (&)[Size]) -> fixed_string<Size>;
 
 } // namespace easylocal::config
