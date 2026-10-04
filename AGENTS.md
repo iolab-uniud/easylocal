@@ -98,9 +98,9 @@ The generated API reference (`scripts/api-docs.py`, MrDocs) is made of the
   or MrDocs reads them as HTML; a code example is a paragraph indented by four
   spaces.
 - Every public declaration has a comment: types, concepts, enums and their
-  values, aliases, functions, members and public fields.
-  `uv run scripts/api-docs.py build/<preset> --undocumented [--only <dir>/]`
-  lists those without one. Parameters and return values are explained in the
+  values, aliases, functions, members and public fields. One without a comment
+  fails the API build, in CI as with `uv run scripts/api-docs.py
+  build/<preset>`; `--undocumented [--only <dir>/]` lists them. Parameters and return values are explained in the
   text, not with their own commands.
 - Repeated members have the same comment everywhere: `parameter_schema()`,
   "The names, members and descriptions of the parameters."; `validate()`,

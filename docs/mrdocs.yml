@@ -19,10 +19,12 @@ generator: html
 multipage: true
 linkcss: true
 copycss: true
-# A warning fails the build; a missing comment is not one.
+# A warning fails the build: a malformed comment, or a public declaration
+# (an enum value included) without one. Parameters and return values are
+# explained in the text of the comment.
 warnings: true
 warn-as-error: true
 warn-if-doc-error: true
-warn-if-undocumented: false
+warn-if-undocumented: true
 warn-no-paramdoc: false
-warn-if-undoc-enum-val: false
+warn-if-undoc-enum-val: true
