@@ -194,6 +194,18 @@ void a_limit_is_a_count_or_unlimited_in_text()
     assert(value == 0); // unchanged by an invalid text
 }
 
+void a_number_reads_back_from_its_text()
+{
+    namespace config = easylocal::config;
+    const double precise = 0.123456789012345;
+    double read = 0.0;
+    assert(config::format_value(precise) == "0.123456789012345");
+    assert(config::detail::parse_text_value(config::format_value(precise), read).empty());
+    assert(read == precise);
+    assert(config::format_value(1e-7) == "1e-07");
+    assert(config::format_value(std::size_t{1234567}) == "1234567");
+}
+
 void every_temperature_policy_has_a_parameter_block()
 {
     namespace temperature = easylocal::runners::temperature;
@@ -265,5 +277,6 @@ int main()
     fixed_length_validation_checks_cross_field_invariants();
     first_improvement_parameters_live_with_the_search_method();
     a_limit_is_a_count_or_unlimited_in_text();
+    a_number_reads_back_from_its_text();
     neighborhood_union_parameter_block_describes_bias_array();
 }

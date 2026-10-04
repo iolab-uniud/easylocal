@@ -7,6 +7,7 @@
 
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/utils/detail/meta.hpp>
+#include <easylocal/utils/detail/number_text.hpp>
 #include <easylocal/utils/limit.hpp>
 
 #include <algorithm>
@@ -19,7 +20,6 @@
 #include <filesystem>
 #include <ranges>
 #include <span>
-#include <sstream>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -409,9 +409,7 @@ std::string format_value(const Value& value)
     }
     else if constexpr (std::integral<value_type> || std::floating_point<value_type>)
     {
-        std::ostringstream stream;
-        stream << value;
-        return stream.str();
+        return easylocal::detail::number_text(value);
     }
     else
     {

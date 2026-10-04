@@ -10,8 +10,8 @@
 #include <easylocal/cost/hierarchical.hpp>
 #include <easylocal/cost/lexicographic.hpp>
 #include <easylocal/cost/pareto.hpp>
+#include <easylocal/utils/detail/number_text.hpp>
 
-#include <array>
 #include <charconv>
 #include <cstddef>
 #include <stdexcept>
@@ -170,11 +170,7 @@ std::string to_text(const Cost& value)
     using cost_type = std::remove_cv_t<Cost>;
     if constexpr (arithmetic<cost_type>)
     {
-        std::array<char, 64> buffer{};
-        const auto [end, error] =
-            std::to_chars(buffer.data(), buffer.data() + buffer.size(), value);
-        static_cast<void>(error); // 64 characters hold any arithmetic value
-        return std::string{buffer.data(), end};
+        return easylocal::detail::number_text(value);
     }
     else if constexpr (hierarchical_type<cost_type>)
     {
