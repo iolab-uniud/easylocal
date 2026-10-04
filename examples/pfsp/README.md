@@ -18,7 +18,7 @@ outside `include/easylocal/` and adds no framework API.
   `std::hash`), used by the features that recognize a schedule met before.
 - `MakespanComponent`: the completion time of the last job on the last
   machine. A swap changes the completion times from its first position on, so
-  there is no delta evaluator: the runner evaluates candidates in full.
+  there is no delta cost component: the runner evaluates candidates in full.
 - `SwapJobsNeighborhoodExplorer`: the swap of the jobs at two positions,
   enumerated with the cursor protocol and drawn uniformly at random. A move
   records the jobs it swaps, because the tabu definitions are on jobs:

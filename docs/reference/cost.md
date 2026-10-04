@@ -5,8 +5,8 @@ and `<easylocal/helpers/recipes.hpp>` (`component`, `delta`)
 
 The cost of a solution is computed by **cost components**, combined by a
 **cost expression** into a value of a **cost type**. Moves are evaluated
-incrementally by **delta evaluators**. Together with the SolutionManager they
-form the *cost layer*; the delta evaluators bound to a NeighborhoodExplorer
+incrementally by **delta cost components**. Together with the SolutionManager they
+form the *cost layer*; the delta cost components bound to a NeighborhoodExplorer
 form the *delta cost layer*.
 
 ## Cost components
@@ -14,7 +14,7 @@ form the *delta cost layer*.
 | Member | Required |
 | --- | --- |
 | `evaluate(const Solution&) const -> Value` | yes |
-| `delta_evaluate(const Solution&, const Move&) const -> Delta` | no: a co-located delta evaluator |
+| `delta_evaluate(const Solution&, const Move&) const -> Delta` | no: a co-located delta cost component |
 | `name() -> std::string_view` (static or not) | no: its name in reports, otherwise its position, `#1` |
 | `describe(const Solution&) const -> std::string` | no: a text that explains its value on a solution, such as the violations it counts |
 
@@ -176,7 +176,7 @@ through its Input, which the Session and the TextUI use instead.
 `cost::apply` first and fall back to `<`, `==` and `<=`. Algorithms reach them through `run.better(...)`; the
 three relations are deliberately independent queries.
 
-## Delta evaluators
+## Delta cost components
 
 | Member | Required |
 | --- | --- |

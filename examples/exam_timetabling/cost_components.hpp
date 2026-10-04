@@ -36,7 +36,7 @@ public:
         return penalty;
     }
 
-    // A delta evaluator may be co-located with its component when that is the
+    // A delta cost component may be co-located with its component when that is the
     // clearest expression. Separate evaluator types remain the primary model.
     penalty_type delta_evaluate(const ExamTimetable& solution, const MoveExam& move) const
     {

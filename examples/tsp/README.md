@@ -63,7 +63,7 @@ heterogeneous TSP neighborhoods: the existing 2-opt explorer and a
 `random_biases(3.0, 1.0)`. A fixed `std::mt19937` seed makes repeated runs
 reproducible within the same standard-library implementation.
 
-Both child neighborhoods attach a `TourLengthComponent` delta evaluator. The
+Both child neighborhoods attach a `TourLengthComponent` delta cost component. The
 union exposes that component delta because every child provides it, then
 dispatches incrementally to the evaluator belonging to the tagged child move.
 `SwapTourLengthDeltaEvaluator` covers the four tour edges potentially affected

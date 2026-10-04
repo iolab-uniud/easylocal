@@ -1,8 +1,8 @@
 # 6. Combining neighborhoods
 
 The tour has two neighborhoods, both from chapter 3: the swap moves, listed by
-a generator and without a delta evaluator, and the 2-opt moves, listed by a
-cursor and with the delta evaluator of chapter 4. A search can use both. When
+a generator and without a delta cost component, and the 2-opt moves, listed by a
+cursor and with the delta cost component of chapter 4. A search can use both. When
 it evaluates a swap, `TourLength` is re-evaluated on a candidate tour; when it
 evaluates a 2-opt move, `TwoOptLengthDelta` is used.
 

@@ -109,7 +109,7 @@ callbacks refer to its state. Keep it alive for at least as long as the Crow
 application uses the registered Blueprint. Codec calls are serialized by the
 adapter, so a codec need not provide its own synchronization.
 
-The Assignment REST MWE demonstrates both supported input styles: a structured
+The Assignment REST example demonstrates both supported input styles: a structured
 object with `demand`/`capacity` and a JSON string containing the existing textual
 assignment-instance representation.
 
@@ -426,7 +426,7 @@ test also prevents optional adapters from reaching into `easylocal/detail/*`.
 ## HTTP integration test
 
 When REST is enabled on a Unix-like host with `curl`, CTest registers
-`easylocal.rest-http`. It starts the real Assignment Crow MWE and exercises the
+`easylocal.rest-http`. It starts the real Assignment Crow example and exercises the
 public surface with HTTP requests: discovery, malformed JSON, semantic `422`
 errors, structured and opaque-text input decoding, `Location`/run IDs, status
 and nested progress, result retrieval, active-run delete rejection, cooperative

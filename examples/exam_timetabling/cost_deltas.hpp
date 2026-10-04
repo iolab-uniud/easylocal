@@ -46,7 +46,7 @@ private:
     std::vector<std::vector<ConflictingExam>> conflicts_by_exam_;
 };
 
-// TimeslotLoadComponent has no delta evaluator: the change of a timeslot's
+// TimeslotLoadComponent has no delta cost component: the change of a timeslot's
 // load needs all the loads, and counting them visits every exam, which is what
 // a full evaluation does. EasyLocal then evaluates each move on a candidate
 // solution, which costs the same and needs no code.

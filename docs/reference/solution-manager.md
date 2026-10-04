@@ -82,7 +82,7 @@ components. A recipe has exactly one cost expression.
   `random_solution`. There is no automatic fallback between the two.
 - **Randomness is passed in.** `random_solution(rng)` receives the generator,
   so the caller (usually a solver) controls seeding and replay.
-- **No cost in the SolutionManager.** Earlier designs let a SolutionManager
-  evaluate the cost directly. Every problem now has the same cost layer, so
+- **No cost in the SolutionManager.** A SolutionManager does not evaluate the
+  cost: every problem has the same cost layer, so
   delta evaluation, weighting and per-component diagnostics are always
   available; a monolithic objective is a single cost component.

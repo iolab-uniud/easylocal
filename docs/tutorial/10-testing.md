@@ -14,7 +14,7 @@ const elt::fixture<tutorial::TourManager> tsp{
 ```
 
 Each check names the type under test and builds it from the fixture, as an app
-would: a component or a delta evaluator from the Input, a NeighborhoodExplorer
+would: a component or a delta cost component from the Input, a NeighborhoodExplorer
 from the SolutionManager.
 
 <!-- snippet: tutorial/checks.cpp:run-checks -->
@@ -26,7 +26,7 @@ return elt::run_checks(
     elt::check_neighborhood<SwapExplorer>(tsp),
     elt::check_neighborhood<TwoOptExplorer>(tsp),
     elt::check_delta_evaluator<TwoOptExplorer, TourLength, TwoOptLengthDelta>(tsp),
-    // No delta evaluator: the check uses the component's own delta_evaluate.
+    // No delta cost component: the check uses the component's own delta_evaluate.
     elt::check_delta_evaluator<TwoOptExplorer, TourLengthWithDelta>(tsp));
 ```
 
@@ -47,7 +47,7 @@ solution. A third argument sets the sampling limits
 argument replaces `==` for comparing values, for instance with a tolerance. A
 component that cannot be built from the Input alone is passed as an object:
 `check_cost_component(f, TourLength{...})`; the same holds for
-neighborhoods and delta evaluators. `testing.hpp` is not part of the Core
+neighborhoods and delta cost components. `testing.hpp` is not part of the Core
 umbrella: include it from your test executables.
 
 For a whole composed problem, `easylocal::check(app, input)` runs the same

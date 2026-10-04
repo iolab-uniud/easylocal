@@ -27,7 +27,7 @@ inline quantity_type overload(quantity_type load, quantity_type capacity)
     return std::max(quantity_type{0}, load - capacity);
 }
 
-// No delta evaluator is bound to these components: the change of a machine's
+// No delta cost component is bound to these components: the change of a machine's
 // load needs the loads, and computing them means scanning every job, which is
 // what a full evaluation does. EasyLocal then evaluates each move on a
 // candidate solution, which costs the same and needs no code.

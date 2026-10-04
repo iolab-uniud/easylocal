@@ -55,7 +55,7 @@ the tutorial. Beyond the names:
   (see the [conventions of the tutorial](tutorial/README.md#conventions-of-the-code)).
 - Migrate in the order of this page, and run the program after each group
   of steps. A first version needs only the SolutionManager, the cost
-  components and one explorer: without delta evaluators, moves are evaluated
+  components and one explorer: without delta cost components, moves are evaluated
   on a copy of the solution with the move applied. Add the deltas afterwards,
   one at a time, and let the Session check each against the full evaluation
   (step 6), as EasyLocal 3's `MoveTester` did.

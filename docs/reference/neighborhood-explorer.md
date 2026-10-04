@@ -77,7 +77,7 @@ class neighborhood_explorer_base;  // aliases, input(), protected solution_manag
 
 ```cpp
 neighborhood<NHE>(args...)
-  | delta<C, D>(args...)     // separate delta evaluator for component C
+  | delta<C, D>(args...)     // separate delta cost component for component C
   | delta<C>()               // co-located: C::delta_evaluate
 // equivalently: neighborhood<NHE>(args...).with_delta<C, D>(args...).with_delta<C>()
 ```

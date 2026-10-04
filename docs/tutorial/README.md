@@ -78,11 +78,11 @@ Every EasyLocal program follows the same three steps:
 
 ```text
 model     values      Input (immutable), Solution, Move
-          services    SolutionManager       valid solutions, construction
-                      cost components       one term of the objective each
-                      cost expression       the cost from the component values
-                      NeighborhoodExplorer  moves: enumeration, sampling, application
-                      delta evaluators      the change of a component under a move
+          services    SolutionManager        valid solutions, construction
+                      cost components        one term of the objective each
+                      cost expression        the cost from the component values
+                      NeighborhoodExplorer   moves: enumeration, sampling, application
+                      delta cost components  the change of a component under a move
 
 compose   a runner    an algorithm plus the recipes of the services
                       (and, optionally, a solver or an app around it)
@@ -91,7 +91,7 @@ run       bind the runner to an Input, run it from a solution, read the result
 ```
 
 The SolutionManager with its cost components and cost expression forms the
-*cost layer*; the NeighborhoodExplorer with its delta evaluators forms the *delta
+*cost layer*; the NeighborhoodExplorer with its delta cost components forms the *delta
 cost layer*. You describe these compositions with recipes, and the framework
 materializes them when the runner is bound to an Input.
 

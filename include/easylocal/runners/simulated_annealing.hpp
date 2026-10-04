@@ -1139,7 +1139,7 @@ struct TimeBasedParameters
 ///
 /// The annealing ends when the time is over or the final temperature is
 /// reached. The trajectory depends on the speed of the machine, so equal seeds
-/// no longer give equal runs. The clock is read once per proposal.
+/// do not give equal runs. The clock is read once per proposal.
 template<class Clock = std::chrono::steady_clock>
 class BasicTimeBased
 {

@@ -19,8 +19,8 @@ object-oriented local search framework first described in 2003. The design
 principles stay — a problem is described by a few components, and generic
 algorithms are composed on top of them — but the implementation is new: a
 C++23 header-only library based on concepts and value semantics instead of
-class hierarchies and virtual dispatch. Code written for EasyLocal++ 3 needs
-porting; [From EasyLocal++ 3](docs/from-easylocal-3.md) maps the
+class hierarchies and virtual dispatch. Code written for EasyLocal 3 needs
+porting; [From EasyLocal 3](docs/from-easylocal-3.md) maps the
 old concepts onto the new ones.
 
 ### Problem model

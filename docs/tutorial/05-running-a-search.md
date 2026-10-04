@@ -5,7 +5,7 @@
 A **runner** couples a search algorithm with the recipes of the services it
 uses. Here First Improvement is combined with the recipes `sm` (the
 SolutionManager with `TourLength`, chapter 2) and `nhe` (the 2-opt neighborhood
-with its delta evaluator, chapter 4), then run on the five cities:
+with its delta cost component, chapter 4), then run on the five cities:
 
 <!-- snippet: tutorial/main.cpp:first-improvement -->
 ```cpp

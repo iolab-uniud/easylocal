@@ -2,14 +2,14 @@
 
 The concepts of EasyLocal 3 and their counterparts in this framework:
 
-| EasyLocal 3 | EasyLocal |
+| EasyLocal 3 | EasyLocal 4 |
 | --- | --- |
 | Input / State / Move | Input / Solution / Move, plain values |
 | `StateManager` | SolutionManager: validity and construction only |
 | `CostComponent` | cost component (`evaluate`), attached with `component<C>()` |
 | `PrintViolations` | an optional `describe(solution)` member of the cost component |
 | hard/soft components and weights | cost expressions: `cost::hard_soft`, `cost::sum`, `cost::weighted`, `cost::in_order`, `cost::apply` |
-| `DeltaCostComponent` | delta evaluator (`delta_evaluate`), attached with `delta<C, D>()` |
+| `DeltaCostComponent` | delta cost component (`delta_evaluate`), attached with `delta<C, D>()` |
 | `NeighborhoodExplorer` (`FirstMove`, `NextMove`, `RandomMove`, `MakeMove`) | NeighborhoodExplorer: cursor or `moves`, `random_move`, `make_move` |
 | `MultimodalNeighborhoodExplorer` | `neighborhood_union` |
 | `Runner` subclasses (hill climbing, SA, ...) | algorithm classes in `easylocal::runners` with one `run` member |

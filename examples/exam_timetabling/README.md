@@ -10,7 +10,7 @@ expression
 - `ConsecutiveExamComponent`: students with exams in consecutive timeslots;
 - `TimeslotLoadComponent`: squared timeslot load, used as a simple balance term.
 
-Two components have delta evaluators for `MoveExam`, in both supported
+Two components have delta cost components for `MoveExam`, in both supported
 spellings: `StudentConflictComponent` co-locates its `delta_evaluate(...)` and
 is attached with `delta<StudentConflictComponent>()`, while
 `ConsecutiveExamComponent` uses the separate-evaluator form

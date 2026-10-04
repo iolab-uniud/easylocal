@@ -81,7 +81,7 @@ struct ConflictingExam
     penalty_type students;
 };
 
-// For each exam, the exams it shares students with: a delta evaluator visits
+// For each exam, the exams it shares students with: a delta cost component visits
 // only the conflicts of the exam a move changes.
 inline std::vector<std::vector<ConflictingExam>> conflicts_by_exam(
     const ExamTimetablingInstance& instance)

@@ -273,7 +273,7 @@ auto excess_sm = el::solution_manager<TourManager>()
   struct needs no operators: the algorithms compare the numbers `cost::apply`
   returns. `cost::apply` is also how a domain value enters a `cost::sum`,
   which adds numbers only.
-- **With a delta evaluator** (chapter 4), the delta is added to the value, so
+- **With a delta cost component** (chapter 4), the delta is added to the value, so
   the struct also needs `operator+(Value, Delta)`.
 
 With First Improvement and the 2-opt moves, `long_edges_sm` stops at an

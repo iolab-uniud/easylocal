@@ -182,7 +182,7 @@ Simulated Annealing returns the best solution found. Temperature policies in
 
 `TimeBased` reads the clock (`std::chrono::steady_clock`; `BasicTimeBased<Clock>`
 takes another one) once per proposal. Its trajectory depends on the speed of
-the machine, so equal seeds no longer give equal runs.
+the machine, so equal seeds do not give equal runs.
 
 `Reheating<Descent>` reheats any schedule whose parameters have an
 `initial_temperature` (all but `FixedTemperature`): a first descent, then up to

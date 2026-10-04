@@ -254,11 +254,11 @@ derives its instance through that manager. They do not use virtual dispatch and
 are not required by the structural Runner concepts; fully custom duck-typed
 services remain supported.
 
-The current Assignment, TSP, Exam Timetabling and PFSP MWEs live under
+The Assignment, TSP, Exam Timetabling and PFSP examples live under
 `examples/assignment/`, `examples/tsp/`, `examples/exam_timetabling/` and
-`examples/pfsp/` and are intentionally not part of the public include tree.
-Exam Timetabling is the reference MWE for multi-component weighted costs and
-Simulated Annealing, PFSP for Tabu Search.
+`examples/pfsp/` and are not part of the public include tree. Exam Timetabling
+is the reference example for multi-component weighted costs and Simulated
+Annealing, PFSP for Tabu Search.
 
 Runners and solvers are built with `make_runner<Algorithm>(parameters)` and
 `make_solver<Solver>(runner, config)`. Composition has two equivalent
@@ -340,15 +340,11 @@ are provided for trajectory/STN/LON-style analyses. Long runs can instead use an
 incremental JSONL recorder that does not retain the event history; see
 [`docs/tracing.md`](docs/tracing.md).
 
-All three MWEs now contain runnable `main` programs and load their small problem
-instances from versioned files under the corresponding `instances/` directory.
-Each `main` owns an application-level `AppParameters` block containing at least
-the instance-file path (and an RNG seed for stochastic examples). The runner
-then gives its own parameters as a set with relative paths, which the program
-adds under a prefix of its choice: `application.*` next to `solver.*`, without
-rebuilding the search/neighborhood hierarchy by hand. This keeps application
-identity outside the framework types while making the effective runner
-configuration introspectable.
+The examples are runnable programs that load their small instances from files
+under their `instances/` directories. They are written with `cli::run`, which
+reads the instance, the seed and the runner from the command line next to the
+app's parameters (`--runners.<name>.*`, `--cost.*`, `--neighborhood.*`); a
+program gives its own values for them with `cli::options::defaults`.
 
 The Assignment executable is
 `./build/<preset>/examples/assignment/easylocal_assignment`; Exam
@@ -364,16 +360,14 @@ Simulated Annealing is public under `easylocal::runners`. Its hot loop is fully
 policy based and uses no virtual dispatch: the concrete temperature and
 acceptance policy types are template parameters, while their configuration and
 run state remain ordinary runtime data stored by value. The standard
-`MetropolisAcceptance` requires an arithmetic, non-`bool` cost; for this S20
-contract that numeric cost is directly the SA energy, with no Cost-to-Energy
-adapter.
+`MetropolisAcceptance` requires a cost with `cost::delta`, the difference of two
+costs as a number.
 
 ## Typed parameter leaves
 
-The first configuration layer is intentionally limited to typed parameter
-blocks. A parameter block owns its ordinary C++ values, declares an internal
-`parameter_schema()` next to those values, and validates its own invariants with
-`validate()`. A block may nest another one with
+Configuration is made of typed parameter blocks. A parameter block owns its
+ordinary C++ values, declares a `parameter_schema()` next to those values, with
+the domain of each field, and validates its own invariants with `validate()`. A block may nest another one with
 `config::group<"name", &Block::member>`. Defaults remain ordinary member
 initializers or constructor values; they are not duplicated in the schema.
 
@@ -381,11 +375,8 @@ initializers or constructor values; they are not duplicated in the schema.
 `NeighborhoodUnionParameters<N>` are current framework-side examples. Concrete
 parameter blocks live beside the object they configure: search-method parameters
 in the search-method header, temperature-policy parameters beside the policy,
-and union parameters beside `neighborhood_union`. Each runnable MWE defines its
-application-owned `AppParameters` directly in its `main`, because the instance
-path and seed belong to the application rather than to EasyLocal. Concrete CLI
-and compact configuration-file frontends are layered separately on top of the
-source-neutral textual override mapper.
+and union parameters beside `neighborhood_union`. The command line and the
+configuration files are frontends over the same textual overrides.
 
 ### Parameter sets
 
@@ -424,9 +415,8 @@ state derived from them (such as a temperature schedule), when it is bound.
 Objects that keep derived state themselves, such as a neighborhood union, take
 part through `parameters()` and `configure()`: a valid block is committed
 through `configure()`. Exposure through a const object is read-only.
-Configuration applies to application values and unbound runner
-recipes/policies; reconfiguration of an already bound/running search is
-deliberately deferred.
+A change applies from the next run: a search already running keeps the values
+it started with.
 
 ### Textual override batches
 
@@ -450,10 +440,11 @@ constexpr std::array overrides{
 const auto result = configuration.apply(overrides);
 ```
 
-The initial built-in textual types are `bool`, integral and floating-point
-values, `std::string`, `std::filesystem::path`, and fixed `std::array` values
-whose elements are themselves supported. Fixed arrays accept bracketed or
-comma-separated forms such as `[3, 1]` and `3,1`. Parsing and validation
+The textual types are `bool`, integral and floating-point values,
+`easylocal::limit` (a count or `unlimited`), `std::string`,
+`std::filesystem::path`, and `std::array` and `std::vector` values whose
+elements are themselves supported. Lists accept bracketed or comma-separated
+forms such as `[3, 1]` and `3,1`, and nest: `[[1, 2], [3, 4]]`. Parsing and validation
 diagnostics are accumulated rather than stopping at the first error. The
 result distinguishes duplicate paths, unknown parameters, read-only targets,
 parse failures, and block-validation failures; diagnostics retain the offending
@@ -489,7 +480,7 @@ validation, and transactional commit remain responsibilities of `apply`.
 ### Compact configuration-file frontend
 
 `easylocal::config::load_config_file` reads the intentionally small line-based
-format used by the runnable MWEs:
+format used by the examples:
 
 ```text
 # Full-line comments begin with #.
@@ -500,7 +491,7 @@ solver.neighborhood.random_biases = [3, 1]
 
 Each non-comment line is exactly `path = textual-value`; the first `=` separates
 the structural path from the value, so the right-hand side is passed to the same
-S27a typed parser used by the CLI. The file frontend reports open errors, malformed
+typed parser as the command line. The file frontend reports open errors, malformed
 lines, empty paths, duplicate paths, and source line numbers without modifying
 configuration.
 
@@ -513,7 +504,7 @@ C++ construction/defaults < configuration file < CLI
 `overlay_overrides` resolves file-vs-CLI precedence first, then one single
 `apply` call validates and commits the effective batch. Source syntax
 errors and effective typed/validation errors all cause failure with zero commits;
-the runnable MWEs return a non-zero exit status after printing diagnostics. CLI
+the examples return a non-zero exit status after printing diagnostics. CLI
 therefore remains a final explicit override layer rather than a second mutation
 pass.
 

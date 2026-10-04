@@ -1,9 +1,9 @@
 # 4. Delta evaluation
 
-To evaluate a move without a delta evaluator, EasyLocal applies it to a copy
+To evaluate a move without a delta cost component, EasyLocal applies it to a copy
 of the tour and evaluates `TourLength` on the copy: a pass over the whole tour
 for every move. A move changes only a few edges, though, and its effect on the
-length could be computed from those edges alone. A **delta evaluator** does
+length could be computed from those edges alone. A **delta cost component** does
 that.
 
 For swap moves, such a delta is possible but fiddly: the edges around the two
@@ -12,7 +12,7 @@ end of the tour, and each case needs its own formula. A 2-opt move always
 changes exactly two edges (chapter 3), so its delta is one formula; the swap
 moves stay without one.
 
-## The delta evaluator
+## The delta cost component
 
 The change of the tour length under a 2-opt move needs only the four cities
 `a`, `b`, `c` and `d`:
@@ -68,7 +68,7 @@ auto nhe =
 
 ## Choice: separate or co-located
 
-A delta evaluator can be a separate class, as `TwoOptLengthDelta` above, or a
+A delta cost component can be a separate class, as `TwoOptLengthDelta` above, or a
 `delta_evaluate(solution, move)` member of the component itself. The
 co-located version of the tour length puts the two computations in one class:
 
@@ -139,7 +139,7 @@ Chapter 10 shows how to check that a delta agrees with the full evaluation.
 
 ## See also
 
-- [Cost](../reference/cost.md#delta-evaluators): the delta contract.
+- [Cost](../reference/cost.md#delta-cost-components): the delta contract.
 - [NeighborhoodExplorer](../reference/neighborhood-explorer.md): how deltas are
   bound.
 

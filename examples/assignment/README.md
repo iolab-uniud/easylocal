@@ -150,7 +150,7 @@ its hard cost.
 
 ## Delta evaluation
 
-The example binds no delta evaluator, on purpose. The change of the capacity
+The example binds no delta cost component, on purpose. The change of the capacity
 component under a reassignment depends on the loads of two machines, and
 without stored loads computing them means scanning every job: a delta would
 cost as much as the full evaluation. The neighborhood is therefore attached
@@ -201,7 +201,7 @@ deltas against a lexicographic hard cost.
 
 `ReassignJobNeighborhoodExplorer`
 : Problem-side service responsible for neighborhood traversal, move validity and
-  `make_move`. Delta evaluators are optional capabilities attached externally to
+  `make_move`. Delta cost components are optional capabilities attached externally to
   a particular neighborhood recipe, so the same explorer and move types can be
   reused by different runners with different incremental-evaluation sets.
 
