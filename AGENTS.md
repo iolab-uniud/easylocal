@@ -67,6 +67,10 @@ the uv environment: `uv sync`, then `uv run ...`.
   time, with templates, rather than by runtime parameters.
 - Comments match the surrounding code: a short description of each class or
   function, no narration of the change.
+- In `include/`, the comment of a public declaration (a class, a function, an
+  alias, a public field) and the leading comment of a header (`/// \file`) are
+  written with `///`, which Doxygen reads for the generated API reference;
+  every other comment (in `detail`, in a body, on a private member) with `//`.
 
 ## Formatting
 
