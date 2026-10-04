@@ -410,7 +410,8 @@ inline std::vector<declared_irace_parameter> read_irace_parameters(std::istream&
         const auto switch_end = text.find('"', text.find('"', name_end) + 1);
         if (switch_end == std::string_view::npos || switch_end > open)
             continue;
-        declared_irace_parameter parameter{.name = std::string{text.substr(0, name_end)}};
+        declared_irace_parameter parameter;
+        parameter.name = std::string{text.substr(0, name_end)};
         parameter.type =
             trim_irace_text(text.substr(switch_end + 1, open - switch_end - 1)).front();
         auto values = text.substr(open + 1, close - open - 1);
@@ -505,14 +506,13 @@ inline std::vector<irace_parameter> irace_parameters(
 
     if (stub.runners.size() > 1)
     {
-        irace_parameter runner{
-            .name = "runner",
-            .type = 'c',
-            .values = stub.runners,
-            .default_value = stub.runners.front(),
-            .active = true,
-            .description = "The runner",
-        };
+        irace_parameter runner;
+        runner.name = "runner";
+        runner.type = 'c';
+        runner.values = stub.runners;
+        runner.default_value = stub.runners.front();
+        runner.active = true;
+        runner.description = "The runner";
         result.push_back(std::move(runner));
     }
 
@@ -522,11 +522,10 @@ inline std::vector<irace_parameter> irace_parameters(
         if (!owner.empty()
             && std::ranges::find(stub.runners, owner) == stub.runners.end())
             continue; // a runner that is not tuned
-        irace_parameter parameter{
-            .name = info.path,
-            .default_value = info.value,
-            .description = info.description,
-        };
+        irace_parameter parameter;
+        parameter.name = info.path;
+        parameter.default_value = info.value;
+        parameter.description = info.description;
         if (!owner.empty() && stub.runners.size() > 1)
             parameter.condition = "runner == \"" + owner + '"';
 
