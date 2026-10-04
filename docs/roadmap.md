@@ -249,8 +249,10 @@ would also become a rule of the code style for future twins.
 
 **When.** Once every compiler of the CI matrix is known to support it. GCC
 15 and 16 and Clang 22 and 23 should; Apple Clang on the macOS runners and
-clang-cl on Windows are to be verified. A first step is a probe dispatched
-through CI (a check of `__cpp_explicit_this_parameter`), then the change.
+clang-cl on Windows are to be verified: the test
+`easylocal.explicit-object-parameter` builds the shape of the change on every
+compiler of the CI. Once it passes everywhere, the twins become one member
+each and the code style gains the rule.
 
 ## The API reference in the style of the site
 

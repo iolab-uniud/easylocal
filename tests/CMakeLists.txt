@@ -528,6 +528,14 @@ easylocal_add_test(
 )
 
 easylocal_add_test(
+    explicit-object-parameter
+    SOURCES
+        explicit_object_parameter.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
+
+easylocal_add_test(
     parameter-set
     SOURCES
         parameter_set.cpp
