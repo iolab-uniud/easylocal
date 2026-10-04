@@ -65,7 +65,12 @@ class Tui:
         self.pid, self.fd = pid, fd
         fcntl.ioctl(fd, termios.TIOCSWINSZ,
                     struct.pack("HHHH", self.lines, self.columns, 0, 0))
-        self.settle(quiet=1.0)
+        # The first frame, then a short quiet time for the rest of it.
+        deadline = time.time() + 8.0
+        while not self.text().strip() and time.time() < deadline:
+            if not self.pump(0.05):
+                break
+        self.settle(quiet=0.3)
         return self
 
     def __enter__(self) -> "Tui":
@@ -154,6 +159,16 @@ class Tui:
     def text(self) -> str:
         return "\n".join(line.rstrip() for line in self.screen_buffer.display)
 
+    def snapshot(self) -> tuple:
+        """The screen with what the text leaves out: the cursor and the style
+        of each character, which is all a change of focus may change."""
+        screen = self.screen_buffer
+        cells = tuple(
+            (char.data, char.fg, char.bg, char.bold, char.reverse, char.underscore)
+            for row in range(screen.lines)
+            for char in (screen.buffer[row][column] for column in range(screen.columns)))
+        return screen.cursor.x, screen.cursor.y, cells
+
     # -- terminal size --------------------------------------------------------
 
     def resize(self, columns: int, lines: int, quiet: float = 0.2,
@@ -185,18 +200,26 @@ class Tui:
                 self.settle()
         return self
 
+    def keys(self, *keys: str) -> "Tui":
+        """Send the keys at once and wait for the screen to be quiet: for
+        typing, or keys repeated (Delete, Backspace) whose order is all that
+        matters."""
+        os.write(self.fd, "".join(keys).encode())
+        self.settle()
+        return self
+
     def type(self, text: str) -> "Tui":
-        return self.press(*text)
+        return self.keys(text)
 
     def step(self, key: str, limit: float = 2.0) -> "Tui":
         """Press `key` and wait for the screen to change (for at most `limit`
         seconds, as a key may change nothing): a slow machine may redraw after
         the quiet time of `press`, and a loop pressing until a marker shows
         would then press once too often."""
-        before = self.text()
+        before = self.snapshot()
         os.write(self.fd, key.encode())
         deadline = time.time() + limit
-        while self.text() == before and time.time() < deadline:
+        while self.snapshot() == before and time.time() < deadline:
             if not self.pump(0.05):
                 break
         self.settle()

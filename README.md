@@ -94,9 +94,10 @@ uv run mkdocs serve                           # preview the documentation site
 
 Scripts that only use the standard library also run with a plain `python3`,
 which is how the test suite runs the snippet check. With the TUI component, the
-suite also runs `easylocal.tui-e2e` (label `tui-e2e`): `tests/tui` drives the
-tutorial's tester in a pseudo-terminal through `scripts/tui_driver.py` and
-checks its user flows on the screen it shows.
+suite also runs the tests of `tests/tui` (label `tui-e2e`, one test
+`easylocal.tui-e2e.<name>` per file): they drive the tutorial's tester in a
+pseudo-terminal through `scripts/tui_driver.py` and check its user flows on the
+screen it shows.
 
 ## Header-only library
 

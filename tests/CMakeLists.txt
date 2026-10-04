@@ -1288,18 +1288,26 @@ if(UNIX AND TARGET easylocal_tutorial_tui)
             list(APPEND easylocal_tui_e2e_environment
                 "EASYLOCAL_ASSIGNMENT_TUI=$<TARGET_FILE:easylocal_assignment_tui>")
         endif()
-        add_test(
-            NAME easylocal.tui-e2e
-            COMMAND ${easylocal_tui_e2e_python} -m pytest -q -p no:cacheprovider
-                "${PROJECT_SOURCE_DIR}/tests/tui"
-        )
-        set_tests_properties(
-            easylocal.tui-e2e
-            PROPERTIES
-                LABELS "integration;tui-e2e"
-                ENVIRONMENT "${easylocal_tui_e2e_environment}"
-                TIMEOUT 600
-        )
+        # One test per file, easylocal.tui-e2e.<name> for test_<name>.py, so
+        # that ctest runs them in parallel.
+        file(GLOB easylocal_tui_e2e_files CONFIGURE_DEPENDS
+            "${PROJECT_SOURCE_DIR}/tests/tui/test_*.py")
+        foreach(easylocal_tui_e2e_file IN LISTS easylocal_tui_e2e_files)
+            get_filename_component(easylocal_tui_e2e_name "${easylocal_tui_e2e_file}" NAME_WE)
+            string(REGEX REPLACE "^test_" "" easylocal_tui_e2e_name "${easylocal_tui_e2e_name}")
+            add_test(
+                NAME easylocal.tui-e2e.${easylocal_tui_e2e_name}
+                COMMAND ${easylocal_tui_e2e_python} -m pytest -q -p no:cacheprovider
+                    "${easylocal_tui_e2e_file}"
+            )
+            set_tests_properties(
+                easylocal.tui-e2e.${easylocal_tui_e2e_name}
+                PROPERTIES
+                    LABELS "integration;tui-e2e"
+                    ENVIRONMENT "${easylocal_tui_e2e_environment}"
+                    TIMEOUT 300
+            )
+        endforeach()
     else()
         message(STATUS "neither uv nor Python with pyte and pytest: TUI end-to-end tests disabled")
     endif()

@@ -3,8 +3,8 @@
 (examples/tsp/tui_main.cpp) and the assignment example's slow runner
 (examples/assignment/tui_main.cpp).
 
-CTest runs them as `easylocal.tui-e2e` when the TUI component and uv are
-available; by hand:
+CTest runs each file as `easylocal.tui-e2e.<name>` (label `tui-e2e`) when the
+TUI component and uv are available; by hand:
 
     EASYLOCAL_TUTORIAL_TUI=build/<preset>/examples/tutorial/easylocal_tutorial_tui \
     EASYLOCAL_TSP_TUI=build/<preset>/examples/tsp/easylocal_tsp_tui \
@@ -37,6 +37,24 @@ def tui(binary):
         yield driver
     # A killed tester writes no coverage data: each flow must end quittable.
     assert driver.exit_status == 0, "the tester did not quit with q"
+
+
+@pytest.fixture
+def terminal(binary):
+    """Start the tester in a terminal of the size a test gives; each one must
+    quit with q at the end, as with the tui fixture."""
+    drivers: list[Tui] = []
+
+    def start(columns: int, lines: int) -> Tui:
+        driver = Tui(binary, columns=columns, lines=lines).start()
+        drivers.append(driver)
+        return driver
+
+    yield start
+    for driver in drivers:
+        driver.close()
+    for driver in drivers:
+        assert driver.exit_status == 0, "the tester did not quit with q"
 
 
 @pytest.fixture
