@@ -552,16 +552,32 @@ public:
     ///
     /// The session's services are rebuilt with the new values, so the costs it
     /// reports follow them; the current solution stays and the selected move is
-    /// cleared. The runners read their parameters at each run.
+    /// cleared. The runners read their parameters at each run. When the
+    /// rebuilding throws, the app gets its previous values back first.
     config::override_result configure(
         const std::span<const config::text_override> overrides)
         requires requires(App& application) { application.configuration(); }
     {
+        const auto previous = bound_
+            ? app_.configuration().parameters()
+            : std::vector<config::parameter_info>{};
         auto result = app_.configuration().apply(overrides);
         if (result && bound_)
         {
-            bound_ =
-                std::unique_ptr<bound_app_type>{new bound_app_type(app_.bind(*input_))};
+            try
+            {
+                bound_ = std::unique_ptr<bound_app_type>{
+                    new bound_app_type(app_.bind(*input_))};
+            }
+            catch (...)
+            {
+                std::vector<config::text_override> restore;
+                for (const auto& parameter : previous)
+                    if (!parameter.read_only)
+                        restore.push_back({parameter.path, parameter.value});
+                static_cast<void>(app_.configuration().apply(restore));
+                throw;
+            }
             clear_move_state();
         }
         return result;
