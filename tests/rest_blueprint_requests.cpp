@@ -354,6 +354,22 @@ void a_run_has_a_time_limit(crow::SimpleApp& server)
         assert(rejected.code == 422);
         assert(text(rejected.body["error"]["message"]).starts_with("'timeout' must be"));
     }
+
+    // An evaluation budget: one evaluation, the initial one.
+    const auto budgeted = submit(server, "fi", R"({"input": {}, "max_evaluations": 1})");
+    assert(budgeted.code == 202);
+    const auto spent = wait_for(server, text(budgeted.body["id"]), "succeeded");
+    assert(spent["max_evaluations"].u() == 1);
+    assert(spent["progress"]["evaluations"].u() == 1);
+    for (const auto* const body :
+        {R"({"input": {}, "max_evaluations": -1})",
+            R"({"input": {}, "max_evaluations": 1.5})"})
+    {
+        const auto rejected = submit(server, "fi", body);
+        assert(rejected.code == 422);
+        assert(text(rejected.body["error"]["message"])
+                .starts_with("'max_evaluations' must be"));
+    }
 }
 
 void a_run_starts_from_the_given_initial_solution(crow::SimpleApp& server)

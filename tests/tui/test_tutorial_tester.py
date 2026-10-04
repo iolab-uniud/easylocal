@@ -2,7 +2,7 @@
 
 import re
 
-from tui_driver import BACKSPACE, DELETE, DOWN, ENTER, ESCAPE, F3, F4, F5, TAB, UP, Tui
+from tui_driver import BACKSPACE, DELETE, DOWN, ENTER, ESCAPE, F3, F4, F5, RIGHT, TAB, UP, Tui
 
 INITIAL_COST = 29  # the initial tour 0-1-2-3-4 of five.tsp
 
@@ -98,8 +98,8 @@ def set_target(tui: Tui, target: str) -> None:
     """On the Run page, type the target cost and select fi again."""
     tui.press(F5)
     tui.focus("P Problem parameters")  # through the runner list
-    # To the last field, the time limit, then up to the target above it.
-    tui.press(*[DOWN] * 8, UP)
+    # To the last row, the limits, then up to the target.
+    tui.press(*[DOWN] * 10, UP)
     tui.type(target)
     tui.select("fi", key=UP)
 
@@ -130,7 +130,7 @@ def test_a_time_limit_stops_the_run(tui):
     # initial tour.
     tui.press("I", F5)
     tui.focus("P Problem parameters")  # through the runner list
-    tui.press(*[DOWN] * 8)  # to the last field, the time limit
+    tui.press(*[DOWN] * 10)  # to the last row, the limits: seconds first
     tui.type("0")
     tui.select("fi", key=UP)
     tui.press("G")
@@ -142,7 +142,7 @@ def test_a_time_limit_stops_the_run(tui):
 def test_an_invalid_time_limit_runs_nothing(tui):
     tui.press("I", F5)
     tui.focus("P Problem parameters")
-    tui.press(*[DOWN] * 8)
+    tui.press(*[DOWN] * 10)
     tui.type("soon")
     tui.select("fi", key=UP)
     tui.press("G")
@@ -150,6 +150,20 @@ def test_an_invalid_time_limit_runs_nothing(tui):
     tui.press(ENTER)
     tui.expect("Time limit: give a non-negative number of seconds, or nothing")
     tui.expect_absent("Runner executing")
+
+
+def test_an_evaluation_budget_stops_the_run(tui):
+    # One evaluation, the initial one: First Improvement stops on the initial
+    # tour.
+    tui.press("I", F5)
+    tui.focus("P Problem parameters")
+    tui.press(*[DOWN] * 10, RIGHT)  # the last row, then from seconds to evaluations
+    tui.type("1")
+    tui.select("fi", key=UP)
+    tui.press("G")
+    tui.expect("Parameters of fi")
+    tui.press(ENTER)
+    tui.expect(f"fi: {INITIAL_COST} -> {INITIAL_COST} (evaluation budget exhausted)")
 
 
 def test_seed_from_the_interface_is_reproducible(binary):

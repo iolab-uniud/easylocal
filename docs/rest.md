@@ -180,13 +180,16 @@ encoded by `encode_cost`.
 ```
 
 A `timeout`, in seconds (a non-negative JSON number), stops the run once it has
-passed (`timeout` in C++); run resources repeat it. Any other value is rejected
-with `422`.
+passed (`timeout` in C++), and `max_evaluations`, a non-negative integer, once
+it has made that many evaluations (`max_evaluations` in C++; a runner's own,
+if smaller, still applies); run resources repeat them. Any other value is
+rejected with `422`.
 
 ```json
 {
   "input": { "...": "..." },
-  "timeout": 2.5
+  "timeout": 2.5,
+  "max_evaluations": 100000
 }
 ```
 

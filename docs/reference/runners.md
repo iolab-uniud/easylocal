@@ -291,12 +291,14 @@ Great Deluge, Simulated Annealing and the tabu searches use it.
 | `with(tracer)` | semantic trace events |
 | `with(control, tracer)` | both |
 | `stop_at(target)`, `with(...).stop_at(target)` | stop as soon as the best cost is at least as good as `target` |
+| `max_evaluations(n)`, `with(...).max_evaluations(n)` | stop once the run has made `n` evaluations, the initial one included; a runner's own `max_evaluations`, if smaller, still applies; termination `evaluation_budget_exhausted` |
 | `timeout(5s)`, `timeout(2.5)`, `with(...).timeout(...)` | stop once the time limit has passed since the run started: a `std::chrono` duration or a number of seconds; termination `time_limit_reached` |
 
 `run_control{stop_token, observer}` calls `observer(const run_progress&)` with
 `evaluations`, `iterations` and `evaluation_limit`.
 
-The options combine in any order: `with(control).timeout(30s).stop_at(0)`. A
+The options combine in any order:
+`with(control).timeout(30s).max_evaluations(100000).stop_at(0)`. A
 negative or non-finite time limit throws `std::invalid_argument`. `search_run`
 checks the deadline with the other stopping conditions, reading the clock at
 an interval of checks that adapts so that readings come about a millisecond

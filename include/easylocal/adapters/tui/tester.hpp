@@ -579,6 +579,7 @@ struct async_runner_result
 {
     bool cancelled{};
     bool timed_out{};
+    bool budget_exhausted{};
     std::optional<Solution> solution;
     std::string error;
 };
@@ -597,6 +598,21 @@ struct async_runner_result
         || !std::isfinite(seconds))
         return std::nullopt;
     return seconds;
+}
+
+// A count as text: empty when it is not a non-negative whole number.
+[[nodiscard]] inline std::optional<std::size_t> count_text(const std::string_view text)
+{
+    const auto first = text.find_first_not_of(" \t");
+    if (first == std::string_view::npos)
+        return std::nullopt;
+    const auto last = text.find_last_not_of(" \t");
+    std::size_t count{};
+    const auto* const end = text.data() + last + 1;
+    const auto [parsed, error] = std::from_chars(text.data() + first, end, count);
+    if (error != std::errc{} || parsed != end)
+        return std::nullopt;
+    return count;
 }
 
 // Seconds as the progress label shows them: one decimal, such as 12.3s.
@@ -1076,12 +1092,23 @@ private:
             }
         }
 
-        // A run stops after this many seconds; empty: no limit.
-        run_controls->Add(section_label("Time limit (s)"));
-        auto timeout_input_option = InputOption::Default();
-        timeout_input_option.multiline = false;
-        timeout_input_ = Input(&timeout_text_, "none", timeout_input_option);
-        run_controls->Add(timeout_input_);
+        // A run stops after this many seconds, or this many evaluations; empty:
+        // no limit beyond the runner's own. One row, so that the page keeps its
+        // height.
+        run_controls->Add(section_label("Stop after"));
+        auto limit_input_option = InputOption::Default();
+        limit_input_option.multiline = false;
+        timeout_input_ = Input(&timeout_text_, "none", limit_input_option);
+        evaluations_input_ = Input(&evaluations_text_, "none", limit_input_option);
+        auto limit_inputs = Container::Horizontal({timeout_input_, evaluations_input_});
+        run_controls->Add(Renderer(limit_inputs, [this] {
+            return hbox({
+                text("seconds "),
+                timeout_input_->Render() | size(WIDTH, EQUAL, 12),
+                text("  evaluations "),
+                evaluations_input_->Render() | size(WIDTH, EQUAL, 14),
+            });
+        }));
 
         return Renderer(run_controls, [this, run_controls] {
             return render_run_page(run_controls);
@@ -1312,7 +1339,8 @@ private:
 
         const bool editing_path = (seed_input_ && seed_input_->Focused())
             || (target_input_ && target_input_->Focused())
-            || (timeout_input_ && timeout_input_->Focused());
+            || (timeout_input_ && timeout_input_->Focused())
+            || (evaluations_input_ && evaluations_input_->Focused());
 
         if (event == Event::F1)
         {
@@ -2260,6 +2288,18 @@ private:
                     return;
                 }
             }
+            std::optional<std::size_t> evaluations;
+            if (evaluations_text_.find_first_not_of(" \t") != std::string::npos)
+            {
+                evaluations = detail::count_text(evaluations_text_);
+                if (!evaluations)
+                {
+                    set_status(
+                        status_kind::error,
+                        "Evaluations: give a non-negative whole number, or nothing");
+                    return;
+                }
+            }
             auto application = tester_.app();
             auto input = tester_.input_handle();
             auto solution = tester_.solution();
@@ -2308,6 +2348,7 @@ private:
                     name,
                     target,
                     seconds,
+                    evaluations,
                     promise = std::move(promise),
                     event_app,
                     progress_state](std::stop_token stop_token) mutable {
@@ -2332,6 +2373,8 @@ private:
                         auto options = easylocal::with(control);
                         if (seconds)
                             options = options.timeout(*seconds);
+                        if (evaluations)
+                            options = options.max_evaluations(*evaluations);
                         auto result = target
                             ? application.run(
                                   name,
@@ -2352,6 +2395,10 @@ private:
                             completion.timed_out = result->effort
                                 && result->effort->termination
                                     == easylocal::termination_reason::time_limit_reached;
+                            completion.budget_exhausted = result->effort
+                                && result->effort->termination
+                                    == easylocal::termination_reason::
+                                        evaluation_budget_exhausted;
                         }
                     }
                     catch (const std::exception& error)
@@ -2653,6 +2700,8 @@ private:
             last_run_result_ += " (target " + value_text(*run_target_) + " reached)";
         else if (completion.timed_out)
             last_run_result_ += " (time limit reached)";
+        else if (completion.budget_exhausted)
+            last_run_result_ += " (evaluation budget exhausted)";
         set_status(status_kind::success, "Runner completed: " + run_name_);
     }
 
@@ -3292,6 +3341,7 @@ private:
     std::string seed_text_;
     std::string target_text_;
     std::string timeout_text_;
+    std::string evaluations_text_;
     std::chrono::steady_clock::time_point run_started_{};
 
     std::string input_path_;
@@ -3349,6 +3399,7 @@ private:
     ftxui::Component seed_input_;
     ftxui::Component target_input_;
     ftxui::Component timeout_input_;
+    ftxui::Component evaluations_input_;
     std::jthread run_worker_{};
     std::future<async_runner_result<typename tester_type::solution_type>> run_future_{};
     std::shared_ptr<easylocal::detail::atomic_run_progress> run_progress_state_;

@@ -37,9 +37,13 @@ const auto observed = descent_search.run(
   `el::with(control).timeout(5s).stop_at(cost)`. The result reports
   `termination_reason::time_limit_reached`; no thread is started, the run
   reads the clock among its other checks.
+- An evaluation budget, `el::max_evaluations(n)`, ends the run after `n`
+  evaluations, with `termination_reason::evaluation_budget_exhausted`; it
+  can only tighten a runner's own `max_evaluations`.
 - Solvers take the same options, `solver.solve(input, el::with(control))`, and
-  pass them to every run they make; a solve's time limit bounds all its runs
-  together, and a pipeline stage may have its own (`& el::timeout(10s)`).
+  pass them to every run they make; a solve's time limit and evaluation budget
+  bound all its runs together, and a pipeline stage may have its own
+  (`& el::timeout(10s)`, `& el::max_evaluations(5000)`).
 
 Recorders include `trace::memory_recorder`, `trace::jsonl_recorder` and the
 binary `buffered_binary_recorder` and `async_binary_recorder`, whose ELTR traces

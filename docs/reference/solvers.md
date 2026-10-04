@@ -33,13 +33,16 @@ Results carry the effort of the whole solve: `evaluations` and `iterations`
 add up over MultiStart's starts and a pipeline's stages and attempts.
 
 `MultiStart` ends early when a start is cancelled or reaches the target, or
-when the solve's time is up; its termination is then `cancelled`,
-`target_reached` or `time_limit_reached`, otherwise `completed`.
+when the solve's time or evaluations are spent; its termination is then
+`cancelled`, `target_reached`, `time_limit_reached` or
+`evaluation_budget_exhausted`, otherwise `completed`.
 
-A solve's time limit (`solve(input, easylocal::timeout(30s))`, or
-`with(control).timeout(30s)`) bounds all its runs together: `LocalSearch`
-gives it to its one run, `MultiStart` starts no run after it and gives each
-start the time left, and a pipeline gives each stage the time left.
+A solve's time limit and evaluation budget (`solve(input,
+easylocal::timeout(30s))`, `easylocal::max_evaluations(1'000'000)`, or both,
+`with(control).timeout(30s).max_evaluations(1'000'000)`) bound all its runs
+together: `LocalSearch` gives them to its one run, `MultiStart` starts no run
+once they are spent and gives each start what is left, and a pipeline gives
+each stage what is left.
 
 ## Pipeline
 
@@ -74,6 +77,7 @@ their costs may differ.
 | `& target(cost)` | `.with_target(cost)` | the stage stops as soon as its best cost reaches `cost`, in the stage's own cost |
 | `& until_feasible()` | `.until_feasible()` | the stage runs `runner.with_hard_cost()` until the hard cost is zero; requires a `cost::hierarchical` cost |
 | `& attempts(n)` | `.with_attempts(n)` | up to `n` runs while the target is not reached, keeping the best; the first stage starts each from a new initial solution, the others from the solution they received |
+| `& max_evaluations(n)` | `.with_max_evaluations(n)` | the stage stops once it has made `n` evaluations, its attempts together; the next stage runs with what is left of the solve's budget |
 | `& timeout(d)` | `.with_timeout(d)` | the stage stops once `d` (a `std::chrono` duration or seconds) has passed since it started, its attempts together; the next stage runs with what is left of the solve's time |
 
 With a `cost::hard_soft` cost expression, `until_feasible()` evaluates only the
@@ -97,7 +101,8 @@ termination and cost (as `cost::to_text` writes it).
 
 The parameters (`configuration()`) are each stage's under its name: its
 runner's (`<name>.search.*`, `<name>.cost.*`, ...), `<name>.attempts` and
-`<name>.timeout` (seconds; `inf`, the default, for no limit of its own).
+`<name>.timeout` (seconds; `inf`, the default, for no limit of its own) and
+`<name>.max_evaluations` (`unlimited` by default).
 Stage names must be distinct and non-empty.
 
 ### two_stage()

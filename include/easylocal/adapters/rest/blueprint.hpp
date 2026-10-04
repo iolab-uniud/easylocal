@@ -335,6 +335,7 @@ private:
         std::uint64_t seed{};
         std::optional<cost_type> target;
         std::optional<double> timeout;                       // seconds
+        std::optional<std::size_t> max_evaluations;
         std::vector<config::owned_text_override> parameters; // as requested
         mutable std::mutex mutex;
         std::stop_source stop_source;
@@ -444,6 +445,20 @@ private:
         return seconds;
     }
 
+    // The evaluation budget of a run: a non-negative integer.
+    [[nodiscard]] static std::size_t decode_max_evaluations(
+        const crow::json::rvalue& payload)
+    {
+        if (payload.t() != crow::json::type::Number
+            || payload.nt() == crow::json::num_type::Floating_point
+            || (payload.nt() == crow::json::num_type::Signed_integer && payload.i() < 0))
+        {
+            throw std::invalid_argument{
+                "'max_evaluations' must be a non-negative integer"};
+        }
+        return static_cast<std::size_t>(payload.u());
+    }
+
     // The target of a run: a string in the textual syntax of costs, read by
     // the problem's read_cost or cost::from_text; otherwise by the codec's
     // decode_cost, or as a number for an arithmetic cost.
@@ -515,6 +530,9 @@ private:
             body["target"] = encode_cost(*record->target);
         if (record->timeout)
             body["timeout"] = *record->timeout;
+        if (record->max_evaluations)
+            body["max_evaluations"] =
+                static_cast<std::uint64_t>(*record->max_evaluations);
         add_parameters(body, *record);
         body["status"] = std::string{state_name(record->state)};
         body["cancellation_requested"] = record->stop_source.stop_requested();
@@ -708,6 +726,10 @@ private:
             std::optional<double> timeout;
             if (payload.has("timeout"))
                 timeout.emplace(decode_timeout(payload["timeout"]));
+            std::optional<std::size_t> max_evaluations;
+            if (payload.has("max_evaluations"))
+                max_evaluations.emplace(
+                    decode_max_evaluations(payload["max_evaluations"]));
 
             const auto run_number = next_run_id_.fetch_add(1);
             const auto id = std::to_string(run_number);
@@ -720,6 +742,7 @@ private:
             record->input = input;
             record->target = target;
             record->timeout = timeout;
+            record->max_evaluations = max_evaluations;
             record->parameters = std::move(parameters);
             session.set_seed(record->seed);
             {
@@ -762,6 +785,8 @@ private:
                         auto options = easylocal::with(control);
                         if (record->timeout)
                             options = options.timeout(*record->timeout);
+                        if (record->max_evaluations)
+                            options = options.max_evaluations(*record->max_evaluations);
                         const bool ran = record->target
                             ? session.run(runner, options.stop_at(*record->target))
                             : session.run(runner, options);
@@ -884,6 +909,9 @@ private:
             body["target"] = encode_cost(*record->target);
         if (record->timeout)
             body["timeout"] = *record->timeout;
+        if (record->max_evaluations)
+            body["max_evaluations"] =
+                static_cast<std::uint64_t>(*record->max_evaluations);
         add_parameters(body, *record);
         body["status"] = std::string{state_name(record->state)};
         body["cost"] = encode_cost(*record->cost);

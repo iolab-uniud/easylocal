@@ -39,7 +39,7 @@ namespace easylocal::cli
 {
 
 /// The command line of cli::run: --instance, --seed, --runner, --start,
-/// --solution, --output, --target, --timeout and --report.
+/// --solution, --output, --target, --timeout, --max_evaluations and --report.
 ///
 /// The app's parameters come next to them: `--runners.<name>.*`, `--cost.*` and
 /// `--neighborhood.*`. Every field has an initializer, so that designated
@@ -64,6 +64,9 @@ struct parameters
     std::string target{};
     /// The seconds the run may last, such as 10 or 2.5; empty: no limit.
     std::string timeout{};
+    /// The evaluations the run may make, the initial one included; unlimited:
+    /// no budget beyond the runner's own.
+    limit max_evaluations{unlimited};
     /// Whether to print the value of each cost component, and its description.
     bool report{false};
 
@@ -99,6 +102,10 @@ struct parameters
                 "Stop the run after this many seconds, such as 10 or 2.5 (empty: no "
                 "limit)",
                 easylocal::unlimited),
+            config::field<"max_evaluations", &parameters::max_evaluations>(
+                "Stop the run after this many evaluations (unlimited: no budget "
+                "beyond the runner's own)",
+                config::range(0, easylocal::unlimited)),
             config::field<"report", &parameters::report>(
                 "Print the value of each cost component, and its description"));
     }
@@ -404,23 +411,16 @@ int run(App application, const int argc, char* argv[], options settings = {})
         }
 
         const auto begin = std::chrono::steady_clock::now();
-        // Blank text is no target, as RunParameters reads it, and no time limit.
-        const bool has_target =
-            command_line.target.find_first_not_of(" \t") != std::string::npos;
-        const auto seconds = *command_line.timeout_seconds();
-        bool ran = false;
-        if (has_target && seconds)
-        {
-            ran = session.run(
-                runner,
-                stop_at(session.read_cost(command_line.target)).timeout(*seconds));
-        }
-        else if (has_target)
-            ran = session.run(runner, stop_at(session.read_cost(command_line.target)));
-        else if (seconds)
-            ran = session.run(runner, easylocal::timeout(*seconds));
-        else
-            ran = session.run(runner);
+        // The run's limits; blank text is no target, as RunParameters reads it,
+        // and no time limit.
+        run_options<trace::null_tracer> limits{};
+        if (const auto seconds = *command_line.timeout_seconds())
+            limits = limits.timeout(*seconds);
+        if (!command_line.max_evaluations.is_unlimited())
+            limits = limits.max_evaluations(command_line.max_evaluations);
+        const bool ran = command_line.target.find_first_not_of(" \t") == std::string::npos
+            ? session.run(runner, limits)
+            : session.run(runner, limits.stop_at(session.read_cost(command_line.target)));
         const std::chrono::duration<double> elapsed =
             std::chrono::steady_clock::now() - begin;
         if (!ran)

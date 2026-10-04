@@ -88,12 +88,15 @@ old concepts onto the new ones.
   command line and in the TextUI. They are unlimited by default, and 0 is a
   limit of zero.
 - Every runner is cancellable through a `std::stop_token`, reports progress,
-  can stop at a target cost (`stop_at(cost)`) or after a time limit
-  (`timeout(5s)`, or `timeout(2.5)` seconds) and returns a `search_result`
-  with its `termination_reason` (`to_string` gives a readable name). A
-  solve's time limit bounds all its runs, and a pipeline stage may have its
-  own (`& timeout(d)`, `<name>.timeout`); `cli::run --timeout`, a REST run's
-  `"timeout"` and the TextUI's *Time limit* field set it.
+  can stop at a target cost (`stop_at(cost)`), after a time limit
+  (`timeout(5s)`, or `timeout(2.5)` seconds) or an evaluation budget
+  (`max_evaluations(n)`, which tightens a runner's own) and returns a
+  `search_result` with its `termination_reason` (`to_string` gives a readable
+  name). A solve's limits bound all its runs together, and a pipeline stage
+  may have its own (`& timeout(d)`, `& max_evaluations(n)`, `<name>.timeout`,
+  `<name>.max_evaluations`); `cli::run --timeout` and `--max_evaluations`, a
+  REST run's `"timeout"` and `"max_evaluations"` and the TextUI's *Time limit*
+  and *Evaluations* fields set them.
 - Solvers: **LocalSearch**, **MultiStart** and **Pipeline**, with pluggable
   initialization. A pipeline (`stage(name, runner) | ...`, or
   `pipeline(stages...)`, or `.then(stage)`) runs runners with their own

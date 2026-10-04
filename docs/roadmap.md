@@ -105,20 +105,6 @@ every runner that draws random moves could use it.
 
 **When.** Not scheduled.
 
-## An evaluation budget for the whole solve
-
-**Why.** A run, a solve and a pipeline stage stop at a time limit
-(`timeout`), which a solve shares among its runs. Evaluations have no such
-budget: each runner has its own `max_evaluations`, and a pipeline cannot give
-its stages a share of one number of evaluations, which a stage that ends early
-would leave to the following ones.
-
-**What.** An evaluation budget among the run options, beside `timeout`:
-shared by a solve's runs, with a share per pipeline stage, and reported in the
-result; the command line and the tools set it as they set the time limit.
-
-**When.** Not scheduled.
-
 ## Cooperative runners
 
 **Why.** A pipeline runs its stages one after the other, each from the solution

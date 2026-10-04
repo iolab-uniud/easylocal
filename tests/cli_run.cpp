@@ -167,6 +167,12 @@ int main()
         {"--instance", instance, "--runner", "fi", "--timeout", "30", "--target", "26"});
     assert(with_target.status == 0);
     assert(with_target.out.find("\ntermination target reached\n") != std::string::npos);
+    const auto budgeted =
+        run({"--instance", instance, "--runner", "fi", "--max_evaluations", "1"});
+    assert(budgeted.status == 0);
+    assert(
+        budgeted.out.find("\nevaluations 1\ntermination evaluation budget exhausted\n")
+        != std::string::npos);
     const auto negative = run({"--instance", instance, "--timeout", "-1"});
     assert(negative.status == 2);
     assert(
