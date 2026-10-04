@@ -2530,10 +2530,10 @@ public:
                     }
                     const auto worst = std::ranges::max_element(
                         best_moves,
-                        [](const auto& lhs, const auto& rhs) {
-                            return std::get<1>(lhs) < std::get<1>(rhs);
+                        [&run](const auto& lhs, const auto& rhs) {
+                            return run.better(std::get<1>(lhs), std::get<1>(rhs));
                         });
-                    if (cost < std::get<1>(*worst))
+                    if (run.better(cost, std::get<1>(*worst)))
                         *worst = std::tuple<move_type, cost_type, std::size_t>{
                             move,
                             cost,
@@ -2545,6 +2545,10 @@ public:
                 break;
             if (full.empty)
                 return engine_.finish(run, state, termination_reason::local_optimum);
+            // Best first, so that one move too many is the worst.
+            std::ranges::sort(best_moves, [&run](const auto& lhs, const auto& rhs) {
+                return run.better(std::get<1>(lhs), std::get<1>(rhs));
+            });
             elite.clear();
             for (const auto& [move, cost, position] : best_moves)
                 if (!full.chosen.has_value() || position != full.chosen_position)
