@@ -14,6 +14,7 @@
 #include <array>
 #include <atomic>
 #include <bit>
+#include <cassert>
 #include <concepts>
 #include <condition_variable>
 #include <cstddef>
@@ -829,7 +830,10 @@ std::uint8_t event_tag(const Event& value, CostWriter&)
     }
     else
     {
-        return static_cast<std::uint8_t>(binary_event_tag(value));
+        // Tags 1 to 127 are EasyLocal's: user_binary_event_tag gives the others.
+        const auto tag = static_cast<std::uint8_t>(binary_event_tag(value));
+        assert(tag >= 128 && "an application event's tag is user_binary_event_tag<N>()");
+        return tag;
     }
 }
 
@@ -1129,7 +1133,6 @@ public:
         std::ostream& out,
         CostWriter cost_writer,
         binary_buffer_options options = {})
-        noexcept(std::is_nothrow_move_constructible_v<CostWriter>)
         : out_{out},
           encoder_{std::move(cost_writer)},
           block_size_{std::max<std::size_t>(options.block_size, 1U)}

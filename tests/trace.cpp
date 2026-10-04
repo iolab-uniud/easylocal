@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <streambuf>
 #include <string>
@@ -307,6 +308,35 @@ int main()
             streamed_jsonl.find("\"event\":\"run_finished\"") != std::string::npos,
         "streaming JSONL recorder serializes events incrementally");
     ok &= expect(streamed.good(), "streaming JSONL recorder exposes stream state");
+
+    // Numbers keep every digit, and JSON has no NaN: it is written as null.
+    std::ostringstream precise_output;
+    easylocal::trace::jsonl_recorder<double> precise{precise_output};
+    easylocal::trace::emit(
+        precise,
+        easylocal::trace::event::run_finished<double>{
+            .evaluations = 1,
+            .iterations = 1,
+            .cost = 1234567.5,
+        });
+    easylocal::trace::emit(
+        precise,
+        easylocal::trace::event::neighborhood_selection{
+            .attempt = 1,
+            .child = 0,
+            .bias = std::numeric_limits<double>::quiet_NaN(),
+            .active_bias_total = 0.1 + 0.2,
+            .conditional_probability = 1.0,
+            .produced_move = true,
+            .neighborhood = &inner,
+        });
+    const auto precise_jsonl = precise_output.str();
+    ok &= expect(
+        precise_jsonl.find("\"cost\":1234567.5") != std::string::npos
+            && precise_jsonl.find("\"bias\":null") != std::string::npos
+            && precise_jsonl.find("\"active_bias_total\":0.30000000000000004")
+                != std::string::npos,
+        "JSONL writes numbers that read back to the same value, and NaN as null");
 
     sync_counting_streambuf buffered_storage;
     std::ostream buffered_output{&buffered_storage};

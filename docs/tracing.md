@@ -278,9 +278,11 @@ Tag ownership is application-level metadata; independent extensions should
 coordinate their user-tag assignments when they share a trace schema.
 
 By default, JSONL persistence accepts costs that can be inserted into an
-`std::ostream`. Domain-specific or structured costs can instead provide a small
-compile-time writer; the writer owns the JSON representation and adds no virtual
-dispatch:
+`std::ostream`. A number is written as the shortest text that reads back to the
+same value, and NaN and the infinities, which JSON has no numbers for, as
+`null`; any other cost is inserted with the precision that keeps its numbers.
+Domain-specific or structured costs can instead provide a small compile-time
+writer; the writer owns the JSON representation and adds no virtual dispatch:
 
 ```cpp
 struct cost_json

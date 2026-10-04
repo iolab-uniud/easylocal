@@ -7,9 +7,12 @@
 #include <easylocal/trace/memory_recorder.hpp>
 #include <easylocal/trace/tracer.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
+#include <easylocal/utils/detail/number_text.hpp>
 
+#include <cmath>
 #include <concepts>
 #include <cstddef>
+#include <limits>
 #include <ostream>
 #include <type_traits>
 #include <utility>
@@ -28,16 +31,49 @@ concept json_cost_writer_for = requires(
     writer(out, cost);
 };
 
-/// The default JSON cost writer: inserts the cost into the stream with
-/// `operator<<`.
+namespace detail
+{
+
+// A number as JSON: the shortest text that reads back to it, and null for
+// NaN and the infinities, which JSON has no numbers for.
+template<class Number>
+void write_json_number(std::ostream& out, const Number value)
+{
+    if constexpr (std::floating_point<Number>)
+    {
+        if (!std::isfinite(value))
+        {
+            out << "null";
+            return;
+        }
+    }
+    out << easylocal::detail::number_text(value);
+}
+
+} // namespace detail
+
+/// The default JSON cost writer: a number as the shortest text that reads
+/// back to it (null for NaN and the infinities), any other cost with
+/// `operator<<`, at the precision that keeps its numbers.
 struct ostream_json_cost_writer
 {
-    /// Writes cost to out with `out << cost`.
+    /// Writes cost to out, as a JSON number when it is one.
     template<class Cost>
     void operator()(std::ostream& out, const Cost& cost) const
         requires requires { out << cost; }
     {
-        out << cost;
+        if constexpr ((std::integral<Cost> || std::floating_point<Cost>)
+            && !std::same_as<Cost, bool>)
+        {
+            detail::write_json_number(out, cost);
+        }
+        else
+        {
+            const auto precision =
+                out.precision(std::numeric_limits<double>::max_digits10);
+            out << cost;
+            out.precision(precision);
+        }
     }
 };
 
@@ -185,11 +221,13 @@ public:
     void emit(const event::neighborhood_selection& value)
     {
         out_ << "{\"event\":\"neighborhood_selection\",\"attempt\":" << value.attempt
-             << ",\"child\":" << value.child
-             << ",\"bias\":" << value.bias
-             << ",\"active_bias_total\":" << value.active_bias_total
-             << ",\"conditional_probability\":" << value.conditional_probability
-             << ",\"produced_move\":" << (value.produced_move ? "true" : "false")
+             << ",\"child\":" << value.child << ",\"bias\":";
+        detail::write_json_number(out_, value.bias);
+        out_ << ",\"active_bias_total\":";
+        detail::write_json_number(out_, value.active_bias_total);
+        out_ << ",\"conditional_probability\":";
+        detail::write_json_number(out_, value.conditional_probability);
+        out_ << ",\"produced_move\":" << (value.produced_move ? "true" : "false")
              << ",\"neighborhood\":";
         detail::write_route_json(out_, value.neighborhood);
         out_ << "}\n";
