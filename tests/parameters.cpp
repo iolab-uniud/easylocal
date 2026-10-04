@@ -16,6 +16,7 @@
 #include <string_view>
 #include <tuple>
 #include <type_traits>
+#include <vector>
 
 namespace
 {
@@ -206,6 +207,28 @@ void a_number_reads_back_from_its_text()
     assert(config::format_value(std::size_t{1234567}) == "1234567");
 }
 
+void a_list_reads_back_from_its_text()
+{
+    namespace config = easylocal::config;
+    std::array<int, 2> pair{};
+    assert(!config::detail::parse_text_value("[1, 2,]", pair).empty());
+    assert(!config::detail::parse_text_value("[1]", pair).empty());
+    assert(config::detail::parse_text_value("[1, 2]", pair).empty());
+    assert((pair == std::array{1, 2}));
+
+    std::vector<int> values;
+    assert(!config::detail::parse_text_value("[1, 2,]", values).empty());
+    assert(config::detail::parse_text_value("[]", values).empty());
+    assert(values.empty());
+
+    // Lists of lists, as format_value writes them.
+    const std::vector<std::array<int, 2>> nested{{1, 2}, {3, 4}};
+    assert(config::format_value(nested) == "[[1, 2], [3, 4]]");
+    std::vector<std::array<int, 2>> read;
+    assert(config::detail::parse_text_value(config::format_value(nested), read).empty());
+    assert(read == nested);
+}
+
 void every_temperature_policy_has_a_parameter_block()
 {
     namespace temperature = easylocal::runners::temperature;
@@ -278,5 +301,6 @@ int main()
     first_improvement_parameters_live_with_the_search_method();
     a_limit_is_a_count_or_unlimited_in_text();
     a_number_reads_back_from_its_text();
+    a_list_reads_back_from_its_text();
     neighborhood_union_parameter_block_describes_bias_array();
 }

@@ -17,6 +17,7 @@
 #include <concepts>
 #include <cstddef>
 #include <exception>
+#include <expected>
 #include <filesystem>
 #include <ranges>
 #include <span>
@@ -203,6 +204,43 @@ constexpr std::string_view trim_ascii_space(std::string_view text) noexcept
     return text;
 }
 
+// The elements of a list, "[a, b]" or "a, b": split at the commas outside
+// nested brackets, so that "[[1, 2], [3, 4]]" has two. An empty element, as a
+// trailing comma leaves, is an error; "[]" has none.
+[[nodiscard]]
+inline std::expected<std::vector<std::string_view>, std::string_view> list_elements(
+    const std::string_view text)
+{
+    auto body = trim_ascii_space(text);
+    if (body.size() >= 2 && body.front() == '[' && body.back() == ']')
+    {
+        body.remove_prefix(1);
+        body.remove_suffix(1);
+    }
+    std::vector<std::string_view> elements;
+    if (trim_ascii_space(body).empty())
+        return elements;
+    std::size_t depth = 0;
+    std::size_t start = 0;
+    for (std::size_t index = 0; index <= body.size(); ++index)
+    {
+        const bool end = index == body.size();
+        if (!end && body[index] == '[')
+            ++depth;
+        else if (!end && body[index] == ']' && depth > 0)
+            --depth;
+        else if (end || (body[index] == ',' && depth == 0))
+        {
+            const auto element = trim_ascii_space(body.substr(start, index - start));
+            if (element.empty())
+                return std::unexpected{std::string_view{"empty list element"}};
+            elements.push_back(element);
+            start = index + 1;
+        }
+    }
+    return elements;
+}
+
 template<class Value>
 [[nodiscard]]
 std::string_view parse_text_value(const std::string_view text, Value& value)
@@ -295,56 +333,20 @@ std::string_view parse_text_value(const std::string_view text, Value& value)
     }
     else if constexpr (is_std_array_v<value_type>)
     {
-        using element_type = typename is_std_array<value_type>::value_type;
         constexpr auto size = is_std_array<value_type>::size;
 
-        auto body = trim_ascii_space(text);
-        if (body.size() >= 2 && body.front() == '[' && body.back() == ']')
-        {
-            body.remove_prefix(1);
-            body.remove_suffix(1);
-        }
-
-        value_type parsed{};
-        std::size_t index = 0;
-
-        while (true)
-        {
-            if (index == size)
-            {
-                if (!trim_ascii_space(body).empty())
-                {
-                    return "too many array elements";
-                }
-                break;
-            }
-
-            const auto comma = body.find(',');
-            const auto token = comma == std::string_view::npos
-                ? body
-                : body.substr(0, comma);
-
-            element_type element{};
-            const auto error = parse_text_value(token, element);
-            if (!error.empty())
-            {
-                return error;
-            }
-            parsed[index++] = std::move(element);
-
-            if (comma == std::string_view::npos)
-            {
-                body = {};
-                break;
-            }
-            body.remove_prefix(comma + 1);
-        }
-
-        if (index != size)
-        {
+        const auto elements = list_elements(text);
+        if (!elements)
+            return elements.error();
+        if (elements->size() != size)
             return "wrong number of array elements";
+        value_type parsed{};
+        for (std::size_t index = 0; index < size; ++index)
+        {
+            const auto error = parse_text_value((*elements)[index], parsed[index]);
+            if (!error.empty())
+                return error;
         }
-
         value = std::move(parsed);
         return {};
     }
@@ -352,36 +354,19 @@ std::string_view parse_text_value(const std::string_view text, Value& value)
     {
         using element_type = typename is_std_vector<value_type>::value_type;
 
-        auto body = trim_ascii_space(text);
-        if (body.size() >= 2 && body.front() == '[' && body.back() == ']')
-        {
-            body.remove_prefix(1);
-            body.remove_suffix(1);
-        }
-
+        const auto elements = list_elements(text);
+        if (!elements)
+            return elements.error();
         value_type parsed;
-        if (trim_ascii_space(body).empty())
+        parsed.reserve(elements->size());
+        for (const auto element_text : *elements)
         {
-            value = std::move(parsed);
-            return {};
-        }
-        while (true)
-        {
-            const auto comma = body.find(',');
-            const auto token =
-                comma == std::string_view::npos ? body : body.substr(0, comma);
-
             element_type element{};
-            const auto error = parse_text_value(token, element);
+            const auto error = parse_text_value(element_text, element);
             if (!error.empty())
                 return error;
             parsed.push_back(std::move(element));
-
-            if (comma == std::string_view::npos)
-                break;
-            body.remove_prefix(comma + 1);
         }
-
         value = std::move(parsed);
         return {};
     }
