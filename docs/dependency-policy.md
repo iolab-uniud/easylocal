@@ -7,9 +7,7 @@ targets whose dependencies are visible to consumers through those targets.
 ## Public target model
 
 `EasyLocal::Core` is the canonical public target. It is header-only, requires
-C++23, and has no third-party link dependencies. Existing code may continue to
-use `EasyLocal::EasyLocal`; that target is a compatibility facade that links
-only to `EasyLocal::Core`.
+C++23, and has no third-party link dependencies.
 
 Optional integrations use separate package components and targets. The
 component model is intentionally one-way: adapters depend on Core, never the
@@ -69,12 +67,8 @@ find_package(EasyLocal CONFIG REQUIRED COMPONENTS Core)
 target_link_libraries(my_solver PRIVATE EasyLocal::Core)
 ```
 
-Legacy consumers remain valid:
-
-```cmake
-find_package(EasyLocal CONFIG REQUIRED)
-target_link_libraries(my_solver PRIVATE EasyLocal::EasyLocal)
-```
+Without components, `find_package(EasyLocal CONFIG REQUIRED)` gives the Core
+as well.
 
 Only adapters built and installed by the producer may report their package
 component as available. Requesting an unavailable component must fail during

@@ -21,8 +21,7 @@ project(
     LANGUAGES CXX
 )
 
-# EasyLocal::Core is the canonical dependency-free public target.
-# EasyLocal::EasyLocal remains as a compatibility facade for existing users.
+# EasyLocal::Core is the dependency-free public target.
 add_library(easylocal_core INTERFACE)
 add_library(EasyLocal::Core ALIAS easylocal_core)
 set_target_properties(
@@ -42,19 +41,6 @@ target_include_directories(
     INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
-)
-
-add_library(easylocal INTERFACE)
-add_library(EasyLocal::EasyLocal ALIAS easylocal)
-set_target_properties(
-    easylocal
-    PROPERTIES
-        EXPORT_NAME EasyLocal
-)
-target_link_libraries(
-    easylocal
-    INTERFACE
-        easylocal_core
 )
 
 include(GNUInstallDirs)
@@ -368,7 +354,6 @@ endif()
 install(
     TARGETS
         easylocal_core
-        easylocal
     EXPORT EasyLocalTargets
 )
 

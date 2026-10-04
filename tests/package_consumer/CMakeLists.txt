@@ -66,12 +66,9 @@ if(NOT EasyLocal_VERSION_PRERELEASE STREQUAL "${EASYLOCAL_EXPECTED_VERSION_PRERE
         "installed package declares pre-release '${EasyLocal_VERSION_PRERELEASE}', expected '${EASYLOCAL_EXPECTED_VERSION_PRERELEASE}'")
 endif()
 
-foreach(_required_target IN ITEMS EasyLocal::Core EasyLocal::EasyLocal)
-    if(NOT TARGET ${_required_target})
-        message(FATAL_ERROR
-            "installed package did not provide ${_required_target}")
-    endif()
-endforeach()
+if(NOT TARGET EasyLocal::Core)
+    message(FATAL_ERROR "installed package did not provide EasyLocal::Core")
+endif()
 
 get_target_property(
     _easylocal_compile_features
@@ -127,16 +124,6 @@ get_target_property(
 if(_core_link_libraries)
     message(FATAL_ERROR
         "EasyLocal::Core must be dependency-free, but links: ${_core_link_libraries}")
-endif()
-
-get_target_property(
-    _compat_link_libraries
-    EasyLocal::EasyLocal
-    INTERFACE_LINK_LIBRARIES
-)
-if(NOT _compat_link_libraries STREQUAL "EasyLocal::Core")
-    message(FATAL_ERROR
-        "EasyLocal::EasyLocal must be a Core-only compatibility facade, got: ${_compat_link_libraries}")
 endif()
 
 add_executable(

@@ -110,8 +110,7 @@ EasyLocal::Core
 ```
 
 `EasyLocal::Core` is intentionally dependency-free beyond the C++ standard
-library. `EasyLocal::EasyLocal` remains available as a compatibility facade and
-links only to `EasyLocal::Core`.
+library.
 
 A configured build tree can be installed to any prefix:
 
