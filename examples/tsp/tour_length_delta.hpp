@@ -1,11 +1,13 @@
 #pragma once
 
+// The delta cost component of the 2-opt moves: the change of the tour length,
+// from the two edges the move replaces.
+
 #include "instance.hpp"
 #include "move.hpp"
 #include "solution.hpp"
 
 #include <cassert>
-#include <cstddef>
 
 namespace tsp
 {

@@ -1,15 +1,16 @@
 #pragma once
 
+// The SolutionManager of the TSP: initial and random tours, and their validity.
+
 #include "instance.hpp"
 #include "solution.hpp"
-#include "tour_length_component.hpp"
 
 #include <easylocal/helpers/solution_manager.hpp>
 
 #include <algorithm>
-#include <cstddef>
 #include <numeric>
 #include <random>
+#include <vector>
 
 namespace tsp
 {
@@ -39,17 +40,13 @@ public:
     {
         if (solution.tour.size() != input().city_count)
             return false;
-
-        for (std::size_t first = 0; first < solution.tour.size(); ++first)
+        std::vector<bool> seen(input().city_count, false);
+        for (const auto city : solution.tour)
         {
-            if (solution.tour[first] >= input().city_count)
+            if (city >= input().city_count || seen[city])
                 return false;
-
-            for (std::size_t second = first + 1; second < solution.tour.size(); ++second)
-                if (solution.tour[first] == solution.tour[second])
-                    return false;
+            seen[city] = true;
         }
-
         return true;
     }
 };

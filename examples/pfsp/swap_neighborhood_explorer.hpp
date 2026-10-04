@@ -1,5 +1,8 @@
 #pragma once
 
+// The neighborhood explorers of the swap moves, with the two tabu definitions
+// of the study (IN1 and IN2).
+
 #include "solution_manager.hpp"
 #include "swap_move.hpp"
 
@@ -86,7 +89,7 @@ public:
     bool inverse(const Schedule&, const SwapJobsMove& move, const SwapJobsMove& tabu_move)
         const
     {
-        const auto touches = [&move](const job_id job) {
+        const auto touches = [&move](job_id job) {
             return move.first_job == job || move.second_job == job;
         };
         if constexpr (Inverse == SwapInverse::both_jobs)
@@ -107,8 +110,8 @@ public:
 private:
     static SwapJobsMove make(
         const Schedule& solution,
-        const std::size_t first,
-        const std::size_t second)
+        std::size_t first,
+        std::size_t second)
     {
         return SwapJobsMove{
             .first_position = first,

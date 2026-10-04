@@ -1,5 +1,7 @@
 #pragma once
 
+// The cost component of the PFSP: the makespan of the schedule.
+
 #include "instance.hpp"
 #include "solution.hpp"
 

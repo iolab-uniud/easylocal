@@ -1,5 +1,7 @@
 #pragma once
 
+// The PFSP Input: the processing time of each job on each machine.
+
 #include <cassert>
 #include <cstddef>
 #include <istream>
@@ -42,7 +44,7 @@ struct PfspInstance
         return instance;
     }
 
-    time_type processing_time(const job_id job, const std::size_t machine) const
+    time_type processing_time(job_id job, std::size_t machine) const
     {
         assert(job < job_count);
         assert(machine < machine_count);

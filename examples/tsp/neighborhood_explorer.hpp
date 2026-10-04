@@ -1,5 +1,7 @@
 #pragma once
 
+// The neighborhood explorer of the 2-opt moves.
+
 #include "move.hpp"
 #include "solution_manager.hpp"
 

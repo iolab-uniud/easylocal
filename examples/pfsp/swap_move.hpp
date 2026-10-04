@@ -1,5 +1,7 @@
 #pragma once
 
+// The swap move of the PFSP: exchange the jobs at two positions.
+
 #include "instance.hpp"
 
 #include <cstddef>

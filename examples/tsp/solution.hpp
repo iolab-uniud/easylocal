@@ -1,5 +1,7 @@
 #pragma once
 
+// The TSP Solution: a tour, the order in which the cities are visited.
+
 #include "instance.hpp"
 
 #include <istream>

@@ -1,5 +1,7 @@
 #pragma once
 
+// The cost component of the TSP: the length of the tour.
+
 #include "instance.hpp"
 #include "solution.hpp"
 

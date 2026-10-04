@@ -1,5 +1,8 @@
 #pragma once
 
+// The two apps of the TSP example, one per neighborhood (2-opt and swap), over
+// the same SolutionManager and cost.
+
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 #include "swap_neighborhood_explorer.hpp"
@@ -28,24 +31,22 @@ inline auto tsp_solution_manager()
 // app spells out all its recipes, so the functions let auto deduce it.
 inline auto two_opt_app()
 {
-    auto application = easylocal::app("tsp-two-opt") | tsp_solution_manager()
+    return easylocal::app("tsp-two-opt") | tsp_solution_manager()
         | (easylocal::neighborhood<TwoOptNeighborhoodExplorer>()
             | easylocal::delta<TourLengthComponent, TwoOptTourLengthDelta>())
-        | easylocal::runner<easylocal::runners::FirstImprovement>("fi");
-    application.runner_config<easylocal::runners::FirstImprovement>().max_evaluations =
-        100;
-    return application;
+        | easylocal::runner<easylocal::runners::FirstImprovement>(
+            "fi",
+            {.max_evaluations = 100});
 }
 
 inline auto swap_app()
 {
-    auto application = easylocal::app("tsp-swap") | tsp_solution_manager()
+    return easylocal::app("tsp-swap") | tsp_solution_manager()
         | (easylocal::neighborhood<SwapCitiesNeighborhoodExplorer>()
             | easylocal::delta<TourLengthComponent, SwapTourLengthDelta>())
-        | easylocal::runner<easylocal::runners::FirstImprovement>("fi");
-    application.runner_config<easylocal::runners::FirstImprovement>().max_evaluations =
-        100;
-    return application;
+        | easylocal::runner<easylocal::runners::FirstImprovement>(
+            "fi",
+            {.max_evaluations = 100});
 }
 // [apps] -------------------------------------------------------------------
 

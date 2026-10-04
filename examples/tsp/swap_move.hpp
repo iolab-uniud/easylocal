@@ -1,5 +1,7 @@
 #pragma once
 
+// The swap move: exchange the cities visited at two positions of the tour.
+
 #include <cstddef>
 #include <string>
 

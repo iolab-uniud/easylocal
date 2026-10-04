@@ -1,5 +1,8 @@
 #pragma once
 
+// The delta cost component of the swap moves: the change of the tour length,
+// from the at most four edges the swap replaces.
+
 #include "instance.hpp"
 #include "solution.hpp"
 #include "swap_move.hpp"

@@ -1,5 +1,7 @@
 #pragma once
 
+// The neighborhood explorer of the swap moves.
+
 #include "solution_manager.hpp"
 #include "swap_move.hpp"
 

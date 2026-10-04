@@ -1,5 +1,8 @@
 #pragma once
 
+// The SolutionManager of the PFSP: initial and random orders, their validity
+// and their hash.
+
 #include "instance.hpp"
 #include "solution.hpp"
 
@@ -7,7 +10,6 @@
 #include <easylocal/utils/hash.hpp>
 
 #include <algorithm>
-#include <cstddef>
 #include <cstdint>
 #include <numeric>
 #include <random>

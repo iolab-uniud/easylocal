@@ -1,5 +1,8 @@
 #pragma once
 
+// The TSP Input: the number of cities and the full distance matrix, read from a
+// text file (the count, then the matrix row by row).
+
 #include <cassert>
 #include <cmath>
 #include <cstddef>

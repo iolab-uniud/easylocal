@@ -1,5 +1,8 @@
 #pragma once
 
+// The 2-opt move: remove two edges of the tour and reconnect it by reversing
+// the segment between them.
+
 #include <cstddef>
 #include <string>
 
