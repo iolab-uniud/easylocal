@@ -8,6 +8,7 @@
 /// It lists, validates and changes them transactionally (all overrides or none)
 /// on the objects it refers to.
 
+#include <easylocal/config/condition.hpp>
 #include <easylocal/config/domain.hpp>
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/parameters.hpp>
@@ -16,6 +17,7 @@
 #include <cstddef>
 #include <exception>
 #include <functional>
+#include <optional>
 #include <span>
 #include <stdexcept>
 #include <string>
@@ -28,8 +30,8 @@ namespace easylocal::config
 {
 
 /// One parameter of a set: its full path, its description, its value as text
-/// (format_value), whether it can be changed, the kind of its value and its
-/// domain.
+/// (format_value), whether it can be changed, the kind of its value, its
+/// domain, and when it matters.
 struct parameter_info
 {
     /// The full path of the parameter.
@@ -45,6 +47,26 @@ struct parameter_info
     /// The values the parameter may take, as its schema declares them; empty
     /// when it declares none.
     domain_info domain{};
+    /// Whether the parameter matters with the current values, by its condition.
+    bool active{true};
+    /// When the parameter matters, with the full paths of the parameters it
+    /// refers to; empty when it always does.
+    std::optional<expression_info> condition{};
+};
+
+/// A requirement between the parameters of a block: the path of the block, why
+/// the block is not valid when it does not hold, the expression with full
+/// paths, and whether it holds with the current values.
+struct requirement_info
+{
+    /// The path of the block; empty for a block at the root of the set.
+    std::string path;
+    /// The reason given when the requirement does not hold.
+    std::string_view message;
+    /// The expression that must hold, with the full paths of the parameters.
+    expression_info expression;
+    /// Whether it holds with the current values.
+    bool satisfied{};
 };
 
 /// A block whose validate() fails, with the reason.
@@ -88,8 +110,9 @@ inline std::string join_path(const std::string_view prefix, const std::string_vi
 }
 
 // Every field of a block, the fields of its nested groups included:
-// leaf(path, descriptor, value&) for the fields, group(path, nested&) for each
-// nested block, before its own fields.
+// leaf(path, descriptor, value&, owner) for the fields, with the block they
+// belong to, group(path, nested&) for each nested block, before its own
+// fields. Requirements are left out.
 template<class Block, class Leaf, class Group>
 void walk_schema(Block& block, const std::string& prefix, Leaf& leaf, Group& group)
 {
@@ -98,16 +121,19 @@ void walk_schema(Block& block, const std::string& prefix, Leaf& leaf, Group& gro
             (
                 [&] {
                     using descriptor_type = decltype(descriptors);
-                    auto& value = block.*descriptor_type::member;
-                    const auto path = join_path(prefix, descriptor_type::name());
-                    if constexpr (is_parameter_group_v<descriptor_type>)
+                    if constexpr (!is_parameter_requirement_v<descriptor_type>)
                     {
-                        group(path, value);
-                        walk_schema(value, path, leaf, group);
-                    }
-                    else
-                    {
-                        leaf(path, descriptors, value);
+                        auto& value = block.*descriptor_type::member;
+                        const auto path = join_path(prefix, descriptor_type::name());
+                        if constexpr (is_parameter_group_v<descriptor_type>)
+                        {
+                            group(path, value);
+                            walk_schema(value, path, leaf, group);
+                        }
+                        else
+                        {
+                            leaf(path, descriptors, value, std::as_const(block));
+                        }
                     }
                 }(),
                 ...);
@@ -115,8 +141,34 @@ void walk_schema(Block& block, const std::string& prefix, Leaf& leaf, Group& gro
         std::remove_cvref_t<Block>::parameter_schema());
 }
 
-// The fields of a block, not of its nested groups, that lie outside the
-// domain of their schema, one diagnostic each, with the field's path.
+// The requirements of a block and of its nested groups:
+// visit(path of the block, requirement, block).
+template<class Block, class Visit>
+void walk_requirements(const Block& block, const std::string& prefix, Visit& visit)
+{
+    std::apply(
+        [&](const auto&... descriptors) {
+            (
+                [&] {
+                    using descriptor_type = std::remove_cvref_t<decltype(descriptors)>;
+                    if constexpr (is_parameter_requirement_v<descriptor_type>)
+                        visit(prefix, descriptors, block);
+                    else if constexpr (is_parameter_group_v<descriptor_type>)
+                    {
+                        walk_requirements(
+                            block.*descriptor_type::member,
+                            join_path(prefix, descriptor_type::name()),
+                            visit);
+                    }
+                }(),
+                ...);
+        },
+        Block::parameter_schema());
+}
+
+// The fields of a block that matter, not of its nested groups, that lie
+// outside the domain of their schema, one diagnostic each, with the field's
+// path; then the requirements that do not hold, with the block's path.
 template<class Block>
 bool check_field_domains(
     const Block& block,
@@ -129,10 +181,20 @@ bool check_field_domains(
             (
                 [&] {
                     using descriptor_type = std::remove_cvref_t<decltype(descriptors)>;
-                    if constexpr (!is_parameter_group_v<descriptor_type>)
+                    if constexpr (is_parameter_requirement_v<descriptor_type>)
+                    {
+                        if (!static_cast<bool>(evaluate(descriptors.expression, block)))
+                        {
+                            valid = false;
+                            diagnostics.push_back(
+                                {prefix, std::string{descriptors.message}});
+                        }
+                    }
+                    else if constexpr (!is_parameter_group_v<descriptor_type>)
                     {
                         const auto& value = block.*descriptor_type::member;
-                        if (!domain_contains(descriptors.domain, value))
+                        if (is_active(descriptors, block)
+                            && !domain_contains(descriptors.domain, value))
                         {
                             valid = false;
                             diagnostics.push_back(
@@ -149,8 +211,9 @@ bool check_field_domains(
     return valid;
 }
 
-// The diagnostics of a block: the fields outside their domains, or else its
-// validate(), which should check them too; then the same for its nested groups.
+// The diagnostics of a block: the fields outside their domains and the
+// requirements that do not hold, or else its validate(), which should check
+// them too; then the same for its nested groups.
 template<class Block>
 void validate_one_block(
     const Block& block,
@@ -170,7 +233,7 @@ void validate_block(
     std::vector<configuration_validation_diagnostic>& diagnostics)
 {
     validate_one_block(block, prefix, diagnostics);
-    auto leaf = [](const std::string&, const auto&, const auto&) {};
+    auto leaf = [](const std::string&, const auto&, const auto&, const auto&) {};
     auto group = [&diagnostics](const std::string& path, const auto& nested) {
         validate_one_block(nested, path, diagnostics);
     };
@@ -281,6 +344,16 @@ public:
         return result;
     }
 
+    /// The requirements between the parameters of each block, with full paths.
+    [[nodiscard]]
+    std::vector<requirement_info> requirements() const
+    {
+        std::vector<requirement_info> result;
+        for (const auto& entry : entries_)
+            entry.requirements(entry.prefix, result);
+        return result;
+    }
+
     /// The diagnostics of every block's validate(), with the block's path.
     [[nodiscard]]
     configuration_validation_result validate() const
@@ -355,6 +428,8 @@ private:
         std::function<
             void(std::string_view, std::vector<configuration_validation_diagnostic>&)>
             validate;
+        std::function<void(std::string_view, std::vector<requirement_info>&)>
+            requirements;
         // Changes a copy of the block with the overrides that name its
         // parameters, counting them in matches; the result commits the copy,
         // and is empty when the block is untouched or the copy is invalid.
@@ -378,20 +453,51 @@ private:
         entry.list = [get, read_only](
                          const std::string_view at,
                          std::vector<parameter_info>& result) {
-            auto leaf =
-                [&](const std::string& path, const auto& descriptor, const auto& value) {
-                    result.push_back({
-                        .path = path,
-                        .description = descriptor.description,
-                        .value = format_value(value),
-                        .read_only = read_only,
-                        .kind = kind_of<decltype(value)>(),
-                        .domain = describe_domain(descriptor.domain),
-                    });
+            auto leaf = [&](const std::string& path,
+                            const auto& descriptor,
+                            const auto& value,
+                            const auto& owner) {
+                parameter_info info{
+                    .path = path,
+                    .description = descriptor.description,
+                    .value = format_value(value),
+                    .read_only = read_only,
+                    .kind = kind_of<decltype(value)>(),
+                    .domain = describe_domain(descriptor.domain),
+                    .active = is_active(descriptor, owner),
                 };
+                if constexpr (!std::same_as<
+                                  std::remove_cvref_t<decltype(descriptor.condition)>,
+                                  no_condition>)
+                {
+                    // The references are relative to the field's block.
+                    const auto name = std::remove_cvref_t<decltype(descriptor)>::name();
+                    const auto block_path = std::string_view{path}.substr(
+                        0,
+                        path.size() - name.size() - (path.size() > name.size() ? 1 : 0));
+                    info.condition =
+                        describe_expression(descriptor.condition, block_path);
+                }
+                result.push_back(std::move(info));
+            };
             auto group = [](const std::string&, const auto&) {};
             detail::walk_schema(get(), std::string{at}, leaf, group);
         };
+        entry.requirements =
+            [get](const std::string_view at, std::vector<requirement_info>& result) {
+                auto visit = [&](const std::string& path,
+                                 const auto& requirement,
+                                 const auto& block) {
+                    result.push_back({
+                        .path = path,
+                        .message = requirement.message,
+                        .expression = describe_expression(requirement.expression, path),
+                        .satisfied =
+                            static_cast<bool>(evaluate(requirement.expression, block)),
+                    });
+                };
+                detail::walk_requirements(get(), std::string{at}, visit);
+            };
         entry.validate =
             [get](
                 const std::string_view at,
@@ -407,7 +513,10 @@ private:
             Block staged = get();
             bool touched = false;
             bool failed = false;
-            auto leaf = [&](const std::string& path, const auto&, auto& value) {
+            auto leaf = [&](const std::string& path,
+                            const auto&,
+                            auto& value,
+                            const auto&) {
                 for (std::size_t index = 0; index < overrides.size(); ++index)
                 {
                     const auto& candidate = overrides[index];

@@ -54,17 +54,45 @@ For an array or a vector the domain applies to each element. A domain that
 does not fit the field's type, a range whose bounds are not in order or a
 logarithmic range from zero do not compile.
 
-A domain is a check of the parameters: the validation of a parameter set
-reports a field outside it with its path (`expected a value in (0, 1), got
-1.5`) and leaves the block's `validate()` out, and a `validate()` checks the
-domains of its block first, so that a block made in the code is checked too:
+### Conditions and requirements
+
+```cpp
+config::field<"initial_acceptance", &P::initial_acceptance>("...", config::range(0.0, 1.0).open())
+    .only_if(config::value<"calibration_samples"> > 0),
+config::require(
+    config::value<"final_temperature"> < config::value<"initial_temperature">,
+    "final_temperature must be smaller than initial_temperature"),
+```
+
+| Declaration | Meaning |
+| --- | --- |
+| `field(...).only_if(expression)` | the field matters only when the expression holds: otherwise its domain is not checked and a configurator does not tune it |
+| `require(expression, message)` | an element of `fields(...)`: the expression must hold, else the block is invalid with `message` (which must outlive it) |
+| `value<"name">`, `value<"group.name">` | a field of the block, or of a nested group, by its path relative to the block; a path that names no field does not compile |
+
+Expressions combine values and constants (numbers, `bool`, text) with `<`,
+`<=`, `>`, `>=`, `==`, `!=`, `&&`, `||`, `!`, `+`, `-`, `*` and `/`; integers
+compare by value whatever their signs, and a `limit` as its count.
+`config::evaluate(expression, block)` computes one, `config::is_active(field,
+block)` tells whether a field's condition holds, and
+`describe_expression(expression, prefix)` gives an `expression_info`, its text
+with the full paths of its references (`text_with`, `references`).
+
+### Checking a schema
+
+The validation of a parameter set checks each block against its schema before
+its `validate()`: the fields that matter outside their domains, with the
+field's path (`expected a value in (0, 1), got 1.5`), and the requirements
+that do not hold, with the block's path and their message; the block's
+`validate()` runs only when they pass. A `validate()` checks the same with
+`config::check_schema`, so that a block made in the code is checked too:
 
 ```cpp
 config::validation_result validate() const
 {
-    if (const auto domains = config::check_domains(*this); !domains)
-        return domains; // "cooling_rate is out of its range"
-    // ... the checks that relate several fields
+    if (const auto schema = config::check_schema(*this); !schema)
+        return schema; // "cooling_rate is out of its range", or a requirement's message
+    // ... the checks the schema does not declare
 }
 ```
 
@@ -85,8 +113,9 @@ parameters.add("solver", runner.configuration());  // another set, under a prefi
 | `add([prefix,] block)` | the fields of a parameter block; read-only when the block is `const` |
 | `add([prefix,] object)` | an object with `parameters()` and `configure(block) -> validation_result`, for objects that rebuild something from their parameters |
 | `add([prefix,] set)` | the parameters of another set |
-| `parameters()` | every parameter: `path`, `description`, `value` (as text), `read_only`, `kind` (`boolean`, `integer`, `real`, `limit`, `text`, `path`, `list`) and `domain` (a `domain_info`, empty when none is declared) |
-| `validate()` | the fields outside their domains and the diagnostics of every block's `validate()`, by path |
+| `parameters()` | every parameter: `path`, `description`, `value` (as text), `read_only`, `kind` (`boolean`, `integer`, `real`, `limit`, `text`, `path`, `list`), `domain` (a `domain_info`, empty when none is declared), `active` (whether its condition holds) and `condition` (an `expression_info` with full paths, empty when it has none) |
+| `requirements()` | the requirements of every block: `path` of the block, `message`, `expression` (full paths) and `satisfied` |
+| `validate()` | the fields outside their domains, the requirements that do not hold and the diagnostics of every block's `validate()`, by path |
 | `apply(text_overrides)` | apply `path = value` overrides, all or none |
 
 A set refers to the objects it was built from: they must outlive it and stay

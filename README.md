@@ -21,7 +21,10 @@ components, neighborhood explorers and their delta costs — and generic runners
 (First and Best Improvement, Hill Climbing, Late Acceptance, Great Deluge,
 Simulated Annealing, Tabu Search, and Pareto Late Acceptance for several
 objectives) and solvers (LocalSearch, MultiStart, Pipeline) search it. Optional components add an interactive
-terminal tester, a REST service and TOML configuration.
+terminal tester, a REST service and TOML configuration. The parameters of a
+program are tuned automatically with
+[irace](https://mlopez-ibanez.github.io/irace/), from a scenario the program
+writes itself (see [Automatic tuning with irace](#automatic-tuning-with-irace)).
 
 New to the library? Start with the [quick start](docs/quick-start.md), then
 follow the [tutorial](docs/tutorial/README.md), which builds a TSP solver one
@@ -511,6 +514,28 @@ errors and effective typed/validation errors all cause failure with zero commits
 the runnable MWEs return a non-zero exit status after printing diagnostics. CLI
 therefore remains a final explicit override layer rather than a second mutation
 pass.
+
+### Automatic tuning with irace
+
+EasyLocal supports [irace](https://mlopez-ibanez.github.io/irace/), the
+iterated racing configurator, out of the box. A parameter's schema declares
+its domain (`config::range(0.0, 1.0).open()`, `.log()`, `config::one_of(...)`),
+when it matters (`.only_if(config::value<"calibration_samples"> > 0)`) and the
+requirements between parameters (`config::require(...)`); a program built with
+`cli::run` turns them into an irace scenario:
+
+```sh
+./solver --tuning.irace=tuning      # parameters.txt, target-runner, scenario.txt, ...
+cd tuning && irace                  # the best configurations, as switches of ./solver
+```
+
+The parameters with a domain become irace parameters, their conditions irace
+conditions and the requirements `[forbidden]` combinations; the others are
+written commented out, with a range to start from. The files are a stub to
+edit, which the program never overwrites. Each run prints its cost as one
+number (`--tuning.print=cost`), a hierarchical cost as hard times a weight plus
+soft. Chapter 11 of the [tutorial](docs/tutorial/11-apps-and-tools.md) walks
+through a tuning; R and the irace package are needed only to run irace.
 
 ## Code style
 

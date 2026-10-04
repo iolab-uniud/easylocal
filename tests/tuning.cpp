@@ -120,6 +120,7 @@ void the_stub_has_the_parameters_with_conditions()
                 parameter("neighborhood.random_biases", "[1, 1]", kind::list),
                 parameter("program.verbose", "false", kind::boolean)},
         .ranges = {{"runners.sa.samples", config::range(10, 1000).log()}},
+        .requirements = {},
         .runners = {"sa", "fi"},
         .fixed = {{"start", "initial"}},
         .instance = "five.tsp",
@@ -212,6 +213,7 @@ void ranges_must_name_parameters_within_their_domains()
             kind::real,
             config::describe_domain(config::range(0.0, 1.0)))},
         .ranges = {{"rate", config::range(0.5, 2.0)}, {"unknown", config::range(1, 2)}},
+        .requirements = {},
         .runners = {},
         .fixed = {},
         .instance = {},
@@ -294,13 +296,22 @@ void cli_writes_the_stub_without_an_instance()
             "--runners.sa.temperature.final_temperature=0.1"},
         {{"runners.sa.temperature.cooling_rate", config::range(0.8, 0.99)}});
     assert(written.status == 0);
-    assert(contains(written.out, "3 parameters to tune"));
+    // runner and cooling_rate: initial_acceptance matters only with
+    // calibration_samples, which is not tuned and is 0.
+    assert(contains(written.out, "2 parameters to tune"));
     const auto parameters = read_file(directory / "parameters.txt");
     assert(contains(parameters, "runner \"--runner=\" c (\"fi\", \"sa\")"));
     assert(contains(
         parameters,
         "runners.sa.temperature.cooling_rate \"--runners.sa.temperature.cooling_rate=\" r "
         "(0.8, 0.99) | runner == \"sa\""));
+    assert(contains(
+        parameters,
+        "# inactive: (runners.sa.temperature.calibration_samples > 0) is false"));
+    assert(contains(
+        parameters,
+        "\"--runners.sa.temperature.initial_acceptance=\" r (0.0001, 0.9999) | runner == "
+        "\"sa\" && (runners.sa.temperature.calibration_samples > 0)\n"));
     assert(contains(
         read_file(directory / "fixed.conf"),
         "runners.sa.temperature.final_temperature = 0.1\n"));

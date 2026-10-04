@@ -159,6 +159,7 @@ inline int write_irace(
     const std::vector<config::parameter_info>& defaults,
     const std::vector<config::parameter_info>& values,
     std::vector<config::parameter_info> tunable,
+    std::vector<config::requirement_info> requirements,
     const std::vector<std::string_view>& names)
 {
     irace_stub stub{
@@ -166,6 +167,7 @@ inline int write_irace(
         .program = std::filesystem::path{program},
         .parameters = std::move(tunable),
         .ranges = settings.tuning,
+        .requirements = std::move(requirements),
         .runners = {},
         .fixed = {},
         .instance = command_line.instance,
@@ -258,6 +260,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
     // The parameters irace may tune: the app's, but those of the cost, and
     // the program's own.
     std::vector<config::parameter_info> tunable;
+    std::vector<config::requirement_info> requirements;
     if (!tuning.irace.empty())
     {
         for (auto& info : application.configuration().parameters())
@@ -266,6 +269,11 @@ int run(App application, const int argc, char* argv[], options settings = {})
         for (auto& info : settings.parameters.parameters())
             if (!info.read_only)
                 tunable.push_back(std::move(info));
+        for (auto& requirement : application.configuration().requirements())
+            if (!requirement.path.starts_with("cost"))
+                requirements.push_back(std::move(requirement));
+        for (auto& requirement : settings.parameters.requirements())
+            requirements.push_back(std::move(requirement));
     }
 
     session_type session{std::move(application), command_line.seed};
@@ -292,6 +300,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
             defaults,
             configuration.parameters(),
             std::move(tunable),
+            std::move(requirements),
             names);
 
     if (command_line.instance.empty())

@@ -150,6 +150,9 @@ struct irace_stub
     std::vector<config::parameter_info> parameters;
     /// The values to try, by path, instead of the domains of the schema.
     std::vector<tuning_range> ranges;
+    /// The requirements between the parameters, written as irace's forbidden
+    /// combinations when they refer to tuned parameters.
+    std::vector<config::requirement_info> requirements;
     /// The runners irace chooses among, each with its parameters
     /// (`runners.<name>.*`); with one runner there is no choice.
     std::vector<std::string> runners;
@@ -230,6 +233,7 @@ struct irace_parameter
     std::string condition;
     std::string default_value;
     bool active{};
+    bool off{}; // its condition is false with the values that are not tuned
     std::string note;
     std::string_view description;
 };
@@ -556,6 +560,141 @@ inline std::vector<irace_parameter> irace_parameters(
     return result;
 }
 
+// A parameter in an irace expression: its name when irace tunes it, else its
+// value as a constant.
+[[nodiscard]]
+inline std::string irace_reference(
+    const std::string_view path,
+    const std::vector<irace_parameter>& parameters,
+    const std::vector<config::parameter_info>& infos)
+{
+    const auto info = std::ranges::find(infos, path, &config::parameter_info::path);
+    const bool boolean =
+        info != infos.end() && info->kind == config::parameter_kind::boolean;
+    const auto tuned = std::ranges::find_if(parameters, [&](const auto& parameter) {
+        return parameter.active && parameter.name == path;
+    });
+    if (tuned != parameters.end())
+        return boolean ? "(" + std::string{path} + " == \"true\")" : std::string{path};
+    if (info == infos.end())
+        return "NA";
+    if (boolean)
+        return info->value == "true" ? "TRUE" : "FALSE";
+    if (info->kind == config::parameter_kind::limit && info->value == "unlimited")
+        return "Inf";
+    if (numeric_kind(info->kind))
+        return info->value;
+    return '"' + info->value + '"';
+}
+
+// The same, as if every parameter it names were tuned: for the lines the user
+// may uncomment.
+[[nodiscard]]
+inline std::string irace_name(
+    const std::string_view path,
+    const std::vector<config::parameter_info>& infos)
+{
+    const auto info = std::ranges::find(infos, path, &config::parameter_info::path);
+    if (info != infos.end() && info->kind == config::parameter_kind::boolean)
+        return "(" + std::string{path} + " == \"true\")";
+    return std::string{path};
+}
+
+[[nodiscard]]
+inline bool refers_to_tuned(
+    const config::expression_info& expression,
+    const std::vector<irace_parameter>& parameters)
+{
+    return std::ranges::any_of(expression.references(), [&](const std::string& path) {
+        return std::ranges::any_of(parameters, [&](const auto& parameter) {
+            return parameter.active && parameter.name == path;
+        });
+    });
+}
+
+// The conditions of the parameters, as irace conditions when they refer to
+// tuned parameters, else decided now: a parameter whose condition is false is
+// left out. A line left commented out keeps its condition with the names of
+// the parameters, for when the user uncomments them.
+inline void apply_irace_conditions(
+    std::vector<irace_parameter>& parameters,
+    const std::vector<config::parameter_info>& infos)
+{
+    for (auto& parameter : parameters)
+    {
+        const auto info =
+            std::ranges::find(infos, parameter.name, &config::parameter_info::path);
+        if (info == infos.end() || !info->condition)
+            continue;
+        const auto named = info->condition->text_with([&](const std::string_view path) {
+            return irace_name(path, infos);
+        });
+        if (!refers_to_tuned(*info->condition, parameters))
+        {
+            if (!info->active)
+            {
+                parameter.active = false;
+                parameter.off = true;
+                parameter.note = "inactive: " + info->condition->to_string()
+                    + " is false with the values of the parameters it names";
+            }
+            if (!parameter.active)
+            {
+                parameter.condition = parameter.condition.empty()
+                    ? named
+                    : parameter.condition + " && " + named;
+            }
+            continue;
+        }
+        const auto condition =
+            info->condition->text_with([&](const std::string_view path) {
+                return irace_reference(path, parameters, infos);
+            });
+        parameter.condition = parameter.condition.empty()
+            ? condition
+            : parameter.condition + " && " + condition;
+    }
+}
+
+// The requirements that refer to tuned parameters, as irace's forbidden
+// expressions, each with its message and, when it names parameters that are
+// not tuned, the expression with every name, for when they are.
+struct irace_forbidden_line
+{
+    std::string_view message;
+    std::string expression;
+    std::string named;
+};
+
+[[nodiscard]]
+inline std::vector<irace_forbidden_line> irace_forbidden(
+    const std::vector<config::requirement_info>& requirements,
+    const std::vector<irace_parameter>& parameters,
+    const std::vector<config::parameter_info>& infos)
+{
+    std::vector<irace_forbidden_line> result;
+    for (const auto& requirement : requirements)
+    {
+        if (!refers_to_tuned(requirement.expression, parameters))
+            continue;
+        irace_forbidden_line line{
+            .message = requirement.message,
+            .expression =
+                "!" + requirement.expression.text_with([&](const std::string_view path) {
+                    return irace_reference(path, parameters, infos);
+                }),
+            .named =
+                "!" + requirement.expression.text_with([&](const std::string_view path) {
+                    return irace_name(path, infos);
+                }),
+        };
+        if (line.named == line.expression)
+            line.named.clear();
+        result.push_back(std::move(line));
+    }
+    return result;
+}
+
 [[nodiscard]]
 inline std::string shell_quote(const std::string_view text)
 {
@@ -608,9 +747,12 @@ void write_new_file(
 inline irace_stub_result write_irace_stub(const irace_stub& stub)
 {
     irace_stub_result result;
-    const auto parameters = detail::irace_parameters(stub, result.errors);
+    auto parameters = detail::irace_parameters(stub, result.errors);
     if (!result)
         return result;
+    detail::apply_irace_conditions(parameters, stub.parameters);
+    const auto forbidden =
+        detail::irace_forbidden(stub.requirements, parameters, stub.parameters);
 
     std::error_code error;
     std::filesystem::create_directories(stub.directory, error);
@@ -626,7 +768,7 @@ inline irace_stub_result write_irace_stub(const irace_stub& stub)
     const bool new_parameters =
         !std::filesystem::exists(directory / "parameters.txt", error);
     for (const auto& parameter : parameters)
-        if (new_parameters && !parameter.active && parameter.type != 0)
+        if (new_parameters && !parameter.active && !parameter.off && parameter.type != 0)
             ++result.to_complete;
 
     detail::write_new_file(directory / "parameters.txt", result, [&](std::ostream& out) {
@@ -653,8 +795,20 @@ inline irace_stub_result write_irace_stub(const irace_stub& stub)
                     << '\n';
             }
         }
-        out << "\n## Combinations that are not valid, as R expressions, such as\n"
-            << "## final_temperature >= initial_temperature, after a line [forbidden].\n";
+        out << "\n## Combinations that are not valid, as R expressions, after a line\n"
+            << "## [forbidden]: the requirements of the program between tuned parameters.\n";
+        if (!forbidden.empty())
+        {
+            out << "[forbidden]\n";
+            for (const auto& line : forbidden)
+            {
+                out << "# " << line.message << '\n';
+                if (!line.named.empty())
+                    out << "# with every parameter it names tuned: " << line.named
+                        << '\n';
+                out << line.expression << '\n';
+            }
+        }
     });
 
     detail::write_new_file(directory / "fixed.conf", result, [&](std::ostream& out) {
@@ -743,8 +897,15 @@ inline irace_stub_result write_irace_stub(const irace_stub& stub)
             continue;
         }
         const auto owner = detail::runner_of(parameter.name);
-        if (parameter.condition.starts_with("runner == ") && !owner.empty()
-            && owner != default_runner)
+        const auto info = std::ranges::find(
+            stub.parameters,
+            parameter.name,
+            &config::parameter_info::path);
+        const bool runner_off = parameter.condition.starts_with("runner == ")
+            && !owner.empty() && owner != default_runner;
+        const bool condition_off =
+            info != stub.parameters.end() && info->condition && !info->active;
+        if (runner_off || condition_off)
         {
             values.emplace_back("NA");
             continue;

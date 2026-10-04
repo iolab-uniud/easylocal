@@ -287,8 +287,10 @@ take, declared in the schema of its block (chapter 9). The built-in runners
 declare the domains of their rates and probabilities, such as Simulated
 Annealing's `cooling_rate` in (0, 1). A program narrows a domain, or gives one
 to a parameter that has none, such as a temperature, whose good values depend
-on the scale of the costs. `examples/tsp/sa_main.cpp` does so for the initial
-temperature:
+on the scale of the costs. The conditions and requirements of the schema
+(chapter 9) come along: a parameter is tuned only when it matters, and irace
+never proposes values that break a requirement. `examples/tsp/sa_main.cpp`
+gives a range to the initial temperature:
 
 <!-- snippet: tsp/sa_main.cpp:tuning -->
 ```cpp
@@ -322,12 +324,12 @@ wrote tuning/target-runner
 wrote tuning/instances.txt
 wrote tuning/scenario.txt
 updated tuning/configurations.txt
-3 parameters to tune, 3 more to complete in parameters.txt; then run irace in tuning
+2 parameters to tune, 3 more to complete in parameters.txt; then run irace in tuning
 ```
 
 | File | |
 | --- | --- |
-| `parameters.txt` | the parameters to tune, one per line with its switch, type and range; the others are commented out, with a range to start from |
+| `parameters.txt` | the parameters to tune, one per line with its switch, type, range and condition; the others are commented out, with a range to start from; the requirements as `[forbidden]` combinations |
 | `configurations.txt` | the current values, which irace tries first |
 | `fixed.conf` | the values given on the command line, read by every run with `--config` |
 | `target-runner` | the script irace calls: it runs the program with `--tuning.print=cost` on an instance, a seed and the candidate values |
@@ -343,11 +345,24 @@ runners.sa.temperature.cooling_rate "--runners.sa.temperature.cooling_rate=" r (
 # runners.sa.temperature.max_iterations "--runners.sa.temperature.max_iterations=" i,log (2000, 200000)
 ```
 
+Here the initial acceptance is not tuned: it matters only when
+`calibration_samples` is above 0, and that parameter is not tuned and is 0.
+Its line is commented out, with the condition irace needs when both are
+uncommented. The requirement between the temperatures becomes a forbidden
+combination, with the final temperature at its value:
+
+```text title="parameters.txt"
+[forbidden]
+# final_temperature must be smaller than initial_temperature
+# with every parameter it names tuned: !(runners.sa.temperature.final_temperature < runners.sa.temperature.initial_temperature)
+!(0.25 < runners.sa.temperature.initial_temperature)
+```
+
 The files are a stub to edit: the program never overwrites them. List the
 instances in `instances.txt`, set the budget in `scenario.txt`, uncomment a
-parameter or change a range in `parameters.txt`, and add a `[forbidden]`
-section for the combinations that are not valid, such as a final temperature
-above the initial one. Then run `--tuning.irace=DIR` again: it checks that
+parameter or change a range in `parameters.txt`, and add to the `[forbidden]`
+section the combinations that are not valid and that the program does not
+declare. Then run `--tuning.irace=DIR` again: it checks that
 every parameter of `parameters.txt` is one of the program's and rewrites
 `configurations.txt` to agree with it, moving a current value into its range
 when it is outside. Finally, run irace in the directory:
@@ -356,8 +371,8 @@ when it is outside. Finally, run irace in the directory:
 $ cd tuning && irace
 ...
 # Best configurations as commandlines (first number is the configuration ID; listed from best to worst according to the sum of ranks):
-26 --runners.sa.temperature.initial_temperature=11.1502 --runners.sa.temperature.cooling_rate=0.9103 --runners.sa.temperature.initial_acceptance=0.5858
-34 --runners.sa.temperature.initial_temperature=6.9444 --runners.sa.temperature.cooling_rate=0.847 --runners.sa.temperature.initial_acceptance=0.6915
+11 --runners.sa.temperature.initial_temperature=4.1621 --runners.sa.temperature.cooling_rate=0.6166
+30 --runners.sa.temperature.initial_temperature=5.4712 --runners.sa.temperature.cooling_rate=0.6343
 ```
 
 The best configurations are switches of the program: give them on its command

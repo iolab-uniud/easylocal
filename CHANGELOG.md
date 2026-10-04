@@ -140,8 +140,9 @@ old concepts onto the new ones.
 - **Tuning with irace**: `cli::run --tuning.irace=DIR` writes an irace
   scenario from the program's parameters (`<easylocal/app/tuning.hpp>`): the
   parameters with a domain, or a range given in `cli::options::tuning`, with a
-  categorical runner and conditions when there are several; the others
-  commented out with a range to start from; the values given on the command
+  categorical runner and conditions when there are several, the fields'
+  conditions as irace conditions and the requirements as forbidden
+  combinations; the others commented out with a range to start from; the values given on the command
   line as the starting point of every run; a target runner, the instances and
   the scenario. The files are a stub that is never overwritten, but
   `configurations.txt`, which follows `parameters.txt` as edited.
@@ -167,10 +168,15 @@ old concepts onto the new ones.
   An app gives the parameters of its cost, neighborhood and runners
   (`cost.*`, `neighborhood.*`, `runners.<name>.*`), and a Session applies them.
   A field may declare its **domain** (`config::range(0.0, 1.0).open()`,
-  `.log()`, `config::one_of("a", "b")`), checked when the parameters are
-  validated and by `config::check_domains` in a block's `validate()`; a
-  parameter set lists the kind and the domain of each parameter. The built-in
-  runners declare the domains of their rates and probabilities.
+  `.log()`, `config::one_of("a", "b")`) and when it matters
+  (`.only_if(config::value<"calibration_samples"> > 0)`), and a schema the
+  **requirements** between its fields (`config::require(config::value<"a"> <
+  config::value<"b">, "message")`, also on fields of nested groups); they are
+  checked when the parameters are validated and by `config::check_schema` in a
+  block's `validate()`. A parameter set lists the kind, the domain and the
+  condition of each parameter, and the requirements. The built-in runners
+  declare the domains of their rates and probabilities, and Simulated
+  Annealing and Great Deluge their conditions and requirements.
   Costs are read as text (`cost::from_text`, or a problem's `read_cost`) and
   written back (`cost::to_text`) in one form, `[hard, soft]` for a
   hierarchical cost: for targets on the command line (`RunParameters`,

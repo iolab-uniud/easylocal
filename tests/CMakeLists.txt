@@ -543,6 +543,14 @@ easylocal_add_test(
         EasyLocal::Core
 )
 
+easylocal_add_test(
+    parameter-conditions
+    SOURCES
+        parameter_conditions.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
+
 
 easylocal_add_test(
     configuration-overrides
@@ -832,6 +840,12 @@ easylocal_add_compile_failure_test(
     parameter_domain_mismatch.cpp
     "the domain does not fit the field"
     "policy"
+)
+easylocal_add_compile_failure_test(
+    parameter-condition-unknown-path
+    parameter_condition_unknown_path.cpp
+    "no field or group of the block has this name"
+    "sample"
 )
 
 # The code of docs/quick-start.md and docs/tutorial is built and run here, so

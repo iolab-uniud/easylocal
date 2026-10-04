@@ -234,15 +234,19 @@ struct ClassicParameters
             config::field<"initial_acceptance", &ClassicParameters::initial_acceptance>(
                 "Acceptance probability of an average worsening move at the "
                 "estimated initial temperature",
-                config::range(0.0, 1.0).open()));
+                config::range(0.0, 1.0).open())
+                .only_if(config::value<"calibration_samples"> > 0),
+            config::require(
+                config::value<"final_temperature"> < config::value<"initial_temperature">,
+                "final_temperature must be smaller than initial_temperature"));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto domains = config::check_domains(*this); !domains)
-            return domains;
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         const auto calibration = detail::validate_calibration(initial_acceptance);
         if (!calibration)
             return calibration;
@@ -386,15 +390,19 @@ struct FixedLengthParameters
                 &FixedLengthParameters::initial_acceptance>(
                 "Acceptance probability of an average worsening move at the "
                 "estimated initial temperature",
-                config::range(0.0, 1.0).open()));
+                config::range(0.0, 1.0).open())
+                .only_if(config::value<"calibration_samples"> > 0),
+            config::require(
+                config::value<"final_temperature"> < config::value<"initial_temperature">,
+                "final_temperature must be smaller than initial_temperature"));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto domains = config::check_domains(*this); !domains)
-            return domains;
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         const auto calibration = detail::validate_calibration(initial_acceptance);
         if (!calibration)
             return calibration;
@@ -560,15 +568,19 @@ struct CutoffParameters
             config::field<"initial_acceptance", &CutoffParameters::initial_acceptance>(
                 "Acceptance probability of an average worsening move at the "
                 "estimated initial temperature",
-                config::range(0.0, 1.0).open()));
+                config::range(0.0, 1.0).open())
+                .only_if(config::value<"calibration_samples"> > 0),
+            config::require(
+                config::value<"final_temperature"> < config::value<"initial_temperature">,
+                "final_temperature must be smaller than initial_temperature"));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto domains = config::check_domains(*this); !domains)
-            return domains;
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         const auto calibration = detail::validate_calibration(initial_acceptance);
         if (!calibration)
             return calibration;
@@ -894,15 +906,16 @@ struct FixedTemperatureParameters
                 &FixedTemperatureParameters::initial_acceptance>(
                 "Acceptance probability of an average worsening move at the "
                 "estimated initial temperature",
-                config::range(0.0, 1.0).open()));
+                config::range(0.0, 1.0).open())
+                .only_if(config::value<"calibration_samples"> > 0));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto domains = config::check_domains(*this); !domains)
-            return domains;
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         const auto calibration = detail::validate_calibration(initial_acceptance);
         if (!calibration)
             return calibration;
@@ -1066,15 +1079,19 @@ struct TimeBasedParameters
             config::field<"initial_acceptance", &TimeBasedParameters::initial_acceptance>(
                 "Acceptance probability of an average worsening move at the "
                 "estimated initial temperature",
-                config::range(0.0, 1.0).open()));
+                config::range(0.0, 1.0).open())
+                .only_if(config::value<"calibration_samples"> > 0),
+            config::require(
+                config::value<"final_temperature"> < config::value<"initial_temperature">,
+                "final_temperature must be smaller than initial_temperature"));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto domains = config::check_domains(*this); !domains)
-            return domains;
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         const auto calibration = detail::validate_calibration(initial_acceptance);
         if (!calibration)
             return calibration;

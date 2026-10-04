@@ -1,5 +1,5 @@
 // Domains of parameters: config::range and config::one_of in a schema, checked
-// by check_domains and by the validation of a parameter_set, and listed with
+// by check_schema and by the validation of a parameter_set, and listed with
 // the parameters.
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/config/setup.hpp>
@@ -54,8 +54,8 @@ struct TunedParameters
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto domains = config::check_domains(*this); !domains)
-            return domains;
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         return config::validation_result::success();
     }
 };
@@ -74,26 +74,25 @@ void check_domains_names_the_first_field_outside()
 {
     TunedParameters parameters;
     parameters.rate = 0.0;
-    const auto result = config::check_domains(parameters);
+    const auto result = config::check_schema(parameters);
     assert(!result);
     assert(result.message == "rate is out of its range");
 
     parameters = {};
     parameters.policy = "greedy";
-    assert(
-        config::check_domains(parameters).message == "policy is not one of its values");
+    assert(config::check_schema(parameters).message == "policy is not one of its values");
 
     parameters = {};
     parameters.weights = {1.0, 11.0};
-    assert(!config::check_domains(parameters));
+    assert(!config::check_schema(parameters));
 
     parameters = {};
     parameters.budget = easylocal::unlimited;
-    assert(!config::check_domains(parameters));
+    assert(!config::check_schema(parameters));
 
     parameters = {};
     parameters.rate = std::numeric_limits<double>::quiet_NaN();
-    assert(!config::check_domains(parameters));
+    assert(!config::check_schema(parameters));
 }
 
 void parameter_sets_check_domains_with_the_field_path()

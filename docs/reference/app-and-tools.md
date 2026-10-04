@@ -145,7 +145,14 @@ lie within the declared domain and name a parameter of the app or of
   numbers and `c` for text and the runner; an open bound moves inward by one
   step of irace's 4 digits. With several runners a categorical `runner` is
   added and each `runners.<name>.*` gets the condition `| runner == "<name>"`;
-  a runner chosen with `--runner` is the only one written. The other
+  a runner chosen with `--runner` is the only one written. A field's
+  `only_if` condition becomes an irace condition when it names tuned
+  parameters, those that are not tuned replaced by their values; when it names
+  none, it is decided at once, and a parameter whose condition is false is
+  commented out as inactive. Each `require` that names a tuned parameter
+  becomes a `[forbidden]` expression, `!(...)`, after its message; with values
+  in place of some names, the expression with every name follows as a comment,
+  and so does the condition of a commented-out line. The other
   parameters are commented out, with a range of a factor of ten around a
   positive value to start from, or `(LOW, HIGH)`; lists, paths, text and
   `unlimited` limits are noted, not written. `cost.*` is never written: it
@@ -160,7 +167,8 @@ lie within the declared domain and name a parameter of the app or of
 - `instances.txt`, `scenario.txt`: stubs, with the program's instance and a
   budget of 1000 runs.
 - `configurations.txt`: the current values as a first configuration, `NA` for
-  the parameters of the runners that are not the first.
+  the parameters of the runners that are not the first and for those whose
+  condition is false.
 
 The files that exist are kept, so that the user edits them; only
 `configurations.txt` is rewritten, each time from `parameters.txt` as it is on

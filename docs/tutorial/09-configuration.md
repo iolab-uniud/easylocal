@@ -33,7 +33,9 @@ $ ./easylocal_tutorial --help
       current: 10
   ...
 $ ./easylocal_tutorial --solver.search.temperature.cooling_rate=2
-error: solver.search.temperature: cooling_rate must be finite and in the open interval (0, 1)
+error: solver.search.temperature.cooling_rate: expected a value in (0, 1), got 2
+$ ./easylocal_tutorial --solver.search.temperature.final_temperature=20
+error: solver.search.temperature: final_temperature must be smaller than initial_temperature
 ```
 
 Values are applied in place and validated, so the runner sees them when it is
@@ -91,6 +93,66 @@ A block may nest another one, as a group of the schema:
 `config::group<"temperature", &Parameters::temperature>("...")` puts the nested
 block's fields under `temperature.`, and validates it together with the
 enclosing one.
+
+### Domains, conditions and requirements
+
+A schema says more than the names of the fields: the values each one may take,
+when it matters, and how fields relate. Simulated Annealing's classic schedule
+declares all three:
+
+```cpp
+static consteval auto parameter_schema()
+{
+    return config::fields(
+        config::field<"initial_temperature", &ClassicParameters::initial_temperature>(
+            "Initial annealing temperature"),
+        config::field<"final_temperature", &ClassicParameters::final_temperature>(
+            "Final annealing temperature"),
+        config::field<"cooling_rate", &ClassicParameters::cooling_rate>(
+            "Multiplicative cooling factor", config::range(0.0, 1.0).open()),
+        // ... samples_per_temperature, calibration_samples
+        config::field<"initial_acceptance", &ClassicParameters::initial_acceptance>(
+            "Acceptance probability of an average worsening move at the "
+            "estimated initial temperature",
+            config::range(0.0, 1.0).open())
+            .only_if(config::value<"calibration_samples"> > 0),
+        config::require(
+            config::value<"final_temperature"> < config::value<"initial_temperature">,
+            "final_temperature must be smaller than initial_temperature"));
+}
+```
+
+- A **domain**, the second argument of `field`, is the set of valid values:
+  `config::range(low, high)`, closed unless `.open()`, `.open_low()` or
+  `.open_high()` says otherwise, with `.log()` when its values span orders of
+  magnitude, or `config::one_of("fixed", "random")`.
+- A **condition**, `.only_if(...)`, says when a field matters: the initial
+  acceptance is used only to estimate the initial temperature, from
+  `calibration_samples` moves. When the condition is false, the field's
+  domain is not checked.
+- A **requirement**, `config::require(expression, message)`, relates fields;
+  its message is the error when it does not hold.
+
+Conditions and requirements are expressions over the fields of the block:
+`config::value<"name">` is a field, `value<"temperature.cooling_rate">` a
+field of a nested group, combined with comparisons, `&&`, `||`, `!` and
+arithmetic. The validation of a set checks all of it, as the errors above
+show, and the block's `validate()` checks it with `config::check_schema`,
+before what the schema cannot say:
+
+```cpp
+config::validation_result validate() const
+{
+    if (const auto schema = config::check_schema(*this); !schema)
+        return schema;
+    // ... the checks the schema does not declare
+    return config::validation_result::success();
+}
+```
+
+Automatic configurators read the same declarations: irace (chapter 11) tunes
+the fields with a domain, only when their condition holds, and never proposes
+values that break a requirement.
 
 ## Configuration files
 

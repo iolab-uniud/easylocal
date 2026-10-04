@@ -50,15 +50,18 @@ struct GreatDelugeParameters
             config::field<"neighbors_sampled", &GreatDelugeParameters::neighbors_sampled>(
                 "Number of proposals at each water level"),
             config::field<"max_evaluations", &GreatDelugeParameters::max_evaluations>(
-                "Maximum number of solution evaluations, or unlimited"));
+                "Maximum number of solution evaluations, or unlimited"),
+            config::require(
+                config::value<"min_level"> < config::value<"initial_level">,
+                "min_level must be smaller than initial_level"));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
-        if (const auto domains = config::check_domains(*this); !domains)
-            return domains;
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
         if (!std::isfinite(initial_level) || initial_level <= 0.0)
         {
             return config::validation_result::failure(
