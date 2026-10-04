@@ -13,6 +13,8 @@
 namespace easylocal
 {
 
+/// A SolutionManager: it declares `input_type` and `solution_type`, and has
+/// `input()` and `is_valid(solution)`.
 template<class SM>
 concept base_solution_manager =
     requires(
@@ -51,6 +53,8 @@ concept has_initial_solution =
         } -> std::same_as<typename SM::solution_type>;
     };
 
+/// A SolutionManager with `random_solution(rng)`, which draws a solution with
+/// the generator `rng`.
 template<class SM, class RNG>
 concept has_random_solution =
     requires(const SM& solution_manager, RNG& rng) {
@@ -75,10 +79,14 @@ concept has_solution_hash_member =
         { solution_manager.hash(solution) } -> std::convertible_to<std::uint64_t>;
     };
 
+/// A SolutionManager whose solutions have a hash: its `hash(solution)` member,
+/// or the solution type's `std::hash`.
 template<class SM>
 concept has_solution_hash =
     has_solution_hash_member<SM> || std_hashable<typename SM::solution_type>;
 
+/// The hash of `solution`: the SolutionManager's `hash(solution)`, or else the
+/// solution type's `std::hash`.
 template<has_solution_hash SM>
 [[nodiscard]]
 constexpr std::uint64_t solution_hash(
@@ -96,16 +104,21 @@ constexpr std::uint64_t solution_hash(
     }
 }
 
+/// A SolutionManager with an `equal(lhs, rhs)` member that compares solutions.
 template<class SM>
 concept has_solution_equality_member =
     requires(const SM& solution_manager, const typename SM::solution_type& solution) {
         { solution_manager.equal(solution, solution) } -> std::convertible_to<bool>;
     };
 
+/// A SolutionManager whose solutions can be compared: its `equal(lhs, rhs)`
+/// member, or the solution type's `==`.
 template<class SM>
 concept has_solution_equality = has_solution_equality_member<SM>
     || std::equality_comparable<typename SM::solution_type>;
 
+/// Whether `lhs` and `rhs` are the same solution: the SolutionManager's
+/// `equal(lhs, rhs)`, or else `lhs == rhs`.
 template<has_solution_equality SM>
 [[nodiscard]]
 constexpr bool solutions_equal(
@@ -127,14 +140,18 @@ template<class Input, class Solution>
 class solution_manager_base
 {
 public:
+    /// The Input type.
     using input_type = Input;
+    /// The Solution type.
     using solution_type = Solution;
 
+    /// From the Input, which it keeps by reference.
     explicit solution_manager_base(const input_type& input) noexcept
         : input_{input}
     {
     }
 
+    /// The Input.
     [[nodiscard]]
     const input_type& input() const noexcept
     {
@@ -142,6 +159,7 @@ public:
     }
 
 protected:
+    /// The Input the SolutionManager was constructed from.
     const input_type& input_;
 };
 

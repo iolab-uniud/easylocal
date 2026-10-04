@@ -98,6 +98,10 @@ using service_t = typename Spec::service_type;
 
 } // namespace detail
 
+/// The recipe of a SolutionManager constructed from the Input and `args`.
+///
+/// It needs a cost: `| component<C>()` or a cost expression, such as
+/// `| cost::sum(component<A>(), component<B>())`.
 template<class SM, class... Args>
 [[nodiscard]]
 auto solution_manager(Args&&... args)
@@ -108,6 +112,8 @@ auto solution_manager(Args&&... args)
         std::tuple<std::decay_t<Args>...>{std::forward<Args>(args)...}};
 }
 
+/// A cost component, a leaf of a cost expression, constructed from the Input
+/// and `args` (or from `args` alone).
 template<class Component, class... Args>
 [[nodiscard]]
 auto component(Args&&... args)
@@ -163,6 +169,8 @@ auto neighborhood(Args&&... args)
     }
 }
 
+/// The delta evaluator co-located in `Component`, its `delta_evaluate`, bound
+/// to a neighborhood recipe with `neighborhood<NHE>() | delta<C>()`.
 template<class Component>
 [[nodiscard]]
 auto delta()
@@ -170,6 +178,9 @@ auto delta()
     return detail::colocated_delta_spec<Component>{};
 }
 
+/// The delta evaluator `DeltaEvaluator` of `Component`, constructed from the
+/// Input and `args` (or from `args` alone), bound to a neighborhood recipe with
+/// `neighborhood<NHE>() | delta<C, D>(args...)`.
 template<class Component, class DeltaEvaluator, class... Args>
 [[nodiscard]]
 auto delta(Args&&... args)

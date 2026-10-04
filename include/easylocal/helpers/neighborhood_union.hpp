@@ -35,6 +35,7 @@
 namespace easylocal
 {
 
+/// The parameters of a neighborhood union of `Count` children.
 template<std::size_t Count>
 struct NeighborhoodUnionParameters
 {
@@ -42,12 +43,15 @@ struct NeighborhoodUnionParameters
         Count >= 2,
         "a neighborhood union parameter block requires at least two children");
 
+    /// The relative weight of each child when a random move draws one (default
+    /// 1, finite and non-negative; 0 excludes the child).
     std::array<double, Count> random_biases = [] {
         std::array<double, Count> biases{};
         biases.fill(1.0);
         return biases;
     }();
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -58,6 +62,7 @@ struct NeighborhoodUnionParameters
                     "Relative weights for random child-neighborhood selection"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
@@ -969,6 +974,8 @@ struct random_biases_spec
 
 } // namespace detail
 
+/// The random biases of a neighborhood union, one per child, as in
+/// `neighborhood_union(a, b) | random_biases(2, 1)`.
 template<std::convertible_to<double>... Weights>
     requires (sizeof...(Weights) >= 2)
 [[nodiscard]]
@@ -979,6 +986,9 @@ auto random_biases(Weights&&... weights)
     };
 }
 
+/// The neighborhood union `spec` with the random biases `biases`.
+///
+/// Requires one bias per child, finite and non-negative.
 template<class... Specs, std::size_t Count>
     requires (sizeof...(Specs) == Count)
 [[nodiscard]]
@@ -989,6 +999,13 @@ auto operator|(
     return std::move(spec).with_random_biases(std::move(biases.values));
 }
 
+/// The recipe of the union of two or more neighborhoods, whose move is a
+/// `std::variant` of theirs.
+///
+/// Enumeration visits the children in order; a random move draws a child with
+/// probability proportional to its bias (1 by default, see `random_biases`).
+/// Requires neighborhood recipes, from `neighborhood<NHE>(...)` or
+/// `neighborhood_union(...)`.
 template<class... Specs>
     requires (sizeof...(Specs) >= 2) &&
              (detail::is_neighborhood_spec_v<std::remove_cvref_t<Specs>> && ...)

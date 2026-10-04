@@ -32,14 +32,18 @@ concept move_optional_for_impl =
 
 } // namespace detail
 
+/// An input range whose elements construct a `Move`.
 template<class Range, class Move>
 concept move_input_range_for =
     std::ranges::input_range<Range> &&
     std::constructible_from<Move, std::ranges::range_reference_t<Range>>;
 
+/// A `std::optional` whose value constructs a `Move`.
 template<class Result, class Move>
 concept move_optional_for = detail::move_optional_for_impl<Result, Move>;
 
+/// A NeighborhoodExplorer for the SolutionManager `SM`: it declares `move_type`
+/// and has `is_valid(solution, move)` and `make_move(solution, move)`.
 template<class NHE, class SM>
 concept neighborhood_explorer_for =
     requires(
@@ -61,6 +65,10 @@ concept neighborhood_explorer_for =
         } -> std::same_as<void>;
     };
 
+/// An explorer that enumerates its moves with the cursor of EasyLocal 3.
+///
+/// `first_move(solution, move)` and `next_move(solution, move)` set `move` and
+/// return whether there was one; its `move_type` is default-initializable.
 template<class NHE, class Solution>
 concept cursor_neighborhood_for =
     requires(
@@ -80,6 +88,8 @@ concept cursor_neighborhood_for =
         } -> std::same_as<bool>;
     };
 
+/// An explorer whose `moves(solution)` returns an input range of moves, such as
+/// a generator.
 template<class NHE, class Solution>
 concept native_moves_neighborhood_for =
     requires(const NHE& neighborhood, const Solution& solution)
@@ -90,11 +100,14 @@ concept native_moves_neighborhood_for =
             typename NHE::move_type>;
     };
 
+/// An explorer that enumerates its moves, with the cursor or with `moves()`.
 template<class NHE, class Solution>
 concept deterministic_neighborhood_for =
     cursor_neighborhood_for<NHE, Solution> ||
     native_moves_neighborhood_for<NHE, Solution>;
 
+/// An explorer that draws moves: `random_move(solution, rng)` returns a
+/// `std::optional` whose value constructs a move, empty when it has none.
 template<class NHE, class Solution, class RNG>
 concept random_neighborhood_for =
     requires(
@@ -306,6 +319,8 @@ concept inverse_neighborhood_for = requires(
     { neighborhood.inverse(solution, move, tabu_move) } -> std::convertible_to<bool>;
 };
 
+/// Whether `move`, proposed at `solution`, is forbidden by `tabu_move`, applied
+/// earlier, as the explorer's `inverse` decides.
 template<class Explorer, class Solution>
     requires inverse_neighborhood_for<Explorer, Solution>
 [[nodiscard]]
@@ -333,11 +348,15 @@ concept has_tabu_attribute_member =
             std::remove_cvref_t<decltype(neighborhood.tabu_attribute(move))>>;
     };
 
+/// An explorer whose moves have a tabu attribute: its `tabu_attribute(move)`
+/// member, or the move itself when it has `std::hash` and `==`.
 template<class NHE>
 concept has_tabu_attribute = has_tabu_attribute_member<NHE>
     || (std_hashable<typename NHE::move_type>
         && std::equality_comparable<typename NHE::move_type>);
 
+/// The attribute of `move` that frequency-based memory counts: the explorer's
+/// `tabu_attribute(move)`, or else a copy of the move.
 template<has_tabu_attribute Explorer>
 [[nodiscard]]
 inline auto tabu_attribute(
@@ -355,6 +374,7 @@ inline auto tabu_attribute(
     }
 }
 
+/// The type of the tabu attribute of the moves of `Explorer`.
 template<has_tabu_attribute Explorer>
 using tabu_attribute_t = decltype(easylocal::tabu_attribute(
     std::declval<const Explorer&>(),
@@ -368,17 +388,23 @@ template<class SolutionManager, class Move>
 class neighborhood_explorer_base
 {
 public:
+    /// The SolutionManager type.
     using solution_manager_type = SolutionManager;
+    /// The Input type of the SolutionManager.
     using input_type = typename solution_manager_type::input_type;
+    /// The Solution type of the SolutionManager.
     using solution_type = typename solution_manager_type::solution_type;
+    /// The Move type.
     using move_type = Move;
 
+    /// From the SolutionManager, which it keeps by reference.
     explicit neighborhood_explorer_base(
         const solution_manager_type& solution_manager) noexcept
         : solution_manager_{solution_manager}
     {
     }
 
+    /// The Input of the SolutionManager.
     [[nodiscard]]
     const input_type& input() const noexcept
     {
@@ -386,6 +412,7 @@ public:
     }
 
 protected:
+    /// The SolutionManager the explorer was constructed from.
     const solution_manager_type& solution_manager_;
 };
 

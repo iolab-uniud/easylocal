@@ -18,11 +18,13 @@
 namespace easylocal
 {
 
-// A NeighborhoodExplorer with parameters: its parameters_type is a parameter
-// block, and it is constructed from the SolutionManager, the parameters and
-// its other recipe arguments. Its recipe holds the parameters, gives them to
-// the explorer when a runner is bound, and exposes them as configuration
-// (under "neighborhood" in a runner or an app).
+/// A NeighborhoodExplorer with parameters: its parameters_type is a parameter
+/// block, and it is constructed from the SolutionManager, the parameters and
+/// its other recipe arguments.
+///
+/// Its recipe holds the parameters, gives them to the explorer when a runner is
+/// bound, and exposes them as configuration (under "neighborhood" in a runner
+/// or an app).
 template<class NHE>
 concept parameterized_neighborhood = requires {
     typename NHE::parameters_type;
