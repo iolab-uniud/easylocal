@@ -397,6 +397,8 @@ pipeline_stage<Runner> operator&(
     return std::move(stage).with_timeout(*options.time_limit);
 }
 
+/// The time limit of a run, `timeout(10s)` or `timeout(2.5)` seconds, here for
+/// a stage: `stage & timeout(10s)`.
 using easylocal::timeout;
 
 /// What one stage of a pipeline did.
