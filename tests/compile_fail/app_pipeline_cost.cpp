@@ -117,8 +117,7 @@ int main()
             easylocal::component<Soft>());
     auto nhe = easylocal::neighborhood<Neighborhood>();
     auto runner = easylocal::Runner{Keep{}} | sm | nhe;
-    auto application =
-        easylocal::app("hard only").with_solution_manager(sm).with_neighborhood(nhe)
+    auto application = easylocal::app("hard only") | sm | nhe
         | easylocal::pipeline(
             "feasible",
             solvers::stage("feasible", runner) & solvers::until_feasible());

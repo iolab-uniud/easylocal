@@ -1,5 +1,6 @@
 // solvers::Pipeline: stages in sequence, their targets and attempts, the
 // effort and report of each stage, cancellation and parameters.
+#include <easylocal/app/app.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
@@ -812,6 +813,19 @@ int main()
     ok &= expect(
         attempts_override && configurable.stage<0>().parameters().attempts == 3,
         "the attempts are set through the parameters");
+
+    // An app over services that derive from no EasyLocal base composes with
+    // |, and runs its pipeline by name.
+    auto plain_app = el::app("plain") | sm | nhe
+        | el::pipeline(
+            "polish",
+            solvers::stage("polish", el::Runner{SoftDown{}} | sm | nhe));
+    std::mt19937_64 app_rng{2};
+    const auto polished =
+        plain_app.run("polish", instance, Solution{.hard = 0, .soft = 9}, app_rng);
+    ok &= expect(
+        polished.has_value() && polished->solution.soft == 5,
+        "an app of plain services is composed with | and runs its pipeline");
 
     // Stage names are distinct and not empty; a stage has at least one attempt.
     auto twins = solvers::pipeline(

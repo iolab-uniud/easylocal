@@ -936,6 +936,54 @@ public:
         return outcome;
     }
 
+    /// Adds a SolutionManager to the app: the pipe spelling of
+    /// with_solution_manager.
+    template<class Spec>
+        requires requires(app_builder builder, Spec&& spec) {
+            std::move(builder).with_solution_manager(std::forward<Spec>(spec));
+        }
+    [[nodiscard]]
+    friend auto operator|(app_builder builder, Spec&& spec)
+    {
+        return std::move(builder).with_solution_manager(std::forward<Spec>(spec));
+    }
+
+    /// Adds a neighborhood to the app: the pipe spelling of with_neighborhood.
+    template<class Spec>
+        requires requires(app_builder builder, Spec&& spec) {
+            std::move(builder).with_neighborhood(std::forward<Spec>(spec));
+        }
+    [[nodiscard]]
+    friend auto operator|(app_builder builder, Spec&& spec)
+    {
+        return std::move(builder).with_neighborhood(std::forward<Spec>(spec));
+    }
+
+    /// Registers a runner in the app: the pipe spelling of with_runner.
+    template<class Algorithm>
+        requires requires(
+            app_builder builder,
+            app_runner_registration<Algorithm> registration) {
+            std::move(builder).with_runner(std::move(registration));
+        }
+    [[nodiscard]]
+    friend auto operator|(
+        app_builder builder,
+        app_runner_registration<Algorithm> registration)
+    {
+        return std::move(builder).with_runner(std::move(registration));
+    }
+
+    /// Registers a pipeline in the app: the pipe spelling of with_pipeline.
+    template<class Pipeline>
+    [[nodiscard]]
+    friend auto operator|(
+        app_builder builder,
+        app_pipeline_registration<Pipeline> registration)
+    {
+        return std::move(builder).with_pipeline(std::move(registration));
+    }
+
 private:
     template<class Registration>
     static void add_runner_configuration(
@@ -1026,53 +1074,6 @@ template<class... Stages>
 auto pipeline(std::string name, Stages... stages)
 {
     return easylocal::pipeline(std::move(name), solvers::pipeline(std::move(stages)...));
-}
-
-/// Pipe spellings of with_solution_manager, with_neighborhood and with_runner.
-template<class SMSpec, class NHESpec, class... Registrations, class Spec>
-    requires requires(detail::app_builder<SMSpec, NHESpec, Registrations...> builder, Spec&& spec) {
-        std::move(builder).with_solution_manager(std::forward<Spec>(spec));
-    }
-[[nodiscard]]
-auto operator|(detail::app_builder<SMSpec, NHESpec, Registrations...> builder, Spec&& spec)
-{
-    return std::move(builder).with_solution_manager(std::forward<Spec>(spec));
-}
-
-/// Adds a neighborhood to an app: the pipe spelling of with_neighborhood.
-template<class SMSpec, class NHESpec, class... Registrations, class Spec>
-    requires requires(detail::app_builder<SMSpec, NHESpec, Registrations...> builder, Spec&& spec) {
-        std::move(builder).with_neighborhood(std::forward<Spec>(spec));
-    }
-[[nodiscard]]
-auto operator|(detail::app_builder<SMSpec, NHESpec, Registrations...> builder, Spec&& spec)
-{
-    return std::move(builder).with_neighborhood(std::forward<Spec>(spec));
-}
-
-/// Registers a runner in an app: the pipe spelling of with_runner.
-template<class SMSpec, class NHESpec, class... Registrations, class Algorithm>
-    requires requires(
-        detail::app_builder<SMSpec, NHESpec, Registrations...> builder,
-        detail::app_runner_registration<Algorithm> registration) {
-        std::move(builder).with_runner(std::move(registration));
-    }
-[[nodiscard]]
-auto operator|(
-    detail::app_builder<SMSpec, NHESpec, Registrations...> builder,
-    detail::app_runner_registration<Algorithm> registration)
-{
-    return std::move(builder).with_runner(std::move(registration));
-}
-
-/// Registers a pipeline in an app: the pipe spelling of with_pipeline.
-template<class SMSpec, class NHESpec, class... Registrations, class Pipeline>
-[[nodiscard]]
-auto operator|(
-    detail::app_builder<SMSpec, NHESpec, Registrations...> builder,
-    detail::app_pipeline_registration<Pipeline> registration)
-{
-    return std::move(builder).with_pipeline(std::move(registration));
 }
 
 } // namespace easylocal
