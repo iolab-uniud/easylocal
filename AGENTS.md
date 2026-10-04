@@ -115,10 +115,12 @@ The generated API reference (`scripts/api-docs.py`, MrDocs) is made of the
 ## Formatting
 
 `.clang-format` (pinned in `pyproject.toml`) formats `examples/` fully and the
-rest of the repository only on the lines a change touches: never reformat a
-whole library or test file. `scripts/format.sh` does this, and the pre-commit
-hook (`git config core.hooksPath .githooks`) checks the staged lines;
-`uv run git-clang-format --staged` fixes them.
+rest of the repository only on the lines a change touches: do not reformat a
+whole library or test file for its own sake. `scripts/format.sh` does this,
+and the pre-commit hook (`git config core.hooksPath .githooks`) checks the
+staged lines; `uv run git-clang-format --staged` fixes them. The exception is a
+file the hook sees as new, such as one renamed with `git mv`: all its lines
+are staged, so it is formatted whole, in the same commit.
 
 ## Documentation
 
