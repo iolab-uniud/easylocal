@@ -1,8 +1,9 @@
 #pragma once
 
-// pareto_archive: the non-dominated solutions (Pareto front) reached by a
-// search with a cost::pareto cost, kept by search_run and returned in the
-// pareto_search_result.
+/// \file
+/// pareto_archive: the non-dominated solutions (Pareto front) reached by a
+/// search with a cost::pareto cost, kept by search_run and returned in the
+/// pareto_search_result.
 
 #include <easylocal/cost/pareto.hpp>
 
@@ -14,7 +15,7 @@
 namespace easylocal
 {
 
-// A solution of a Pareto front, with its cost.
+/// A solution of a Pareto front, with its cost.
 template<class Solution, class Cost>
 struct pareto_point
 {
@@ -22,18 +23,18 @@ struct pareto_point
     Cost cost;
 };
 
-// The non-dominated solutions reached by a search with a cost::pareto cost:
-// a solution enters unless an archived one dominates it or is the same (equal
-// cost and the same solution), and removes the archived solutions it
-// dominates. Solutions with equal costs are all kept when they differ.
+/// The non-dominated solutions reached by a search with a cost::pareto cost:
+/// a solution enters unless an archived one dominates it or is the same (equal
+/// cost and the same solution), and removes the archived solutions it
+/// dominates. Solutions with equal costs are all kept when they differ.
 template<class Solution, class Cost>
 class pareto_archive
 {
 public:
     using point_type = pareto_point<Solution, Cost>;
 
-    // same_solution(lhs, rhs) tells whether two solutions of equal cost are
-    // the same one. True when the solution entered the archive.
+    /// same_solution(lhs, rhs) tells whether two solutions of equal cost are
+    /// the same one. True when the solution entered the archive.
     template<class SameSolution>
     bool offer(const Solution& solution, const Cost& cost, SameSolution&& same_solution)
     {
@@ -68,7 +69,7 @@ public:
         points_.clear();
     }
 
-    // The points ordered by their objectives, first objective first.
+    /// The points ordered by their objectives, first objective first.
     [[nodiscard]]
     std::vector<point_type> sorted() const
     {

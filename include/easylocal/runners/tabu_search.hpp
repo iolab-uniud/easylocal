@@ -1,10 +1,11 @@
 #pragma once
 
-// Tabu Search: at each iteration the best admissible move of the neighborhood
-// is applied, even when it worsens the cost. A tabu list forbids the moves that
-// would undo recent ones (by the neighborhood's inverse), unless an aspiration
-// criterion lifts the prohibition. The tabu lists live in runners::tabu, the
-// aspiration criteria in runners::aspiration.
+/// \file
+/// Tabu Search: at each iteration the best admissible move of the neighborhood
+/// is applied, even when it worsens the cost. A tabu list forbids the moves that
+/// would undo recent ones (by the neighborhood's inverse), unless an aspiration
+/// criterion lifts the prohibition. The tabu lists live in runners::tabu, the
+/// aspiration criteria in runners::aspiration.
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost/concepts.hpp>
@@ -35,10 +36,10 @@
 namespace easylocal::runners
 {
 
-// A candidate move, as a tabu list sees it: forbidden_by(tabu_move), whether a
-// move the list holds forbids it (the neighborhood's inverse), its attribute()
-// when the neighborhood has one, and its cost() for the lists that need it
-// (their state declares needs_cost = true).
+/// A candidate move, as a tabu list sees it: forbidden_by(tabu_move), whether a
+/// move the list holds forbids it (the neighborhood's inverse), its attribute()
+/// when the neighborhood has one, and its cost() for the lists that need it
+/// (their state declares needs_cost = true).
 template<class Run>
 class tabu_candidate
 {
@@ -57,7 +58,7 @@ public:
     {
     }
 
-    // The cost after the move; only for lists with needs_cost.
+    /// The cost after the move; only for lists with needs_cost.
     [[nodiscard]]
     const cost_type& cost() const noexcept
     {
@@ -99,10 +100,10 @@ private:
     const cost_type* cost_;
 };
 
-// What a tabu list learns after each iteration: the move applied, the solution
-// and its cost after it, the iteration (counted from 1), whether the move
-// improved the best cost, the move's attribute() and the solution_hash() when
-// the problem has them.
+/// What a tabu list learns after each iteration: the move applied, the solution
+/// and its cost after it, the iteration (counted from 1), whether the move
+/// improved the best cost, the move's attribute() and the solution_hash() when
+/// the problem has them.
 template<class Run>
 class tabu_step
 {
@@ -189,12 +190,12 @@ private:
     bool improved_best_;
 };
 
-// A tabu list policy: a value holding its parameters, from which each run makes
-// the list's state with make_state<Run>(). The state answers
-// tabu_tenure(candidate): the iterations left before the candidate is no longer
-// tabu, or nothing when it is admissible; update(step, rng) records an applied
-// move. A state may also have escape_moves(): a number of random moves to apply
-// at once, then reset to 0 (the reactive list's escape).
+/// A tabu list policy: a value holding its parameters, from which each run makes
+/// the list's state with make_state<Run>(). The state answers
+/// tabu_tenure(candidate): the iterations left before the candidate is no longer
+/// tabu, or nothing when it is admissible; update(step, rng) records an applied
+/// move. A state may also have escape_moves(): a number of random moves to apply
+/// at once, then reset to 0 (the reactive list's escape).
 template<class List, class Run, class RNG>
 concept tabu_list_for =
     requires(const List& list) {
@@ -315,7 +316,7 @@ private:
 
 struct FixedLengthParameters
 {
-    // Iterations a move stays in the list.
+    /// Iterations a move stays in the list.
     std::size_t tenure{10};
 
     [[nodiscard]]
@@ -336,8 +337,8 @@ struct FixedLengthParameters
     }
 };
 
-// TS1: a list of the last tenure moves, overwritten in a circle: each move
-// stays tabu for tenure iterations.
+/// TS1: a list of the last tenure moves, overwritten in a circle: each move
+/// stays tabu for tenure iterations.
 class FixedLength
 {
 public:
@@ -358,8 +359,8 @@ public:
             moves_.reserve(tenure);
         }
 
-        // A move forbidden by several entries is tabu until the youngest
-        // expires.
+        /// A move forbidden by several entries is tabu until the youngest
+        /// expires.
         template<class Candidate>
             requires detail::inverse_candidate<Candidate, Move>
         [[nodiscard]]
@@ -441,8 +442,8 @@ struct RandomTenureParameters
     }
 };
 
-// TS2 (Gendreau, Hertz and Laporte): each move stays tabu for a tenure drawn
-// uniformly in [min_tenure, max_tenure].
+/// TS2 (Gendreau, Hertz and Laporte): each move stays tabu for a tenure drawn
+/// uniformly in [min_tenure, max_tenure].
 class RandomTenure
 {
 public:
@@ -499,9 +500,9 @@ private:
 
 struct CyclicParameters
 {
-    // Iterations each tenure is used for.
+    /// Iterations each tenure is used for.
     std::size_t period{100};
-    // The tenures, used in turn.
+    /// The tenures, used in turn.
     std::vector<std::size_t> tenures{11, 34, 20, 8, 98};
 
     [[nodiscard]]
@@ -527,8 +528,8 @@ struct CyclicParameters
     }
 };
 
-// TS3 (Taillard): the tenure of the moves changes every period iterations,
-// taking the given tenures in turn.
+/// TS3 (Taillard): the tenure of the moves changes every period iterations,
+/// taking the given tenures in turn.
 class Cyclic
 {
 public:
@@ -565,7 +566,7 @@ public:
             }
         }
 
-        // The tenure the next moves get.
+        /// The tenure the next moves get.
         [[nodiscard]]
         std::size_t current_tenure() const noexcept
         {
@@ -593,22 +594,22 @@ private:
 
 struct ReactiveParameters
 {
-    // Factor of the tenure when a solution comes back within cycle_length
-    // iterations.
+    /// Factor of the tenure when a solution comes back within cycle_length
+    /// iterations.
     double increase{1.1};
-    // Factor of the tenure when no cycle is seen for longer than the average
-    // cycle length.
+    /// Factor of the tenure when no cycle is seen for longer than the average
+    /// cycle length.
     double decrease{0.9};
-    // Visits of a solution after which each further visit counts as chaos.
+    /// Visits of a solution after which each further visit counts as chaos.
     std::size_t repetitions{3};
-    // Chaos counts after which the search escapes with random moves.
+    /// Chaos counts after which the search escapes with random moves.
     std::size_t chaos{3};
-    // Revisits closer than this many iterations are cycles.
+    /// Revisits closer than this many iterations are cycles.
     std::size_t cycle_length{50};
-    // The largest tenure.
+    /// The largest tenure.
     std::size_t max_tenure{1000};
-    // Confirms a revisit by comparing the solutions with the same hash, which
-    // keeps a copy of each visited solution; it needs solution equality.
+    /// Confirms a revisit by comparing the solutions with the same hash, which
+    /// keeps a copy of each visited solution; it needs solution equality.
     bool verify_equality{false};
 
     [[nodiscard]]
@@ -647,17 +648,17 @@ struct ReactiveParameters
     }
 };
 
-// TS4, Reactive Tabu Search (Battiti and Tecchiolli): the tenure starts at 1
-// and reacts to the solutions visited, recognized by their hash. A solution
-// revisited within cycle_length iterations multiplies the tenure by increase
-// and updates the average cycle length; when no such cycle occurs for longer
-// than the average, the tenure is multiplied by decrease. A solution visited
-// more than repetitions times counts as chaos; after more than chaos counts the
-// memory is reset and the search escapes with 1 + (1 + r) * average / 2
-// random moves, r uniform in [0, 1), which are recorded like the others. It
-// needs the solution hash (has_solution_hash); a collision is taken for a
-// revisit unless verify_equality keeps the solutions to compare them, which
-// needs solution equality (has_solution_equality).
+/// TS4, Reactive Tabu Search (Battiti and Tecchiolli): the tenure starts at 1
+/// and reacts to the solutions visited, recognized by their hash. A solution
+/// revisited within cycle_length iterations multiplies the tenure by increase
+/// and updates the average cycle length; when no such cycle occurs for longer
+/// than the average, the tenure is multiplied by decrease. A solution visited
+/// more than repetitions times counts as chaos; after more than chaos counts the
+/// memory is reset and the search escapes with 1 + (1 + r) * average / 2
+/// random moves, r uniform in [0, 1), which are recorded like the others. It
+/// needs the solution hash (has_solution_hash); a collision is taken for a
+/// revisit unless verify_equality keeps the solutions to compare them, which
+/// needs solution equality (has_solution_equality).
 class Reactive
 {
 public:
@@ -745,7 +746,7 @@ public:
             return std::exchange(escape_, 0);
         }
 
-        // The iterations a move applied now stays tabu.
+        /// The iterations a move applied now stays tabu.
         [[nodiscard]]
         std::size_t current_tenure() const noexcept
         {
@@ -828,7 +829,7 @@ private:
 
 struct FrequencyParameters
 {
-    // Relative frequency above which an attribute is tabu.
+    /// Relative frequency above which an attribute is tabu.
     double threshold{0.05};
 
     [[nodiscard]]
@@ -850,11 +851,11 @@ struct FrequencyParameters
     }
 };
 
-// TS5, frequency-based long-term memory (Glover and Laguna's transition
-// measure): a move is tabu while the attribute of its moves (tabu_attribute)
-// has been applied in more than threshold of the iterations so far. Its tenure
-// is the iterations before that frequency falls to the threshold. It needs the
-// neighborhood's tabu_attribute, not its inverse.
+/// TS5, frequency-based long-term memory (Glover and Laguna's transition
+/// measure): a move is tabu while the attribute of its moves (tabu_attribute)
+/// has been applied in more than threshold of the iterations so far. Its tenure
+/// is the iterations before that frequency falls to the threshold. It needs the
+/// neighborhood's tabu_attribute, not its inverse.
 class Frequency
 {
 public:
@@ -919,7 +920,7 @@ private:
 
 struct ObjectiveBasedParameters
 {
-    // Iterations a cost value stays tabu.
+    /// Iterations a cost value stays tabu.
     std::size_t tenure{10};
 
     [[nodiscard]]
@@ -940,10 +941,10 @@ struct ObjectiveBasedParameters
     }
 };
 
-// Tabu on cost values (Gendreau and Potvin): a move is tabu when it would
-// reach a cost equal to one reached in the last tenure iterations. It needs
-// neither inverse nor attribute, but the candidate's cost: moves are evaluated
-// before the tabu check.
+/// Tabu on cost values (Gendreau and Potvin): a move is tabu when it would
+/// reach a cost equal to one reached in the last tenure iterations. It needs
+/// neither inverse nor attribute, but the candidate's cost: moves are evaluated
+/// before the tabu check.
 class ObjectiveBased
 {
 public:
@@ -1004,7 +1005,7 @@ struct LimDynamicParameters
 {
     std::size_t min_tenure{5};
     std::size_t max_tenure{20};
-    // Iterations without improving the best cost after which the tenure grows.
+    /// Iterations without improving the best cost after which the tenure grows.
     std::size_t idle_threshold{10};
 
     [[nodiscard]]
@@ -1032,9 +1033,9 @@ struct LimDynamicParameters
     }
 };
 
-// A tenure that grows by one at each iteration after idle_threshold iterations
-// without improving the best cost, and falls back to min_tenure when the best
-// improves or the tenure reaches max_tenure.
+/// A tenure that grows by one at each iteration after idle_threshold iterations
+/// without improving the best cost, and falls back to min_tenure when the best
+/// improves or the tenure reaches max_tenure.
 class LimDynamic
 {
 public:
@@ -1184,12 +1185,12 @@ private:
 
 struct FooParameters
 {
-    // Iterations between two tenure changes.
+    /// Iterations between two tenure changes.
     std::size_t window{100};
-    // Growth of the tenure when the costs fluctuate little; also the initial
-    // tenure.
+    /// Growth of the tenure when the costs fluctuate little; also the initial
+    /// tenure.
     std::size_t increment{5};
-    // The spread of the costs in a window below which the tenure grows.
+    /// The spread of the costs in a window below which the tenure grows.
     double fluctuation{1.0};
 
     [[nodiscard]]
@@ -1219,11 +1220,11 @@ struct FooParameters
     }
 };
 
-// The Fluctuation Of the Objective scheme (Blöchliger and Zufferey): a tenure
-// that grows by increment when the costs reached in the last window spread
-// less than fluctuation (the search is stuck), and shrinks by one otherwise.
-// The fluctuation is in cost units, so it depends on the instance; the cost
-// needs cost::delta.
+/// The Fluctuation Of the Objective scheme (Blöchliger and Zufferey): a tenure
+/// that grows by increment when the costs reached in the last window spread
+/// less than fluctuation (the search is stuck), and shrinks by one otherwise.
+/// The fluctuation is in cost units, so it depends on the instance; the cost
+/// needs cost::delta.
 class Foo
 {
 public:
@@ -1328,8 +1329,8 @@ struct RandomFooParameters
     }
 };
 
-// Foo with its window, increment and fluctuation drawn uniformly in their
-// ranges at the start and again at the end of each window.
+/// Foo with its window, increment and fluctuation drawn uniformly in their
+/// ranges at the start and again at the end of each window.
 class RandomFoo
 {
 public:
@@ -1416,7 +1417,7 @@ private:
 namespace aspiration
 {
 
-// A tabu move is admitted when it would improve the best cost found.
+/// A tabu move is admitted when it would improve the best cost found.
 struct ByObjective
 {
     static constexpr bool needs_cost = true;
@@ -1429,7 +1430,7 @@ struct ByObjective
     }
 };
 
-// Tabu moves are never admitted, and need not be evaluated.
+/// Tabu moves are never admitted, and need not be evaluated.
 struct None
 {
     static constexpr bool needs_cost = false;
@@ -1447,11 +1448,11 @@ struct None
 template<class ListParameters>
 struct TabuSearchParameters
 {
-    // Iterations without improving the best cost after which the search stops.
+    /// Iterations without improving the best cost after which the search stops.
     std::size_t max_idle_iterations{1000};
-    // Iterations in all; unlimited by default.
+    /// Iterations in all; unlimited by default.
     limit max_iterations{unlimited};
-    // Evaluation budget, including the initial evaluation; unlimited by default.
+    /// Evaluation budget, including the initial evaluation; unlimited by default.
     limit max_evaluations{unlimited};
     ListParameters tabu_list{};
 
@@ -1469,7 +1470,7 @@ struct TabuSearchParameters
             config::group<"tabu_list", &self::tabu_list>("The tabu list"));
     }
 
-    // The tabu list is validated as a group.
+    /// The tabu list is validated as a group.
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
@@ -1488,8 +1489,8 @@ struct FirstImprovementTabuSearchParameters
     std::size_t max_idle_iterations{1000};
     limit max_iterations{unlimited};
     limit max_evaluations{unlimited};
-    // The scan stops at the first admissible move that improves the best cost
-    // rather than the current one.
+    /// The scan stops at the first admissible move that improves the best cost
+    /// rather than the current one.
     bool improve_on_best{false};
     ListParameters tabu_list{};
 
@@ -1902,10 +1903,10 @@ private:
 
 } // namespace detail
 
-// Tabu Search exploring the whole neighborhood: the best admissible move is
-// applied, ties broken uniformly at random. When every move is tabu, the least
-// tabu one is applied. It stops after max_idle_iterations iterations without
-// improving the best cost, and returns the best solution found.
+/// Tabu Search exploring the whole neighborhood: the best admissible move is
+/// applied, ties broken uniformly at random. When every move is tabu, the least
+/// tabu one is applied. It stops after max_idle_iterations iterations without
+/// improving the best cost, and returns the best solution found.
 template<class TabuList = tabu::FixedLength, class Aspiration = aspiration::ByObjective>
 class TabuSearch
 {
@@ -1934,9 +1935,9 @@ private:
     detail::tabu_search_engine<TabuList, Aspiration> engine_;
 };
 
-// Tabu Search stopping the scan at the first admissible move that improves the
-// current cost or, with improve_on_best, the best cost; without one, the best
-// admissible move of the whole neighborhood is applied, as in TabuSearch.
+/// Tabu Search stopping the scan at the first admissible move that improves the
+/// current cost or, with improve_on_best, the best cost; without one, the best
+/// admissible move of the whole neighborhood is applied, as in TabuSearch.
 template<class TabuList = tabu::FixedLength, class Aspiration = aspiration::ByObjective>
 class FirstImprovementTabuSearch
 {
@@ -1987,12 +1988,12 @@ struct AspirationPlusTabuSearchParameters
     std::size_t max_idle_iterations{1000};
     limit max_iterations{unlimited};
     limit max_evaluations{unlimited};
-    // Admissible moves examined at least and at most in each scan.
+    /// Admissible moves examined at least and at most in each scan.
     std::size_t min_moves{10};
     std::size_t max_moves{100};
-    // Admissible moves examined after the first one under the aspiration level.
+    /// Admissible moves examined after the first one under the aspiration level.
     std::size_t plus{5};
-    // The aspiration level, as a factor of the best cost.
+    /// The aspiration level, as a factor of the best cost.
     double aspiration_level{1.0};
     ListParameters tabu_list{};
 
@@ -2034,12 +2035,12 @@ struct AspirationPlusTabuSearchParameters
     }
 };
 
-// Tabu Search with Glover's aspiration plus candidate strategy: each scan
-// examines admissible moves until plus more after the first one whose cost is
-// under the aspiration level (aspiration_level times the best cost), but at
-// least min_moves and at most max_moves of them, and applies the best of those
-// examined. The aspiration level is a value of the cost, so the cost is
-// arithmetic.
+/// Tabu Search with Glover's aspiration plus candidate strategy: each scan
+/// examines admissible moves until plus more after the first one whose cost is
+/// under the aspiration level (aspiration_level times the best cost), but at
+/// least min_moves and at most max_moves of them, and applies the best of those
+/// examined. The aspiration level is a value of the cost, so the cost is
+/// arithmetic.
 template<class TabuList = tabu::FixedLength, class Aspiration = aspiration::ByObjective>
 class AspirationPlusTabuSearch
 {
@@ -2102,10 +2103,10 @@ struct EliteCandidateTabuSearchParameters
     std::size_t max_idle_iterations{1000};
     limit max_iterations{unlimited};
     limit max_evaluations{unlimited};
-    // The moves kept from a full scan.
+    /// The moves kept from a full scan.
     std::size_t elite_size{10};
-    // A candidate of the list is applied while its cost is not above this
-    // factor of the best cost.
+    /// A candidate of the list is applied while its cost is not above this
+    /// factor of the best cost.
     double quality{1.05};
     ListParameters tabu_list{};
 
@@ -2142,12 +2143,12 @@ struct EliteCandidateTabuSearchParameters
     }
 };
 
-// Tabu Search with Glover's elite candidate list: a full scan applies the best
-// admissible move and keeps the elite_size best other admissible moves; the
-// following iterations evaluate only the kept moves still valid, and apply the
-// best admissible one while its cost is not above quality times the best cost.
-// Otherwise a new full scan builds a new list. The quality level is a value of
-// the cost, so the cost is arithmetic.
+/// Tabu Search with Glover's elite candidate list: a full scan applies the best
+/// admissible move and keeps the elite_size best other admissible moves; the
+/// following iterations evaluate only the kept moves still valid, and apply the
+/// best admissible one while its cost is not above quality times the best cost.
+/// Otherwise a new full scan builds a new list. The quality level is a value of
+/// the cost, so the cost is arithmetic.
 template<class TabuList = tabu::FixedLength, class Aspiration = aspiration::ByObjective>
 class EliteCandidateTabuSearch
 {

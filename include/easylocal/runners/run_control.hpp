@@ -1,8 +1,9 @@
 #pragma once
 
-// run_control: what the caller of a run controls while it runs, cancellation
-// through a std::stop_token and progress reports (evaluations, iterations,
-// budget) to an observer.
+/// \file
+/// run_control: what the caller of a run controls while it runs, cancellation
+/// through a std::stop_token and progress reports (evaluations, iterations,
+/// budget) to an observer.
 
 #include <concepts>
 #include <cstddef>

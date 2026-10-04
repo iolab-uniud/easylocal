@@ -1,9 +1,10 @@
 #pragma once
 
-// Runner: a search algorithm composed with a SolutionManager recipe and a
-// neighborhood recipe (make_runner). Binding it to an Input builds the services
-// (bound_runner) on which the algorithm runs; its parameters (search, cost,
-// neighborhood) are exposed as one parameter_set.
+/// \file
+/// Runner: a search algorithm composed with a SolutionManager recipe and a
+/// neighborhood recipe (make_runner). Binding it to an Input builds the services
+/// (bound_runner) on which the algorithm runs; its parameters (search, cost,
+/// neighborhood) are exposed as one parameter_set.
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
@@ -466,15 +467,15 @@ template<class Algorithm>
 class Runner<Algorithm, detail::unconfigured_t, detail::unconfigured_t>
 {
 public:
-    // An algorithm without a parameter block, held as it is.
+    /// An algorithm without a parameter block, held as it is.
     explicit Runner(Algorithm algorithm)
         requires(!detail::parameterized_algorithm<Algorithm>)
         : algorithm_{std::move(algorithm)}
     {
     }
 
-    // A parameterized algorithm is built from its parameters when the runner is
-    // bound: make_runner<Algorithm>(parameters) creates the runner.
+    /// A parameterized algorithm is built from its parameters when the runner is
+    /// bound: make_runner<Algorithm>(parameters) creates the runner.
     template<class Self = Algorithm>
         requires detail::parameterized_algorithm<Self>
     explicit Runner(Algorithm)
@@ -610,8 +611,8 @@ public:
     {
     }
 
-    // The algorithm's parameters, to read or change from code; the algorithm
-    // is built from them when the runner is bound.
+    /// The algorithm's parameters, to read or change from code; the algorithm
+    /// is built from them when the runner is bound.
     [[nodiscard]]
     auto& parameters() noexcept
         requires detail::parameterized_algorithm<Algorithm>
@@ -626,10 +627,10 @@ public:
         return algorithm_.parameters();
     }
 
-    // The parameters of the algorithm ("search"), of the cost expression
-    // ("cost") and of the neighborhood ("neighborhood"), with paths relative
-    // to the runner: whoever composes it adds a prefix, if any. The set refers
-    // to this runner, which must stay in place while it is used.
+    /// The parameters of the algorithm ("search"), of the cost expression
+    /// ("cost") and of the neighborhood ("neighborhood"), with paths relative
+    /// to the runner: whoever composes it adds a prefix, if any. The set refers
+    /// to this runner, which must stay in place while it is used.
     [[nodiscard]]
     config::parameter_set configuration()
     {
@@ -746,8 +747,8 @@ auto operator|(
 template<class Algorithm>
 Runner(Algorithm) -> Runner<std::remove_cvref_t<Algorithm>>;
 
-// A runner for a parameterized algorithm, from its parameters:
-// make_runner<FirstImprovement>({.max_evaluations = 1000}).
+/// A runner for a parameterized algorithm, from its parameters:
+/// make_runner<FirstImprovement>({.max_evaluations = 1000}).
 template<class Algorithm>
     requires detail::parameterized_algorithm<Algorithm>
 [[nodiscard]]
@@ -756,7 +757,7 @@ auto make_runner(typename Algorithm::parameters_type parameters = {})
     return Runner<Algorithm>{detail::algorithm_source<Algorithm>{std::move(parameters)}};
 }
 
-// A runner for any other algorithm, built from its arguments.
+/// A runner for any other algorithm, built from its arguments.
 template<class Algorithm, class... Args>
     requires(!detail::parameterized_algorithm<Algorithm>)
     && std::constructible_from<Algorithm, Args&&...>

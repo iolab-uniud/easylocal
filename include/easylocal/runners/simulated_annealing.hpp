@@ -1,7 +1,8 @@
 #pragma once
 
-// Simulated Annealing together with its policies: temperature schedules
-// (runners::temperature) and the Metropolis acceptance criterion.
+/// \file
+/// Simulated Annealing together with its policies: temperature schedules
+/// (runners::temperature) and the Metropolis acceptance criterion.
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost/concepts.hpp>
@@ -40,10 +41,10 @@ concept temperature_policy =
         { const_policy.finished() } -> std::convertible_to<bool>;
     };
 
-// A temperature policy that can estimate its initial temperature: before the
-// run Simulated Annealing evaluates calibration_samples() random moves at the
-// initial solution, without applying them, and passes their deltas to
-// calibrate(), then calls reset(). The built-in policies are calibrating.
+/// A temperature policy that can estimate its initial temperature: before the
+/// run Simulated Annealing evaluates calibration_samples() random moves at the
+/// initial solution, without applying them, and passes their deltas to
+/// calibrate(), then calls reset(). The built-in policies are calibrating.
 template<class Policy>
 concept calibrating_temperature_policy = temperature_policy<Policy>
     && requires(
@@ -192,11 +193,11 @@ struct ClassicParameters
     double cooling_rate{0.95};
     std::size_t samples_per_temperature{100};
 
-    // Moves sampled at the initial solution to estimate the initial
-    // temperature; 0 keeps initial_temperature.
+    /// Moves sampled at the initial solution to estimate the initial
+    /// temperature; 0 keeps initial_temperature.
     std::size_t calibration_samples{0};
-    // Acceptance probability of an average worsening move at the estimated
-    // initial temperature.
+    /// Acceptance probability of an average worsening move at the estimated
+    /// initial temperature.
     double initial_acceptance{0.5};
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -315,11 +316,11 @@ struct FixedLengthParameters
     double cooling_rate{0.95};
     std::size_t max_iterations{100'000};
 
-    // Moves sampled at the initial solution to estimate the initial
-    // temperature; 0 keeps initial_temperature.
+    /// Moves sampled at the initial solution to estimate the initial
+    /// temperature; 0 keeps initial_temperature.
     std::size_t calibration_samples{0};
-    // Acceptance probability of an average worsening move at the estimated
-    // initial temperature.
+    /// Acceptance probability of an average worsening move at the estimated
+    /// initial temperature.
     double initial_acceptance{0.5};
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -462,11 +463,11 @@ struct CutoffParameters
     std::size_t max_iterations{100'000};
     double accepted_ratio{0.1};
 
-    // Moves sampled at the initial solution to estimate the initial
-    // temperature; 0 keeps initial_temperature.
+    /// Moves sampled at the initial solution to estimate the initial
+    /// temperature; 0 keeps initial_temperature.
     std::size_t calibration_samples{0};
-    // Acceptance probability of an average worsening move at the estimated
-    // initial temperature.
+    /// Acceptance probability of an average worsening move at the estimated
+    /// initial temperature.
     double initial_acceptance{0.5};
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -744,11 +745,11 @@ struct FixedTemperatureParameters
     std::size_t max_iterations{100'000};
     double accepted_ratio{1.0};
 
-    // Moves sampled at the initial solution to estimate the temperature; 0
-    // keeps temperature.
+    /// Moves sampled at the initial solution to estimate the temperature; 0
+    /// keeps temperature.
     std::size_t calibration_samples{0};
-    // Acceptance probability of an average worsening move at the estimated
-    // initial temperature.
+    /// Acceptance probability of an average worsening move at the estimated
+    /// initial temperature.
     double initial_acceptance{0.5};
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -794,8 +795,8 @@ struct FixedTemperatureParameters
     }
 };
 
-// A constant temperature: the search ends after max_iterations proposals, or
-// earlier once accepted_ratio * max_iterations of them have been accepted.
+/// A constant temperature: the search ends after max_iterations proposals, or
+/// earlier once accepted_ratio * max_iterations of them have been accepted.
 class FixedTemperature
 {
 public:
@@ -878,16 +879,16 @@ struct TimeBasedParameters
     double initial_temperature{10.0};
     double final_temperature{0.01};
     double cooling_rate{0.95};
-    // Seconds.
+    /// Seconds.
     double allowed_running_time{10.0};
-    // Accepted proposals that cool early; unlimited cools only on time.
+    /// Accepted proposals that cool early; unlimited cools only on time.
     limit accepted_per_temperature{unlimited};
 
-    // Moves sampled at the initial solution to estimate the initial
-    // temperature; 0 keeps initial_temperature.
+    /// Moves sampled at the initial solution to estimate the initial
+    /// temperature; 0 keeps initial_temperature.
     std::size_t calibration_samples{0};
-    // Acceptance probability of an average worsening move at the estimated
-    // initial temperature.
+    /// Acceptance probability of an average worsening move at the estimated
+    /// initial temperature.
     double initial_acceptance{0.5};
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -939,14 +940,14 @@ struct TimeBasedParameters
     }
 };
 
-// The cooling schedule spread over a running time instead of an iteration
-// budget: the allowed time is divided evenly among the temperature levels,
-// and the temperature cools when the time of its level is over or, with
-// accepted_per_temperature, after that many acceptances; the time an early
-// cooling saves is redistributed over the remaining levels. The annealing
-// ends when the time is over or the final temperature is reached. The
-// trajectory depends on the speed of the machine, so equal seeds no longer
-// give equal runs. The clock is read once per proposal.
+/// The cooling schedule spread over a running time instead of an iteration
+/// budget: the allowed time is divided evenly among the temperature levels,
+/// and the temperature cools when the time of its level is over or, with
+/// accepted_per_temperature, after that many acceptances; the time an early
+/// cooling saves is redistributed over the remaining levels. The annealing
+/// ends when the time is over or the final temperature is reached. The
+/// trajectory depends on the speed of the machine, so equal seeds no longer
+/// give equal runs. The clock is read once per proposal.
 template<class Clock = std::chrono::steady_clock>
 class BasicTimeBased
 {
@@ -987,7 +988,7 @@ public:
             parameters_.final_temperature / parameters_.cooling_rate);
     }
 
-    // Starts the clock.
+    /// Starts the clock.
     void reset() noexcept
     {
         temperature_ = parameters_.initial_temperature;
@@ -1103,16 +1104,16 @@ namespace temperature
 template<class DescentParameters>
 struct ReheatingParameters
 {
-    // The schedule of the descents; the reheats restart it from a lower
-    // initial temperature.
+    /// The schedule of the descents; the reheats restart it from a lower
+    /// initial temperature.
     DescentParameters descent{};
     std::size_t max_reheats{3};
-    // The temperature a reheat restarts from, as a factor of the descent's
-    // initial_temperature.
+    /// The temperature a reheat restarts from, as a factor of the descent's
+    /// initial_temperature.
     double reheat_ratio{0.5};
-    // The share of the descent's budget (max_iterations or
-    // allowed_running_time) spent by the first descent; the reheats divide
-    // the rest evenly. Ignored by a schedule without a budget.
+    /// The share of the descent's budget (max_iterations or
+    /// allowed_running_time) spent by the first descent; the reheats divide
+    /// the rest evenly. Ignored by a schedule without a budget.
     double first_descent_share{0.5};
 
     [[nodiscard]]
@@ -1165,14 +1166,14 @@ struct ReheatingParameters
     }
 };
 
-// Reheats any schedule with an initial temperature: a first descent, then up
-// to max_reheats descents restarting from reheat_ratio times the initial
-// temperature. When the schedule has a budget, max_iterations or
-// allowed_running_time, the first descent spends first_descent_share of it
-// and the reheats divide the rest evenly; otherwise each descent runs the
-// whole schedule. It calibrates when the schedule does, and the reheat
-// temperature stays above the final one. Reheating<Hybrid> is EasyLocal 3's
-// annealing with reheating.
+/// Reheats any schedule with an initial temperature: a first descent, then up
+/// to max_reheats descents restarting from reheat_ratio times the initial
+/// temperature. When the schedule has a budget, max_iterations or
+/// allowed_running_time, the first descent spends first_descent_share of it
+/// and the reheats divide the rest evenly; otherwise each descent runs the
+/// whole schedule. It calibrates when the schedule does, and the reheat
+/// temperature stays above the final one. Reheating<Hybrid> is EasyLocal 3's
+/// annealing with reheating.
 template<detail::reheatable_policy Descent>
 class Reheating
 {
@@ -1199,8 +1200,8 @@ public:
         return descent_.calibration_samples();
     }
 
-    // The schedule's estimate of the initial temperature, kept high enough
-    // for the reheats.
+    /// The schedule's estimate of the initial temperature, kept high enough
+    /// for the reheats.
     void calibrate(const std::span<const double> deltas)
         requires calibrating_temperature_policy<Descent>
     {
@@ -1247,7 +1248,7 @@ public:
         return reheats_;
     }
 
-    // The descent under way.
+    /// The descent under way.
     [[nodiscard]]
     const Descent& descent() const noexcept
     {
@@ -1397,8 +1398,8 @@ public:
 
 // Algorithm.
 
-// The parameters of Simulated Annealing: its temperature policy's, as the
-// group "temperature" (paths temperature.*).
+/// The parameters of Simulated Annealing: its temperature policy's, as the
+/// group "temperature" (paths temperature.*).
 template<class TemperatureParameters>
 struct SimulatedAnnealingParameters
 {
@@ -1412,7 +1413,7 @@ struct SimulatedAnnealingParameters
                 "The temperature schedule"));
     }
 
-    // The schedule is validated as a group.
+    /// The schedule is validated as a group.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
@@ -1485,8 +1486,8 @@ public:
     {
     }
 
-    // From its parameters, {.temperature = {...}}: the form a Runner and an
-    // app hold, and build it from.
+    /// From its parameters, {.temperature = {...}}: the form a Runner and an
+    /// app hold, and build it from.
     template<class Policy = TemperaturePolicy>
         requires requires { typename Policy::parameters_type; }
     explicit SimulatedAnnealing(

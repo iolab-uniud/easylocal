@@ -1,7 +1,8 @@
 #pragma once
 
-// GreatDeluge (Dueck): random moves accepted while their cost stays below a
-// decreasing water level; arithmetic costs only.
+/// \file
+/// GreatDeluge (Dueck): random moves accepted while their cost stays below a
+/// decreasing water level; arithmetic costs only.
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost/concepts.hpp>
@@ -21,16 +22,16 @@ namespace easylocal::runners
 
 struct GreatDelugeParameters
 {
-    // Initial water level, as a factor of the initial cost.
+    /// Initial water level, as a factor of the initial cost.
     double initial_level{1.1};
-    // The search stops when the level falls below this factor of the best
-    // cost.
+    /// The search stops when the level falls below this factor of the best
+    /// cost.
     double min_level{0.9};
-    // Multiplicative decrease of the level.
+    /// Multiplicative decrease of the level.
     double level_rate{0.99};
-    // Proposals at each level.
+    /// Proposals at each level.
     std::size_t neighbors_sampled{100};
-    // Evaluation budget, including the initial evaluation; unlimited by default.
+    /// Evaluation budget, including the initial evaluation; unlimited by default.
     limit max_evaluations{unlimited};
 
     [[nodiscard]]
@@ -89,14 +90,14 @@ concept great_deluge_cost = cost::arithmetic<typename Context::cost_type>;
 
 } // namespace detail
 
-// Great Deluge (Dueck): a random move is accepted if it improves the current
-// cost or if its cost does not exceed the water level. The level starts at
-// initial_level times the initial cost and is multiplied by level_rate every
-// neighbors_sampled proposals; the search stops when it falls below
-// min_level times the best cost, and returns the best solution found. The
-// level is a value of the cost, so costs are arithmetic and, as the levels
-// are factors of them, positive: the search stops at once when the best cost
-// is zero or negative.
+/// Great Deluge (Dueck): a random move is accepted if it improves the current
+/// cost or if its cost does not exceed the water level. The level starts at
+/// initial_level times the initial cost and is multiplied by level_rate every
+/// neighbors_sampled proposals; the search stops when it falls below
+/// min_level times the best cost, and returns the best solution found. The
+/// level is a value of the cost, so costs are arithmetic and, as the levels
+/// are factors of them, positive: the search stops at once when the best cost
+/// is zero or negative.
 class GreatDeluge
 {
 public:

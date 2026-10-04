@@ -1,7 +1,8 @@
 #pragma once
 
-// HillClimbing: random moves accepted when they do not worsen the cost, until
-// too many consecutive proposals bring no strict improvement.
+/// \file
+/// HillClimbing: random moves accepted when they do not worsen the cost, until
+/// too many consecutive proposals bring no strict improvement.
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
@@ -19,10 +20,10 @@ namespace easylocal::runners
 
 struct HillClimbingParameters
 {
-    // Consecutive proposals without a strict improvement after which the
-    // search stops.
+    /// Consecutive proposals without a strict improvement after which the
+    /// search stops.
     std::size_t max_idle_iterations{1000};
-    // Evaluation budget, including the initial evaluation; unlimited by default.
+    /// Evaluation budget, including the initial evaluation; unlimited by default.
     limit max_evaluations{unlimited};
 
     [[nodiscard]]
@@ -50,11 +51,11 @@ struct HillClimbingParameters
     }
 };
 
-// Hill Climbing: at each iteration a random move is proposed and accepted if
-// it does not worsen the current cost, so the search can drift across
-// plateaus. It stops after max_idle_iterations consecutive proposals without
-// a strict improvement. The cost never worsens, so the current solution is
-// also the best one.
+/// Hill Climbing: at each iteration a random move is proposed and accepted if
+/// it does not worsen the current cost, so the search can drift across
+/// plateaus. It stops after max_idle_iterations consecutive proposals without
+/// a strict improvement. The cost never worsens, so the current solution is
+/// also the best one.
 class HillClimbing
 {
 public:

@@ -1,8 +1,9 @@
 #pragma once
 
-// ParetoLateAcceptanceHillClimbing: late acceptance for multi-objective
-// cost::pareto costs, over a history of solutions compared by dominance; the
-// result is the Pareto front of the run.
+/// \file
+/// ParetoLateAcceptanceHillClimbing: late acceptance for multi-objective
+/// cost::pareto costs, over a history of solutions compared by dominance; the
+/// result is the Pareto front of the run.
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
@@ -25,18 +26,18 @@ namespace easylocal::runners
 
 struct ParetoLateAcceptanceHillClimbingParameters
 {
-    // Number of solutions in the history: the first is the initial solution,
-    // the others random ones.
+    /// Number of solutions in the history: the first is the initial solution,
+    /// the others random ones.
     std::size_t history_length{20};
-    // Iterations after which the search stops as soon as the idle iterations
-    // exceed idle_ratio of all the iterations.
+    /// Iterations after which the search stops as soon as the idle iterations
+    /// exceed idle_ratio of all the iterations.
     std::size_t max_iterations{100000};
-    // Share of the iterations that may be idle once max_iterations is past.
+    /// Share of the iterations that may be idle once max_iterations is past.
     double idle_ratio{0.02};
-    // A candidate that does not dominate the current solution may still
-    // replace the next solution of the history if it dominates it.
+    /// A candidate that does not dominate the current solution may still
+    /// replace the next solution of the history if it dominates it.
     bool second_chance{true};
-    // Evaluation budget, including the initial evaluations; unlimited by default.
+    /// Evaluation budget, including the initial evaluations; unlimited by default.
     limit max_evaluations{unlimited};
 
     [[nodiscard]]
@@ -77,17 +78,17 @@ struct ParetoLateAcceptanceHillClimbingParameters
     }
 };
 
-// Pareto Late Acceptance Hill Climbing (Da Ros and Di Gaspero), for a
-// cost::pareto cost: a history of solutions, the initial one and
-// history_length - 1 random ones, is visited in a circle. At each iteration a
-// random move of the current solution is evaluated; if the candidate
-// dominates the current solution it replaces it in the history, otherwise,
-// with second_chance, it replaces the next solution of the history if it
-// dominates that one (which is skipped). The search goes on to the next
-// solution of the history either way. Past max_iterations it stops as soon as
-// more than idle_ratio of the iterations are idle (no replacement since the
-// last one). The result is the front of the run (search_run's archive of the
-// non-dominated solutions reached), with its first solution by objectives.
+/// Pareto Late Acceptance Hill Climbing (Da Ros and Di Gaspero), for a
+/// cost::pareto cost: a history of solutions, the initial one and
+/// history_length - 1 random ones, is visited in a circle. At each iteration a
+/// random move of the current solution is evaluated; if the candidate
+/// dominates the current solution it replaces it in the history, otherwise,
+/// with second_chance, it replaces the next solution of the history if it
+/// dominates that one (which is skipped). The search goes on to the next
+/// solution of the history either way. Past max_iterations it stops as soon as
+/// more than idle_ratio of the iterations are idle (no replacement since the
+/// last one). The result is the front of the run (search_run's archive of the
+/// non-dominated solutions reached), with its first solution by objectives.
 class ParetoLateAcceptanceHillClimbing
 {
 public:

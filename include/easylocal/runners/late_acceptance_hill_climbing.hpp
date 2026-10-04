@@ -1,8 +1,9 @@
 #pragma once
 
-// LateAcceptanceHillClimbing (Burke and Bykov): a random move is accepted when
-// it is no worse than the current cost or than the cost of history_length
-// iterations ago.
+/// \file
+/// LateAcceptanceHillClimbing (Burke and Bykov): a random move is accepted when
+/// it is no worse than the current cost or than the cost of history_length
+/// iterations ago.
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
@@ -21,12 +22,12 @@ namespace easylocal::runners
 
 struct LateAcceptanceHillClimbingParameters
 {
-    // Number of past costs a candidate is compared with.
+    /// Number of past costs a candidate is compared with.
     std::size_t history_length{10};
-    // Consecutive proposals without improving the best cost after which the
-    // search stops.
+    /// Consecutive proposals without improving the best cost after which the
+    /// search stops.
     std::size_t max_idle_iterations{1000};
-    // Evaluation budget, including the initial evaluation; unlimited by default.
+    /// Evaluation budget, including the initial evaluation; unlimited by default.
     limit max_evaluations{unlimited};
 
     [[nodiscard]]
@@ -62,13 +63,13 @@ struct LateAcceptanceHillClimbingParameters
     }
 };
 
-// Late Acceptance Hill Climbing (Burke and Bykov): a random move is accepted
-// if its cost is better than or equivalent to the current cost, or to the
-// cost the current solution had history_length iterations earlier. After each
-// proposal the current cost replaces that oldest entry of the history, which
-// starts filled with the initial cost. With history_length 1 it accepts the
-// moves Hill Climbing accepts. It stops after max_idle_iterations consecutive proposals
-// without improving the best cost, and returns the best solution found.
+/// Late Acceptance Hill Climbing (Burke and Bykov): a random move is accepted
+/// if its cost is better than or equivalent to the current cost, or to the
+/// cost the current solution had history_length iterations earlier. After each
+/// proposal the current cost replaces that oldest entry of the history, which
+/// starts filled with the initial cost. With history_length 1 it accepts the
+/// moves Hill Climbing accepts. It stops after max_idle_iterations consecutive proposals
+/// without improving the best cost, and returns the best solution found.
 class LateAcceptanceHillClimbing
 {
 public:

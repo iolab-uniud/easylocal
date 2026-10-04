@@ -1,7 +1,8 @@
 #pragma once
 
-// BestImprovement (steepest descent): at each step the best move of the whole
-// neighborhood is applied while it strictly improves the cost.
+/// \file
+/// BestImprovement (steepest descent): at each step the best move of the whole
+/// neighborhood is applied while it strictly improves the cost.
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
@@ -17,8 +18,8 @@ namespace easylocal::runners
 
 struct BestImprovementParameters
 {
-    // Evaluation budget, including the initial evaluation; unlimited by default:
-    // the search runs until a local optimum.
+    /// Evaluation budget, including the initial evaluation; unlimited by default:
+    /// the search runs until a local optimum.
     limit max_evaluations{unlimited};
 
     [[nodiscard]]

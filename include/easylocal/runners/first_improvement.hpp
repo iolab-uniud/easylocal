@@ -1,7 +1,8 @@
 #pragma once
 
-// FirstImprovement: at each step the first move of the neighborhood that
-// strictly improves the cost is applied, until a local optimum.
+/// \file
+/// FirstImprovement: at each step the first move of the neighborhood that
+/// strictly improves the cost is applied, until a local optimum.
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
@@ -18,8 +19,8 @@ namespace easylocal::runners
 
 struct FirstImprovementParameters
 {
-    // Evaluation budget, including the initial evaluation; unlimited by default:
-    // the search runs until a local optimum.
+    /// Evaluation budget, including the initial evaluation; unlimited by default:
+    /// the search runs until a local optimum.
     limit max_evaluations{unlimited};
 
     [[nodiscard]]
