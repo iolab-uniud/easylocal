@@ -14,27 +14,42 @@
 namespace easylocal::logging
 {
 
+/// The severity of a log record, from the lowest.
 enum class level : std::uint8_t
 {
+    /// Fine-grained tracing.
     trace,
+    /// Debugging information.
     debug,
+    /// Normal operation.
     info,
+    /// Something unexpected, that does not stop the program.
     warning,
+    /// A failure.
     error,
 };
 
+/// Who emits a log record.
 enum class origin : std::uint8_t
 {
+    /// EasyLocal itself.
     framework,
+    /// The program that uses EasyLocal.
     application,
 };
 
+/// A log record, as a sink receives it.
 struct record
 {
+    /// The level of the record.
     level severity{};
+    /// Who emitted it.
     origin source{origin::application};
+    /// Its category, e.g. `application.model`.
     std::string_view category{};
+    /// Its message.
     std::string_view message{};
+    /// Where it was emitted.
     std::source_location location{};
 };
 
@@ -44,6 +59,7 @@ struct record
 /// duration of the call. Sinks must not throw.
 using sink = void (*)(const record&) noexcept;
 
+/// The name of a level, e.g. "warning".
 [[nodiscard]]
 constexpr std::string_view level_name(const level severity) noexcept
 {
@@ -64,6 +80,8 @@ constexpr std::string_view level_name(const level severity) noexcept
     return "unknown";
 }
 
+/// The default sink: writes warnings and errors to stderr, as
+/// `EasyLocal <level>: <message>`, and ignores the other records.
 inline void stderr_sink(const record& entry) noexcept
 {
     if (entry.severity < level::warning)
@@ -90,18 +108,23 @@ inline std::atomic<sink> active_sink{&stderr_sink};
 
 } // namespace detail
 
+/// The active sink, or a null pointer when dispatch is disabled.
 [[nodiscard]]
 inline sink current_sink() noexcept
 {
     return detail::active_sink.load(std::memory_order_acquire);
 }
 
+/// Replaces the active sink, and returns the previous one; `nullptr` disables
+/// dispatch.
 [[nodiscard]]
 inline sink set_sink(const sink target) noexcept
 {
     return detail::active_sink.exchange(target, std::memory_order_acq_rel);
 }
 
+/// Sends a record to the active sink, if any; its location defaults to the
+/// call site.
 inline void emit(
     const level severity,
     const std::string_view category,

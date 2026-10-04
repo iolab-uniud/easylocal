@@ -16,6 +16,7 @@
 namespace easylocal
 {
 
+/// A type that `std::hash` can hash.
 template<class T>
 concept std_hashable = requires(const T& value) {
     { std::hash<T>{}(value) } -> std::convertible_to<std::size_t>;
@@ -36,6 +37,8 @@ constexpr std::uint64_t mix_hash(std::uint64_t value) noexcept
 
 } // namespace detail
 
+/// Folds the hash of `value` into the running hash `seed`, and returns the
+/// result.
 template<std_hashable T>
 [[nodiscard]]
 constexpr std::uint64_t hash_combine(const std::uint64_t seed, const T& value) noexcept(
@@ -45,6 +48,8 @@ constexpr std::uint64_t hash_combine(const std::uint64_t seed, const T& value) n
         seed + 0x9e3779b97f4a7c15ULL + static_cast<std::uint64_t>(std::hash<T>{}(value)));
 }
 
+/// Folds the hash of every element of `range`, in order, into `seed` (0 by
+/// default), and returns the result.
 template<std::ranges::input_range Range>
     requires std_hashable<std::ranges::range_value_t<Range>>
 [[nodiscard]]

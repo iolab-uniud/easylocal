@@ -52,24 +52,30 @@ class generator : public std::ranges::view_interface<generator<T>>
         "easylocal::generator<T> supports non-const object types only");
 
 public:
+    /// The promise of the coroutine, used by the compiler.
     class promise_type
     {
     public:
+        /// The generator of this coroutine.
         generator get_return_object() noexcept
         {
             return generator{handle_type::from_promise(*this)};
         }
 
+        /// Suspends the coroutine at its start, until begin().
         static std::suspend_always initial_suspend() noexcept
         {
             return {};
         }
 
+        /// Suspends the coroutine at its end, so that the generator destroys
+        /// it.
         static std::suspend_always final_suspend() noexcept
         {
             return {};
         }
 
+        /// Stores the value of a `co_yield` and suspends the coroutine.
         std::suspend_always yield_value(T value) noexcept(
             std::is_nothrow_move_constructible_v<T>)
         {
@@ -81,8 +87,11 @@ public:
         template<class Awaitable>
         std::suspend_never await_transform(Awaitable&&) = delete;
 
+        /// Ends the coroutine.
         static void return_void() noexcept {}
 
+        /// Stores an exception thrown by the coroutine, which begin() or `++`
+        /// rethrows.
         void unhandled_exception() noexcept
         {
             exception_ = std::current_exception();
@@ -95,33 +104,42 @@ public:
         std::exception_ptr exception_;
     };
 
+    /// The handle of the coroutine.
     using handle_type = std::coroutine_handle<promise_type>;
 
+    /// An input iterator over the yielded values.
     class iterator
     {
     public:
+        /// The type of the values.
         using value_type = T;
+        /// The difference type of the iterator.
         using difference_type = std::ptrdiff_t;
+        /// An input iterator.
         using iterator_concept = std::input_iterator_tag;
 
         iterator() = default;
 
+        /// The current value, to be moved from.
         T&& operator*() const
         {
             return std::move(*coroutine_.promise().value_);
         }
 
+        /// Resumes the coroutine until it yields the next value or ends.
         iterator& operator++()
         {
             advance(coroutine_);
             return *this;
         }
 
+        /// The same, returning nothing.
         void operator++(int)
         {
             ++*this;
         }
 
+        /// Whether the coroutine has ended.
         friend bool operator==(const iterator& current, std::default_sentinel_t) noexcept
         {
             return current.coroutine_.done();
@@ -161,6 +179,7 @@ public:
         return iterator{coroutine_};
     }
 
+    /// The end of the values: the coroutine has ended.
     static std::default_sentinel_t end() noexcept
     {
         return {};

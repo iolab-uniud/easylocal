@@ -30,6 +30,7 @@ public:
         return count_;
     }
 
+    /// Whether the limit is unlimited.
     [[nodiscard]]
     constexpr bool is_unlimited() const noexcept
     {
