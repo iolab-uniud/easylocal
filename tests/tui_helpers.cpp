@@ -111,7 +111,9 @@ int main()
     const auto hierarchical = easylocal::cost::hierarchical{
         lexicographic,
         3};
-    assert(value_text(hierarchical) == "hard=[1, 2], soft=3");
+    assert(value_text(hierarchical) == "[[1, 2], 3]");
+    assert(value_text(easylocal::cost::hierarchical{2, 5}) == "[2, 5]");
+    assert(value_text(0.1) == "0.1");
     assert(object_name(named_value{}) == "named");
     assert(object_name(unnamed_value{}) == "<unnamed neighborhood>");
 

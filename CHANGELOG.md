@@ -146,8 +146,10 @@ old concepts onto the new ones.
   An app gives the parameters of its cost, neighborhood and runners
   (`cost.*`, `neighborhood.*`, `runners.<name>.*`), and a Session applies them.
   Costs are read as text (`cost::from_text`, or a problem's `read_cost`) and
-  written back (`cost::to_text`) for targets on the command line
-  (`RunParameters`, `--run.target`), in the TextUI and in REST requests.
+  written back (`cost::to_text`) in one form, `[hard, soft]` for a
+  hierarchical cost: for targets on the command line (`RunParameters`,
+  `--run.target`), in the TextUI and in REST requests, and wherever the
+  command line and the TextUI show a cost.
 - **Tracing**: core search events to JSONL, self-describing binary (ELTR: the
   header gives the run's metadata, the cost layout and every event's fields)
   or in-memory recorders, with no overhead when unused, including the

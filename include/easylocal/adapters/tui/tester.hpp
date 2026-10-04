@@ -213,10 +213,14 @@ template<class T>
     {
         return easylocal::describe(value);
     }
+    // A cost as the target field reads it: [hard, soft], [v1, v2, ...].
+    else if constexpr (easylocal::cost::text_readable<T>)
+    {
+        return easylocal::cost::to_text(value);
+    }
     else if constexpr (easylocal::cost::hierarchical_type<T>)
     {
-        return "hard=" + value_text(value.hard()) +
-               ", soft=" + value_text(value.soft());
+        return "[" + value_text(value.hard()) + ", " + value_text(value.soft()) + "]";
     }
     else if constexpr (easylocal::cost::lexicographic_type<T>
         || easylocal::cost::pareto_type<T>)
@@ -237,8 +241,7 @@ template<class T>
     }
     else if constexpr (requires { value.hard(); value.soft(); })
     {
-        return "hard=" + value_text(value.hard()) +
-               ", soft=" + value_text(value.soft());
+        return "[" + value_text(value.hard()) + ", " + value_text(value.soft()) + "]";
     }
     else if constexpr (tuple_like<T>)
     {
