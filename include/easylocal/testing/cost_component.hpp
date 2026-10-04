@@ -1,7 +1,8 @@
 #pragma once
 
-// check_cost_component: a cost component evaluates the fixture Solution, and
-// the same value every time.
+/// \file
+/// check_cost_component: a cost component evaluates the fixture Solution, and
+/// the same value every time.
 
 #include <easylocal/testing/check.hpp>
 #include <easylocal/testing/fixture.hpp>
@@ -11,8 +12,8 @@
 namespace easylocal::testing
 {
 
-// A cost component evaluates the fixture Solution, and evaluating it twice
-// gives equivalent values.
+/// A cost component evaluates the fixture Solution, and evaluating it twice
+/// gives equivalent values.
 template<check_fixture Fixture, class Component>
 [[nodiscard]] check_report check_cost_component(
     const Fixture& fixture,
@@ -51,7 +52,7 @@ template<check_fixture Fixture, class Component>
     return report;
 }
 
-// The same, with the component built from the fixture Input.
+/// The same, with the component built from the fixture Input.
 template<class Component, check_fixture Fixture>
 [[nodiscard]] check_report check_cost_component(const Fixture& fixture)
 {

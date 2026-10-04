@@ -1,7 +1,8 @@
 #pragma once
 
-// check_neighborhood: the enumerated and random moves of the fixture Solution
-// are valid, and applying them keeps it valid.
+/// \file
+/// check_neighborhood: the enumerated and random moves of the fixture Solution
+/// are valid, and applying them keeps it valid.
 
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/testing/check.hpp>
@@ -62,8 +63,8 @@ void check_moves(
 
 } // namespace detail
 
-// Enumerated and sampled moves of the fixture Solution are valid, and applying
-// them keeps the Solution valid.
+/// Enumerated and sampled moves of the fixture Solution are valid, and applying
+/// them keeps the Solution valid.
 template<check_fixture Fixture, class NHE>
 [[nodiscard]] check_report check_neighborhood(
     const Fixture& fixture,
@@ -148,7 +149,7 @@ template<check_fixture Fixture, class NHE>
     return report;
 }
 
-// The same, with the NeighborhoodExplorer built on the fixture's SolutionManager.
+/// The same, with the NeighborhoodExplorer built on the fixture's SolutionManager.
 template<class NHE, check_fixture Fixture>
 [[nodiscard]] check_report check_neighborhood(const Fixture& fixture)
 {

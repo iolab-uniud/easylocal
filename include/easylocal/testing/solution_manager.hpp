@@ -1,7 +1,8 @@
 #pragma once
 
-// check_solution_manager: the SolutionManager refers to the fixture Input,
-// and the fixture, initial and random solutions are valid.
+/// \file
+/// check_solution_manager: the SolutionManager refers to the fixture Input,
+/// and the fixture, initial and random solutions are valid.
 
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/testing/check.hpp>
@@ -13,8 +14,8 @@
 namespace easylocal::testing
 {
 
-// The fixture's SolutionManager: bound to the fixture Input, and the fixture,
-// initial and random solutions are valid.
+/// The fixture's SolutionManager: bound to the fixture Input, and the fixture,
+/// initial and random solutions are valid.
 template<check_fixture Fixture>
 [[nodiscard]] check_report check_solution_manager(const Fixture& fixture)
 {

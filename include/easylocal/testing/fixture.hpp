@@ -1,8 +1,9 @@
 #pragma once
 
-// fixture: what every contract check runs on, an Input, a valid Solution and
-// the SolutionManager built on the Input, with the options (samples, move
-// limits) and the comparison of the values.
+/// \file
+/// fixture: what every contract check runs on, an Input, a valid Solution and
+/// the SolutionManager built on the Input, with the options (samples, move
+/// limits) and the comparison of the values.
 
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/testing/check.hpp>
@@ -23,13 +24,13 @@ struct check_options
     std::size_t max_enumerated_moves{1024}; // enumerated moves visited per traversal
 };
 
-// The data every component check runs on: an Input, a valid Solution and the
-// SolutionManager built on the Input. Values are compared with Equivalent
-// (operator== by default; pass a tolerance-based comparison for floating
-// point costs that accumulate rounding errors).
-//
-// The fixture owns the Input the SolutionManager refers to, so it can be
-// neither copied nor moved: construct it in place.
+/// The data every component check runs on: an Input, a valid Solution and the
+/// SolutionManager built on the Input. Values are compared with Equivalent
+/// (operator== by default; pass a tolerance-based comparison for floating
+/// point costs that accumulate rounding errors).
+///
+/// The fixture owns the Input the SolutionManager refers to, so it can be
+/// neither copied nor moved: construct it in place.
 template<easylocal::base_solution_manager SM, class Equivalent = std::equal_to<>>
 class fixture
 {
@@ -46,7 +47,7 @@ public:
     {
     }
 
-    // The Solution defaults to the SolutionManager's initial solution.
+    /// The Solution defaults to the SolutionManager's initial solution.
     explicit fixture(input_type input, check_options options = {})
         requires easylocal::has_initial_solution<SM>
         : input_{std::move(input)},

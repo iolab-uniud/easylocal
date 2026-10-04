@@ -1,8 +1,9 @@
 #pragma once
 
-// check_delta_evaluator: for the moves of the fixture Solution, value + delta
-// equals the component's value after the move, for separate and co-located
-// delta evaluators.
+/// \file
+/// check_delta_evaluator: for the moves of the fixture Solution, value + delta
+/// equals the component's value after the move, for separate and co-located
+/// delta evaluators.
 
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/testing/check.hpp>
@@ -143,9 +144,9 @@ template<class Fixture, class NHE, class Component, class Delta>
 
 } // namespace detail
 
-// For the valid moves of the fixture Solution (enumerated, or sampled when the
-// neighborhood cannot enumerate), value + delta equals the component's value
-// after the move. The delta comes from a separate delta evaluator...
+/// For the valid moves of the fixture Solution (enumerated, or sampled when the
+/// neighborhood cannot enumerate), value + delta equals the component's value
+/// after the move. The delta comes from a separate delta evaluator...
 template<check_fixture Fixture, class NHE, class Component, class DeltaEvaluator>
 [[nodiscard]] check_report check_delta_evaluator(
     const Fixture& fixture,
@@ -156,7 +157,7 @@ template<check_fixture Fixture, class NHE, class Component, class DeltaEvaluator
     return detail::check_delta_law(fixture, neighborhood, component, delta_evaluator);
 }
 
-// ...or from the component's own delta_evaluate (co-located).
+/// ...or from the component's own delta_evaluate (co-located).
 template<check_fixture Fixture, class NHE, class Component>
 [[nodiscard]] check_report check_delta_evaluator(
     const Fixture& fixture,
@@ -170,8 +171,8 @@ template<check_fixture Fixture, class NHE, class Component>
         detail::colocated_delta{});
 }
 
-// The same, with every object built from the fixture; omit DeltaEvaluator for
-// a co-located delta.
+/// The same, with every object built from the fixture; omit DeltaEvaluator for
+/// a co-located delta.
 template<class NHE, class Component, class DeltaEvaluator = void, check_fixture Fixture>
 [[nodiscard]] check_report check_delta_evaluator(const Fixture& fixture)
 {
