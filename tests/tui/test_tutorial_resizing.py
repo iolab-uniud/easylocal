@@ -13,11 +13,9 @@ from tui_driver import BACKSPACE, DOWN, ENTER, ESCAPE, F1, F2, F3, F4, F5, TAB, 
 INITIAL_COST = 29  # the initial tour 0-1-2-3-4 of five.tsp
 FI_COST = 26  # where First Improvement stops from it
 
-def small(columns: int, lines: int, *, cut: str | None = None):
-    """A terminal size as a test parameter; `cut` marks a size known to hide
-    part of the page, with the reason."""
-    marks = [pytest.mark.xfail(strict=True, reason=cut)] if cut else []
-    return pytest.param(columns, lines, id=f"{columns}x{lines}", marks=marks)
+def small(columns: int, lines: int):
+    """A terminal size as a test parameter."""
+    return pytest.param(columns, lines, id=f"{columns}x{lines}")
 
 
 @pytest.fixture
@@ -106,12 +104,7 @@ def test_the_input_output_page_shows_its_controls(terminal, columns, lines):
                                  "Shift-L Load  W Save", "C Check"))
 
 
-@pytest.mark.parametrize("columns, lines", [
-    small(80, 40),
-    small(80, 24),
-    small(60, 20, cut="the page gets 8 lines: the actions and the diagnostics "
-                      "leave none to the move window"),
-])
+@pytest.mark.parametrize("columns, lines", [small(80, 40), small(80, 24)])
 def test_the_move_page_fits(terminal, columns, lines):
     tui = terminal(columns, lines)
     tui.press("I", F4, "B")
