@@ -168,6 +168,12 @@ template<cost::arithmetic Cost>
     return json_response(status, std::move(body));
 }
 
+// The answer about a run that does not exist, or no longer does.
+[[nodiscard]] inline crow::response run_not_found(const std::string& id)
+{
+    return error_response(404, "run_not_found", "run '" + id + "' does not exist");
+}
+
 // A JSON parameter value as the text a parameter_set parses: numbers in their
 // shortest exact form, true/false, strings verbatim, [a, b] for arrays.
 [[nodiscard]] inline std::string parameter_text(
@@ -873,10 +879,7 @@ private:
         const auto record = find_run(id);
         if (!record)
         {
-            return detail::error_response(
-                404,
-                "run_not_found",
-                "run '" + id + "' does not exist");
+            return detail::run_not_found(id);
         }
         return detail::json_response(200, run_body(record));
     }
@@ -886,10 +889,7 @@ private:
         const auto record = find_run(id);
         if (!record)
         {
-            return detail::error_response(
-                404,
-                "run_not_found",
-                "run '" + id + "' does not exist");
+            return detail::run_not_found(id);
         }
 
         const std::lock_guard lock{record->mutex};
@@ -935,10 +935,7 @@ private:
         const auto record = find_run(id);
         if (!record)
         {
-            return detail::error_response(
-                404,
-                "run_not_found",
-                "run '" + id + "' does not exist");
+            return detail::run_not_found(id);
         }
 
         {
@@ -961,10 +958,7 @@ private:
         const auto record = find_run(id);
         if (!record)
         {
-            return detail::error_response(
-                404,
-                "run_not_found",
-                "run '" + id + "' does not exist");
+            return detail::run_not_found(id);
         }
 
         {
