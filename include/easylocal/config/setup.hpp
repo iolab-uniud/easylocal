@@ -21,26 +21,43 @@
 namespace easylocal::config
 {
 
+/// The step of load_and_apply an error comes from.
 enum class setup_diagnostic_source
 {
+    /// The validation of a parameter block.
     validation,
+    /// The command line (parse_cli).
     command_line,
+    /// The configuration file (load_config_file).
     config_file,
+    /// The application of the overrides (parameter_set::apply()).
     override,
 };
 
+/// An error of load_and_apply, from any of its steps.
 struct setup_diagnostic
 {
+    /// The step it comes from.
     setup_diagnostic_source source;
+    /// What it is about: a path, an argument, or a line of the configuration
+    /// file.
     std::string subject;
+    /// The value of the override it is about, if any.
     std::string value;
+    /// The number of the line of the configuration file, from 1; 0 otherwise.
     std::size_t line{};
+    /// A description of the error.
     std::string message;
 };
 
+/// What load_and_apply did: whether help was requested, and the errors.
+///
+/// It converts to true when there are no errors.
 struct setup_result
 {
+    /// Whether `-h` or `--help` was given; then nothing was applied.
     bool help_requested{};
+    /// The errors of every step.
     std::vector<setup_diagnostic> diagnostics;
 
     [[nodiscard]]
@@ -150,6 +167,12 @@ inline void append_diagnostics(
 
 } // namespace detail
 
+/// Applies to the parameters the overrides of an optional `--config` file and
+/// then those of the command line, which take precedence.
+///
+/// Nothing is changed unless every override applies and leaves its block
+/// valid, and every other block is valid. With `--help`, nothing is read or
+/// applied: the program prints cli_help() instead.
 [[nodiscard]]
 inline setup_result load_and_apply(
     const int argc,
@@ -230,6 +253,7 @@ inline setup_result load_and_apply(
     return result;
 }
 
+/// Writes each error of a setup to `output`, one per line, after `error: `.
 inline void print_diagnostics(
     std::ostream& output,
     const setup_result& result)

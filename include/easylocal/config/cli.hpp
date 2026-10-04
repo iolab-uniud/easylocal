@@ -26,26 +26,43 @@
 namespace easylocal::config
 {
 
+/// An error of the command line.
 enum class cli_error
 {
+    /// An argument that is not a long option (`--path`).
     unexpected_argument,
+    /// An option with an empty path (`--` or `--=value`).
     malformed_option,
+    /// An option, or `--config`, without a value.
     missing_value,
+    /// `--config` given more than once.
     duplicate_config_file,
 };
 
+/// An error of the command line, with the argument that caused it.
 struct cli_diagnostic
 {
+    /// The kind of error.
     cli_error error;
+    /// The argument, as written.
     std::string argument;
+    /// A description of the error.
     std::string message;
 };
 
+/// What parse_cli read: the help request, the configuration file, the overrides
+/// and the errors.
+///
+/// It converts to true when there are no errors.
 struct cli_parse_result
 {
+    /// Whether `-h` or `--help` was given.
     bool help_requested{};
+    /// The file given with `--config`, if any.
     std::optional<std::filesystem::path> config_file;
+    /// The overrides `--path value` and `--path=value`, in order.
     std::vector<text_override> overrides;
+    /// The errors, in the order of the arguments.
     std::vector<cli_diagnostic> diagnostics;
 
     [[nodiscard]]
@@ -60,6 +77,13 @@ namespace detail
 
 } // namespace detail
 
+/// Reads the help request, the configuration file and the overrides of the
+/// arguments of a program, without its name.
+///
+/// It recognizes `-h` and `--help`, `--config <file>` (or `--config=<file>`),
+/// and the overrides `--path value` and `--path=value`, which refer to the text
+/// of the arguments. A malformed argument gives a diagnostic, and the reading
+/// goes on.
 [[nodiscard]]
 inline cli_parse_result parse_cli(const std::span<const std::string_view> arguments)
 {
@@ -177,6 +201,10 @@ inline cli_parse_result parse_cli(const std::span<const std::string_view> argume
     return result;
 }
 
+/// Reads the help request, the configuration file and the overrides of `argv`,
+/// skipping the program name.
+///
+/// The overrides refer to the strings of `argv`.
 [[nodiscard]]
 inline cli_parse_result parse_cli(const int argc, char* const argv[])
 {
@@ -194,6 +222,8 @@ inline cli_parse_result parse_cli(const int argc, char* const argv[])
     return parse_cli(std::span<const std::string_view>{arguments});
 }
 
+/// The help text of a program: its usage, the options `--help` and `--config`,
+/// and every parameter of the set with its description and current value.
 [[nodiscard]]
 inline std::string cli_help(
     const std::string_view program_name,

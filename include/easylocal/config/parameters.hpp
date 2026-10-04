@@ -19,11 +19,14 @@
 namespace easylocal::config
 {
 
+/// A string literal as a template argument: the name of a field or of a group.
 template<std::size_t Size>
 struct fixed_string
 {
+    /// The characters, with the terminating null.
     char value[Size]{};
 
+    /// From a string literal.
     consteval fixed_string(const char (&text)[Size])
     {
         for (std::size_t index = 0; index < Size; ++index)
@@ -32,6 +35,7 @@ struct fixed_string
         }
     }
 
+    /// The characters, without the terminating null.
     [[nodiscard]]
     constexpr std::string_view view() const noexcept
     {
@@ -40,12 +44,18 @@ struct fixed_string
     }
 };
 
+/// Deduces the size from the string literal.
 template<std::size_t Size>
 fixed_string(const char (&)[Size]) -> fixed_string<Size>;
 
+/// Whether a parameter block is valid, and why not.
+///
+/// It converts to true when the block is valid.
 struct validation_result
 {
+    /// Whether the block is valid.
     bool valid{true};
+    /// Why the block is not valid; empty when it is.
     std::string_view message{};
 
     [[nodiscard]]
@@ -54,12 +64,15 @@ struct validation_result
         return valid;
     }
 
+    /// A valid result.
     [[nodiscard]]
     static constexpr validation_result success() noexcept
     {
         return {};
     }
 
+    /// An invalid result, with the reason `message`, which must outlive it (a
+    /// string literal usually does).
     [[nodiscard]]
     static constexpr validation_result failure(const std::string_view message) noexcept
     {
@@ -100,6 +113,8 @@ consteval bool unique_field_names() noexcept
 
 } // namespace detail
 
+/// The descriptor of a field of a parameter block: its name, its member and its
+/// description, made with field().
 template<fixed_string Name, auto Member>
     requires std::is_member_object_pointer_v<decltype(Member)>
 struct parameter_field
@@ -108,16 +123,22 @@ struct parameter_field
         !Name.view().empty(),
         "parameter field name must not be empty");
 
+    /// The type of the member pointer.
     using member_pointer_type = decltype(Member);
+    /// The parameter block the member belongs to.
     using owner_type = typename detail::member_pointer_traits<
         member_pointer_type>::owner_type;
+    /// The type of the member.
     using value_type = typename detail::member_pointer_traits<
         member_pointer_type>::value_type;
 
+    /// The pointer to the member.
     static constexpr auto member = Member;
 
+    /// The description of the field.
     std::string_view description{};
 
+    /// The name of the field, the last component of its path.
     [[nodiscard]]
     static constexpr std::string_view name() noexcept
     {
@@ -125,6 +146,8 @@ struct parameter_field
     }
 };
 
+/// The descriptor of a field of a parameter block, e.g.
+/// `field<"size", &MyParameters::size>("Description")`.
 template<fixed_string Name, auto Member>
     requires std::is_member_object_pointer_v<decltype(Member)>
 [[nodiscard]]
@@ -143,16 +166,22 @@ struct parameter_group
 {
     static_assert(!Name.view().empty(), "parameter group name must not be empty");
 
+    /// The type of the member pointer.
     using member_pointer_type = decltype(Member);
+    /// The parameter block the member belongs to.
     using owner_type =
         typename detail::member_pointer_traits<member_pointer_type>::owner_type;
+    /// The type of the member, a parameter block.
     using value_type =
         typename detail::member_pointer_traits<member_pointer_type>::value_type;
 
+    /// The pointer to the member.
     static constexpr auto member = Member;
 
+    /// The description of the group.
     std::string_view description{};
 
+    /// The name of the group, the prefix of the paths of its fields.
     [[nodiscard]]
     static constexpr std::string_view name() noexcept
     {
@@ -160,6 +189,8 @@ struct parameter_group
     }
 };
 
+/// The descriptor of a member that is itself a parameter block (a
+/// parameter_group).
 template<fixed_string Name, auto Member>
     requires std::is_member_object_pointer_v<decltype(Member)>
 [[nodiscard]]
@@ -169,12 +200,18 @@ constexpr parameter_group<Name, Member> group(
     return {.description = description};
 }
 
+/// Whether a descriptor is a parameter_group.
 template<class Descriptor>
 inline constexpr bool is_parameter_group_v = false;
 
+/// A parameter_group is one.
 template<fixed_string Name, auto Member>
 inline constexpr bool is_parameter_group_v<parameter_group<Name, Member>> = true;
 
+/// The schema of a parameter block, as parameter_schema() returns it: its field
+/// and group descriptors.
+///
+/// Their names must be unique within the block.
 template<class... Fields>
 [[nodiscard]]
 constexpr std::tuple<Fields...> fields(Fields... parameter_fields) noexcept
@@ -185,6 +222,8 @@ constexpr std::tuple<Fields...> fields(Fields... parameter_fields) noexcept
     return {std::move(parameter_fields)...};
 }
 
+/// A struct of parameters: its static parameter_schema() describes its fields,
+/// its validate() checks them and returns a validation_result.
 template<class T>
 concept parameter_block =
     requires(const T& parameters)
@@ -193,10 +232,16 @@ concept parameter_block =
         { parameters.validate() } -> std::same_as<validation_result>;
     };
 
+/// The parameter block of a configurable object, the type its parameters()
+/// returns.
 template<class T>
 using configurable_parameters_t = std::remove_cvref_t<decltype(
     std::declval<const std::remove_cvref_t<T>&>().parameters())>;
 
+/// An object configured with a parameter block: parameters() gives the current
+/// one, configure() takes a new one and returns a validation_result.
+///
+/// configure() must accept every block whose validate() succeeds.
 template<class T>
 concept configurable_endpoint =
     requires(
@@ -240,6 +285,7 @@ constexpr void for_each_parameter(
         std::move(schema));
 }
 
+/// The same, on a const block.
 template<parameter_block Parameters, class Function>
 constexpr void for_each_parameter(
     const Parameters& parameters,

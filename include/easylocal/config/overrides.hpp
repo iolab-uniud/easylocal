@@ -31,18 +31,26 @@
 namespace easylocal::config
 {
 
+/// An override `path = value`, as views of a text owned elsewhere.
 struct text_override
 {
+    /// The full path of the parameter.
     std::string_view path;
+    /// The value, as text.
     std::string_view value;
 };
 
+/// An override `path = value` that owns its text.
 struct owned_text_override
 {
+    /// The full path of the parameter.
     std::string path;
+    /// The value, as text.
     std::string value;
 };
 
+/// Views of owned overrides, as parameter_set::apply() takes them; they refer
+/// to the strings of `overrides`.
 [[nodiscard]]
 inline std::vector<text_override> override_views(
     const std::span<const owned_text_override> overrides)
@@ -61,6 +69,11 @@ inline std::vector<text_override> override_views(
     return result;
 }
 
+/// The overrides of `lower_precedence` whose path `higher_precedence` does not
+/// set, followed by all those of `higher_precedence`.
+///
+/// For example, the overrides of a configuration file under those of the
+/// command line.
 [[nodiscard]]
 inline std::vector<owned_text_override> overlay_overrides(
     const std::span<const owned_text_override> lower_precedence,
@@ -92,26 +105,43 @@ inline std::vector<owned_text_override> overlay_overrides(
     return result;
 }
 
+/// An error of an override.
 enum class override_error
 {
+    /// A path set by more than one override.
     duplicate_path,
+    /// A path that names no parameter of the set.
     unknown_parameter,
+    /// A parameter that cannot be changed.
     read_only_parameter,
+    /// A value that cannot be read as the type of its parameter.
     parse_error,
+    /// A block that the overrides make invalid; the path is the block's.
     validation_error,
 };
 
+/// An error of an override, with its path and value.
 struct override_diagnostic
 {
+    /// The kind of error.
     override_error error;
+    /// The path of the parameter, or of the block for a `validation_error`.
     std::string path;
+    /// The value, as text; empty for a `validation_error`.
     std::string value;
+    /// A description of the error.
     std::string message;
 };
 
+/// What parameter_set::apply() did: the number of blocks it changed, and the
+/// errors.
+///
+/// It converts to true when there are no errors.
 struct override_result
 {
+    /// The number of blocks changed; 0 when there are errors.
     std::size_t applied_parameter_blocks{};
+    /// The errors; when there are any, nothing was changed.
     std::vector<override_diagnostic> diagnostics;
 
     [[nodiscard]]

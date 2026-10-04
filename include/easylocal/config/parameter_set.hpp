@@ -30,20 +30,31 @@ namespace easylocal::config
 /// (format_value), and whether it can be changed.
 struct parameter_info
 {
+    /// The full path of the parameter.
     std::string path;
+    /// The description of the parameter.
     std::string_view description;
+    /// The value, as text.
     std::string value;
+    /// Whether the parameter cannot be changed.
     bool read_only{};
 };
 
+/// A block whose validate() fails, with the reason.
 struct configuration_validation_diagnostic
 {
+    /// The path of the block; empty for a block at the root of the set.
     std::string path;
+    /// The reason, as validate() gives it.
     std::string message;
 };
 
+/// The blocks of a set whose validate() fails.
+///
+/// It converts to true when every block is valid.
 struct configuration_validation_result
 {
+    /// One diagnostic for each invalid block.
     std::vector<configuration_validation_diagnostic> diagnostics;
 
     [[nodiscard]]
@@ -194,17 +205,21 @@ public:
         return add(std::string_view{}, source);
     }
 
+    /// The parameters of another set, at the root of this set.
     parameter_set& add(const parameter_set& other)
     {
         return add(std::string_view{}, other);
     }
 
+    /// Whether nothing was added to the set.
     [[nodiscard]]
     bool empty() const noexcept
     {
         return entries_.empty();
     }
 
+    /// The parameters, with their paths, descriptions, values as text and
+    /// whether they are read-only.
     [[nodiscard]]
     std::vector<parameter_info> parameters() const
     {
@@ -425,6 +440,7 @@ inline override_result apply_overrides(
     return parameters.apply(overrides);
 }
 
+/// Whether the parameters are valid, and why not.
 [[nodiscard]]
 inline configuration_validation_result validate(const parameter_set& parameters)
 {

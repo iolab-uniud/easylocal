@@ -19,25 +19,40 @@
 namespace easylocal::config
 {
 
+/// An error of a configuration file.
 enum class config_file_error
 {
+    /// The file cannot be opened.
     open_error,
+    /// A line that is not `path = value`, a comment or blank.
     malformed_line,
+    /// A line with nothing before its `=`.
     empty_path,
+    /// A path already set on an earlier line.
     duplicate_path,
 };
 
+/// An error of a configuration file, with the line that caused it.
 struct config_file_diagnostic
 {
+    /// The kind of error.
     config_file_error error;
+    /// The number of the line, from 1; 0 when the file cannot be opened.
     std::size_t line{};
+    /// The line as written, or the path of a file that cannot be opened.
     std::string text;
+    /// A description of the error.
     std::string message;
 };
 
+/// The overrides of a configuration file, and its errors.
+///
+/// It converts to true when there are no errors.
 struct config_file_parse_result
 {
+    /// The overrides `path = value`, in the order of the lines.
     std::vector<owned_text_override> overrides;
+    /// The errors, in the order of the lines.
     std::vector<config_file_diagnostic> diagnostics;
 
     [[nodiscard]]
@@ -47,6 +62,11 @@ struct config_file_parse_result
     }
 };
 
+/// Reads the overrides `path = value` of a configuration text, one per line.
+///
+/// Blank lines and lines that start with `#` are skipped; paths and values are
+/// trimmed of spaces. A line in error gives a diagnostic, and the reading goes
+/// on.
 [[nodiscard]]
 inline config_file_parse_result parse_config_text(const std::string_view text)
 {
@@ -125,6 +145,9 @@ inline config_file_parse_result parse_config_text(const std::string_view text)
     return result;
 }
 
+/// Reads the overrides of a configuration file, as parse_config_text does.
+///
+/// A file that cannot be opened gives an `open_error` diagnostic.
 [[nodiscard]]
 inline config_file_parse_result load_config_file(const std::filesystem::path& path)
 {
