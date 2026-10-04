@@ -449,23 +449,6 @@ inline constexpr bool is_pipeline_stage_v = false;
 template<class Runner>
 inline constexpr bool is_pipeline_stage_v<pipeline_stage<Runner>> = true;
 
-// Run options without their target cost: those of a stage whose cost may not
-// be the target's.
-template<class Tracer, class Target>
-[[nodiscard]]
-run_options<Tracer> without_target(const run_options<Tracer, Target>& options) noexcept
-{
-    // Every option but the target: the time limit and the evaluation budget
-    // apply to every stage.
-    return {
-        .control = options.control,
-        .tracer = options.tracer,
-        .target = std::nullopt,
-        .time_limit = options.time_limit,
-        .evaluation_budget = options.evaluation_budget,
-    };
-}
-
 // Whether a run ends the attempts of its stage: it reached the stage's target
 // (by its termination, or by its cost for results that do not report one) or
 // was cancelled.
@@ -931,7 +914,7 @@ private:
                 bound_runner,
                 std::move(solution),
                 rng,
-                detail::without_target(timed));
+                timed.without_target());
         }
     }
 

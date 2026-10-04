@@ -186,6 +186,20 @@ struct run_options
         };
     }
 
+    /// The same options without a target cost, as a pipeline gives a stage
+    /// that is not the last.
+    [[nodiscard]]
+    run_options<Tracer> without_target() const noexcept
+    {
+        return {
+            .control = control,
+            .tracer = tracer,
+            .target = std::nullopt,
+            .time_limit = time_limit,
+            .evaluation_budget = evaluation_budget,
+        };
+    }
+
     /// The same options with a time limit: with(control).timeout(5s).
     ///
     /// Throws `std::invalid_argument` when the limit is negative.

@@ -298,6 +298,7 @@ Great Deluge, Simulated Annealing and the tabu searches use it.
 | `with(tracer)` | semantic trace events |
 | `with(control, tracer)` | both |
 | `stop_at(target)`, `with(...).stop_at(target)` | stop as soon as the best cost is at least as good as `target` |
+| `options.without_target()` | the same options without their target (a pipeline gives them to a stage that is not the last) |
 | `max_evaluations(n)`, `with(...).max_evaluations(n)` | stop once the run has made `n` evaluations, the initial one included; a runner's own `max_evaluations`, if smaller, still applies; termination `evaluation_budget_exhausted` |
 | `timeout(5s)`, `timeout(2.5)`, `with(...).timeout(...)` | stop once the time limit has passed since the run started: a `std::chrono` duration or a number of seconds; termination `time_limit_reached` |
 
