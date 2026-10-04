@@ -18,8 +18,8 @@ auto result = search.run(initial_solution, easylocal::with(trace));
 Core events are emitted by the framework-owned `easylocal::search_run`, not by
 the individual algorithms: `start()` emits `run_started`, `evaluate_move()`
 emits `move_evaluated`, `commit()` emits `move_accepted`, `finish()` emits
-`run_finished` (preceded by `local_optimum` when that is the termination reason)
-and `random_move()` forwards `neighborhood_selection` events. Algorithms that
+`run_finished`, with the termination reason (preceded by `local_optimum` when
+that is the reason), and `random_move()` forwards `neighborhood_selection` events. Algorithms that
 track a best-so-far solution, such as Simulated Annealing, call
 `incumbent_updated()`; custom events can be sent with `run.emit(event)`.
 
@@ -163,7 +163,7 @@ application event that describes itself. The core events are:
 | 4 | `incumbent_updated` | evaluations, iterations, previous_cost, cost |
 | 5 | `local_optimum` | evaluations, iterations, cost |
 | 6 | `neighborhood_selection` | attempt, child, bias, active_bias_total, conditional_probability, produced_move, neighborhood |
-| 7 | `run_finished` | evaluations, iterations, cost |
+| 7 | `run_finished` | evaluations, iterations, cost, termination (its name, as `to_string` writes it) |
 | 8 | `solution_visited` | evaluations, iterations, hash, cost |
 | 9 | `aspiration_applied` | evaluations, iterations, cost |
 | 10 | `tabu_escape` | evaluations, iterations, moves |

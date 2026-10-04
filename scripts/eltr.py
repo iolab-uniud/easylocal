@@ -271,6 +271,8 @@ def summary(trace: Trace) -> dict[str, Any]:
                 evaluations=record["evaluations"],
                 iterations=record["iterations"],
             )
+            if "termination" in record:
+                runs[-1]["termination"] = record["termination"]
         elif name == "solution_visited":
             solutions.add(record["hash"])
     result: dict[str, Any] = {

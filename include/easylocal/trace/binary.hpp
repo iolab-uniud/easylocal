@@ -530,7 +530,9 @@ inline std::vector<std::pair<std::uint8_t, binary_event_schema>> core_event_sche
                     {"conditional_probability", f64},
                     {"produced_move", boolean},
                     {"neighborhood", route}}}},
-        {tag(run_finished), {"run_finished", {evaluations, iterations, {"cost", cost}}}},
+        {tag(run_finished),
+            {"run_finished",
+                {evaluations, iterations, {"cost", cost}, {"termination", string}}}},
         {tag(solution_visited),
             {"solution_visited",
                 {evaluations, iterations, {"hash", u64}, {"cost", cost}}}},
@@ -794,6 +796,7 @@ void encode_core_event(
     out.u64(value.evaluations);
     out.u64(value.iterations);
     cost_writer(out, value.cost);
+    out.string(to_string(value.termination));
 }
 
 template<class Event, class CostWriter>

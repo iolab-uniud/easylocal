@@ -163,6 +163,8 @@ public:
         std::size_t iterations{};
         /// The cost of the solution returned.
         Cost cost;
+        /// Why the run ended.
+        termination_reason termination{termination_reason::completed};
     };
 
     /// A recorded event.
@@ -297,11 +299,13 @@ public:
     /// Records the event.
     void emit(const event::run_finished<Cost>& value)
     {
-        records_.emplace_back(run_finished_record{
-            value.evaluations,
-            value.iterations,
-            value.cost,
-        });
+        records_.emplace_back(
+            run_finished_record{
+                value.evaluations,
+                value.iterations,
+                value.cost,
+                value.termination,
+            });
     }
 
     /// The recorded events, in the order they were emitted.
@@ -489,6 +493,7 @@ private:
                 .evaluations = value.evaluations,
                 .iterations = value.iterations,
                 .cost = value.cost,
+                .termination = value.termination,
             });
     }
 

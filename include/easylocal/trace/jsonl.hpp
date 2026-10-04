@@ -237,7 +237,7 @@ public:
              << ",\"iterations\":" << value.iterations
              << ",\"cost\":";
         cost_writer_(out_, value.cost);
-        out_ << "}\n";
+        out_ << ",\"termination\":\"" << to_string(value.termination) << "\"}\n";
     }
 
     /// Flushes the stream.

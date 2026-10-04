@@ -18,6 +18,7 @@
 #include <easylocal/trace/events.hpp>
 #include <easylocal/trace/tracer.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
+#include <easylocal/utils/termination.hpp>
 
 #include <algorithm>
 #include <chrono>
@@ -35,49 +36,6 @@
 namespace easylocal
 {
 
-/// Why a search run ended.
-enum class termination_reason
-{
-    /// The algorithm ended on its own terms (an iteration budget, a schedule
-    /// that finished).
-    completed,
-    /// No move improves the current solution, or the neighborhood is empty.
-    local_optimum,
-    /// The evaluation budget was spent.
-    evaluation_budget_exhausted,
-    /// The run was cancelled from outside, through its run control.
-    cancelled,
-    /// The best cost reached the target cost.
-    target_reached,
-    /// Too many iterations went without improvement.
-    idle_limit_reached,
-    /// The time limit of the run (run_options::timeout) passed.
-    time_limit_reached,
-};
-
-/// A readable name of the reason, e.g. "evaluation budget exhausted".
-[[nodiscard]]
-constexpr std::string_view to_string(const termination_reason reason) noexcept
-{
-    switch (reason)
-    {
-    case termination_reason::completed:
-        return "completed";
-    case termination_reason::local_optimum:
-        return "local optimum";
-    case termination_reason::evaluation_budget_exhausted:
-        return "evaluation budget exhausted";
-    case termination_reason::cancelled:
-        return "cancelled";
-    case termination_reason::target_reached:
-        return "target reached";
-    case termination_reason::idle_limit_reached:
-        return "idle limit reached";
-    case termination_reason::time_limit_reached:
-        return "time limit reached";
-    }
-    return "unknown";
-}
 
 /// The result contract consumed by solvers, runs by name (app.run) and the
 /// adapters: the final solution and its cost. search_result models it; custom runners may
@@ -744,12 +702,6 @@ public:
                 .cost = cost,
             });
         }
-        emit(trace::event::run_finished<cost_type>{
-            .evaluations = evaluations_,
-            .iterations = iterations_,
-            .cost = cost,
-        });
-
         // A reached target is the reason a run ends, unless it was cancelled,
         // also when it coincides with a local optimum or the end of the
         // algorithm.
@@ -757,6 +709,13 @@ public:
             reason != termination_reason::cancelled && target_reached()
                 ? termination_reason::target_reached
                 : reason;
+        emit(
+            trace::event::run_finished<cost_type>{
+                .evaluations = evaluations_,
+                .iterations = iterations_,
+                .cost = cost,
+                .termination = termination,
+            });
 
         if constexpr (archives_front)
         {

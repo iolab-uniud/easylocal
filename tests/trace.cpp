@@ -278,7 +278,8 @@ int main()
                "{\"event\":\"incumbent_updated\",\"evaluations\":3,\"iterations\":1,"
                "\"previous_cost\":10,\"cost\":7}\n"
                "{\"event\":\"local_optimum\",\"evaluations\":9,\"iterations\":4,\"cost\":7}\n"
-               "{\"event\":\"run_finished\",\"evaluations\":9,\"iterations\":4,\"cost\":7}\n",
+               "{\"event\":\"run_finished\",\"evaluations\":9,\"iterations\":4,\"cost\":7,"
+               "\"termination\":\"completed\"}\n",
         "JSONL serialization writes one line per search event");
 
     std::ostringstream streamed_output;
@@ -430,7 +431,9 @@ int main()
     structured_binary.flush();
     ok &= expect(
         structured_binary_stream.str().size()
-            == records_offset(structured_binary_stream.str()) + 5 + 24,
+            // The record header, then evaluations, iterations and the cost (24
+            // bytes) and the termination ("completed": a u32 size and 9 bytes).
+            == records_offset(structured_binary_stream.str()) + 5 + 24 + 4 + 9,
         "binary recorder accepts a custom structured cost writer");
 
     std::ostringstream custom_event_stream;

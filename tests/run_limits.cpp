@@ -8,6 +8,7 @@
 #include <easylocal/solvers/local_search.hpp>
 #include <easylocal/solvers/multi_start.hpp>
 #include <easylocal/solvers/pipeline.hpp>
+#include <easylocal/trace/memory_recorder.hpp>
 
 #include <algorithm>
 #include <chrono>
@@ -330,6 +331,28 @@ int main()
         parameters,
         std::vector<el::config::text_override>{{"second.timeout", "-1"}});
     ok &= expect(!invalid, "a negative stage time limit is rejected");
+
+    // The trace says why each run ended.
+    el::trace::memory_recorder<int> timed_trace;
+    static_cast<void>(
+        bound.run(bound.initial_solution(), rng, el::with(timed_trace).timeout(0s)));
+    el::trace::memory_recorder<int> budget_trace;
+    static_cast<void>(bound.run(
+        bound.initial_solution(),
+        rng,
+        el::with(budget_trace).max_evaluations(3)));
+    using finished = el::trace::memory_recorder<int>::run_finished_record;
+    const auto* const timed_end = std::get_if<finished>(&timed_trace.records().back());
+    const auto* const budget_end = std::get_if<finished>(&budget_trace.records().back());
+    ok &= expect(
+        timed_end != nullptr
+            && timed_end->termination == el::termination_reason::time_limit_reached,
+        "the trace records a run stopped by its time limit");
+    ok &= expect(
+        budget_end != nullptr
+            && budget_end->termination
+                == el::termination_reason::evaluation_budget_exhausted,
+        "the trace records a run stopped by its evaluation budget");
 
     // A solve's evaluation budget is shared by its runs: MultiStart's starts
     // and a pipeline's stages together make at most that many.

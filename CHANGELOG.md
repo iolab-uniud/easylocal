@@ -197,7 +197,8 @@ old concepts onto the new ones.
   or in-memory recorders, with no overhead when unused, including the
   solutions visited, by their hash, for search trajectory and local optima
   networks (left out at compile time with `trace::without`), and tabu
-  search's aspirations, escapes and tenure changes; an in-memory trace is
+  search's aspirations, escapes and tenure changes; `run_finished` says why
+  the run ended (`"termination": "time limit reached"`); an in-memory trace is
   replayed to any recorder after the run (`replay`, `write_jsonl`);
   `scripts/eltr.py` decodes binary traces to JSONL, a summary or a search
   trajectory network; leveled logging.

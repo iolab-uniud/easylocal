@@ -146,8 +146,20 @@ class FixtureTraces(unittest.TestCase):
         self.assertEqual(
             result["runs"],
             [
-                {"initial_cost": 40, "final_cost": -7, "evaluations": 4, "iterations": 3},
-                {"initial_cost": 41, "final_cost": -7, "evaluations": 4, "iterations": 3},
+                {
+                    "initial_cost": 40,
+                    "final_cost": -7,
+                    "evaluations": 4,
+                    "iterations": 3,
+                    "termination": "completed",
+                },
+                {
+                    "initial_cost": 41,
+                    "final_cost": -7,
+                    "evaluations": 4,
+                    "iterations": 3,
+                    "termination": "completed",
+                },
             ],
         )
         self.assertEqual(result["distinct_solutions"], 2)
@@ -194,7 +206,16 @@ class FixtureTraces(unittest.TestCase):
         )
         self.assertEqual(
             lines[1:],
-            2 * [{"event": "run_finished", "evaluations": 4, "iterations": 3, "cost": -7}],
+            2
+            * [
+                {
+                    "event": "run_finished",
+                    "evaluations": 4,
+                    "iterations": 3,
+                    "cost": -7,
+                    "termination": "completed",
+                }
+            ],
         )
 
         schema = json.loads(self.run_cli(self.path / "integral.eltr", "--format", "schema").stdout)

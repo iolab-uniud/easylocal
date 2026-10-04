@@ -3,6 +3,8 @@
 /// \file
 /// Typed semantic search events and hierarchical neighborhood provenance.
 
+#include <easylocal/utils/termination.hpp>
+
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -198,6 +200,8 @@ struct run_finished
     std::size_t iterations{};
     /// The cost of the solution returned.
     Cost cost;
+    /// Why the run ended.
+    termination_reason termination{termination_reason::completed};
 };
 
 } // namespace event
