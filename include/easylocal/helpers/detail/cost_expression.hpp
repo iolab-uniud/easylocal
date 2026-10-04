@@ -445,22 +445,22 @@ private:
     EASYLOCAL_NO_UNIQUE_ADDRESS children_type children_;
 };
 
-// Lexicographic: the children's costs, compared in order.
-template<class... Children, class Solution>
-class cost_node<cost::in_order_expression<Children...>, Solution>
+// A node whose cost is Cost<the children's costs...>, built from them in order:
+// the base of in_order and objectives.
+template<template<class...> class Cost, class Solution, class... Children>
+class positional_cost_node
 {
     using children_type = cost_children<Solution, Children...>;
 
 public:
-    using cost_type = cost::lexicographic<
-        typename cost_node<Children, Solution>::cost_type...>;
+    using cost_type = Cost<typename cost_node<Children, Solution>::cost_type...>;
     using leaf_specs = typename children_type::leaf_specs;
 
     static constexpr std::size_t leaf_count = children_type::leaf_count;
     static constexpr bool configurable = children_type::configurable;
 
-    explicit cost_node(cost::in_order_expression<Children...> expression)
-        : children_{std::move(expression.children)}
+    explicit positional_cost_node(std::tuple<Children...> children)
+        : children_{std::move(children)}
     {
     }
 
@@ -502,60 +502,30 @@ private:
     EASYLOCAL_NO_UNIQUE_ADDRESS children_type children_;
 };
 
+// Lexicographic: the children's costs, compared in order.
+template<class... Children, class Solution>
+class cost_node<cost::in_order_expression<Children...>, Solution>
+    : public positional_cost_node<cost::lexicographic, Solution, Children...>
+{
+public:
+    explicit cost_node(cost::in_order_expression<Children...> expression)
+        : positional_cost_node<cost::lexicographic, Solution, Children...>{
+              std::move(expression.children)}
+    {
+    }
+};
+
 // Pareto: the children's costs, compared by dominance.
 template<class... Children, class Solution>
 class cost_node<cost::objectives_expression<Children...>, Solution>
+    : public positional_cost_node<cost::pareto, Solution, Children...>
 {
-    using children_type = cost_children<Solution, Children...>;
-
 public:
-    using cost_type = cost::pareto<typename cost_node<Children, Solution>::cost_type...>;
-    using leaf_specs = typename children_type::leaf_specs;
-
-    static constexpr std::size_t leaf_count = children_type::leaf_count;
-    static constexpr bool configurable = children_type::configurable;
-
     explicit cost_node(cost::objectives_expression<Children...> expression)
-        : children_{std::move(expression.children)}
+        : positional_cost_node<cost::pareto, Solution, Children...>{
+              std::move(expression.children)}
     {
     }
-
-    [[nodiscard]]
-    leaf_specs leaves() const
-    {
-        return children_.leaves();
-    }
-
-    template<std::size_t Offset, class Values>
-    [[nodiscard]]
-    cost_type evaluate(const Values& values) const
-    {
-        return children_.template evaluate_with<Offset>(
-            [](auto... cost) { return cost_type{std::move(cost)...}; },
-            values);
-    }
-
-    // The parameters of the children, under their positions.
-    [[nodiscard]]
-    config::parameter_set configuration()
-        requires configurable
-    {
-        config::parameter_set parameters;
-        children_.add_configurations(parameters);
-        return parameters;
-    }
-
-    [[nodiscard]]
-    config::parameter_set configuration() const
-        requires configurable
-    {
-        config::parameter_set parameters;
-        children_.add_configurations(parameters);
-        return parameters;
-    }
-
-private:
-    EASYLOCAL_NO_UNIQUE_ADDRESS children_type children_;
 };
 
 // Hierarchical: the hard branch has strict priority. Its components are the
