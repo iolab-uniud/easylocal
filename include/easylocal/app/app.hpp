@@ -209,12 +209,6 @@ public:
     }
 
     [[nodiscard]]
-    Algorithm& algorithm() noexcept
-    {
-        return algorithm_;
-    }
-
-    [[nodiscard]]
     solution_type initial_solution() const
         requires has_initial_solution<SM>
     {
@@ -656,20 +650,14 @@ public:
     template<class Visitor>
     void for_each_runner_registration(Visitor&& visitor) const
     {
-        for_each_runner_registration_indexed(
+        auto by_type =
             [&]<class Algorithm, std::size_t>(
                 const std::string_view name,
                 const typename Algorithm::parameters_type& config) {
                 visitor.template operator()<Algorithm>(name, config);
-            });
-    }
-
-    // The same, with each runner's index among all the registrations.
-    template<class Visitor>
-    void for_each_runner_registration_indexed(Visitor&& visitor) const
-    {
+            };
         [&]<std::size_t... Index>(std::index_sequence<Index...>) {
-            (visit_runner<Index>(visitor), ...);
+            (visit_runner<Index>(by_type), ...);
         }(std::index_sequence_for<Registrations...>{});
     }
 

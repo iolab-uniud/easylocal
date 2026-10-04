@@ -8,19 +8,13 @@
 
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/parameter_set.hpp>
-#include <easylocal/utils/detail/meta.hpp>
 
-#include <array>
-#include <concepts>
 #include <cstddef>
 #include <filesystem>
 #include <optional>
 #include <span>
-#include <sstream>
 #include <string>
 #include <string_view>
-#include <type_traits>
-#include <utility>
 #include <vector>
 
 namespace easylocal::config
@@ -71,11 +65,6 @@ struct cli_parse_result
         return diagnostics.empty();
     }
 };
-
-namespace detail
-{
-
-} // namespace detail
 
 /// Reads the help request, the configuration file and the overrides of the
 /// arguments of a program, without its name.

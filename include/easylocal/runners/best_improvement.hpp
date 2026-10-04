@@ -9,7 +9,6 @@
 #include <easylocal/runners/search_run.hpp>
 #include <easylocal/utils/limit.hpp>
 
-#include <cstddef>
 #include <optional>
 #include <utility>
 

@@ -13,7 +13,6 @@
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/parameters.hpp>
 
-#include <cassert>
 #include <cstddef>
 #include <exception>
 #include <functional>
@@ -288,9 +287,7 @@ public:
             commit = [&endpoint](block_type staged) {
                 // configure() must accept every block whose validate() succeeds:
                 // a failure here is a broken invariant of the object.
-                const auto committed = endpoint.configure(std::move(staged));
-                assert(committed);
-                if (!committed)
+                if (!endpoint.configure(std::move(staged)))
                     std::terminate();
             };
         }

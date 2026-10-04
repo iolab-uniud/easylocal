@@ -16,7 +16,6 @@
 #include <ostream>
 #include <type_traits>
 #include <utility>
-#include <vector>
 
 namespace easylocal::trace
 {
@@ -79,22 +78,6 @@ struct ostream_json_cost_writer
 
 namespace detail
 {
-
-inline void write_route_json(
-    std::ostream& out,
-    const std::vector<std::size_t>& route)
-{
-    out << '[';
-    for (std::size_t index = 0; index < route.size(); ++index)
-    {
-        if (index != 0)
-        {
-            out << ',';
-        }
-        out << route[index];
-    }
-    out << ']';
-}
 
 inline void write_route_json_elements(
     std::ostream& out,

@@ -101,21 +101,6 @@ bool stop_requested(const Options&... options) noexcept
     return ((options.control != nullptr && options.control->stop_requested()) || ...);
 }
 
-// The run options with `target` as target cost.
-template<class Target, class... Options>
-[[nodiscard]]
-auto with_target(Target target, const Options&... options)
-{
-    if constexpr (sizeof...(Options) == 0)
-    {
-        return easylocal::stop_at(std::move(target));
-    }
-    else
-    {
-        return (options.stop_at(std::move(target)), ...);
-    }
-}
-
 // What is left of a solve's limits: its deadline and its evaluations (none:
 // not bounded). A solve gives each run what is left, and counts what the run
 // used.

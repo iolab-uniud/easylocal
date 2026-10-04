@@ -951,7 +951,7 @@ private:
                 bound_runner,
                 std::move(solution),
                 rng,
-                easylocal::detail::with_target(*stage.target(), timed));
+                timed.stop_at(*stage.target()));
         }
         if constexpr (Index + 1 == stage_count)
         {

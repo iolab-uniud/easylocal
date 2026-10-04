@@ -212,7 +212,7 @@ inline setup_result load_and_apply(
         std::span<const text_override>{cli.overrides});
 
     // Invalid defaults are allowed when this batch directly overrides that
-    // parameter block: apply_overrides() will validate the staged candidate
+    // parameter block: apply() will validate the staged candidate
     // before committing anything. Invalid untouched blocks, however, make the
     // whole transaction fail before any mutation can occur.
     const auto baseline_validation = parameters.validate();
@@ -241,18 +241,9 @@ inline setup_result load_and_apply(
         std::span<const owned_text_override>{effective_overrides});
     const auto overrides =
         parameters.apply(std::span<const text_override>{effective_views});
+    // Every untouched block was valid at baseline, and apply() validated every
+    // touched one before committing it.
     detail::append_diagnostics(result, overrides);
-
-    if (!result)
-    {
-        return result;
-    }
-
-    // At this point every untouched block was valid at baseline and every
-    // touched block was validated transactionally by apply_overrides().
-    // Keep this as a defensive check of that invariant.
-    const auto final_validation = parameters.validate();
-    detail::append_diagnostics(result, final_validation);
     return result;
 }
 

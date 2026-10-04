@@ -142,7 +142,7 @@ private:
     }
 
     std::size_t queue_capacity_;
-    mutable std::mutex mutex_;
+    std::mutex mutex_;
     std::condition_variable ready_;
     std::deque<queued_task> queue_;
     bool stopping_{};

@@ -21,7 +21,6 @@
 #include <cstdint>
 #include <cstring>
 #include <deque>
-#include <exception>
 #include <iterator>
 #include <mutex>
 #include <ostream>
@@ -30,10 +29,8 @@
 #include <string>
 #include <string_view>
 #include <thread>
-#include <tuple>
 #include <type_traits>
 #include <utility>
-#include <variant>
 #include <vector>
 
 namespace easylocal::trace
@@ -546,6 +543,9 @@ inline std::vector<std::pair<std::uint8_t, binary_event_schema>> core_event_sche
     };
 }
 
+// The version of the ELTR format, in the header after the magic.
+inline constexpr std::uint32_t eltr_format_version = 1;
+
 // "ELTR", the format version, then the header: its size (u32), the metadata
 // (u32 count, key and value strings), the cost layout (a field list) and the
 // core event schemas (u32 count, then tag, name and field list each).
@@ -556,7 +556,7 @@ inline void append_trace_header(
 {
     static constexpr char magic[] = {'E', 'L', 'T', 'R'};
     buffer.insert(buffer.end(), std::begin(magic), std::end(magic));
-    append_u32_le(buffer, 1U);
+    append_u32_le(buffer, eltr_format_version);
 
     const auto size_offset = buffer.size();
     append_u32_le(buffer, 0U);
@@ -1114,7 +1114,7 @@ class buffered_binary_recorder
 
 public:
     /// The version of the ELTR format written.
-    static constexpr std::uint16_t format_version = 1;
+    static constexpr std::uint32_t format_version = detail::eltr_format_version;
 
     /// Writes to out, with a default-constructed cost writer.
     explicit buffered_binary_recorder(
@@ -1231,7 +1231,7 @@ class async_binary_recorder
 
 public:
     /// The version of the ELTR format written.
-    static constexpr std::uint16_t format_version = 1;
+    static constexpr std::uint32_t format_version = detail::eltr_format_version;
 
     /// Writes to out, with a default-constructed cost writer.
     explicit async_binary_recorder(

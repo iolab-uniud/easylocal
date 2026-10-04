@@ -630,14 +630,15 @@ public:
 
     explicit Cutoff(const CutoffParameters parameters) noexcept
         : parameters_{parameters},
-          reference_sample_limit_{detail::positive_quotient(
-              parameters.max_iterations,
-              detail::temperature_level_count(
-                  parameters.initial_temperature,
-                  parameters.final_temperature,
-                  parameters.cooling_rate))},
-          accepted_limit_{
-              detail::accepted_limit(reference_sample_limit_, parameters.accepted_ratio)}
+          // The proposals of a level, were the iterations shared evenly.
+          accepted_limit_{detail::accepted_limit(
+              detail::positive_quotient(
+                  parameters.max_iterations,
+                  detail::temperature_level_count(
+                      parameters.initial_temperature,
+                      parameters.final_temperature,
+                      parameters.cooling_rate)),
+              parameters.accepted_ratio)}
     {
         assert(parameters_.validate());
         reset();
@@ -715,7 +716,6 @@ public:
 
 private:
     CutoffParameters parameters_;
-    std::size_t reference_sample_limit_{};
     std::size_t accepted_limit_{};
     double temperature_{};
     std::size_t iterations_{};
