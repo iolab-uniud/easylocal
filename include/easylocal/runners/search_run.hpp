@@ -786,15 +786,16 @@ private:
         checks_since_clock_ = 0;
 
         const auto now = std::chrono::steady_clock::now();
-        if (last_clock_reading_.has_value())
+        if (clock_read_)
         {
-            const auto gap = now - *last_clock_reading_;
+            const auto gap = now - last_clock_reading_;
             if (gap < clock_spacing / 2 && clock_interval_ < max_clock_interval)
                 clock_interval_ *= 2;
             else if (gap > clock_spacing * 2 && clock_interval_ > 1)
                 clock_interval_ /= 2;
         }
         last_clock_reading_ = now;
+        clock_read_ = true;
         time_up_ = now >= *deadline_;
         return time_up_;
     }
@@ -896,7 +897,10 @@ private:
         std::chrono::milliseconds{1};
     static constexpr std::size_t max_clock_interval = std::size_t{1} << 20U;
     std::optional<std::chrono::steady_clock::time_point> deadline_;
-    std::optional<std::chrono::steady_clock::time_point> last_clock_reading_;
+    // The last reading of the clock, when clock_read_ (not an optional, which
+    // GCC 15 at -O3 reports as maybe uninitialized).
+    std::chrono::steady_clock::time_point last_clock_reading_{};
+    bool clock_read_{false};
     std::size_t clock_interval_{1};
     std::size_t checks_since_clock_{};
     bool time_up_{};
