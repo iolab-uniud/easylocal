@@ -24,6 +24,7 @@ struct FirstImprovementParameters
     /// the search runs until a local optimum.
     limit max_evaluations{unlimited};
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -35,6 +36,7 @@ struct FirstImprovementParameters
                 "(unlimited: until a local optimum)"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
@@ -52,6 +54,7 @@ struct FirstImprovementParameters
 class FirstImprovement
 {
 public:
+    /// The parameter block of the algorithm.
     using parameters_type = FirstImprovementParameters;
 
     explicit FirstImprovement(

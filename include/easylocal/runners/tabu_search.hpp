@@ -46,11 +46,19 @@ template<class Run>
 class tabu_candidate
 {
 public:
+    /// The move type of the run.
     using move_type = typename Run::move_type;
+    /// The solution type of the run.
     using solution_type = typename Run::solution_type;
+    /// The cost type of the run.
     using cost_type = typename Run::cost_type;
+    /// The neighborhood explorer type of the run.
     using neighborhood_type = typename Run::neighborhood_explorer_type;
 
+    /// The candidate move of run at solution, with the cost after it when the
+    /// move was evaluated (nullptr otherwise).
+    ///
+    /// It refers to its arguments, which must outlive it.
     tabu_candidate(
         const Run& run,
         const solution_type& solution,
@@ -68,12 +76,15 @@ public:
         return *cost_;
     }
 
+    /// The candidate move.
     [[nodiscard]]
     const move_type& move() const noexcept
     {
         return move_;
     }
 
+    /// Whether tabu_move, a move the list holds, forbids the candidate, by the
+    /// neighborhood's inverse().
     template<class R = Run>
         requires inverse_neighborhood_for<
             typename R::neighborhood_explorer_type,
@@ -88,6 +99,7 @@ public:
             tabu_move);
     }
 
+    /// The candidate's attribute, by the neighborhood's tabu_attribute().
     [[nodiscard]]
     auto attribute() const
         requires has_tabu_attribute<neighborhood_type>
@@ -110,11 +122,19 @@ template<class Run>
 class tabu_step
 {
 public:
+    /// The move type of the run.
     using move_type = typename Run::move_type;
+    /// The solution type of the run.
     using solution_type = typename Run::solution_type;
+    /// The cost type of the run.
     using cost_type = typename Run::cost_type;
+    /// The neighborhood explorer type of the run.
     using neighborhood_type = typename Run::neighborhood_explorer_type;
 
+    /// The step of run that applied move, reaching solution with cost;
+    /// improved_best tells whether it improved the best cost.
+    ///
+    /// It refers to its arguments, which must outlive it.
     tabu_step(
         const Run& run,
         const move_type& move,
@@ -129,36 +149,42 @@ public:
     {
     }
 
+    /// The move applied.
     [[nodiscard]]
     const move_type& move() const noexcept
     {
         return move_;
     }
 
+    /// The solution after the move.
     [[nodiscard]]
     const solution_type& solution() const noexcept
     {
         return solution_;
     }
 
+    /// The cost after the move.
     [[nodiscard]]
     const cost_type& cost() const noexcept
     {
         return cost_;
     }
 
+    /// The iteration of the move, counted from 1.
     [[nodiscard]]
     std::size_t iteration() const noexcept
     {
         return run_.iterations();
     }
 
+    /// Whether the move improved the best cost.
     [[nodiscard]]
     bool improved_best() const noexcept
     {
         return improved_best_;
     }
 
+    /// The move's attribute, by the neighborhood's tabu_attribute().
     [[nodiscard]]
     auto attribute() const
         requires has_tabu_attribute<neighborhood_type>
@@ -166,6 +192,7 @@ public:
         return easylocal::tabu_attribute(run_.neighborhood_explorer(), move_);
     }
 
+    /// The hash of the solution, by the solution manager's solution_hash().
     template<class R = Run>
         requires has_solution_hash<
             std::remove_cvref_t<decltype(std::declval<const R&>().solution_manager())>>
@@ -175,6 +202,8 @@ public:
         return easylocal::solution_hash(run_.solution_manager(), solution_);
     }
 
+    /// Whether the solution equals other, by the solution manager's solution
+    /// equality.
     template<class R = Run>
         requires has_solution_equality<
             std::remove_cvref_t<decltype(std::declval<const R&>().solution_manager())>>
@@ -324,6 +353,7 @@ struct FixedLengthParameters
     /// Iterations a move stays in the list.
     std::size_t tenure{10};
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -333,6 +363,7 @@ struct FixedLengthParameters
                 "Number of iterations a move stays tabu"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
@@ -347,6 +378,7 @@ struct FixedLengthParameters
 class FixedLength
 {
 public:
+    /// The parameter block of the list.
     using parameters_type = FixedLengthParameters;
 
     explicit FixedLength(const FixedLengthParameters& parameters) noexcept
@@ -384,6 +416,8 @@ public:
             return std::nullopt;
         }
 
+        /// Records the move, in place of the oldest one when the list holds
+        /// tenure moves.
         template<class Step, class RNG>
         void update(const Step& step, RNG&)
         {
@@ -399,6 +433,7 @@ public:
             }
         }
 
+        /// The iterations each move stays tabu: tenure.
         [[nodiscard]]
         std::size_t current_tenure() const noexcept
         {
@@ -431,6 +466,7 @@ struct RandomTenureParameters
     /// The longest tenure drawn.
     std::size_t max_tenure{15};
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -442,6 +478,7 @@ struct RandomTenureParameters
                 "Maximum number of iterations a move stays tabu"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
@@ -459,6 +496,7 @@ struct RandomTenureParameters
 class RandomTenure
 {
 public:
+    /// The parameter block of the list.
     using parameters_type = RandomTenureParameters;
 
     explicit RandomTenure(const RandomTenureParameters& parameters) noexcept
@@ -478,6 +516,8 @@ public:
         {
         }
 
+        /// The iterations the candidate stays tabu, the most among the moves
+        /// that forbid it, or nothing when none does.
         template<class Candidate>
             requires detail::inverse_candidate<Candidate, Move>
         [[nodiscard]]
@@ -486,6 +526,8 @@ public:
             return moves_.tabu_tenure(candidate, iteration_);
         }
 
+        /// Records the move, tabu for a tenure drawn uniformly in [min_tenure,
+        /// max_tenure].
         template<class Step, class RNG>
         void update(const Step& step, RNG& rng)
         {
@@ -522,6 +564,7 @@ struct CyclicParameters
     /// The tenures, used in turn.
     std::vector<std::size_t> tenures{11, 34, 20, 8, 98};
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -532,6 +575,7 @@ struct CyclicParameters
             config::field<"tenures", &self::tenures>("The tenures, used in turn"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const
     {
@@ -550,6 +594,7 @@ struct CyclicParameters
 class Cyclic
 {
 public:
+    /// The parameter block of the list.
     using parameters_type = CyclicParameters;
 
     explicit Cyclic(const CyclicParameters& parameters) : parameters_{parameters}
@@ -566,6 +611,8 @@ public:
     public:
         explicit state(const CyclicParameters& parameters) : parameters_{parameters} {}
 
+        /// The iterations the candidate stays tabu, the most among the moves
+        /// that forbid it, or nothing when none does.
         template<class Candidate>
             requires detail::inverse_candidate<Candidate, Move>
         [[nodiscard]]
@@ -574,6 +621,8 @@ public:
             return moves_.tabu_tenure(candidate, iteration_);
         }
 
+        /// Records the move, tabu for the current tenure, and passes to the
+        /// next tenure after period moves.
         template<class Step, class RNG>
         void update(const Step& step, RNG&)
         {
@@ -634,6 +683,7 @@ struct ReactiveParameters
     /// keeps a copy of each visited solution; it needs solution equality.
     bool verify_equality{false};
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -654,6 +704,7 @@ struct ReactiveParameters
                 "Confirm revisits by comparing solutions with equal hashes"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
@@ -685,6 +736,7 @@ struct ReactiveParameters
 class Reactive
 {
 public:
+    /// The parameter block of the list.
     using parameters_type = ReactiveParameters;
 
     explicit Reactive(const ReactiveParameters& parameters) noexcept
@@ -706,6 +758,8 @@ public:
         {
         }
 
+        /// The iterations the candidate stays tabu with the current tenure, or
+        /// nothing when no move still tabu forbids it.
         template<class Candidate>
             requires detail::inverse_candidate<Candidate, Move>
         [[nodiscard]]
@@ -714,6 +768,12 @@ public:
             return moves_.tabu_tenure(candidate, iteration_, current_tenure());
         }
 
+        /// Records the move and the solution reached, and adapts the tenure to
+        /// the revisits.
+        ///
+        /// After more than chaos repeated solutions it clears its memory,
+        /// resets the tenure to 1 and asks for an escape (escape_moves()).
+        /// Requires the solution hash.
         template<class Step, class RNG>
             requires requires(const Step& step) {
                 { step.solution_hash() } -> std::convertible_to<std::uint64_t>;
@@ -766,6 +826,8 @@ public:
             moves_.trim(iteration_, current_tenure());
         }
 
+        /// The random moves of the escape asked for, 0 if none; the count is
+        /// reset to 0.
         [[nodiscard]]
         std::size_t escape_moves() noexcept
         {
@@ -860,6 +922,7 @@ struct FrequencyParameters
     /// Relative frequency above which an attribute is tabu.
     double threshold{0.05};
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -869,6 +932,7 @@ struct FrequencyParameters
                 "Relative frequency of an attribute above which its moves are tabu"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
@@ -888,6 +952,7 @@ struct FrequencyParameters
 class Frequency
 {
 public:
+    /// The parameter block of the list.
     using parameters_type = FrequencyParameters;
 
     explicit Frequency(const FrequencyParameters& parameters) noexcept
@@ -905,6 +970,8 @@ public:
     public:
         explicit state(const FrequencyParameters& parameters) : parameters_{parameters} {}
 
+        /// The iterations before the frequency of the candidate's attribute
+        /// falls to threshold, or nothing when it is not above it.
         template<class Candidate>
             requires requires(const Candidate& candidate) { candidate.attribute(); }
         [[nodiscard]]
@@ -924,6 +991,7 @@ public:
             return std::max<std::size_t>(1, admissible - iteration_);
         }
 
+        /// Counts the attribute of the move applied.
         template<class Step, class RNG>
         void update(const Step& step, RNG&)
         {
@@ -957,6 +1025,7 @@ struct ObjectiveBasedParameters
     /// Iterations a cost value stays tabu.
     std::size_t tenure{10};
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -966,6 +1035,7 @@ struct ObjectiveBasedParameters
                 "Number of iterations a reached cost stays tabu"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
@@ -983,6 +1053,7 @@ struct ObjectiveBasedParameters
 class ObjectiveBased
 {
 public:
+    /// The parameter block of the list.
     using parameters_type = ObjectiveBasedParameters;
 
     explicit ObjectiveBased(const ObjectiveBasedParameters& parameters) noexcept
@@ -998,10 +1069,13 @@ public:
     class state
     {
     public:
+        /// The candidates carry their cost, which the list compares.
         static constexpr bool needs_cost = true;
 
         explicit state(const std::size_t tenure) : tenure_{tenure} {}
 
+        /// The iterations the candidate's cost stays tabu when it equals one of
+        /// the last tenure costs reached, or nothing.
         template<class Candidate>
             requires requires(const Candidate& candidate) { candidate.cost(); }
         [[nodiscard]]
@@ -1013,6 +1087,7 @@ public:
             return std::nullopt;
         }
 
+        /// Records the cost reached, keeping the last tenure ones.
         template<class Step, class RNG>
         void update(const Step& step, RNG&)
         {
@@ -1050,6 +1125,7 @@ struct LimDynamicParameters
     /// Iterations without improving the best cost after which the tenure grows.
     std::size_t idle_threshold{10};
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -1063,6 +1139,7 @@ struct LimDynamicParameters
                 "Iterations without improvement after which the tenure grows"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
@@ -1081,6 +1158,7 @@ struct LimDynamicParameters
 class LimDynamic
 {
 public:
+    /// The parameter block of the list.
     using parameters_type = LimDynamicParameters;
 
     explicit LimDynamic(const LimDynamicParameters& parameters) noexcept
@@ -1101,6 +1179,8 @@ public:
         {
         }
 
+        /// The iterations the candidate stays tabu with the current tenure, or
+        /// nothing when no move still tabu forbids it.
         template<class Candidate>
             requires detail::inverse_candidate<Candidate, Move>
         [[nodiscard]]
@@ -1109,6 +1189,9 @@ public:
             return moves_.tabu_tenure(candidate, iteration_, tenure_);
         }
 
+        /// Records the move, and resets the tenure to min_tenure on an
+        /// improvement of the best cost or at max_tenure, or grows it by one
+        /// after idle_threshold idle iterations.
         template<class Step, class RNG>
         void update(const Step& step, RNG&)
         {
@@ -1122,6 +1205,7 @@ public:
             moves_.trim(iteration_, tenure_);
         }
 
+        /// The iterations a move applied now stays tabu.
         [[nodiscard]]
         std::size_t current_tenure() const noexcept
         {
@@ -1240,6 +1324,7 @@ struct FooParameters
     /// The spread of the costs in a window below which the tenure grows.
     double fluctuation{1.0};
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -1253,6 +1338,7 @@ struct FooParameters
                 "Spread of the costs in a window below which the tenure grows"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
@@ -1276,6 +1362,7 @@ struct FooParameters
 class Foo
 {
 public:
+    /// The parameter block of the list.
     using parameters_type = FooParameters;
 
     explicit Foo(const FooParameters& parameters) noexcept : parameters_{parameters}
@@ -1295,6 +1382,8 @@ public:
             tenure_.set_tenure(parameters.increment);
         }
 
+        /// The iterations the candidate stays tabu with the current tenure, or
+        /// nothing when no move still tabu forbids it.
         template<class Candidate>
             requires detail::inverse_candidate<Candidate, Move>
         [[nodiscard]]
@@ -1303,6 +1392,9 @@ public:
             return tenure_.tabu_tenure(candidate);
         }
 
+        /// Records the move and its cost and, at the end of a window, grows the
+        /// tenure by increment if the costs spread less than fluctuation, or
+        /// shrinks it by one.
         template<class Step, class RNG>
         void update(const Step& step, RNG&)
         {
@@ -1313,6 +1405,7 @@ public:
                 parameters_.fluctuation);
         }
 
+        /// The iterations a move applied now stays tabu.
         [[nodiscard]]
         std::size_t current_tenure() const noexcept
         {
@@ -1342,14 +1435,18 @@ struct RandomFooParameters
 {
     /// The range of Foo's window.
     std::size_t min_window{50};
+    /// The largest window drawn.
     std::size_t max_window{150};
     /// The range of Foo's increment.
     std::size_t min_increment{2};
+    /// The largest increment drawn.
     std::size_t max_increment{8};
     /// The range of Foo's fluctuation threshold.
     double min_fluctuation{0.5};
+    /// The largest fluctuation threshold drawn.
     double max_fluctuation{2.0};
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -1365,6 +1462,7 @@ struct RandomFooParameters
                 "Largest fluctuation threshold"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
@@ -1390,6 +1488,7 @@ struct RandomFooParameters
 class RandomFoo
 {
 public:
+    /// The parameter block of the list.
     using parameters_type = RandomFooParameters;
 
     explicit RandomFoo(const RandomFooParameters& parameters) noexcept
@@ -1407,6 +1506,8 @@ public:
     public:
         explicit state(const RandomFooParameters& parameters) : parameters_{parameters} {}
 
+        /// The iterations the candidate stays tabu with the current tenure, or
+        /// nothing when no move still tabu forbids it.
         template<class Candidate>
             requires detail::inverse_candidate<Candidate, Move>
         [[nodiscard]]
@@ -1415,6 +1516,8 @@ public:
             return tenure_.tabu_tenure(candidate);
         }
 
+        /// Records the move as Foo does, with window, increment and fluctuation
+        /// drawn at the first move and again at the end of each window.
         template<class Step, class RNG>
         void update(const Step& step, RNG& rng)
         {
@@ -1428,6 +1531,7 @@ public:
                 draw(rng);
         }
 
+        /// The iterations a move applied now stays tabu.
         [[nodiscard]]
         std::size_t current_tenure() const noexcept
         {
@@ -1480,8 +1584,10 @@ namespace aspiration
 /// A tabu move is admitted when it would improve the best cost found.
 struct ByObjective
 {
+    /// Tabu candidates are evaluated, for overrides().
     static constexpr bool needs_cost = true;
 
+    /// Whether the candidate cost is better than the best cost.
     template<class Run, class Cost>
     [[nodiscard]]
     bool overrides(const Run& run, const Cost& candidate, const Cost& best) const
@@ -1493,8 +1599,10 @@ struct ByObjective
 /// Tabu moves are never admitted, and need not be evaluated.
 struct None
 {
+    /// Tabu candidates need not be evaluated.
     static constexpr bool needs_cost = false;
 
+    /// Never: a tabu move stays forbidden.
     template<class Run, class Cost>
     [[nodiscard]]
     bool overrides(const Run&, const Cost&, const Cost&) const
@@ -1519,6 +1627,7 @@ struct TabuSearchParameters
     /// The parameters of the tabu list.
     ListParameters tabu_list{};
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -1563,6 +1672,7 @@ struct FirstImprovementTabuSearchParameters
     /// The parameters of the tabu list.
     ListParameters tabu_list{};
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -1579,6 +1689,7 @@ struct FirstImprovementTabuSearchParameters
             config::group<"tabu_list", &self::tabu_list>("The tabu list"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
@@ -1985,8 +2096,10 @@ template<class TabuList = tabu::FixedLength, class Aspiration = aspiration::ByOb
 class TabuSearch
 {
 public:
+    /// The parameter block of the algorithm.
     using parameters_type = TabuSearchParameters<typename TabuList::parameters_type>;
 
+    /// From its parameters and an aspiration criterion.
     explicit TabuSearch(const parameters_type& parameters, Aspiration aspiration = {})
         : engine_{parameters, std::move(aspiration)}
     {
@@ -2023,9 +2136,11 @@ template<class TabuList = tabu::FixedLength, class Aspiration = aspiration::ByOb
 class FirstImprovementTabuSearch
 {
 public:
+    /// The parameter block of the algorithm.
     using parameters_type =
         FirstImprovementTabuSearchParameters<typename TabuList::parameters_type>;
 
+    /// From its parameters and an aspiration criterion.
     explicit FirstImprovementTabuSearch(
         const parameters_type& parameters,
         Aspiration aspiration = {})
@@ -2090,6 +2205,7 @@ struct AspirationPlusTabuSearchParameters
     /// The parameters of the tabu list.
     ListParameters tabu_list{};
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -2112,6 +2228,7 @@ struct AspirationPlusTabuSearchParameters
             config::group<"tabu_list", &self::tabu_list>("The tabu list"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
@@ -2140,9 +2257,11 @@ template<class TabuList = tabu::FixedLength, class Aspiration = aspiration::ByOb
 class AspirationPlusTabuSearch
 {
 public:
+    /// The parameter block of the algorithm.
     using parameters_type =
         AspirationPlusTabuSearchParameters<typename TabuList::parameters_type>;
 
+    /// From its parameters and an aspiration criterion.
     explicit AspirationPlusTabuSearch(
         const parameters_type& parameters,
         Aspiration aspiration = {})
@@ -2216,6 +2335,7 @@ struct EliteCandidateTabuSearchParameters
     /// The parameters of the tabu list.
     ListParameters tabu_list{};
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -2234,6 +2354,7 @@ struct EliteCandidateTabuSearchParameters
             config::group<"tabu_list", &self::tabu_list>("The tabu list"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
@@ -2261,9 +2382,11 @@ template<class TabuList = tabu::FixedLength, class Aspiration = aspiration::ByOb
 class EliteCandidateTabuSearch
 {
 public:
+    /// The parameter block of the algorithm.
     using parameters_type =
         EliteCandidateTabuSearchParameters<typename TabuList::parameters_type>;
 
+    /// From its parameters and an aspiration criterion.
     explicit EliteCandidateTabuSearch(
         const parameters_type& parameters,
         Aspiration aspiration = {})

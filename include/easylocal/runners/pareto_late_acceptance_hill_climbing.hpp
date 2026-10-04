@@ -41,6 +41,7 @@ struct ParetoLateAcceptanceHillClimbingParameters
     /// Evaluation budget, including the initial evaluations; unlimited by default.
     limit max_evaluations{unlimited};
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -67,6 +68,7 @@ struct ParetoLateAcceptanceHillClimbingParameters
                 "Maximum number of solution evaluations, or unlimited"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
@@ -97,6 +99,7 @@ struct ParetoLateAcceptanceHillClimbingParameters
 class ParetoLateAcceptanceHillClimbing
 {
 public:
+    /// The parameter block of the algorithm.
     using parameters_type = ParetoLateAcceptanceHillClimbingParameters;
 
     explicit ParetoLateAcceptanceHillClimbing(

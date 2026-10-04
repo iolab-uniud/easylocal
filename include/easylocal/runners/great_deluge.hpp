@@ -35,6 +35,7 @@ struct GreatDelugeParameters
     /// Evaluation budget, including the initial evaluation; unlimited by default.
     limit max_evaluations{unlimited};
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -51,6 +52,7 @@ struct GreatDelugeParameters
                 "Maximum number of solution evaluations, or unlimited"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
@@ -104,6 +106,7 @@ concept great_deluge_cost = cost::arithmetic<typename Context::cost_type>;
 class GreatDeluge
 {
 public:
+    /// The parameter block of the algorithm.
     using parameters_type = GreatDelugeParameters;
 
     explicit GreatDeluge(const GreatDelugeParameters parameters) noexcept

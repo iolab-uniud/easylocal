@@ -31,13 +31,21 @@
 namespace easylocal
 {
 
+/// Why a search run ended.
 enum class termination_reason
 {
+    /// The algorithm ended on its own terms (an iteration budget, a schedule
+    /// that finished).
     completed,
+    /// No move improves the current solution, or the neighborhood is empty.
     local_optimum,
+    /// The evaluation budget was spent.
     evaluation_budget_exhausted,
+    /// The run was cancelled from outside, through its run control.
     cancelled,
+    /// The best cost reached the target cost.
     target_reached,
+    /// Too many iterations went without improvement.
     idle_limit_reached,
 };
 

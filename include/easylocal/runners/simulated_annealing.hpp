@@ -213,6 +213,7 @@ struct ClassicParameters
     /// Acceptance probability of an average worsening move at the estimated
     /// initial temperature.
     double initial_acceptance{0.5};
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -234,6 +235,7 @@ struct ClassicParameters
                 "estimated initial temperature"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
@@ -262,6 +264,7 @@ struct ClassicParameters
 class Classic
 {
 public:
+    /// The parameter block of the policy.
     using parameters_type = ClassicParameters;
 
     explicit Classic(
@@ -272,35 +275,47 @@ public:
         reset();
     }
 
+    /// The parameters.
     [[nodiscard]]
     const ClassicParameters& parameters() const noexcept
     {
         return parameters_;
     }
 
+    /// The moves sampled to estimate the initial temperature; 0 skips the
+    /// calibration.
     [[nodiscard]]
     std::size_t calibration_samples() const noexcept
     {
         return parameters_.calibration_samples;
     }
 
+    /// Rebuilds the schedule from the initial temperature at which a worsening
+    /// move of average delta is accepted with probability initial_acceptance.
+    ///
+    /// The estimate is kept at least final_temperature / cooling_rate; without
+    /// worsening deltas nothing changes.
     void calibrate(const std::span<const double> deltas)
     {
         detail::calibrate_initial_temperature(*this, parameters_, deltas);
     }
 
+    /// Restarts from initial_temperature, at the start of a level.
     void reset() noexcept
     {
         temperature_ = parameters_.initial_temperature;
         sampled_ = 0;
     }
 
+    /// The current temperature.
     [[nodiscard]]
     double temperature() const noexcept
     {
         return temperature_;
     }
 
+    /// Counts the proposal, and multiplies the temperature by cooling_rate
+    /// after samples_per_temperature of them.
     void on_iteration(const bool) noexcept
     {
         ++sampled_;
@@ -311,6 +326,7 @@ public:
         }
     }
 
+    /// Whether the temperature has reached final_temperature.
     [[nodiscard]]
     bool finished() const noexcept
     {
@@ -341,6 +357,7 @@ struct FixedLengthParameters
     /// Acceptance probability of an average worsening move at the estimated
     /// initial temperature.
     double initial_acceptance{0.5};
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -366,6 +383,7 @@ struct FixedLengthParameters
                 "estimated initial temperature"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
@@ -397,6 +415,7 @@ struct FixedLengthParameters
 class FixedLength
 {
 public:
+    /// The parameter block of the policy.
     using parameters_type = FixedLengthParameters;
 
     explicit FixedLength(const FixedLengthParameters parameters) noexcept
@@ -412,23 +431,32 @@ public:
         reset();
     }
 
+    /// The parameters.
     [[nodiscard]]
     const FixedLengthParameters& parameters() const noexcept
     {
         return parameters_;
     }
 
+    /// The moves sampled to estimate the initial temperature; 0 skips the
+    /// calibration.
     [[nodiscard]]
     std::size_t calibration_samples() const noexcept
     {
         return parameters_.calibration_samples;
     }
 
+    /// Rebuilds the schedule from the initial temperature at which a worsening
+    /// move of average delta is accepted with probability initial_acceptance.
+    ///
+    /// The estimate is kept at least final_temperature / cooling_rate; without
+    /// worsening deltas nothing changes.
     void calibrate(const std::span<const double> deltas)
     {
         detail::calibrate_initial_temperature(*this, parameters_, deltas);
     }
 
+    /// Restarts from initial_temperature, with the whole budget.
     void reset() noexcept
     {
         temperature_ = parameters_.initial_temperature;
@@ -436,12 +464,15 @@ public:
         sampled_ = 0;
     }
 
+    /// The current temperature.
     [[nodiscard]]
     double temperature() const noexcept
     {
         return temperature_;
     }
 
+    /// Counts the proposal, and multiplies the temperature by cooling_rate
+    /// after samples_per_temperature() of them.
     void on_iteration(const bool) noexcept
     {
         assert(!finished());
@@ -455,12 +486,15 @@ public:
         }
     }
 
+    /// Whether max_iterations proposals have been made.
     [[nodiscard]]
     bool finished() const noexcept
     {
         return iterations_ >= parameters_.max_iterations;
     }
 
+    /// The proposals of each temperature level: max_iterations over the number
+    /// of levels, at least 1.
     [[nodiscard]]
     std::size_t samples_per_temperature() const noexcept
     {
@@ -496,6 +530,7 @@ struct CutoffParameters
     /// Acceptance probability of an average worsening move at the estimated
     /// initial temperature.
     double initial_acceptance{0.5};
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -517,6 +552,7 @@ struct CutoffParameters
                 "estimated initial temperature"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
@@ -551,6 +587,7 @@ struct CutoffParameters
 class Cutoff
 {
 public:
+    /// The parameter block of the policy.
     using parameters_type = CutoffParameters;
 
     explicit Cutoff(const CutoffParameters parameters) noexcept
@@ -568,23 +605,32 @@ public:
         reset();
     }
 
+    /// The parameters.
     [[nodiscard]]
     const CutoffParameters& parameters() const noexcept
     {
         return parameters_;
     }
 
+    /// The moves sampled to estimate the initial temperature; 0 skips the
+    /// calibration.
     [[nodiscard]]
     std::size_t calibration_samples() const noexcept
     {
         return parameters_.calibration_samples;
     }
 
+    /// Rebuilds the schedule from the initial temperature at which a worsening
+    /// move of average delta is accepted with probability initial_acceptance.
+    ///
+    /// The estimate is kept at least final_temperature / cooling_rate; without
+    /// worsening deltas nothing changes.
     void calibrate(const std::span<const double> deltas)
     {
         detail::calibrate_initial_temperature(*this, parameters_, deltas);
     }
 
+    /// Restarts from initial_temperature, with the whole budget.
     void reset() noexcept
     {
         temperature_ = parameters_.initial_temperature;
@@ -592,12 +638,15 @@ public:
         accepted_ = 0;
     }
 
+    /// The current temperature.
     [[nodiscard]]
     double temperature() const noexcept
     {
         return temperature_;
     }
 
+    /// Counts the proposal, and multiplies the temperature by cooling_rate
+    /// after accepted_limit() acceptances at the same temperature.
     void on_iteration(const bool accepted) noexcept
     {
         assert(!finished());
@@ -611,12 +660,15 @@ public:
         }
     }
 
+    /// Whether max_iterations proposals have been made.
     [[nodiscard]]
     bool finished() const noexcept
     {
         return iterations_ >= parameters_.max_iterations;
     }
 
+    /// The acceptances that cool: accepted_ratio times a level's share of
+    /// max_iterations, at least 1.
     [[nodiscard]]
     std::size_t accepted_limit() const noexcept
     {
@@ -643,6 +695,7 @@ using HybridParameters = CutoffParameters;
 class Hybrid
 {
 public:
+    /// The parameter block of the policy.
     using parameters_type = HybridParameters;
 
     explicit Hybrid(
@@ -663,23 +716,33 @@ public:
         reset();
     }
 
+    /// The parameters.
     [[nodiscard]]
     const HybridParameters& parameters() const noexcept
     {
         return parameters_;
     }
 
+    /// The moves sampled to estimate the initial temperature; 0 skips the
+    /// calibration.
     [[nodiscard]]
     std::size_t calibration_samples() const noexcept
     {
         return parameters_.calibration_samples;
     }
 
+    /// Rebuilds the schedule from the initial temperature at which a worsening
+    /// move of average delta is accepted with probability initial_acceptance.
+    ///
+    /// The estimate is kept at least final_temperature / cooling_rate; without
+    /// worsening deltas nothing changes.
     void calibrate(const std::span<const double> deltas)
     {
         detail::calibrate_initial_temperature(*this, parameters_, deltas);
     }
 
+    /// Restarts from initial_temperature, with the whole budget spread evenly
+    /// over the levels.
     void reset() noexcept
     {
         temperature_ = parameters_.initial_temperature;
@@ -690,12 +753,19 @@ public:
         current_sample_limit_ = initial_sample_limit_;
     }
 
+    /// The current temperature.
     [[nodiscard]]
     double temperature() const noexcept
     {
         return temperature_;
     }
 
+    /// Counts the proposal, and multiplies the temperature by cooling_rate
+    /// after sample_limit() proposals or accepted_limit() acceptances at the
+    /// same temperature.
+    ///
+    /// After an early cooling by acceptances, the proposals left are spread
+    /// evenly over the remaining levels.
     void on_iteration(const bool accepted) noexcept
     {
         assert(!finished());
@@ -738,18 +808,23 @@ public:
         }
     }
 
+    /// Whether max_iterations proposals have been made.
     [[nodiscard]]
     bool finished() const noexcept
     {
         return iterations_ >= parameters_.max_iterations;
     }
 
+    /// The proposals of the current level: max_iterations over the levels or,
+    /// after an early cooling, the proposals left over the remaining levels.
     [[nodiscard]]
     std::size_t sample_limit() const noexcept
     {
         return current_sample_limit_;
     }
 
+    /// The acceptances that end a level early: accepted_ratio times a level's
+    /// initial share of max_iterations, at least 1.
     [[nodiscard]]
     std::size_t accepted_limit() const noexcept
     {
@@ -785,6 +860,7 @@ struct FixedTemperatureParameters
     /// Acceptance probability of an average worsening move at the estimated
     /// initial temperature.
     double initial_acceptance{0.5};
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -806,6 +882,7 @@ struct FixedTemperatureParameters
                 "estimated initial temperature"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
@@ -834,6 +911,7 @@ struct FixedTemperatureParameters
 class FixedTemperature
 {
 public:
+    /// The parameter block of the policy.
     using parameters_type = FixedTemperatureParameters;
 
     explicit FixedTemperature(const FixedTemperatureParameters parameters) noexcept
@@ -846,18 +924,25 @@ public:
         reset();
     }
 
+    /// The parameters.
     [[nodiscard]]
     const FixedTemperatureParameters& parameters() const noexcept
     {
         return parameters_;
     }
 
+    /// The moves sampled to estimate the initial temperature; 0 skips the
+    /// calibration.
     [[nodiscard]]
     std::size_t calibration_samples() const noexcept
     {
         return parameters_.calibration_samples;
     }
 
+    /// Sets temperature to the one at which a worsening move of average delta
+    /// is accepted with probability initial_acceptance, and restarts.
+    ///
+    /// Without worsening deltas nothing changes.
     void calibrate(const std::span<const double> deltas)
     {
         const auto estimate =
@@ -870,18 +955,21 @@ public:
         }
     }
 
+    /// Clears the counts of proposals and acceptances.
     void reset() noexcept
     {
         iterations_ = 0;
         accepted_ = 0;
     }
 
+    /// The constant temperature.
     [[nodiscard]]
     double temperature() const noexcept
     {
         return parameters_.temperature;
     }
 
+    /// Counts the proposal, and the acceptance when it was accepted.
     void on_iteration(const bool accepted) noexcept
     {
         assert(!finished());
@@ -889,12 +977,16 @@ public:
         accepted_ += accepted ? 1U : 0U;
     }
 
+    /// Whether max_iterations proposals or accepted_limit() acceptances have
+    /// been made.
     [[nodiscard]]
     bool finished() const noexcept
     {
         return iterations_ >= parameters_.max_iterations || accepted_ >= accepted_limit_;
     }
 
+    /// The acceptances that end the annealing: accepted_ratio times
+    /// max_iterations, at least 1.
     [[nodiscard]]
     std::size_t accepted_limit() const noexcept
     {
@@ -928,6 +1020,7 @@ struct TimeBasedParameters
     /// Acceptance probability of an average worsening move at the estimated
     /// initial temperature.
     double initial_acceptance{0.5};
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -957,6 +1050,7 @@ struct TimeBasedParameters
                 "estimated initial temperature"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
@@ -991,6 +1085,7 @@ template<class Clock = std::chrono::steady_clock>
 class BasicTimeBased
 {
 public:
+    /// The parameter block of the policy.
     using parameters_type = TimeBasedParameters;
 
     explicit BasicTimeBased(const TimeBasedParameters parameters) noexcept
@@ -1006,18 +1101,26 @@ public:
         reset();
     }
 
+    /// The parameters.
     [[nodiscard]]
     const TimeBasedParameters& parameters() const noexcept
     {
         return parameters_;
     }
 
+    /// The moves sampled to estimate the initial temperature; 0 skips the
+    /// calibration.
     [[nodiscard]]
     std::size_t calibration_samples() const noexcept
     {
         return parameters_.calibration_samples;
     }
 
+    /// Rebuilds the schedule from the initial temperature at which a worsening
+    /// move of average delta is accepted with probability initial_acceptance.
+    ///
+    /// The estimate is kept at least final_temperature / cooling_rate; without
+    /// worsening deltas nothing changes.
     void calibrate(const std::span<const double> deltas)
     {
         detail::calibrate_initial_temperature(*this, parameters_, deltas);
@@ -1036,12 +1139,19 @@ public:
         timed_out_ = false;
     }
 
+    /// The current temperature.
     [[nodiscard]]
     double temperature() const noexcept
     {
         return temperature_;
     }
 
+    /// Reads the clock, and multiplies the temperature by cooling_rate when the
+    /// time of the level is over or after accepted_per_temperature acceptances
+    /// at it.
+    ///
+    /// An early cooling spreads the time left over the remaining levels; once
+    /// allowed_running_time is over the annealing is finished.
     void on_iteration(const bool accepted) noexcept
     {
         assert(!finished());
@@ -1071,12 +1181,16 @@ public:
         accepted_ = 0;
     }
 
+    /// Whether allowed_running_time is over or the temperature has reached
+    /// final_temperature.
     [[nodiscard]]
     bool finished() const noexcept
     {
         return timed_out_ || temperature_ <= parameters_.final_temperature;
     }
 
+    /// The time of the current level: allowed_running_time over the levels or,
+    /// after an early cooling, the time left over the remaining levels.
     [[nodiscard]]
     typename Clock::duration level_time() const noexcept
     {
@@ -1098,6 +1212,7 @@ private:
     bool timed_out_{};
 };
 
+/// The TimeBased schedule, timed by `std::chrono::steady_clock`.
 using TimeBased = BasicTimeBased<>;
 
 } // namespace temperature
@@ -1156,6 +1271,7 @@ struct ReheatingParameters
     /// Ignored by a schedule without a budget.
     double first_descent_share{0.5};
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -1172,6 +1288,7 @@ struct ReheatingParameters
                 "Share of the budget spent by the first descent"));
     }
 
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
@@ -1219,7 +1336,9 @@ template<detail::reheatable_policy Descent>
 class Reheating
 {
 public:
+    /// The parameter block of the reheated schedule.
     using descent_parameters_type = typename Descent::parameters_type;
+    /// The parameter block of the policy.
     using parameters_type = ReheatingParameters<descent_parameters_type>;
 
     explicit Reheating(const parameters_type parameters)
@@ -1228,12 +1347,14 @@ public:
         assert(parameters_.validate());
     }
 
+    /// The parameters.
     [[nodiscard]]
     const parameters_type& parameters() const noexcept
     {
         return parameters_;
     }
 
+    /// The moves the schedule samples to estimate its initial temperature.
     [[nodiscard]]
     std::size_t calibration_samples() const noexcept
         requires calibrating_temperature_policy<Descent>
@@ -1254,18 +1375,22 @@ public:
         reset();
     }
 
+    /// Restarts with the first descent, and no reheat done.
     void reset()
     {
         descent_ = Descent{first_descent(parameters_)};
         reheats_ = 0;
     }
 
+    /// The temperature of the descent under way.
     [[nodiscard]]
     double temperature() const noexcept
     {
         return descent_.temperature();
     }
 
+    /// Passes the proposal to the descent under way, and starts a reheat when
+    /// it finishes and fewer than max_reheats have been done.
     void on_iteration(const bool accepted)
     {
         assert(!finished());
@@ -1277,12 +1402,14 @@ public:
         }
     }
 
+    /// Whether the last descent, after max_reheats reheats, has finished.
     [[nodiscard]]
     bool finished() const noexcept
     {
         return reheats_ >= parameters_.max_reheats && descent_.finished();
     }
 
+    /// The reheats done so far.
     [[nodiscard]]
     std::size_t reheats() const noexcept
     {
@@ -1454,6 +1581,7 @@ struct SimulatedAnnealingParameters
     /// The parameters of the temperature schedule.
     TemperatureParameters temperature{};
 
+    /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -1659,10 +1787,13 @@ private:
     EASYLOCAL_NO_UNIQUE_ADDRESS Acceptance acceptance_;
 };
 
+/// Deduces the algorithm from its temperature policy, with the Metropolis
+/// acceptance.
 template<temperature_policy TemperaturePolicy>
 SimulatedAnnealing(TemperaturePolicy)
     -> SimulatedAnnealing<TemperaturePolicy, MetropolisAcceptance>;
 
+/// Deduces the algorithm from its temperature policy and acceptance criterion.
 template<temperature_policy TemperaturePolicy, class Acceptance>
 SimulatedAnnealing(TemperaturePolicy, Acceptance)
     -> SimulatedAnnealing<TemperaturePolicy, Acceptance>;
