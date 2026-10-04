@@ -85,7 +85,9 @@ class Tui:
             if self.exit_status is not None or time.time() > deadline:
                 break
             try:
-                self.press(*keys)
+                for key in keys:
+                    os.write(self.fd, key.encode())
+                    self.settle()
             except OSError:
                 pass
             self.poll_exit(min(1.0, max(0.0, deadline - time.time())))
@@ -172,9 +174,15 @@ class Tui:
     # -- input ----------------------------------------------------------------
 
     def press(self, *keys: str) -> "Tui":
+        """Press each key and wait for the screen to be quiet. After Escape,
+        wait for the screen to change: read together with the next key, it
+        would make one escape sequence (Alt and the key)."""
         for key in keys:
-            os.write(self.fd, key.encode())
-            self.settle()
+            if key == ESCAPE:
+                self.step(key, limit=1.0)
+            else:
+                os.write(self.fd, key.encode())
+                self.settle()
         return self
 
     def type(self, text: str) -> "Tui":
