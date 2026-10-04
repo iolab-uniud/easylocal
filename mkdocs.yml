@@ -2,7 +2,7 @@
 #
 #     uv run mkdocs serve      # preview on http://127.0.0.1:8000
 #     uv run mkdocs build --strict
-#     doxygen docs/Doxyfile    # the generated API reference, served under api/
+#     uv run scripts/api-docs.py build/<preset>   # the API reference (MrDocs), served under api/
 #
 # .github/workflows/docs.yml publishes it.
 site_name: EasyLocal
@@ -20,7 +20,7 @@ hooks:
   - scripts/mkdocs_downloads.py
 
 exclude_docs: |
-  Doxyfile
+  mrdocs.yml
   assets/branding/README.md
   assets/branding/generate.py
 

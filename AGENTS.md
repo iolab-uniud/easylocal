@@ -28,7 +28,9 @@ Before committing, run:
   (configure with `-DEASYLOCAL_ENABLE_CONFIG_TOML=ON -DEASYLOCAL_ENABLE_TUI=ON
   -DEASYLOCAL_ENABLE_REST=ON -DEASYLOCAL_FETCH_DEPENDENCIES=ON`);
 - `scripts/format.sh --check` and `scripts/tidy.sh build/dev`;
-- `uv run mkdocs build --strict` when `docs/` changes.
+- `uv run mkdocs build --strict` when `docs/` changes, and
+  `uv run scripts/api-docs.py build/<preset>` (MrDocs, warnings as errors) when
+  the `///` comments change.
 
 Never run `scripts/build-and-test.sh --exhaustive` (every feature subset): it
 is a last resort. For
@@ -69,7 +71,7 @@ the uv environment: `uv sync`, then `uv run ...`.
   function, no narration of the change.
 - In `include/`, the comment of a public declaration (a class, a function, an
   alias, a public field) and the leading comment of a header (`/// \file`) are
-  written with `///`, which Doxygen reads for the generated API reference;
+  written with `///`, which MrDocs reads for the generated API reference;
   every other comment (in `detail`, in a body, on a private member) with `//`.
 
 ## Formatting

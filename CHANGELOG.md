@@ -181,6 +181,9 @@ old concepts onto the new ones.
   [tutorial](docs/tutorial/README.md) built around a TSP, and
   [reference pages](docs/reference/README.md) per component (contract, API,
   design choices). Their code is compiled and run as tests.
+- A [generated API reference](https://iolab-uniud.github.io/easylocal/api/)
+  of every public class, function and concept, built by MrDocs from the `///`
+  comments of the headers.
 - Examples: TSP, Assignment, Exam Timetabling and PFSP (Tabu Search), each
   with its TUI or REST front-end where useful.
 - [API stability](docs/stability.md): what is stable, extensible, experimental

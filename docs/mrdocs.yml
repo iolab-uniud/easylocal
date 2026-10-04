@@ -1,0 +1,28 @@
+# MrDocs configuration of the generated API reference, served under api/.
+# scripts/api-docs.py runs it with the compilation database it writes; paths
+# are relative to this file.
+source-root: ../include
+input:
+  - ../include/easylocal
+recursive: true
+file-patterns:
+  - '*.hpp'
+exclude-patterns:
+  - '**/detail/**'
+  - '**/third_party/**'
+exclude-symbols:
+  - 'easylocal::detail'
+  - 'easylocal::detail::**'
+  - 'easylocal::**::detail'
+  - 'easylocal::**::detail::**'
+generator: html
+multipage: true
+linkcss: true
+copycss: true
+# A warning fails the build; a missing comment is not one.
+warnings: true
+warn-as-error: true
+warn-if-doc-error: true
+warn-if-undocumented: false
+warn-no-paramdoc: false
+warn-if-undoc-enum-val: false
