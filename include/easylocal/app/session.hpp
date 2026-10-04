@@ -83,6 +83,14 @@ std::string report_text(const Value& value)
         return "(not printable)";
 }
 
+// An app a Session can hold: movable, with the Input type of its problem. A
+// named concept, not an inline requires-expression, which MrDocs would separate
+// from the class and its comment.
+template<class App>
+concept session_app = std::move_constructible<App> && requires {
+    typename App::input_type;
+};
+
 } // namespace detail
 
 /// The state of an interactive session on an app, and the commands that change
@@ -90,9 +98,10 @@ std::string report_text(const Value& value)
 /// and an RNG.
 ///
 /// It has no user interface of its own: interactive frontends, such as the
-/// TextUI, are views on it.
+/// TextUI, are views on it. Requires a movable app, such as the one
+/// easylocal::app() builds.
 template<class App>
-    requires std::move_constructible<App> && requires { typename App::input_type; }
+    requires detail::session_app<App>
 class Session
 {
 public:
