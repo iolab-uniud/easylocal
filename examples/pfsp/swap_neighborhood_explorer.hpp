@@ -4,6 +4,7 @@
 #include "swap_move.hpp"
 
 #include <easylocal/helpers/neighborhood_explorer.hpp>
+#include <easylocal/utils/generator.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -47,14 +48,13 @@ public:
             && solution.order[move.second_position] == move.second_job;
     }
 
-    bool first_move(const Schedule& solution, SwapJobsMove& move) const
+    // Every pair of positions i < j, in lexicographic order.
+    easylocal::generator<SwapJobsMove> moves(const Schedule& solution) const
     {
-        return find_from(solution, 0, 1, move);
-    }
-
-    bool next_move(const Schedule& solution, SwapJobsMove& move) const
-    {
-        return find_from(solution, move.first_position, move.second_position + 1, move);
+        const auto n = solution.order.size();
+        for (std::size_t i = 0; i < n; ++i)
+            for (auto j = i + 1; j < n; ++j)
+                co_yield make(solution, i, j);
     }
 
     // A uniform swap: two distinct positions, the second drawn among the
@@ -86,13 +86,13 @@ public:
     bool inverse(const Schedule&, const SwapJobsMove& move, const SwapJobsMove& tabu_move)
         const
     {
-        const auto moves = [&move](const job_id job) {
+        const auto touches = [&move](const job_id job) {
             return move.first_job == job || move.second_job == job;
         };
         if constexpr (Inverse == SwapInverse::both_jobs)
-            return moves(tabu_move.first_job) && moves(tabu_move.second_job);
+            return touches(tabu_move.first_job) && touches(tabu_move.second_job);
         else
-            return moves(tabu_move.first_job) || moves(tabu_move.second_job);
+            return touches(tabu_move.first_job) || touches(tabu_move.second_job);
     }
 
     // The pair of jobs, whatever their positions, for frequency-based memory.
@@ -116,25 +116,6 @@ private:
             .first_job = solution.order[first],
             .second_job = solution.order[second],
         };
-    }
-
-    static bool find_from(
-        const Schedule& solution,
-        const std::size_t initial_first,
-        const std::size_t initial_second,
-        SwapJobsMove& move)
-    {
-        const auto job_count = solution.order.size();
-        for (auto first = initial_first; first < job_count; ++first)
-        {
-            const auto second = first == initial_first ? initial_second : first + 1;
-            if (second < job_count)
-            {
-                move = make(solution, first, second);
-                return true;
-            }
-        }
-        return false;
     }
 };
 

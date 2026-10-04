@@ -15,12 +15,6 @@
 #include <utility>
 #include <vector>
 
-// GCC 16 snapshots (Ubuntu 26.04, -O3) report the const explorer handed to
-// cursor_moves_view::begin() as "may be used uninitialized"; it is initialized.
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-
 namespace
 {
 
@@ -84,22 +78,6 @@ int main()
     ok &= expect(
         collect(all_moves) == expected,
         "2-opt moves are generated lazily in lexicographic edge order");
-
-    std::vector<observed_move> cursor_observed;
-    TwoOptMove cursor_move{};
-    if (neighborhood.first_move(solution, cursor_move))
-    {
-        do
-        {
-            cursor_observed.emplace_back(
-                cursor_move.first_edge,
-                cursor_move.second_edge);
-        } while (neighborhood.next_move(solution, cursor_move));
-    }
-
-    ok &= expect(
-        cursor_observed == expected,
-        "FirstMove/NextMove authoring protocol matches the 2-opt move range");
 
     for (const auto move : easylocal::moves(neighborhood, solution))
     {

@@ -4,6 +4,7 @@
 #include "swap_move.hpp"
 
 #include <easylocal/helpers/neighborhood_explorer.hpp>
+#include <easylocal/utils/generator.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -18,12 +19,6 @@ namespace tsp
 class SwapCitiesNeighborhoodExplorer
     : public easylocal::neighborhood_explorer_base<TspSolutionManager, SwapCitiesMove>
 {
-private:
-    static constexpr std::size_t move_count(std::size_t city_count)
-    {
-        return city_count >= 2 ? city_count * (city_count - 1) / 2 : std::size_t{0};
-    }
-
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
@@ -38,18 +33,13 @@ public:
             && move.second_position < solution.tour.size();
     }
 
-    bool first_move(const Tour& solution, SwapCitiesMove& move) const
+    // Every pair of positions i < j, in lexicographic order.
+    easylocal::generator<SwapCitiesMove> moves(const Tour& solution) const
     {
-        return find_from(solution.tour.size(), 0, 1, move);
-    }
-
-    bool next_move(const Tour& solution, SwapCitiesMove& move) const
-    {
-        return find_from(
-            solution.tour.size(),
-            move.first_position,
-            move.second_position + 1,
-            move);
+        const auto n = solution.tour.size();
+        for (std::size_t i = 0; i < n; ++i)
+            for (auto j = i + 1; j < n; ++j)
+                co_yield SwapCitiesMove{i, j};
     }
 
     // A uniform swap in O(1): two distinct positions, the second drawn among
@@ -58,7 +48,7 @@ public:
     std::optional<SwapCitiesMove> random_move(const Tour& solution, RNG& rng) const
     {
         const auto city_count = solution.tour.size();
-        if (move_count(city_count) == 0)
+        if (city_count < 2)
             return std::nullopt;
 
         std::uniform_int_distribution<std::size_t> draw_first{0, city_count - 1};
@@ -78,30 +68,6 @@ public:
         std::swap(
             solution.tour[move.first_position],
             solution.tour[move.second_position]);
-    }
-
-private:
-    static bool find_from(
-        std::size_t city_count,
-        std::size_t initial_first,
-        std::size_t initial_second,
-        SwapCitiesMove& move)
-    {
-        for (auto first = initial_first; first < city_count; ++first)
-        {
-            const auto second = first == initial_first ? initial_second : first + 1;
-
-            if (second < city_count)
-            {
-                move = SwapCitiesMove{
-                    .first_position = first,
-                    .second_position = second,
-                };
-                return true;
-            }
-        }
-
-        return false;
     }
 };
 

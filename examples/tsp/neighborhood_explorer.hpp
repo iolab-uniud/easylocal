@@ -4,6 +4,7 @@
 #include "solution_manager.hpp"
 
 #include <easylocal/helpers/neighborhood_explorer.hpp>
+#include <easylocal/utils/generator.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -29,11 +30,6 @@ private:
             && !(first_edge == 0 && second_edge + 1 == city_count);
     }
 
-    static constexpr std::size_t move_count(std::size_t city_count)
-    {
-        return city_count >= 4 ? city_count * (city_count - 3) / 2 : std::size_t{0};
-    }
-
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
@@ -47,18 +43,14 @@ public:
         return valid_edge_pair(solution.tour.size(), move.first_edge, move.second_edge);
     }
 
-    bool first_move(const Tour& solution, TwoOptMove& move) const
+    // Every valid pair of edges i < j, in lexicographic order.
+    easylocal::generator<TwoOptMove> moves(const Tour& solution) const
     {
-        return find_from(solution.tour.size(), 0, 1, move);
-    }
-
-    bool next_move(const Tour& solution, TwoOptMove& move) const
-    {
-        return find_from(
-            solution.tour.size(),
-            move.first_edge,
-            move.second_edge + 1,
-            move);
+        const auto n = solution.tour.size();
+        for (std::size_t i = 0; i < n; ++i)
+            for (auto j = i + 2; j < n; ++j)
+                if (valid_edge_pair(n, i, j))
+                    co_yield TwoOptMove{i, j};
     }
 
     // A uniform 2-opt move in expected O(1): two edges drawn independently,
@@ -69,7 +61,7 @@ public:
     std::optional<TwoOptMove> random_move(const Tour& solution, RNG& rng) const
     {
         const auto city_count = solution.tour.size();
-        if (move_count(city_count) == 0)
+        if (city_count < 4)
             return std::nullopt;
 
         std::uniform_int_distribution<std::size_t> draw{0, city_count - 1};
@@ -94,34 +86,6 @@ public:
         const auto first = static_cast<std::ptrdiff_t>(move.first_edge + 1);
         const auto last = static_cast<std::ptrdiff_t>(move.second_edge + 1);
         std::reverse(solution.tour.begin() + first, solution.tour.begin() + last);
-    }
-
-private:
-    static bool find_from(
-        std::size_t city_count,
-        std::size_t initial_first_edge,
-        std::size_t initial_second_edge,
-        TwoOptMove& move)
-    {
-        for (auto first_edge = initial_first_edge; first_edge < city_count; ++first_edge)
-        {
-            const auto second_begin =
-                first_edge == initial_first_edge ? initial_second_edge : first_edge + 1;
-
-            for (auto second_edge = second_begin; second_edge < city_count; ++second_edge)
-            {
-                if (valid_edge_pair(city_count, first_edge, second_edge))
-                {
-                    move = TwoOptMove{
-                        .first_edge = first_edge,
-                        .second_edge = second_edge,
-                    };
-                    return true;
-                }
-            }
-        }
-
-        return false;
     }
 };
 

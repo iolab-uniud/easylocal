@@ -15,12 +15,6 @@
 #include <utility>
 #include <vector>
 
-// GCC 16 snapshots (Ubuntu 26.04, -O3) report the const explorer handed to
-// cursor_moves_view::begin() as "may be used uninitialized"; it is initialized.
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-
 namespace
 {
 
