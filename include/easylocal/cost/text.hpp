@@ -12,12 +12,10 @@
 #include <easylocal/cost/pareto.hpp>
 #include <easylocal/utils/detail/number_text.hpp>
 
-#include <charconv>
 #include <cstddef>
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <system_error>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -29,42 +27,17 @@ namespace easylocal::cost
 namespace detail
 {
 
-[[nodiscard]]
-constexpr std::string_view trim_text(std::string_view text) noexcept
-{
-    constexpr std::string_view space{" \t\n\r"};
-    const auto first = text.find_first_not_of(space);
-    if (first == std::string_view::npos)
-        return {};
-    const auto last = text.find_last_not_of(space);
-    return text.substr(first, last - first + 1);
-}
-
 // The elements of "[a, b, ...]", split at the commas outside nested brackets.
 [[nodiscard]]
 inline std::vector<std::string_view> bracketed_elements(std::string_view text)
 {
-    text = trim_text(text);
+    text = easylocal::detail::trim_space(text);
     if (text.size() < 2 || text.front() != '[' || text.back() != ']')
         throw std::invalid_argument{"expected [...], found '" + std::string{text} + "'"};
-    text = text.substr(1, text.size() - 2);
-
-    std::vector<std::string_view> elements;
-    std::size_t depth = 0;
-    std::size_t start = 0;
-    for (std::size_t index = 0; index < text.size(); ++index)
-    {
-        if (text[index] == '[')
-            ++depth;
-        else if (text[index] == ']' && depth > 0)
-            --depth;
-        else if (text[index] == ',' && depth == 0)
-        {
-            elements.push_back(text.substr(start, index - start));
-            start = index + 1;
-        }
-    }
-    elements.push_back(text.substr(start));
+    // "[]" has one empty element, as "[a]" has one.
+    auto elements = easylocal::detail::split_list(text.substr(1, text.size() - 2));
+    if (elements.empty())
+        elements.emplace_back();
     return elements;
 }
 
@@ -113,27 +86,19 @@ template<text_readable Cost>
 Cost from_text(std::string_view text)
 {
     using cost_type = std::remove_cv_t<Cost>;
-    text = detail::trim_text(text);
+    text = easylocal::detail::trim_space(text);
 
     if constexpr (arithmetic<cost_type>)
     {
-        cost_type value{};
-        const auto* const first = text.data();
-        const auto* const last = first + text.size();
-        const auto [end, error] = [&] {
-            if constexpr (std::floating_point<cost_type>)
-                return std::from_chars(first, last, value, std::chars_format::general);
-            else
-                return std::from_chars(first, last, value);
-        }();
-        if (text.empty() || error != std::errc{} || end != last)
+        const auto value = easylocal::detail::parse_number<cost_type>(text);
+        if (!value)
             throw std::invalid_argument{
                 std::string{
                     std::floating_point<cost_type>
                         ? "expected a number"
                         : "expected an integer"}
                 + ", found '" + std::string{text} + "'"};
-        return value;
+        return *value;
     }
     else if constexpr (hierarchical_type<cost_type>)
     {

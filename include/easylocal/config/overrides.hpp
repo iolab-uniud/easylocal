@@ -8,11 +8,11 @@
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/utils/detail/meta.hpp>
 #include <easylocal/utils/detail/number_text.hpp>
+#include <easylocal/utils/detail/text.hpp>
 #include <easylocal/utils/limit.hpp>
 
 #include <algorithm>
 #include <array>
-#include <charconv>
 #include <concepts>
 #include <cstddef>
 #include <expected>
@@ -21,7 +21,6 @@
 #include <span>
 #include <string>
 #include <string_view>
-#include <system_error>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -181,26 +180,6 @@ struct is_std_vector<std::vector<Value, Allocator>> : std::true_type
 template<class T>
 inline constexpr bool is_std_vector_v = is_std_vector<T>::value;
 
-[[nodiscard]]
-constexpr std::string_view trim_ascii_space(std::string_view text) noexcept
-{
-    while (!text.empty() &&
-           (text.front() == ' ' || text.front() == '\t' ||
-            text.front() == '\n' || text.front() == '\r'))
-    {
-        text.remove_prefix(1);
-    }
-
-    while (!text.empty() &&
-           (text.back() == ' ' || text.back() == '\t' ||
-            text.back() == '\n' || text.back() == '\r'))
-    {
-        text.remove_suffix(1);
-    }
-
-    return text;
-}
-
 // The elements of a list, "[a, b]" or "a, b": split at the commas outside
 // nested brackets, so that "[[1, 2], [3, 4]]" has two. An empty element, as a
 // trailing comma leaves, is an error; "[]" has none.
@@ -208,33 +187,16 @@ constexpr std::string_view trim_ascii_space(std::string_view text) noexcept
 inline std::expected<std::vector<std::string_view>, std::string_view> list_elements(
     const std::string_view text)
 {
-    auto body = trim_ascii_space(text);
+    auto body = easylocal::detail::trim_space(text);
     if (body.size() >= 2 && body.front() == '[' && body.back() == ']')
     {
         body.remove_prefix(1);
         body.remove_suffix(1);
     }
-    std::vector<std::string_view> elements;
-    if (trim_ascii_space(body).empty())
-        return elements;
-    std::size_t depth = 0;
-    std::size_t start = 0;
-    for (std::size_t index = 0; index <= body.size(); ++index)
-    {
-        const bool end = index == body.size();
-        if (!end && body[index] == '[')
-            ++depth;
-        else if (!end && body[index] == ']' && depth > 0)
-            --depth;
-        else if (end || (body[index] == ',' && depth == 0))
-        {
-            const auto element = trim_ascii_space(body.substr(start, index - start));
-            if (element.empty())
-                return std::unexpected{std::string_view{"empty list element"}};
-            elements.push_back(element);
-            start = index + 1;
-        }
-    }
+    auto elements = easylocal::detail::split_list(body);
+    for (const auto element : elements)
+        if (element.empty())
+            return std::unexpected{std::string_view{"empty list element"}};
     return elements;
 }
 
@@ -247,7 +209,7 @@ std::string_view parse_text_value(const std::string_view text, Value& value)
     if constexpr (std::same_as<value_type, easylocal::limit>)
     {
         // "unlimited", or a count.
-        if (trim_ascii_space(text) == "unlimited")
+        if (easylocal::detail::trim_space(text) == "unlimited")
         {
             value = easylocal::unlimited;
             return {};
@@ -270,7 +232,7 @@ std::string_view parse_text_value(const std::string_view text, Value& value)
     }
     else if constexpr (std::same_as<value_type, bool>)
     {
-        const auto trimmed = trim_ascii_space(text);
+        const auto trimmed = easylocal::detail::trim_space(text);
         if (trimmed == "true")
         {
             value = true;
@@ -283,49 +245,20 @@ std::string_view parse_text_value(const std::string_view text, Value& value)
         }
         return "expected 'true' or 'false'";
     }
-    else if constexpr (
-        std::integral<value_type> && !std::same_as<value_type, bool>)
+    else if constexpr (std::integral<value_type>)
     {
-        const auto trimmed = trim_ascii_space(text);
-        if (trimmed.empty())
-        {
+        const auto parsed = easylocal::detail::parse_number<value_type>(text);
+        if (!parsed)
             return "expected integer";
-        }
-
-        value_type parsed{};
-        const auto* const first = trimmed.data();
-        const auto* const last = first + trimmed.size();
-        const auto result = std::from_chars(first, last, parsed, 10);
-        if (result.ec != std::errc{} || result.ptr != last)
-        {
-            return "expected integer";
-        }
-
-        value = parsed;
+        value = *parsed;
         return {};
     }
     else if constexpr (std::floating_point<value_type>)
     {
-        const auto trimmed = trim_ascii_space(text);
-        if (trimmed.empty())
-        {
+        const auto parsed = easylocal::detail::parse_number<value_type>(text);
+        if (!parsed)
             return "expected floating-point value";
-        }
-
-        value_type parsed{};
-        const auto* const first = trimmed.data();
-        const auto* const last = first + trimmed.size();
-        const auto result = std::from_chars(
-            first,
-            last,
-            parsed,
-            std::chars_format::general);
-        if (result.ec != std::errc{} || result.ptr != last)
-        {
-            return "expected floating-point value";
-        }
-
-        value = parsed;
+        value = *parsed;
         return {};
     }
     else if constexpr (is_std_array_v<value_type>)

@@ -9,6 +9,7 @@
 
 #include <easylocal/cost/hierarchical.hpp>
 #include <easylocal/cost/lexicographic.hpp>
+#include <easylocal/utils/detail/number_text.hpp>
 
 #include <concepts>
 #include <cstddef>
@@ -22,8 +23,7 @@ namespace detail
 {
 
 template<class T>
-inline constexpr bool scalar_number_v =
-    (std::integral<T> || std::floating_point<T>) && !std::same_as<T, bool>;
+inline constexpr bool scalar_number_v = easylocal::detail::number<T>;
 
 template<class T>
 struct scalar_convertible_trait : std::bool_constant<scalar_number_v<T>>

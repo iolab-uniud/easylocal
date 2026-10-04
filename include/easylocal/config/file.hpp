@@ -5,6 +5,7 @@
 /// read as the overrides of a parameter_set.
 
 #include <easylocal/config/overrides.hpp>
+#include <easylocal/utils/detail/text.hpp>
 
 #include <cstddef>
 #include <filesystem>
@@ -83,7 +84,7 @@ inline config_file_parse_result parse_config_text(const std::string_view text)
         const auto raw_line = newline == std::string_view::npos
             ? text.substr(cursor)
             : text.substr(cursor, newline - cursor);
-        const auto line = detail::trim_ascii_space(raw_line);
+        const auto line = easylocal::detail::trim_space(raw_line);
 
         if (!line.empty() && !line.starts_with('#'))
         {
@@ -99,8 +100,8 @@ inline config_file_parse_result parse_config_text(const std::string_view text)
             }
             else
             {
-                const auto path = detail::trim_ascii_space(line.substr(0, equals));
-                const auto value = detail::trim_ascii_space(line.substr(equals + 1));
+                const auto path = easylocal::detail::trim_space(line.substr(0, equals));
+                const auto value = easylocal::detail::trim_space(line.substr(equals + 1));
 
                 if (path.empty())
                 {

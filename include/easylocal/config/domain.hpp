@@ -98,10 +98,8 @@ struct range_domain
 /// field: `config::range(0.0, 1.0).open()` is (0, 1).
 ///
 /// Throws std::invalid_argument when low is not below high (a compilation error
-/// in a schema).
-template<class Number>
-    requires(std::integral<Number> || std::floating_point<Number>)
-    && (!std::same_as<Number, bool>)
+/// in a schema). Requires an integer or floating-point type, not bool.
+template<easylocal::detail::number Number>
 [[nodiscard]]
 constexpr range_domain<Number> range(const Number low, const Number high)
 {
@@ -116,10 +114,9 @@ constexpr range_domain<Number> range(const Number low, const Number high)
 /// a limit.
 ///
 /// Throws std::invalid_argument when high is a count rather than unlimited (a
-/// compilation error in a schema).
-template<class Number>
-    requires(std::integral<Number> || std::floating_point<Number>)
-    && (!std::same_as<Number, bool>)
+/// compilation error in a schema). Requires an integer or floating-point type,
+/// not bool.
+template<easylocal::detail::number Number>
 [[nodiscard]]
 constexpr range_domain<Number> range(const Number low, const easylocal::limit high)
 {
@@ -200,8 +197,7 @@ template<class Value, std::size_t Size>
 inline constexpr bool is_choice_domain_v<choice_domain<Value, Size>> = true;
 
 template<class T>
-inline constexpr bool is_number_v =
-    (std::integral<T> || std::floating_point<T>) && !std::same_as<T, bool>;
+inline constexpr bool is_number_v = easylocal::detail::number<T>;
 
 template<class T>
 struct domain_element
@@ -484,15 +480,9 @@ struct domain_info
             }
             for (const auto& choice : other.choices)
             {
-                try
-                {
-                    if (!contains_number(std::stod(choice)))
-                        return false;
-                }
-                catch (const std::exception&)
-                {
+                const auto number = easylocal::detail::parse_number<double>(choice);
+                if (!number || !contains_number(*number))
                     return false;
-                }
             }
             return true;
         }

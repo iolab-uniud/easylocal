@@ -7,6 +7,8 @@
 /// use cost::delta(candidate, current); operator- is convenience syntax only
 /// and cost types may provide delta via ADL.
 
+#include <easylocal/utils/detail/number_text.hpp>
+
 #include <concepts>
 #include <type_traits>
 
@@ -15,10 +17,7 @@ namespace easylocal::cost
 
 /// An arithmetic cost: an integral or floating-point type other than bool.
 template<class Cost>
-concept arithmetic =
-    (std::integral<std::remove_cv_t<Cost>> ||
-     std::floating_point<std::remove_cv_t<Cost>>) &&
-    (!std::same_as<std::remove_cv_t<Cost>, bool>);
+concept arithmetic = easylocal::detail::number<Cost>;
 
 /// The numeric difference `candidate - current` of two arithmetic costs.
 ///
