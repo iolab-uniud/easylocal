@@ -9,6 +9,7 @@
 #include <easylocal/runners/search_run.hpp>
 #include <easylocal/utils/limit.hpp>
 
+#include <cassert>
 #include <optional>
 #include <utility>
 
@@ -59,6 +60,7 @@ public:
         const BestImprovementParameters parameters) noexcept
         : parameters_{parameters}
     {
+        assert(parameters_.validate());
     }
 
     /// Runs the search from solution.

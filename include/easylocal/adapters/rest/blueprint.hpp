@@ -1051,13 +1051,13 @@ private:
 ///
 /// The result is neither copyable nor movable: initialize a variable with it.
 template<class App, class Codec>
-[[nodiscard]] auto blueprint(
+[[nodiscard]] app_blueprint<App, Codec> blueprint(
     std::string prefix,
     App application,
     Codec codec,
     blueprint_options options = {})
 {
-    return app_blueprint<std::remove_cvref_t<App>, std::remove_cvref_t<Codec>>{
+    return app_blueprint<App, Codec>{
         std::move(prefix),
         std::move(application),
         std::move(codec),

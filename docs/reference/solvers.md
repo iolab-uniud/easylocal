@@ -86,7 +86,8 @@ ignored; with another expression producing a hierarchical cost it evaluates
 them all and keeps the hard part.
 
 The pipeline's `.initialization(...)` and `.seed(...)` return the pipeline;
-by default it starts from a random solution when the first stage supports it.
+by default it starts from a random solution when the first stage supports it,
+with seed 0, as the other solvers.
 A caller's target applies to the last stage, unless that stage has its own.
 After a cancellation the remaining stages stop at once, so the result still
 has the last stage's cost.

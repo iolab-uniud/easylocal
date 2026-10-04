@@ -331,7 +331,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
             if (!info.read_only)
                 tunable.push_back(std::move(info));
         for (auto& requirement : application.configuration().requirements())
-            if (!requirement.path.starts_with("cost"))
+            if (requirement.path != "cost" && !requirement.path.starts_with("cost."))
                 requirements.push_back(std::move(requirement));
         for (auto& requirement : settings.parameters.requirements())
             requirements.push_back(std::move(requirement));

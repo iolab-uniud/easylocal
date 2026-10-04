@@ -928,8 +928,10 @@ auto pipeline(pipeline_stage<Runner> first, Stages... rest)
 {
     using first_type = pipeline_stage<Runner>;
     return (
-        Pipeline<RNG, first_type>{std::tuple<first_type>{std::move(first)}, RNG{}} | ...
-        | std::move(rest));
+        Pipeline<RNG, first_type>{
+            std::tuple<first_type>{std::move(first)},
+            RNG{std::uint64_t{0}}}
+        | ... | std::move(rest));
 }
 
 /// The pipeline of two stages: `pipeline(first, second)`.
