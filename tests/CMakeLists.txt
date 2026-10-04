@@ -40,6 +40,16 @@ function(easylocal_add_header_self_containment_test name dependency)
     )
 endfunction()
 
+# A test program: the executable easylocal_<name>_test (dashes as underscores),
+# built from SOURCES and linked with LIBRARIES, run as the test easylocal.<name>.
+function(easylocal_add_test name)
+    cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "SOURCES;LIBRARIES")
+    string(REPLACE "-" "_" target "easylocal_${name}_test")
+    add_executable(${target} ${arg_SOURCES})
+    target_link_libraries(${target} PRIVATE ${arg_LIBRARIES})
+    add_test(NAME easylocal.${name} COMMAND ${target})
+endfunction()
+
 file(
     GLOB_RECURSE EASYLOCAL_CORE_HEADERS
     CONFIGURE_DEPENDS
@@ -178,75 +188,45 @@ add_test(
 
 
 if(TARGET EasyLocal::ConfigTOML)
-    add_executable(
-        easylocal_configuration_toml_test
-        configuration_toml.cpp
-    )
-    target_link_libraries(
-        easylocal_configuration_toml_test
-        PRIVATE
+    easylocal_add_test(
+        configuration-toml
+        SOURCES
+            configuration_toml.cpp
+        LIBRARIES
             EasyLocal::ConfigTOML
-    )
-    add_test(
-        NAME easylocal.configuration-toml
-        COMMAND easylocal_configuration_toml_test
     )
 endif()
 
-add_executable(
-    easylocal_factory_api_test
-    factory_api.cpp
-)
-target_link_libraries(
-    easylocal_factory_api_test
-    PRIVATE
+easylocal_add_test(
+    factory-api
+    SOURCES
+        factory_api.cpp
+    LIBRARIES
         EasyLocal::Core
 )
-add_test(
-    NAME easylocal.factory-api
-    COMMAND easylocal_factory_api_test
-)
 
-add_executable(
-    easylocal_logging_test
-    logging.cpp
-)
-target_link_libraries(
-    easylocal_logging_test
-    PRIVATE
+easylocal_add_test(
+    logging
+    SOURCES
+        logging.cpp
+    LIBRARIES
         EasyLocal::Core
 )
-add_test(
-    NAME easylocal.logging
-    COMMAND easylocal_logging_test
-)
 
-add_executable(
-    easylocal_run_control_test
-    run_control.cpp
-)
-target_link_libraries(
-    easylocal_run_control_test
-    PRIVATE
+easylocal_add_test(
+    run-control
+    SOURCES
+        run_control.cpp
+    LIBRARIES
         easylocal_assignment_mwe_model
 )
-add_test(
-    NAME easylocal.run-control
-    COMMAND easylocal_run_control_test
-)
 
-add_executable(
-    easylocal_cursor_moves_test
-    cursor_moves.cpp
-)
-target_link_libraries(
-    easylocal_cursor_moves_test
-    PRIVATE
+easylocal_add_test(
+    cursor-moves
+    SOURCES
+        cursor_moves.cpp
+    LIBRARIES
         EasyLocal::Core
-)
-add_test(
-    NAME easylocal.cursor-moves
-    COMMAND easylocal_cursor_moves_test
 )
 
 add_executable(
@@ -279,382 +259,220 @@ add_test(
     COMMAND easylocal_cost_expression_test
 )
 
-add_executable(
-    easylocal_service_base_test
-    service_base.cpp
-)
-target_link_libraries(
-    easylocal_service_base_test
-    PRIVATE
+easylocal_add_test(
+    service-base
+    SOURCES
+        service_base.cpp
+    LIBRARIES
         EasyLocal::Core
 )
-add_test(
-    NAME easylocal.service-base
-    COMMAND easylocal_service_base_test
-)
 
-add_executable(
-    easylocal_solution_manager_construction_test
-    solution_manager_construction.cpp
-)
-target_link_libraries(
-    easylocal_solution_manager_construction_test
-    PRIVATE
+easylocal_add_test(
+    solution-manager-construction
+    SOURCES
+        solution_manager_construction.cpp
+    LIBRARIES
         EasyLocal::Core
 )
-add_test(
-    NAME easylocal.solution-manager-construction
-    COMMAND easylocal_solution_manager_construction_test
-)
 
-add_executable(
-    easylocal_solution_identity_test
-    solution_identity.cpp
-)
-target_link_libraries(
-    easylocal_solution_identity_test
-    PRIVATE
+easylocal_add_test(
+    solution-identity
+    SOURCES
+        solution_identity.cpp
+    LIBRARIES
         EasyLocal::Core
 )
-add_test(
-    NAME easylocal.solution-identity
-    COMMAND easylocal_solution_identity_test
-)
 
-add_executable(
-    easylocal_tabu_customization_test
-    tabu_customization.cpp
-)
-target_link_libraries(
-    easylocal_tabu_customization_test
-    PRIVATE
+easylocal_add_test(
+    tabu-customization
+    SOURCES
+        tabu_customization.cpp
+    LIBRARIES
         EasyLocal::Core
 )
-add_test(
-    NAME easylocal.tabu-customization
-    COMMAND easylocal_tabu_customization_test
-)
 
-add_executable(
-    easylocal_neighborhood_parameters_test
-    neighborhood_parameters.cpp
-)
-target_link_libraries(
-    easylocal_neighborhood_parameters_test
-    PRIVATE
+easylocal_add_test(
+    neighborhood-parameters
+    SOURCES
+        neighborhood_parameters.cpp
+    LIBRARIES
         EasyLocal::Core
 )
-add_test(
-    NAME easylocal.neighborhood-parameters
-    COMMAND easylocal_neighborhood_parameters_test
-)
 
-add_executable(
-    easylocal_concept_contracts_test
-    concept_contracts.cpp
-)
-target_link_libraries(
-    easylocal_concept_contracts_test
-    PRIVATE
+easylocal_add_test(
+    concept-contracts
+    SOURCES
+        concept_contracts.cpp
+    LIBRARIES
         EasyLocal::Core
 )
-add_test(
-    NAME easylocal.concept-contracts
-    COMMAND easylocal_concept_contracts_test
-)
 
-add_executable(
-    easylocal_testing_checks_test
-    testing_checks.cpp
-)
-target_link_libraries(
-    easylocal_testing_checks_test
-    PRIVATE
+easylocal_add_test(
+    testing-checks
+    SOURCES
+        testing_checks.cpp
+    LIBRARIES
         easylocal_assignment_mwe_model
 )
-add_test(
-    NAME easylocal.testing-checks
-    COMMAND easylocal_testing_checks_test
-)
 
-add_executable(
-    easylocal_assignment_model_test
-    assignment_model.cpp
-)
-target_link_libraries(
-    easylocal_assignment_model_test
-    PRIVATE
+easylocal_add_test(
+    assignment-model
+    SOURCES
+        assignment_model.cpp
+    LIBRARIES
         easylocal_assignment_mwe_model
 )
-add_test(
-    NAME easylocal.assignment-model
-    COMMAND easylocal_assignment_model_test
-)
 
-add_executable(
-    easylocal_assignment_neighborhood_test
-    assignment_neighborhood.cpp
-)
-target_link_libraries(
-    easylocal_assignment_neighborhood_test
-    PRIVATE
+easylocal_add_test(
+    assignment-neighborhood
+    SOURCES
+        assignment_neighborhood.cpp
+    LIBRARIES
         easylocal_assignment_mwe_model
 )
-add_test(
-    NAME easylocal.assignment-neighborhood
-    COMMAND easylocal_assignment_neighborhood_test
-)
 
-add_executable(
-    easylocal_assignment_search_test
-    assignment_search.cpp
-)
-target_link_libraries(
-    easylocal_assignment_search_test
-    PRIVATE
+easylocal_add_test(
+    assignment-search
+    SOURCES
+        assignment_search.cpp
+    LIBRARIES
         easylocal_assignment_mwe_model
 )
-add_test(
-    NAME easylocal.assignment-search
-    COMMAND easylocal_assignment_search_test
-)
 
-add_executable(
-    easylocal_tsp_model_test
-    tsp_model.cpp
-)
-target_link_libraries(
-    easylocal_tsp_model_test
-    PRIVATE
+easylocal_add_test(
+    tsp-model
+    SOURCES
+        tsp_model.cpp
+    LIBRARIES
         easylocal_tsp_mwe_model
 )
-add_test(
-    NAME easylocal.tsp-model
-    COMMAND easylocal_tsp_model_test
-)
 
-add_executable(
-    easylocal_tsp_neighborhood_test
-    tsp_neighborhood.cpp
-)
-target_link_libraries(
-    easylocal_tsp_neighborhood_test
-    PRIVATE
+easylocal_add_test(
+    tsp-neighborhood
+    SOURCES
+        tsp_neighborhood.cpp
+    LIBRARIES
         easylocal_tsp_mwe_model
 )
-add_test(
-    NAME easylocal.tsp-neighborhood
-    COMMAND easylocal_tsp_neighborhood_test
-)
 
-add_executable(
-    easylocal_tsp_swap_neighborhood_test
-    tsp_swap_neighborhood.cpp
-)
-target_link_libraries(
-    easylocal_tsp_swap_neighborhood_test
-    PRIVATE
+easylocal_add_test(
+    tsp-swap-neighborhood
+    SOURCES
+        tsp_swap_neighborhood.cpp
+    LIBRARIES
         easylocal_tsp_mwe_model
 )
-add_test(
-    NAME easylocal.tsp-swap-neighborhood
-    COMMAND easylocal_tsp_swap_neighborhood_test
-)
 
-add_executable(
-    easylocal_evaluation_contract_test
-    evaluation_contract.cpp
-)
-target_link_libraries(
-    easylocal_evaluation_contract_test
-    PRIVATE
+easylocal_add_test(
+    evaluation-contract
+    SOURCES
+        evaluation_contract.cpp
+    LIBRARIES
         EasyLocal::Core
 )
-add_test(
-    NAME easylocal.evaluation-contract
-    COMMAND easylocal_evaluation_contract_test
-)
 
-add_executable(
-    easylocal_tsp_evaluation_test
-    tsp_evaluation.cpp
-)
-target_link_libraries(
-    easylocal_tsp_evaluation_test
-    PRIVATE
+easylocal_add_test(
+    tsp-evaluation
+    SOURCES
+        tsp_evaluation.cpp
+    LIBRARIES
         easylocal_tsp_mwe_model
 )
-add_test(
-    NAME easylocal.tsp-evaluation
-    COMMAND easylocal_tsp_evaluation_test
-)
 
-add_executable(
-    easylocal_tsp_delta_test
-    tsp_delta.cpp
-)
-target_link_libraries(
-    easylocal_tsp_delta_test
-    PRIVATE
+easylocal_add_test(
+    tsp-delta
+    SOURCES
+        tsp_delta.cpp
+    LIBRARIES
         easylocal_tsp_mwe_model
 )
-add_test(
-    NAME easylocal.tsp-delta
-    COMMAND easylocal_tsp_delta_test
-)
 
-add_executable(
-    easylocal_approximate_comparison_test
-    approximate_comparison.cpp
-)
-target_link_libraries(
-    easylocal_approximate_comparison_test
-    PRIVATE
+easylocal_add_test(
+    approximate-comparison
+    SOURCES
+        approximate_comparison.cpp
+    LIBRARIES
         EasyLocal::Core
 )
-add_test(
-    NAME easylocal.approximate-comparison
-    COMMAND easylocal_approximate_comparison_test
-)
 
-add_executable(
-    easylocal_tsp_floating_point_test
-    tsp_floating_point.cpp
-)
-target_link_libraries(
-    easylocal_tsp_floating_point_test
-    PRIVATE
+easylocal_add_test(
+    tsp-floating-point
+    SOURCES
+        tsp_floating_point.cpp
+    LIBRARIES
         easylocal_tsp_mwe_model
 )
-add_test(
-    NAME easylocal.tsp-floating-point
-    COMMAND easylocal_tsp_floating_point_test
-)
 
-add_executable(
-    easylocal_exam_timetabling_test
-    exam_timetabling.cpp
-)
-target_link_libraries(
-    easylocal_exam_timetabling_test
-    PRIVATE
+easylocal_add_test(
+    exam-timetabling
+    SOURCES
+        exam_timetabling.cpp
+    LIBRARIES
         easylocal_exam_timetabling_mwe_model
 )
-add_test(
-    NAME easylocal.exam-timetabling
-    COMMAND easylocal_exam_timetabling_test
-)
 
-add_executable(
-    easylocal_simulated_annealing_test
-    simulated_annealing.cpp
-)
-target_link_libraries(
-    easylocal_simulated_annealing_test
-    PRIVATE
+easylocal_add_test(
+    simulated-annealing
+    SOURCES
+        simulated_annealing.cpp
+    LIBRARIES
         easylocal_exam_timetabling_mwe_model
 )
-add_test(
-    NAME easylocal.simulated-annealing
-    COMMAND easylocal_simulated_annealing_test
-)
 
-add_executable(
-    easylocal_hill_climbing_test
-    hill_climbing.cpp
-)
-target_link_libraries(
-    easylocal_hill_climbing_test
-    PRIVATE
+easylocal_add_test(
+    hill-climbing
+    SOURCES
+        hill_climbing.cpp
+    LIBRARIES
         EasyLocal::Core
 )
-add_test(
-    NAME easylocal.hill-climbing
-    COMMAND easylocal_hill_climbing_test
-)
 
-add_executable(
-    easylocal_late_acceptance_hill_climbing_test
-    late_acceptance_hill_climbing.cpp
-)
-target_link_libraries(
-    easylocal_late_acceptance_hill_climbing_test
-    PRIVATE
+easylocal_add_test(
+    late-acceptance-hill-climbing
+    SOURCES
+        late_acceptance_hill_climbing.cpp
+    LIBRARIES
         EasyLocal::Core
 )
-add_test(
-    NAME easylocal.late-acceptance-hill-climbing
-    COMMAND easylocal_late_acceptance_hill_climbing_test
-)
 
-add_executable(
-    easylocal_pareto_cost_test
-    pareto_cost.cpp
-)
-target_link_libraries(
-    easylocal_pareto_cost_test
-    PRIVATE
+easylocal_add_test(
+    pareto-cost
+    SOURCES
+        pareto_cost.cpp
+    LIBRARIES
         EasyLocal::Core
 )
-add_test(
-    NAME easylocal.pareto-cost
-    COMMAND easylocal_pareto_cost_test
-)
 
-add_executable(
-    easylocal_pareto_late_acceptance_hill_climbing_test
-    pareto_late_acceptance_hill_climbing.cpp
-)
-target_link_libraries(
-    easylocal_pareto_late_acceptance_hill_climbing_test
-    PRIVATE
+easylocal_add_test(
+    pareto-late-acceptance-hill-climbing
+    SOURCES
+        pareto_late_acceptance_hill_climbing.cpp
+    LIBRARIES
         EasyLocal::Core
 )
-add_test(
-    NAME easylocal.pareto-late-acceptance-hill-climbing
-    COMMAND easylocal_pareto_late_acceptance_hill_climbing_test
-)
 
-add_executable(
-    easylocal_great_deluge_test
-    great_deluge.cpp
-)
-target_link_libraries(
-    easylocal_great_deluge_test
-    PRIVATE
+easylocal_add_test(
+    great-deluge
+    SOURCES
+        great_deluge.cpp
+    LIBRARIES
         EasyLocal::Core
 )
-add_test(
-    NAME easylocal.great-deluge
-    COMMAND easylocal_great_deluge_test
-)
 
-add_executable(
-    easylocal_tabu_search_test
-    tabu_search.cpp
-)
-target_link_libraries(
-    easylocal_tabu_search_test
-    PRIVATE
+easylocal_add_test(
+    tabu-search
+    SOURCES
+        tabu_search.cpp
+    LIBRARIES
         EasyLocal::Core
 )
-add_test(
-    NAME easylocal.tabu-search
-    COMMAND easylocal_tabu_search_test
-)
 
-add_executable(
-    easylocal_tabu_lists_test
-    tabu_lists.cpp
-)
-target_link_libraries(
-    easylocal_tabu_lists_test
-    PRIVATE
+easylocal_add_test(
+    tabu-lists
+    SOURCES
+        tabu_lists.cpp
+    LIBRARIES
         EasyLocal::Core
-)
-add_test(
-    NAME easylocal.tabu-lists
-    COMMAND easylocal_tabu_lists_test
 )
 
 add_executable(
@@ -677,191 +495,113 @@ add_test(
     COMMAND easylocal_pfsp_test
 )
 
-add_executable(
-    easylocal_cost_semantics_test
-    cost_semantics.cpp
-)
-target_link_libraries(
-    easylocal_cost_semantics_test
-    PRIVATE
+easylocal_add_test(
+    cost-semantics
+    SOURCES
+        cost_semantics.cpp
+    LIBRARIES
         easylocal_assignment_mwe_model
 )
-add_test(
-    NAME easylocal.cost-semantics
-    COMMAND easylocal_cost_semantics_test
-)
 
-add_executable(
-    easylocal_runner_composition_test
-    runner_composition.cpp
-)
-target_link_libraries(
-    easylocal_runner_composition_test
-    PRIVATE
+easylocal_add_test(
+    runner-composition
+    SOURCES
+        runner_composition.cpp
+    LIBRARIES
         easylocal_assignment_mwe_model
 )
-add_test(
-    NAME easylocal.runner-composition
-    COMMAND easylocal_runner_composition_test
-)
 
-add_executable(
-    easylocal_service_composition_test
-    service_composition.cpp
-)
-target_link_libraries(
-    easylocal_service_composition_test
-    PRIVATE
+easylocal_add_test(
+    service-composition
+    SOURCES
+        service_composition.cpp
+    LIBRARIES
         easylocal_assignment_mwe_model
 )
-add_test(
-    NAME easylocal.service-composition
-    COMMAND easylocal_service_composition_test
-)
 
-add_executable(
-    easylocal_parameters_test
-    parameters.cpp
-)
-target_link_libraries(
-    easylocal_parameters_test
-    PRIVATE
+easylocal_add_test(
+    parameters
+    SOURCES
+        parameters.cpp
+    LIBRARIES
         easylocal_tsp_mwe_model
 )
-add_test(
-    NAME easylocal.parameters
-    COMMAND easylocal_parameters_test
-)
 
-add_executable(
-    easylocal_parameter_set_test
-    parameter_set.cpp
-)
-target_link_libraries(
-    easylocal_parameter_set_test
-    PRIVATE
+easylocal_add_test(
+    parameter-set
+    SOURCES
+        parameter_set.cpp
+    LIBRARIES
         EasyLocal::Core
 )
-add_test(
-    NAME easylocal.parameter-set
-    COMMAND easylocal_parameter_set_test
-)
 
 
-add_executable(
-    easylocal_configuration_overrides_test
-    configuration_overrides.cpp
-)
-target_link_libraries(
-    easylocal_configuration_overrides_test
-    PRIVATE
+easylocal_add_test(
+    configuration-overrides
+    SOURCES
+        configuration_overrides.cpp
+    LIBRARIES
         easylocal_tsp_mwe_model
 )
-add_test(
-    NAME easylocal.configuration-overrides
-    COMMAND easylocal_configuration_overrides_test
-)
 
-add_executable(
-    easylocal_configuration_file_test
-    configuration_file.cpp
-)
-target_link_libraries(
-    easylocal_configuration_file_test
-    PRIVATE
+easylocal_add_test(
+    configuration-file
+    SOURCES
+        configuration_file.cpp
+    LIBRARIES
         EasyLocal::Core
 )
-add_test(
-    NAME easylocal.configuration-file
-    COMMAND easylocal_configuration_file_test
-)
 
-add_executable(
-    easylocal_configuration_cli_test
-    configuration_cli.cpp
-)
-target_link_libraries(
-    easylocal_configuration_cli_test
-    PRIVATE
+easylocal_add_test(
+    configuration-cli
+    SOURCES
+        configuration_cli.cpp
+    LIBRARIES
         EasyLocal::Core
 )
-add_test(
-    NAME easylocal.configuration-cli
-    COMMAND easylocal_configuration_cli_test
-)
 
-add_executable(
-    easylocal_configuration_setup_test
-    configuration_setup.cpp
-)
-target_link_libraries(
-    easylocal_configuration_setup_test
-    PRIVATE
+easylocal_add_test(
+    configuration-setup
+    SOURCES
+        configuration_setup.cpp
+    LIBRARIES
         EasyLocal::Core
 )
-add_test(
-    NAME easylocal.configuration-setup
-    COMMAND easylocal_configuration_setup_test
-)
 
-add_executable(
-    easylocal_neighborhood_composition_test
-    neighborhood_composition.cpp
-)
-target_link_libraries(
-    easylocal_neighborhood_composition_test
-    PRIVATE
+easylocal_add_test(
+    neighborhood-composition
+    SOURCES
+        neighborhood_composition.cpp
+    LIBRARIES
         easylocal_assignment_mwe_model
-)
-add_test(
-    NAME easylocal.neighborhood-composition
-    COMMAND easylocal_neighborhood_composition_test
 )
 
 
 if(TARGET EasyLocal::TUI)
-    add_executable(
-        easylocal_tui_tester_compile_test
-        tui_tester_compile.cpp
-    )
-    target_link_libraries(
-        easylocal_tui_tester_compile_test
-        PRIVATE
+    easylocal_add_test(
+        tui-tester-compile
+        SOURCES
+            tui_tester_compile.cpp
+        LIBRARIES
             easylocal_assignment_mwe_model
             EasyLocal::TUI
     )
-    add_test(
-        NAME easylocal.tui-tester-compile
-        COMMAND easylocal_tui_tester_compile_test
-    )
 
-    add_executable(
-        easylocal_tui_helpers_test
-        tui_helpers.cpp
-    )
-    target_link_libraries(
-        easylocal_tui_helpers_test
-        PRIVATE
+    easylocal_add_test(
+        tui-helpers
+        SOURCES
+            tui_helpers.cpp
+        LIBRARIES
             EasyLocal::TUI
     )
-    add_test(
-        NAME easylocal.tui-helpers
-        COMMAND easylocal_tui_helpers_test
-    )
 
 
-    add_executable(
-        easylocal_tui_launcher_helpers_test
-        tui_launcher_helpers.cpp
-    )
-    target_link_libraries(
-        easylocal_tui_launcher_helpers_test
-        PRIVATE
+    easylocal_add_test(
+        tui-launcher-helpers
+        SOURCES
+            tui_launcher_helpers.cpp
+        LIBRARIES
             EasyLocal::TUI
-    )
-    add_test(
-        NAME easylocal.tui-launcher-helpers
-        COMMAND easylocal_tui_launcher_helpers_test
     )
 endif()
 
@@ -1281,46 +1021,28 @@ add_executable(easylocal_run_target_test run_target.cpp)
 target_link_libraries(easylocal_run_target_test PRIVATE EasyLocal::Core)
 add_test(NAME easylocal.run-target COMMAND easylocal_run_target_test)
 
-add_executable(
-    easylocal_app_test
-    app.cpp
-)
-target_link_libraries(
-    easylocal_app_test
-    PRIVATE
+easylocal_add_test(
+    app
+    SOURCES
+        app.cpp
+    LIBRARIES
         EasyLocal::Core
-)
-add_test(
-    NAME easylocal.app
-    COMMAND easylocal_app_test
 )
 
-add_executable(
-    easylocal_app_graph_shape_test
-    app_graph_shape.cpp
-)
-target_link_libraries(
-    easylocal_app_graph_shape_test
-    PRIVATE
+easylocal_add_test(
+    app-graph-shape
+    SOURCES
+        app_graph_shape.cpp
+    LIBRARIES
         EasyLocal::Core
-)
-add_test(
-    NAME easylocal.app-graph-shape
-    COMMAND easylocal_app_graph_shape_test
 )
 
-add_executable(
-    easylocal_app_check_test
-    app_check.cpp
-)
-target_link_libraries(
-    easylocal_app_check_test
-    PRIVATE
+easylocal_add_test(
+    app-check
+    SOURCES
+        app_check.cpp
+    LIBRARIES
         EasyLocal::Core
-)
-add_test(
-    NAME easylocal.app-check
-    COMMAND easylocal_app_check_test
 )
 
 if(TARGET easylocal_tsp_two_apps_mwe)
@@ -1330,133 +1052,79 @@ if(TARGET easylocal_tsp_two_apps_mwe)
     )
 endif()
 
-add_executable(
-    easylocal_stochastic_tools_test
-    stochastic_tools.cpp
-)
-target_link_libraries(
-    easylocal_stochastic_tools_test
-    PRIVATE
+easylocal_add_test(
+    stochastic-tools
+    SOURCES
+        stochastic_tools.cpp
+    LIBRARIES
         EasyLocal::Core
-)
-add_test(
-    NAME easylocal.stochastic-tools
-    COMMAND easylocal_stochastic_tools_test
 )
 
-add_executable(
-    easylocal_session_test
-    session.cpp
-)
-target_link_libraries(
-    easylocal_session_test
-    PRIVATE
+easylocal_add_test(
+    session
+    SOURCES
+        session.cpp
+    LIBRARIES
         EasyLocal::Core
-)
-add_test(
-    NAME easylocal.session
-    COMMAND easylocal_session_test
 )
 
-add_executable(
-    easylocal_session_configuration_test
-    session_configuration.cpp
-)
-target_link_libraries(
-    easylocal_session_configuration_test
-    PRIVATE
+easylocal_add_test(
+    session-configuration
+    SOURCES
+        session_configuration.cpp
+    LIBRARIES
         EasyLocal::Core
-)
-add_test(
-    NAME easylocal.session-configuration
-    COMMAND easylocal_session_configuration_test
 )
 
-add_executable(
-    easylocal_cost_text_test
-    cost_text.cpp
-)
-target_link_libraries(
-    easylocal_cost_text_test
-    PRIVATE
+easylocal_add_test(
+    cost-text
+    SOURCES
+        cost_text.cpp
+    LIBRARIES
         EasyLocal::Core
-)
-add_test(
-    NAME easylocal.cost-text
-    COMMAND easylocal_cost_text_test
 )
 
-add_executable(
-    easylocal_union_moves_test
-    union_moves.cpp
-)
-target_link_libraries(
-    easylocal_union_moves_test
-    PRIVATE
+easylocal_add_test(
+    union-moves
+    SOURCES
+        union_moves.cpp
+    LIBRARIES
         EasyLocal::Core
-)
-add_test(
-    NAME easylocal.union-moves
-    COMMAND easylocal_union_moves_test
 )
 
-add_executable(
-    easylocal_session_io_test
-    session_io.cpp
-)
-target_link_libraries(
-    easylocal_session_io_test
-    PRIVATE
+easylocal_add_test(
+    session-io
+    SOURCES
+        session_io.cpp
+    LIBRARIES
         EasyLocal::Core
-)
-add_test(
-    NAME easylocal.session-io
-    COMMAND easylocal_session_io_test
 )
 
 if(TARGET EasyLocal::REST)
-    add_executable(
-        easylocal_rest_execution_test
-        rest_execution.cpp
-    )
-    target_link_libraries(
-        easylocal_rest_execution_test
-        PRIVATE
+    easylocal_add_test(
+        rest-execution
+        SOURCES
+            rest_execution.cpp
+        LIBRARIES
             EasyLocal::REST
     )
-    add_test(
-        NAME easylocal.rest-execution
-        COMMAND easylocal_rest_execution_test
-    )
 
-    add_executable(
-        easylocal_rest_blueprint_compile_test
-        rest_blueprint_compile.cpp
-    )
-    target_link_libraries(
-        easylocal_rest_blueprint_compile_test
-        PRIVATE
+    easylocal_add_test(
+        rest-blueprint-compile
+        SOURCES
+            rest_blueprint_compile.cpp
+        LIBRARIES
             EasyLocal::REST
             easylocal_assignment_mwe_model
     )
-    add_test(
-        NAME easylocal.rest-blueprint-compile
-        COMMAND easylocal_rest_blueprint_compile_test
-    )
 
-    add_executable(
-        easylocal_rest_blueprint_requests_test
-        rest_blueprint_requests.cpp
-    )
-    target_link_libraries(
-        easylocal_rest_blueprint_requests_test
-        PRIVATE
+    easylocal_add_test(
+        rest-blueprint-requests
+        SOURCES
+            rest_blueprint_requests.cpp
+        LIBRARIES
             EasyLocal::REST
             easylocal_assignment_mwe_model
-    )
-    add_test(
-        NAME easylocal.rest-blueprint-requests
-        COMMAND easylocal_rest_blueprint_requests_test
     )
     set_tests_properties(
         easylocal.rest-blueprint-requests
@@ -1545,18 +1213,12 @@ if(UNIX AND TARGET easylocal_tutorial_tui)
     endif()
 endif()
 
-add_executable(
-    easylocal_trace_test
-    trace.cpp
-)
-target_link_libraries(
-    easylocal_trace_test
-    PRIVATE
+easylocal_add_test(
+    trace
+    SOURCES
+        trace.cpp
+    LIBRARIES
         EasyLocal::Core
-)
-add_test(
-    NAME easylocal.trace
-    COMMAND easylocal_trace_test
 )
 
 # The ELTR decoder (scripts/eltr.py) reads what the binary recorder writes as
