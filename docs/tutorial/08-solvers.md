@@ -109,6 +109,20 @@ const auto result = solver.seed(7).solve(tsp);
   `feasible.attempts`). `examples/tutorial/pipeline_main.cpp` is the complete
   program.
 
+An app registers a pipeline beside its runners, under a name of the same list:
+
+```cpp
+auto application = el::app("tsp") | sm | two_opt
+    | el::runner<runners::FirstImprovement>("fi")
+    | el::pipeline("cascade",
+          stage("feasible", descent) & until_feasible() & attempts(5),
+          stage("climb", climbing));
+```
+
+The command line (`--runner cascade`), the TextUI and the REST service then run
+it by name from the current solution, as they run a runner, and configure its
+stages under `runners.cascade.*` ([Apps and tools](../reference/app-and-tools.md#pipelines)).
+
 ## See also
 
 - [Solvers](../reference/solvers.md).

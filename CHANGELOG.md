@@ -96,7 +96,10 @@ old concepts onto the new ones.
   recipes in sequence over the same solution; a stage, with `&` or a method,
   may stop at a target (`target`, or `until_feasible()` on the hard cost until
   it is zero) and be repeated (`attempts`), and the result reports every
-  stage. `two_stage(first,
+  stage. An app registers pipelines beside its runners
+  (`pipeline("name", stages...)`): the command line, the TextUI and the REST
+  service run them by name from the current solution and configure them under
+  `runners.<name>.<stage>.*`. `two_stage(first,
   second)` is the pipeline of the hard/soft model: hard constraints first,
   until the hard cost is zero, then the full cost. Solvers take the same run options as runners —
   cancellation, tracer, target — and report the effort of all their runs.

@@ -23,6 +23,29 @@ A registered algorithm must expose a default-constructible `parameters_type`
 and be constructible from it. The same algorithm may be registered under
 several names.
 
+### Pipelines
+
+An app also registers [pipelines](solvers.md#pipeline), beside its runners and
+under names of the same list:
+
+```cpp
+using namespace easylocal::solvers;
+auto application = app("tsp") | sm | nhe
+    | runner<runners::FirstImprovement>("fi")
+    | pipeline("cascade",
+          stage("feasible", descent) & until_feasible() & attempts(5),
+          stage("climb", climbing));
+// or pipeline("cascade", (stage(...) & ...) | stage(...)), or .with_pipeline(...)
+```
+
+Each stage is a runner with its own recipes; the stages must have the app's
+Input and Solution, and the last one the app's cost (checked at compile time).
+For every tool a pipeline is one more runner: it is listed among the runners,
+run by name from the current solution (`pipeline.run(input, solution, rng)`,
+so its first stage's attempts all start from that solution), and configured
+under `runners.<name>.<stage>.*` (`--runners.cascade.climb.search.*`,
+`runners.cascade.feasible.attempts`).
+
 | Member | Purpose |
 | --- | --- |
 | `name()` | the app name |
@@ -30,11 +53,12 @@ several names.
 | `runner_name<A>()` | the registered name |
 | `configuration()` | the app's parameters as a `config::parameter_set`: `cost.*`, `neighborhood.*` and `runners.<name>.*` |
 | `bind(input)` | the *bound app*: services built once for `input`, which it borrows (a temporary Input is rejected) |
-| `run("name", input, solution, rng, options...)` | run the runner registered under a name; `std::optional<named_run_result>`, empty for an unknown name |
+| `run("name", input, solution, rng, options...)` | run the runner or pipeline registered under a name; `std::optional<named_run_result>`, empty for an unknown name |
 | `run<A>(input, solution, args...)`, `run_at<I>(...)` | run by algorithm or by registration index |
 | `run_at_with_rng<I>(input, solution, rng, options...)` | run by index; `rng` goes to stochastic algorithms only |
 | `make_runner<A>([name])`, `make_solver<Solver, A>([name,] config)` | standalone runner or solver |
-| `for_each_runner_registration[_indexed](visitor)` | iterate registrations (adapters) |
+| `for_each_registration_name(visitor)` | the name of every registration, runner or pipeline, in order |
+| `for_each_runner_registration[_indexed](visitor)` | iterate the runner registrations (adapters) |
 
 The `run` members bind the app to the Input for that run only, with the
 current runner parameters. A bound app (`bind`) offers
@@ -174,7 +198,7 @@ flowchart TB
 | Solution | `use_initial_solution`, `use_random_solution(rng)`, `set_solution`, `load_solution`, `save_solution`, `solution`, `is_valid`, `evaluate`, `check()` |
 | Move | select with `use_first_move`, `use_next_move`, `use_first_improving_move`, `use_best_move`, `use_random_move(rng)` or `set_move`; then `move_is_valid`, `evaluate_move`, `evaluate_move_fully`, `move_evaluation_matches_full`, `apply_move` |
 | Neighborhood | `neighborhood_preview`, `neighborhood_statistics`, `check_neighborhood_costs`, `check_move_independence` (needs `Solution::operator==`), `check_random_move_distribution(rng)` (needs `Move::operator==`) |
-| Runners | `runner_names`, `run("name", options...)` (replaces the current solution; options are `with(control, tracer)`), `last_run_effort()`: the evaluations, iterations and termination of the last run, when its algorithm reports them |
+| Runners | `runner_names` (the runners and pipelines), `run("name", options...)` (replaces the current solution; options are `with(control, tracer)`), `last_run_effort()`: the evaluations, iterations and termination of the last run, when its algorithm reports them |
 | Costs | `read_cost(text)`: a cost written as text, such as a target, by the problem's `read_cost` or `cost::from_text`; `cost_report()`: each cost component on the current solution, in the order of the recipe, as `component_report{name, value, description}`: its `name()` or `#<position>`, its own value without weights, and its `describe(solution)` text, empty without it |
 | Parameters | `configuration()`, the app's; `configure(text_overrides)` applies them all or none and, when the cost or the neighborhood changes, rebuilds the bound services |
 

@@ -9,23 +9,32 @@
 #include <easylocal/app/app.hpp>
 #include <easylocal/app/session.hpp>
 #include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/solvers/pipeline.hpp>
 
 int main()
 {
     using namespace assignment;
 
+    auto sm = easylocal::solution_manager<AssignmentSolutionManager>()
+        | assignment::assignment_cost();
+    auto nhe = easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
+        | easylocal::delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>();
+    auto descent =
+        easylocal::make_runner<easylocal::runners::FirstImprovement>({}) | sm | nhe;
+
+    // Two runners and a pipeline: the tester lists and runs them alike.
     auto application =
         easylocal::app("tui-compile")
-            .with_solution_manager(
-                easylocal::solution_manager<AssignmentSolutionManager>()
-                | assignment::assignment_cost())
-            .with_neighborhood(
-                easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-                | easylocal::delta<
-                    CapacityCostComponent,
-                    ReassignCapacityDeltaEvaluator>())
+            .with_solution_manager(sm)
+            .with_neighborhood(nhe)
             .with_runner<easylocal::runners::FirstImprovement>("fi")
-            .with_runner<demo::SlowFirstImprovement>("slow-fi");
+            .with_runner<demo::SlowFirstImprovement>("slow-fi")
+            .with_pipeline(
+                easylocal::pipeline(
+                    "cascade",
+                    (easylocal::solvers::stage("feasible", descent)
+                        & easylocal::solvers::until_feasible())
+                        | easylocal::solvers::stage("descent", descent)));
 
     using session_type = easylocal::Session<decltype(application)>;
     static_assert(session_type::supports_input_loading);

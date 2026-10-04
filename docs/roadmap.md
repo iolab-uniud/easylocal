@@ -105,20 +105,16 @@ every runner that draws random moves could use it.
 
 **When.** Not scheduled.
 
-## Pipelines in apps, and a budget for the whole solve
+## A budget for the whole solve
 
-**Why.** `solvers::Pipeline` chains stages, each a runner with its own recipes,
-but it is used from a program: an app registers runners, built on its one
-SolutionManager and neighborhood, so `cli::run`, the TextUI and the REST
-service cannot run a pipeline by name. And each stage has its own budget
+**Why.** Each stage of a pipeline, like each runner, has its own budget
 (evaluations, iterations): there is no time or effort budget for the whole
-solve, shared among the stages.
+solve, shared among the stages, which a stage that ends early would leave to
+the following ones.
 
-**What.** An app that registers pipelines beside its runners, with their stages'
-recipes, so that the command line (`--runner`), the TextUI and the REST service
-run them and configure them (`<pipeline>.<stage>.*`) as they do a runner; and a
-budget of the solve (a time limit, or a number of evaluations), with a share
-per stage, which a stage that ends early leaves to the following ones.
+**What.** A budget of the solve (a time limit, or a number of evaluations),
+with a share per stage, reported in the result; the same budget for a runner
+run by name, so that the command line and the tools can bound a run in time.
 
 **When.** Not scheduled.
 

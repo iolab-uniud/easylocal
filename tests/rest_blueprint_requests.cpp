@@ -11,6 +11,7 @@
 #include <easylocal/adapters/rest.hpp>
 #include <easylocal/app/app.hpp>
 #include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/solvers/pipeline.hpp>
 
 #include <crow.h>
 
@@ -114,14 +115,25 @@ public:
     auto nhe = easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
         | easylocal::delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>();
 
+    // A pipeline of two descents, run by name like a runner.
+    auto descent =
+        easylocal::make_runner<easylocal::runners::FirstImprovement>(
+            {.max_evaluations = 100})
+        | sm | nhe;
+
     auto application =
         easylocal::app("assignment")
-            .with_solution_manager(std::move(sm))
-            .with_neighborhood(std::move(nhe))
+            .with_solution_manager(sm)
+            .with_neighborhood(nhe)
             .with_runner<easylocal::runners::FirstImprovement>("fi")
             .with_runner<GatedRunner>("gated")
             .with_runner<BrokenRunner<true>>("broken")
-            .with_runner<BrokenRunner<false>>("very-broken");
+            .with_runner<BrokenRunner<false>>("very-broken")
+            .with_pipeline(
+                easylocal::pipeline(
+                    "cascade",
+                    easylocal::solvers::stage("first", descent),
+                    easylocal::solvers::stage("second", descent)));
     application.runner_config<easylocal::runners::FirstImprovement>().max_evaluations =
         100;
     return application;
@@ -300,6 +312,31 @@ void a_codec_failure_is_an_internal_error(crow::SimpleApp& server)
     const auto other = submit(server, "fi", R"({"input": {"corrupt": 1}})");
     assert(other.code == 500);
     assert(text(other.body["error"]["message"]) == "cannot create run: unknown error");
+}
+
+void a_pipeline_runs_by_name(crow::SimpleApp& server)
+{
+    // Listed among the runners, its stages' parameters under its name.
+    const auto runners = send(server, crow::HTTPMethod::GET, "/assignment/runners");
+    bool listed = false;
+    for (const auto& name : runners.body["runners"])
+        listed = listed || text(name) == "cascade";
+    assert(listed);
+    const auto parameters = send(server, crow::HTTPMethod::GET, "/assignment/parameters");
+    bool configurable = false;
+    for (const auto& parameter : parameters.body["parameters"])
+        configurable =
+            configurable || text(parameter["path"]) == "runners.cascade.second.attempts";
+    assert(configurable);
+
+    // Run by name, with a parameter of its own for this run.
+    const auto submitted = submit(
+        server,
+        "cascade",
+        R"({"input": {}, "parameters": {"runners.cascade.second.attempts": 2}})");
+    assert(submitted.code == 202);
+    const auto done = wait_for(server, text(submitted.body["id"]), "succeeded");
+    assert(text(done["parameters"]["runners.cascade.second.attempts"]) == "2");
 }
 
 void a_run_starts_from_the_given_initial_solution(crow::SimpleApp& server)
@@ -508,6 +545,7 @@ int main()
     a_run_failing_without_a_standard_exception_reports_an_unknown_error(server);
     a_codec_failure_is_an_internal_error(server);
     a_run_starts_from_the_given_initial_solution(server);
+    a_pipeline_runs_by_name(server);
     a_run_stops_at_its_target(server);
     a_run_has_its_own_parameters(server);
     json_parameter_values_become_text();

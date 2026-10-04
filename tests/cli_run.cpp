@@ -4,6 +4,7 @@
 #include <easylocal/app/cli.hpp>
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/solvers/pipeline.hpp>
 
 #include <cassert>
 #include <cstdint>
@@ -48,12 +49,20 @@ struct Extra
 auto tsp_app()
 {
     using namespace tutorial;
-    return easylocal::app("tsp")
-        | (easylocal::solution_manager<TourManager>()
-            | easylocal::component<TourLength>())
-        | (easylocal::neighborhood<TwoOptExplorer>()
-            | easylocal::delta<TourLength, TwoOptLengthDelta>())
-        | easylocal::runner<easylocal::runners::FirstImprovement>("fi");
+    namespace solvers = easylocal::solvers;
+    auto sm =
+        easylocal::solution_manager<TourManager>() | easylocal::component<TourLength>();
+    auto nhe = easylocal::neighborhood<TwoOptExplorer>()
+        | easylocal::delta<TourLength, TwoOptLengthDelta>();
+    auto descent =
+        easylocal::make_runner<easylocal::runners::FirstImprovement>({}) | sm | nhe;
+    // A pipeline of two descents, run by name like the runner.
+    return easylocal::app("tsp") | sm | nhe
+        | easylocal::runner<easylocal::runners::FirstImprovement>("fi")
+        | easylocal::pipeline(
+            "cascade",
+            solvers::stage("first", descent),
+            solvers::stage("second", descent));
 }
 
 Captured run(
@@ -147,7 +156,20 @@ int main()
 
     const auto unknown = run({"--instance", instance, "--runner", "sa"});
     assert(unknown.status == 2);
-    assert(unknown.err == "unknown runner sa; the runners are: fi\n");
+    assert(unknown.err == "unknown runner sa; the runners are: fi cascade\n");
+
+    // A pipeline is run by name, and configured under runners.<name>.
+    const auto cascaded = run(
+        {"--instance",
+            instance,
+            "--seed",
+            "1",
+            "--runner",
+            "cascade",
+            "--runners.cascade.second.attempts",
+            "2"});
+    assert(cascaded.status == 0);
+    assert(cascaded.out.starts_with("cost 26\ntime "));
 
     const auto bad_start = run({"--instance", instance, "--start", "greedy"});
     assert(bad_start.status == 2);
@@ -177,6 +199,7 @@ int main()
     assert(help.status == 0);
     assert(help.out.find("--instance") != std::string::npos);
     assert(help.out.find("--runners.fi.max_evaluations") != std::string::npos);
+    assert(help.out.find("--runners.cascade.first.attempts") != std::string::npos);
 
     return 0;
 }
