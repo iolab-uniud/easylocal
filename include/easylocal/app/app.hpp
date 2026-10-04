@@ -100,58 +100,27 @@ consteval std::size_t app_runner_index()
     return app_runner_index_impl<Algorithm, 0, Registrations...>();
 }
 
+// The registration of Algorithm called name, const when registrations is.
 template<class Algorithm, std::size_t Index = 0, class Tuple>
 [[nodiscard]]
-app_runner_registration<Algorithm>& app_runner_registration_by_name(
-    Tuple& registrations,
-    const std::string_view name)
+std::conditional_t<
+    std::is_const_v<Tuple>,
+    const app_runner_registration<Algorithm>,
+    app_runner_registration<Algorithm>>&
+app_runner_registration_by_name(Tuple& registrations, const std::string_view name)
 {
-    if constexpr (Index == std::tuple_size_v<std::remove_reference_t<Tuple>>)
+    if constexpr (Index == std::tuple_size_v<std::remove_const_t<Tuple>>)
     {
         throw std::invalid_argument{
             "runner '" + std::string{name} + "' is not registered for the requested algorithm"};
     }
     else
     {
-        using registration_type = std::tuple_element_t<
-            Index,
-            std::remove_reference_t<Tuple>>;
+        using registration_type = std::tuple_element_t<Index, std::remove_const_t<Tuple>>;
 
         if constexpr (std::same_as<Algorithm, typename registration_type::algorithm_type>)
         {
             auto& registration = std::get<Index>(registrations);
-            if (registration.name == name)
-            {
-                return registration;
-            }
-        }
-
-        return app_runner_registration_by_name<Algorithm, Index + 1>(
-            registrations,
-            name);
-    }
-}
-
-template<class Algorithm, std::size_t Index = 0, class Tuple>
-[[nodiscard]]
-const app_runner_registration<Algorithm>& app_runner_registration_by_name(
-    const Tuple& registrations,
-    const std::string_view name)
-{
-    if constexpr (Index == std::tuple_size_v<std::remove_reference_t<Tuple>>)
-    {
-        throw std::invalid_argument{
-            "runner '" + std::string{name} + "' is not registered for the requested algorithm"};
-    }
-    else
-    {
-        using registration_type = std::tuple_element_t<
-            Index,
-            std::remove_reference_t<Tuple>>;
-
-        if constexpr (std::same_as<Algorithm, typename registration_type::algorithm_type>)
-        {
-            const auto& registration = std::get<Index>(registrations);
             if (registration.name == name)
             {
                 return registration;
