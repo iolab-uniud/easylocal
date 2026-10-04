@@ -410,10 +410,14 @@ inline std::vector<declared_irace_parameter> read_irace_parameters(std::istream&
         const auto switch_end = text.find('"', text.find('"', name_end) + 1);
         if (switch_end == std::string_view::npos || switch_end > open)
             continue;
+        // The type, such as i or c, between the switch and the values.
+        const auto type =
+            trim_irace_text(text.substr(switch_end + 1, open - switch_end - 1));
+        if (type.empty())
+            continue;
         declared_irace_parameter parameter;
         parameter.name = std::string{text.substr(0, name_end)};
-        parameter.type =
-            trim_irace_text(text.substr(switch_end + 1, open - switch_end - 1)).front();
+        parameter.type = type.front();
         auto values = text.substr(open + 1, close - open - 1);
         while (!values.empty())
         {
