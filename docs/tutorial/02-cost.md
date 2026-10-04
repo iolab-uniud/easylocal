@@ -196,7 +196,7 @@ const double length_within_bound = within_bound.cost.soft();
 
 On the five cities both give a longest edge of 8 and a length of 26: here the
 shortest tour also has the shortest possible longest edge, so the constraint
-costs nothing. The Assignment example (`examples/assignment/main.cpp`) nests
+costs nothing. The Assignment example (`examples/assignment/cost.hpp`) nests
 the two: a lexicographic hard cost, computed from one component by
 `cost::apply`, inside a `cost::hard_soft`.
 
