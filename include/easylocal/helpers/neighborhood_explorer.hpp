@@ -1,7 +1,8 @@
 #pragma once
 
-// NeighborhoodExplorer: move validity/application semantics, deterministic
-// and random neighborhood protocols and their framework customization points.
+/// \file
+/// NeighborhoodExplorer: move validity/application semantics, deterministic
+/// and random neighborhood protocols and their framework customization points.
 
 #include <easylocal/utils/detail/meta.hpp>
 #include <easylocal/utils/generator.hpp> // IWYU pragma: export
@@ -236,7 +237,7 @@ private:
 
 } // namespace detail
 
-// Adapt an EL3-style deterministic cursor to the lazy input-range protocol.
+/// Adapt an EL3-style deterministic cursor to the lazy input-range protocol.
 template<class Explorer, class Solution>
     requires cursor_neighborhood_for<Explorer, Solution>
 [[nodiscard]]
@@ -247,8 +248,8 @@ inline detail::cursor_moves_view<Explorer, Solution> cursor_moves(
     return detail::cursor_moves_view<Explorer, Solution>{explorer, solution};
 }
 
-// Unified deterministic-neighborhood customization point. The EL3 cursor
-// protocol wins when both cursor and native range protocols are present.
+/// Unified deterministic-neighborhood customization point. The EL3 cursor
+/// protocol wins when both cursor and native range protocols are present.
 template<class Explorer, class Solution>
     requires deterministic_neighborhood_for<Explorer, Solution>
 [[nodiscard]]
@@ -266,8 +267,8 @@ inline auto moves(
     }
 }
 
-// Unified random-neighborhood customization point. A neighborhood may return
-// std::optional<T> for any T from which its declared move_type can be built.
+/// Unified random-neighborhood customization point. A neighborhood may return
+/// std::optional<T> for any T from which its declared move_type can be built.
 template<class Explorer, class Solution, std::uniform_random_bit_generator RNG>
     requires random_neighborhood_for<Explorer, Solution, RNG>
 [[nodiscard]]
@@ -285,13 +286,13 @@ inline std::optional<typename Explorer::move_type> random_move(
     return typename Explorer::move_type{*result};
 }
 
-// Optional tabu customization points, used by tabu search.
-//
-// inverse(solution, move, tabu_move): whether move, proposed at solution, is
-// forbidden by tabu_move, a move applied earlier, typically because it would
-// undo it. There is no default: what forbids what (the same pair of jobs, or
-// any move of either job) is a modelling choice of the neighborhood, and may
-// be one of its parameters.
+/// Optional tabu customization points, used by tabu search.
+///
+/// inverse(solution, move, tabu_move): whether move, proposed at solution, is
+/// forbidden by tabu_move, a move applied earlier, typically because it would
+/// undo it. There is no default: what forbids what (the same pair of jobs, or
+/// any move of either job) is a modelling choice of the neighborhood, and may
+/// be one of its parameters.
 template<class NHE, class Solution>
 concept inverse_neighborhood_for = requires(
     const NHE& neighborhood,
@@ -313,10 +314,10 @@ inline bool inverse(
     return static_cast<bool>(explorer.inverse(solution, move, tabu_move));
 }
 
-// tabu_attribute(move): the attribute of a move that frequency-based memory
-// counts, a value with std::hash and ==. A tabu_attribute member chooses it
-// (the pair of jobs of a swap, ignoring their positions); without one, the
-// move itself is the attribute when it has std::hash and ==.
+/// tabu_attribute(move): the attribute of a move that frequency-based memory
+/// counts, a value with std::hash and ==. A tabu_attribute member chooses it
+/// (the pair of jobs of a swap, ignoring their positions); without one, the
+/// move itself is the attribute when it has std::hash and ==.
 template<class NHE>
 concept has_tabu_attribute_member =
     requires(const NHE& neighborhood, const typename NHE::move_type& move) {
@@ -353,8 +354,8 @@ using tabu_attribute_t = decltype(easylocal::tabu_attribute(
     std::declval<const Explorer&>(),
     std::declval<const typename Explorer::move_type&>()));
 
-// Optional non-virtual convenience base: associated types and the
-// SolutionManager reference. Not required by the structural concepts above.
+/// Optional non-virtual convenience base: associated types and the
+/// SolutionManager reference. Not required by the structural concepts above.
 template<class SolutionManager, class Move>
 class neighborhood_explorer_base
 {
