@@ -18,9 +18,12 @@
 namespace easylocal::testing
 {
 
+/// The options of the contract checks: how many moves and solutions they try.
 struct check_options
 {
+    /// The random moves and solutions drawn per check (default 32).
     std::size_t random_samples{32};         // random moves and solutions drawn per check
+    /// The enumerated moves visited per traversal (default 1024).
     std::size_t max_enumerated_moves{1024}; // enumerated moves visited per traversal
 };
 
@@ -37,10 +40,16 @@ template<easylocal::base_solution_manager SM, class Equivalent = std::equal_to<>
 class fixture
 {
 public:
+    /// The SolutionManager under test.
     using solution_manager_type = SM;
+    /// The Input of the SolutionManager.
     using input_type = typename SM::input_type;
+    /// The Solution of the SolutionManager.
     using solution_type = typename SM::solution_type;
 
+    /// From an Input, a Solution and the options of the checks.
+    ///
+    /// The checks verify that the Solution is valid.
     fixture(input_type input, solution_type solution, check_options options = {})
         : input_{std::move(input)},
           solution_manager_{input_},
@@ -62,26 +71,31 @@ public:
     fixture(const fixture&) = delete;
     fixture& operator=(const fixture&) = delete;
 
+    /// The Input.
     [[nodiscard]] const input_type& input() const noexcept
     {
         return input_;
     }
 
+    /// The SolutionManager built on the Input.
     [[nodiscard]] const SM& solution_manager() const noexcept
     {
         return solution_manager_;
     }
 
+    /// The Solution.
     [[nodiscard]] const solution_type& solution() const noexcept
     {
         return solution_;
     }
 
+    /// The options of the checks.
     [[nodiscard]] const check_options& options() const noexcept
     {
         return options_;
     }
 
+    /// Whether `lhs` and `rhs` are equivalent according to Equivalent.
     template<class Left, class Right>
         requires std::predicate<const Equivalent&, const Left&, const Right&>
     [[nodiscard]] bool equivalent(const Left& lhs, const Right& rhs) const
@@ -108,6 +122,7 @@ inline constexpr bool is_fixture_v<fixture<SM, Equivalent>> = true;
 
 } // namespace detail
 
+/// A testing::fixture, whatever its SolutionManager and comparison.
 template<class T>
 concept check_fixture = detail::is_fixture_v<std::remove_cvref_t<T>>;
 

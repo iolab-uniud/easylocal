@@ -26,40 +26,51 @@
 namespace easylocal::testing
 {
 
+/// A failed check: its name and what went wrong.
 struct check_failure
 {
+    /// The name of the check.
     std::string check;
+    /// What went wrong.
     std::string message;
 };
 
+/// The outcome of the checks on a subject: how many ran and which failed.
 class check_report
 {
 public:
+    /// An empty report on `subject`, the name print_report() shows.
     explicit check_report(std::string_view subject = "custom")
         : subject_{subject}
     {
     }
 
+    /// What the checks are about ("SolutionManager", "cost component"...).
     [[nodiscard]] std::string_view subject() const noexcept
     {
         return subject_;
     }
 
+    /// Whether no check failed.
     [[nodiscard]] bool passed() const noexcept
     {
         return failures_.empty();
     }
 
+    /// The number of checks run.
     [[nodiscard]] std::size_t checks() const noexcept
     {
         return checks_;
     }
 
+    /// The failed checks.
     [[nodiscard]] std::span<const check_failure> failures() const noexcept
     {
         return failures_;
     }
 
+    /// Counts a check named `check_name`, and records a failure with `message`
+    /// when `condition` is false.
     void check(
         const bool condition,
         std::string_view check_name,
@@ -81,6 +92,8 @@ private:
     std::vector<check_failure> failures_;
 };
 
+/// Prints `report` to `out`: the number of checks passed, or each failure with
+/// its message.
 inline void print_report(
     std::ostream& out,
     const check_report& report)
@@ -103,11 +116,15 @@ inline void print_report(
     }
 }
 
+/// A random bit generator that cycles through a fixed list of values, for
+/// reproducible checks.
 class deterministic_rng
 {
 public:
+    /// The type of the generated values.
     using result_type = std::uint64_t;
 
+    /// Cycles through four fixed values.
     deterministic_rng()
         : deterministic_rng({
               0x9e3779b97f4a7c15ULL,
@@ -118,6 +135,7 @@ public:
     {
     }
 
+    /// Cycles through `values` (a single 0 when empty).
     deterministic_rng(std::initializer_list<result_type> values)
         : values_{values}
     {
@@ -127,18 +145,21 @@ public:
         }
     }
 
+    /// The smallest value it can return.
     [[nodiscard]]
     static constexpr result_type min() noexcept
     {
         return std::numeric_limits<result_type>::min();
     }
 
+    /// The largest value it can return.
     [[nodiscard]]
     static constexpr result_type max() noexcept
     {
         return std::numeric_limits<result_type>::max();
     }
 
+    /// The next value of the list, back to the first after the last.
     result_type operator()() noexcept
     {
         const auto value = values_[index_];
@@ -146,6 +167,7 @@ public:
         return value;
     }
 
+    /// Restarts from the first value.
     void reset() noexcept
     {
         index_ = 0;
@@ -158,6 +180,8 @@ private:
 
 static_assert(std::uniform_random_bit_generator<deterministic_rng>);
 
+/// Prints the reports to `out`, separated by blank lines, and returns
+/// `EXIT_SUCCESS` when all passed, `EXIT_FAILURE` otherwise.
 template<class... Reports>
     requires(std::same_as<std::remove_cvref_t<Reports>, check_report> && ...)
 int run_checks(std::ostream& out, Reports&&... reports)
@@ -179,6 +203,8 @@ int run_checks(std::ostream& out, Reports&&... reports)
     return passed ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
+/// Prints the reports to `std::cerr` and returns `EXIT_SUCCESS` when all
+/// passed, `EXIT_FAILURE` otherwise.
 template<class... Reports>
     requires(std::same_as<std::remove_cvref_t<Reports>, check_report> && ...)
 int run_checks(Reports&&... reports)
