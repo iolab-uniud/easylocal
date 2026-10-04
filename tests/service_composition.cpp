@@ -256,6 +256,34 @@ auto expect(const bool condition, const std::string_view description) -> bool
     return true;
 }
 
+// Whether every delta attached to NHE names an active component of SM.
+template<class SM, class NHE>
+constexpr bool all_delta_components_active =
+    []<std::size_t... Indices>(std::index_sequence<Indices...>) {
+        using bindings = easylocal::detail::neighborhood_delta_bindings_t<NHE>;
+        return (
+            easylocal::detail::delta_component_active_v<
+                SM,
+                std::tuple_element_t<Indices, bindings>>
+            && ...);
+    }(std::make_index_sequence<
+        std::tuple_size_v<easylocal::detail::neighborhood_delta_bindings_t<NHE>>>{});
+
+// Whether every delta attached to NHE fits its component's value, Solution and
+// Move.
+template<class SM, class NHE>
+constexpr bool all_delta_bindings_compatible =
+    []<std::size_t... Indices>(std::index_sequence<Indices...>) {
+        using bindings = easylocal::detail::neighborhood_delta_bindings_t<NHE>;
+        return (
+            easylocal::detail::delta_binding_compatible<
+                SM,
+                NHE,
+                std::tuple_element_t<Indices, bindings>>()
+            && ...);
+    }(std::make_index_sequence<
+        std::tuple_size_v<easylocal::detail::neighborhood_delta_bindings_t<NHE>>>{});
+
 } // namespace
 
 int main()
@@ -387,12 +415,8 @@ int main()
     // occurs, so the placeholder reference is never observed.
     using HardSM = typename decltype(hard_manager_recipe)::service_type;
     using HardNHE = typename decltype(hard_neighborhood_recipe)::service_type;
-    static_assert(easylocal::detail::all_delta_components_active_v<
-        HardSM,
-        HardNHE>);
-    static_assert(easylocal::detail::all_delta_bindings_compatible_v<
-        HardSM,
-        HardNHE>);
+    static_assert(all_delta_components_active<HardSM, HardNHE>);
+    static_assert(all_delta_bindings_compatible<HardSM, HardNHE>);
 
     const auto inactive_delta_recipe =
         neighborhood<CountingSingleMoveNeighborhood>(
@@ -403,9 +427,7 @@ int main()
               AssignmentCardinalityDeltaEvaluator>();
     using InactiveNHE =
         typename decltype(inactive_delta_recipe)::service_type;
-    static_assert(!easylocal::detail::all_delta_components_active_v<
-        HardSM,
-        InactiveNHE>);
+    static_assert(!all_delta_components_active<HardSM, InactiveNHE>);
 
     const auto incompatible_delta_recipe =
         neighborhood<CountingSingleMoveNeighborhood>(
@@ -416,12 +438,8 @@ int main()
               IncompatibleCapacityDeltaEvaluator>();
     using IncompatibleNHE =
         typename decltype(incompatible_delta_recipe)::service_type;
-    static_assert(easylocal::detail::all_delta_components_active_v<
-        HardSM,
-        IncompatibleNHE>);
-    static_assert(!easylocal::detail::all_delta_bindings_compatible_v<
-        HardSM,
-        IncompatibleNHE>);
+    static_assert(all_delta_components_active<HardSM, IncompatibleNHE>);
+    static_assert(!all_delta_bindings_compatible<HardSM, IncompatibleNHE>);
 
     bool ok = true;
 
@@ -596,9 +614,7 @@ int main()
     // A full-stage delta set is invalid when paired with a hard-only manager:
     // bind() uses the same predicate in a static_assert.
     using FullNHE = typename decltype(full_nhe)::service_type;
-    static_assert(!easylocal::detail::all_delta_components_active_v<
-        HardSM,
-        FullNHE>);
+    static_assert(!all_delta_components_active<HardSM, FullNHE>);
 
     // A hierarchical hard projection must not evaluate soft components and
     // discard them afterwards. The configured manager exposes the hard

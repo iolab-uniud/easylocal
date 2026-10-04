@@ -245,39 +245,6 @@ consteval bool delta_binding_compatible()
     }
 }
 
-template<class SM, class NHE, std::size_t... Indices>
-consteval bool all_delta_components_active_impl(std::index_sequence<Indices...>)
-{
-    using bindings = neighborhood_delta_bindings_t<NHE>;
-    return (
-        delta_component_active_v<SM, std::tuple_element_t<Indices, bindings>> &&
-        ...);
-}
-
-template<class SM, class NHE>
-inline constexpr bool all_delta_components_active_v =
-    all_delta_components_active_impl<SM, NHE>(
-        std::make_index_sequence<
-            std::tuple_size_v<neighborhood_delta_bindings_t<NHE>>>{});
-
-template<class SM, class NHE, std::size_t... Indices>
-consteval bool all_delta_bindings_compatible_impl(std::index_sequence<Indices...>)
-{
-    using bindings = neighborhood_delta_bindings_t<NHE>;
-    return (
-        delta_binding_compatible<
-            SM,
-            NHE,
-            std::tuple_element_t<Indices, bindings>>() &&
-        ...);
-}
-
-template<class SM, class NHE>
-inline constexpr bool all_delta_bindings_compatible_v =
-    all_delta_bindings_compatible_impl<SM, NHE>(
-        std::make_index_sequence<
-            std::tuple_size_v<neighborhood_delta_bindings_t<NHE>>>{});
-
 template<class SM, class NHE, class Binding>
 consteval bool validate_delta_binding()
 {
