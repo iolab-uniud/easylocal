@@ -27,7 +27,7 @@ struct AssignmentSolution
             .assignment = std::vector<machine_id>(instance.demand.size()),
         };
         for (auto& machine : solution.assignment)
-            if (!(in >> machine))
+            if (!(in >> machine) || machine >= instance.capacity.size())
                 throw std::runtime_error{"invalid assignment solution"};
         return solution;
     }
