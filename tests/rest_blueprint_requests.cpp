@@ -606,6 +606,24 @@ void an_empty_prefix_is_rejected()
     assert(rejected);
 }
 
+void a_zero_completed_run_capacity_is_rejected()
+{
+    bool rejected = false;
+    try
+    {
+        [[maybe_unused]] auto api = easylocal::rest::blueprint(
+            "/assignment",
+            make_application(),
+            AssignmentCodec{},
+            easylocal::rest::blueprint_options{.completed_run_capacity = 0});
+    }
+    catch (const std::invalid_argument&)
+    {
+        rejected = true;
+    }
+    assert(rejected);
+}
+
 } // namespace
 
 int main()
@@ -640,6 +658,7 @@ int main()
     an_arithmetic_target_is_a_number();
     a_full_queue_rejects_runs_and_a_queued_run_can_be_cancelled(server);
     an_empty_prefix_is_rejected();
+    a_zero_completed_run_capacity_is_rejected();
     destroying_the_blueprint_stops_its_runs();
     run_gate.open(); // never leave a worker waiting on exit
 }

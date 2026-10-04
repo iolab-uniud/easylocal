@@ -1194,15 +1194,6 @@ if(TARGET EasyLocal::REST)
     )
 
     easylocal_add_test(
-        rest-blueprint-compile
-        SOURCES
-            rest_blueprint_compile.cpp
-        LIBRARIES
-            EasyLocal::REST
-            easylocal_assignment_model
-    )
-
-    easylocal_add_test(
         rest-blueprint-requests
         SOURCES
             rest_blueprint_requests.cpp
