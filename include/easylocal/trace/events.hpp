@@ -1,6 +1,7 @@
 #pragma once
 
-// Typed semantic search events and hierarchical neighborhood provenance.
+/// \file
+/// Typed semantic search events and hierarchical neighborhood provenance.
 
 #include <algorithm>
 #include <cstddef>
@@ -84,9 +85,9 @@ struct neighborhood_selection
     const neighborhood_route_node* neighborhood{};
 };
 
-// The solution reached at the start of a run and after each applied move,
-// identified by its hash (solution_hash): the nodes of search trajectory and
-// local optima networks. Emitted only when the problem has a solution hash.
+/// The solution reached at the start of a run and after each applied move,
+/// identified by its hash (solution_hash): the nodes of search trajectory and
+/// local optima networks. Emitted only when the problem has a solution hash.
 template<class Cost>
 struct solution_visited
 {
@@ -96,7 +97,7 @@ struct solution_visited
     Cost cost;
 };
 
-// The move just applied was tabu, admitted by the aspiration criterion.
+/// The move just applied was tabu, admitted by the aspiration criterion.
 template<class Cost>
 struct aspiration_applied
 {
@@ -105,7 +106,7 @@ struct aspiration_applied
     Cost cost;
 };
 
-// A reactive tabu list's escape: moves random moves follow.
+/// A reactive tabu list's escape: moves random moves follow.
 struct tabu_escape
 {
     std::size_t evaluations{};
@@ -113,8 +114,8 @@ struct tabu_escape
     std::size_t moves{};
 };
 
-// The tenure of a tabu list with one tenure for all its moves changed, from
-// previous_tenure (0 at the start of a run) to tenure.
+/// The tenure of a tabu list with one tenure for all its moves changed, from
+/// previous_tenure (0 at the start of a run) to tenure.
 struct tabu_tenure_changed
 {
     std::size_t evaluations{};

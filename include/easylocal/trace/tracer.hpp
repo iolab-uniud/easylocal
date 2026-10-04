@@ -1,6 +1,7 @@
 #pragma once
 
-// Tracer protocol: compile-time event selection and emission.
+/// \file
+/// Tracer protocol: compile-time event selection and emission.
 
 #include <easylocal/utils/detail/meta.hpp>
 #include <easylocal/trace/events.hpp>

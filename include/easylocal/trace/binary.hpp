@@ -1,8 +1,9 @@
 #pragma once
 
-// ELTR binary recording: encoders, buffered and asynchronous recorders. A
-// trace describes itself: its header gives the metadata of the run, the layout
-// of the costs and the fields of every event (docs/tracing.md).
+/// \file
+/// ELTR binary recording: encoders, buffered and asynchronous recorders. A
+/// trace describes itself: its header gives the metadata of the run, the layout
+/// of the costs and the fields of every event (docs/tracing.md).
 
 #include <easylocal/trace/events.hpp>
 #include <easylocal/trace/tracer.hpp>
@@ -36,7 +37,7 @@
 namespace easylocal::trace
 {
 
-// The types of the fields of an ELTR record.
+/// The types of the fields of an ELTR record.
 enum class binary_type : std::uint8_t
 {
     u8 = 1,
@@ -62,7 +63,7 @@ struct binary_field
     binary_type type;
 };
 
-// The name and fields of the records of one tag.
+/// The name and fields of the records of one tag.
 struct binary_event_schema
 {
     std::string name;
@@ -132,7 +133,7 @@ public:
         u64(std::bit_cast<std::uint64_t>(value));
     }
 
-    // A field list: u32 count, then the name and the type of each field.
+    /// A field list: u32 count, then the name and the type of each field.
     void fields(const std::span<const binary_field> value)
     {
         u32(static_cast<std::uint32_t>(value.size()));
@@ -228,8 +229,8 @@ private:
     std::vector<char>& buffer_;
 };
 
-// A cost writer writes a cost and describes what it writes: fields() gives
-// the fields in order, a scalar cost one field with an empty name.
+/// A cost writer writes a cost and describes what it writes: fields() gives
+/// the fields in order, a scalar cost one field with an empty name.
 template<class Writer, class Cost>
 concept binary_cost_writer_for = requires(
     Writer& writer,
@@ -353,9 +354,9 @@ struct default_binary_cost<Cost> : std::true_type
 
 } // namespace detail
 
-// The cost writer of the recorders by default: an arithmetic cost as i64, u64
-// or f64; a cost::lexicographic as its levels ("0", "1", ...) and a
-// cost::hierarchical as "hard" and "soft", nested as the types are.
+/// The cost writer of the recorders by default: an arithmetic cost as i64, u64
+/// or f64; a cost::lexicographic as its levels ("0", "1", ...) and a
+/// cost::hierarchical as "hard" and "soft", nested as the types are.
 template<class Cost>
 struct default_binary_cost_writer
 {
@@ -378,10 +379,10 @@ struct default_binary_cost_writer
     }
 };
 
-// An application event may describe its records with an ADL function
-// describe_binary_event(std::type_identity<Event>) returning its
-// binary_event_schema; the recorder then writes
-// the schema before the first record of its tag, and decoders name its fields.
+/// An application event may describe its records with an ADL function
+/// describe_binary_event(std::type_identity<Event>) returning its
+/// binary_event_schema; the recorder then writes
+/// the schema before the first record of its tag, and decoders name its fields.
 template<class Event>
 concept described_binary_event = requires {
     {
@@ -400,8 +401,8 @@ struct binary_buffer_options
 {
     std::size_t block_size = 256U * 1024U;
     std::size_t async_queue_blocks = 4;
-    // Key-value pairs written in the header: the instance, the runner, the
-    // seed, the parameters, whatever tells the run apart.
+    /// Key-value pairs written in the header: the instance, the runner, the
+    /// seed, the parameters, whatever tells the run apart.
     std::vector<std::pair<std::string, std::string>> metadata{};
 };
 

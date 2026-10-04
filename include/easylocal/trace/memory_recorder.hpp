@@ -1,6 +1,7 @@
 #pragma once
 
-// Owning in-memory recorder for tests, short traces and in-process analysis.
+/// \file
+/// Owning in-memory recorder for tests, short traces and in-process analysis.
 
 #include <easylocal/trace/events.hpp>
 #include <easylocal/trace/tracer.hpp>
