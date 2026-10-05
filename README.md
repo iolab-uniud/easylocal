@@ -109,7 +109,10 @@ each with a README that guides through its files.
 ## Requirements
 
 - a C++23 compiler: CI covers GCC 15 and 16, Clang 22 and 23 (libstdc++ and
-  libc++), AppleClang and clang-cl;
+  libc++), AppleClang and clang-cl; AppleClang needs Xcode 26 or later and a
+  macOS deployment target (`CMAKE_OSX_DEPLOYMENT_TARGET`) of 26.0 or later, for
+  the floating-point `std::from_chars` of its libc++, and CMake stops with a
+  message otherwise;
 - CMake 3.25 or later and Ninja.
 
 The core uses only the standard library. The optional components need toml++,

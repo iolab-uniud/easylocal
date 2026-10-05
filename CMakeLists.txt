@@ -21,6 +21,9 @@ project(
     LANGUAGES CXX
 )
 
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/EasyLocalToolchainCheck.cmake")
+easylocal_check_toolchain()
+
 # EasyLocal::Core is the dependency-free public target.
 add_library(easylocal_core INTERFACE)
 add_library(EasyLocal::Core ALIAS easylocal_core)
@@ -458,5 +461,6 @@ install(
     FILES
         "${CMAKE_CURRENT_BINARY_DIR}/EasyLocalConfig.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/EasyLocalConfigVersion.cmake"
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/EasyLocalToolchainCheck.cmake"
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/EasyLocal"
 )

@@ -5,6 +5,10 @@ set(EasyLocal_VERSION_PRERELEASE "@EASYLOCAL_VERSION_PRERELEASE@")
 
 include("${CMAKE_CURRENT_LIST_DIR}/EasyLocalTargets.cmake")
 
+# A toolchain that cannot compile EasyLocal stops here, with the reason.
+include("${CMAKE_CURRENT_LIST_DIR}/EasyLocalToolchainCheck.cmake")
+easylocal_check_toolchain()
+
 # Core is always installed and intentionally has no third-party dependencies.
 set(EasyLocal_Core_FOUND TRUE)
 

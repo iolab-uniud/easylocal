@@ -9,7 +9,9 @@ the rest of the framework.
 ## Requirements
 
 - a C++23 compiler: CI covers GCC 15 and 16, Clang 22 and 23 (libstdc++ and
-  libc++) and AppleClang;
+  libc++) and AppleClang; AppleClang needs Xcode 26 or later and a macOS
+  deployment target of 26.0 or later, for the floating-point `std::from_chars`
+  of its libc++ (CMake stops with a message otherwise);
 - CMake 3.25+;
 - EasyLocal, either installed (`cmake --install <build> --prefix <prefix>`) or
   added to your project with `add_subdirectory`.

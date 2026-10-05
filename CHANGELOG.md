@@ -152,6 +152,14 @@ reviewed by hand before tagging.
   field of the ELTR schemas, a field of the JSONL line), for anytime and
   time-to-target analyses. Without it, no clock is read.
 
+### Platforms
+
+- AppleClang needs Xcode 26 or later and a macOS deployment target of 26.0 or
+  later, where its libc++ has the floating-point `std::from_chars`: the
+  README, the quick start and the stability page say so, and CMake (the
+  project and `find_package(EasyLocal)`) stops with a message that says how to
+  fix it, instead of failing on every number parsed.
+
 ### Changed
 
 - The stability levels no longer contradict each other (`docs/stability.md`):

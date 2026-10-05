@@ -66,5 +66,8 @@ under these conditions:
 
 The compilers and platforms of the CI matrix are supported (see the
 [changelog](https://github.com/iolab-uniud/easylocal/blob/main/CHANGELOG.md)
-and the README). Dropping one happens in a minor release and is noted in the
+and the README). AppleClang needs Xcode 26 or later and a macOS deployment
+target of 26.0 or later, where its libc++ has the floating-point
+`std::from_chars`; the configuration of the project, and `find_package` of the
+installed one, stop with a message otherwise. Dropping one happens in a minor release and is noted in the
 changelog.
