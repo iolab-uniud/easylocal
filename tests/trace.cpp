@@ -1002,5 +1002,23 @@ int main()
             "trace::without forwards only the events it does not hide");
     }
 
+    // A memory recorder replayed into a binary recorder writes the bytes a
+    // binary recorder writes during the run, routes included.
+    {
+        easylocal::trace::memory_recorder<int> memory;
+        std::ostringstream live_stream;
+        std::ostringstream replayed_stream;
+        {
+            easylocal::trace::binary_recorder<int> live{live_stream};
+            emit_every_event(memory);
+            emit_every_event(live);
+            easylocal::trace::binary_recorder<int> replayed{replayed_stream};
+            memory.replay(replayed);
+        }
+        ok &= expect(
+            !live_stream.str().empty() && live_stream.str() == replayed_stream.str(),
+            "a replay into a binary recorder writes the trace of the run");
+    }
+
     return ok ? 0 : 1;
 }
