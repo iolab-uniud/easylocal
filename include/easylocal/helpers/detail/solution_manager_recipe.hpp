@@ -106,18 +106,22 @@ public:
     // The configurable parameters of the expression (the weights of its
     // sums, the parameters of its functions); a runner puts them under "cost".
     [[nodiscard]]
-    config::parameter_set configuration()
+    config::parameter_set configuration() &
         requires expression_type::configurable
     {
         return expression_.configuration();
     }
 
     [[nodiscard]]
-    config::parameter_set configuration() const
+    config::parameter_set configuration() const&
         requires expression_type::configurable
     {
         return expression_.configuration();
     }
+
+    // A temporary has no configuration: the set would refer to it after it is
+    // gone. Configure the object that will run.
+    config::parameter_set configuration() const&& = delete;
 
 private:
     BaseArgsTuple base_args_;

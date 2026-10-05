@@ -625,10 +625,10 @@ public:
     // ("runners.<name>", for parameters that are a parameter block). Every
     // run reads them, so a change applies from the next run; read-only when
     // the app is const. The set refers to this app, which must stay in place
-    // while it is used.
+    // while it is used: a temporary app has no configuration().
     template<class Self>
     [[nodiscard]]
-    config::parameter_set configuration(this Self&& self)
+    config::parameter_set configuration(this Self& self)
     {
         config::parameter_set parameters;
         config::add_configuration(parameters, "cost", self.solution_manager_spec_);

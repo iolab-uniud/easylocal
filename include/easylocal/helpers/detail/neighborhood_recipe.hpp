@@ -153,7 +153,7 @@ public:
     // The explorer's parameters, at the root: a runner puts them under
     // "neighborhood".
     [[nodiscard]]
-    config::parameter_set configuration()
+    config::parameter_set configuration() &
         requires parameterized_neighborhood<BaseNHE>
     {
         config::parameter_set parameters;
@@ -162,13 +162,17 @@ public:
     }
 
     [[nodiscard]]
-    config::parameter_set configuration() const
+    config::parameter_set configuration() const&
         requires parameterized_neighborhood<BaseNHE>
     {
         config::parameter_set parameters;
         parameters.add(*this);
         return parameters;
     }
+
+    // A temporary has no configuration: the set would refer to it after it is
+    // gone. Configure the object that will run.
+    config::parameter_set configuration() const&& = delete;
 
     template<class Component, class DeltaEvaluator, class... Args>
     [[nodiscard]]

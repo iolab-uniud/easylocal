@@ -151,6 +151,9 @@ reviewed by hand before tagging.
   instead of binding and running each one past the budget.
 - `Pipeline::seed()` and `Pipeline::initialization()` on a temporary return the
   pipeline by value, not a `Pipeline&&` that could dangle.
+- `configuration()` does not compile on a temporary (a runner, an app, a
+  pipeline, a recipe, a solver or a Session), whose parameter set would refer
+  to an object already gone.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

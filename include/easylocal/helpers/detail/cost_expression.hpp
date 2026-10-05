@@ -368,7 +368,7 @@ public:
     // The weights, and the parameters of the terms under their positions.
     template<class Self>
     [[nodiscard]]
-    config::parameter_set configuration(this Self&& self)
+    config::parameter_set configuration(this Self& self)
     {
         config::parameter_set parameters;
         parameters.add(self.parameters_);
@@ -487,7 +487,7 @@ public:
 
     // The parameters of the children, under their positions.
     [[nodiscard]]
-    config::parameter_set configuration()
+    config::parameter_set configuration() &
         requires configurable
     {
         config::parameter_set parameters;
@@ -496,13 +496,17 @@ public:
     }
 
     [[nodiscard]]
-    config::parameter_set configuration() const
+    config::parameter_set configuration() const&
         requires configurable
     {
         config::parameter_set parameters;
         children_.add_configurations(parameters);
         return parameters;
     }
+
+    // A temporary has no configuration: the set would refer to it after it is
+    // gone. Configure the object that will run.
+    config::parameter_set configuration() const&& = delete;
 
 private:
     EASYLOCAL_NO_UNIQUE_ADDRESS children_type children_;
@@ -589,7 +593,7 @@ public:
 
     // The parameters of the branches, under "hard" and "soft".
     [[nodiscard]]
-    config::parameter_set configuration()
+    config::parameter_set configuration() &
         requires configurable
     {
         config::parameter_set parameters;
@@ -599,7 +603,7 @@ public:
     }
 
     [[nodiscard]]
-    config::parameter_set configuration() const
+    config::parameter_set configuration() const&
         requires configurable
     {
         config::parameter_set parameters;
@@ -607,6 +611,10 @@ public:
         add_node_configuration(parameters, "soft", soft_);
         return parameters;
     }
+
+    // A temporary has no configuration: the set would refer to it after it is
+    // gone. Configure the object that will run.
+    config::parameter_set configuration() const&& = delete;
 
 private:
     EASYLOCAL_NO_UNIQUE_ADDRESS hard_node hard_;
@@ -707,7 +715,7 @@ public:
     // The function's parameters, at the root, and the children's, under their
     // positions.
     [[nodiscard]]
-    config::parameter_set configuration()
+    config::parameter_set configuration() &
         requires configurable
     {
         config::parameter_set parameters;
@@ -717,7 +725,7 @@ public:
     }
 
     [[nodiscard]]
-    config::parameter_set configuration() const
+    config::parameter_set configuration() const&
         requires configurable
     {
         config::parameter_set parameters;
@@ -725,6 +733,10 @@ public:
         children_.add_configurations(parameters);
         return parameters;
     }
+
+    // A temporary has no configuration: the set would refer to it after it is
+    // gone. Configure the object that will run.
+    config::parameter_set configuration() const&& = delete;
 
 private:
     EASYLOCAL_NO_UNIQUE_ADDRESS Function function_;

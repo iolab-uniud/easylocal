@@ -147,6 +147,11 @@ An object provides parameters when `configuration()` returns a
 `parameter_set`, with paths relative to it; whoever composes it chooses the
 prefix.
 
+The set refers to the object, so configure the object that will run, after
+its last copy: `configuration()` does not compile on a temporary
+(`(make_runner<A>() | sm | nhe).configuration()`), whose set would refer to
+an object already gone.
+
 | Provider | Paths |
 | --- | --- |
 | a parameterized algorithm (`FirstImprovement`, `BestImprovement`, `HillClimbing`, `GreatDeluge`, `LateAcceptanceHillClimbing`, `ParetoLateAcceptanceHillClimbing`, `SimulatedAnnealing`, the Tabu Search family), through its runner | the fields of its `parameters_type`; `temperature.*` for Simulated Annealing, `tabu_list.*` for Tabu Search |

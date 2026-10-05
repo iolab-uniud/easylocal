@@ -123,12 +123,16 @@ public:
 
     /// Its runner's parameters (search.*, cost.*, neighborhood.*).
     [[nodiscard]]
-    config::parameter_set configuration()
+    config::parameter_set configuration() &
     {
         config::parameter_set parameters;
         config::add_configuration(parameters, {}, runner_);
         return parameters;
     }
+
+    /// Deleted: the set of a temporary would refer to it after it is gone.
+    /// Configure the object that will run, after its last copy.
+    config::parameter_set configuration() const&& = delete;
 
 private:
     RunnerType runner_;

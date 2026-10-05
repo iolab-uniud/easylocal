@@ -211,13 +211,17 @@ public:
     /// Its own parameters (starts) and its runner's (search.*, cost.*,
     /// neighborhood.*), with paths relative to the solver.
     [[nodiscard]]
-    config::parameter_set configuration()
+    config::parameter_set configuration() &
     {
         config::parameter_set parameters;
         parameters.add(parameters_);
         config::add_configuration(parameters, {}, runner_);
         return parameters;
     }
+
+    /// Deleted: the set of a temporary would refer to it after it is gone.
+    /// Configure the object that will run, after its last copy.
+    config::parameter_set configuration() const&& = delete;
 
 private:
     void validate_parameters() const

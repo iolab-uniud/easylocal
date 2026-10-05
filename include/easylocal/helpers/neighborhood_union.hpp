@@ -912,7 +912,7 @@ public:
     // positions ("0", "1"): a runner puts them under "neighborhood".
     template<class Self>
     [[nodiscard]]
-    config::parameter_set configuration(this Self&& self)
+    config::parameter_set configuration(this Self& self)
     {
         config::parameter_set parameters;
         parameters.add(self);

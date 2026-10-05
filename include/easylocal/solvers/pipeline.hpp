@@ -666,13 +666,15 @@ public:
 
     /// The parameters of every stage under its name: its runner's and its own
     /// (`<name>.attempts`, `<name>.timeout`, `<name>.max_evaluations`),
-    /// read-only when the pipeline is const.
+    /// read-only when the pipeline is const. The set refers to this pipeline,
+    /// which must stay in place while it is used: a temporary pipeline has no
+    /// configuration().
     ///
     /// Throws `std::invalid_argument` when two stages have the same name, or
     /// one has none.
     template<class Self>
     [[nodiscard]]
-    config::parameter_set configuration(this Self&& self)
+    config::parameter_set configuration(this Self& self)
     {
         self.check_names();
         config::parameter_set parameters;

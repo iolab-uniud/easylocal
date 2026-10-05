@@ -463,18 +463,22 @@ public:
     }
 
     [[nodiscard]]
-    config::parameter_set configuration()
+    config::parameter_set configuration() &
         requires config::configuration_provider<SMSpec>
     {
         return spec_.configuration();
     }
 
     [[nodiscard]]
-    config::parameter_set configuration() const
+    config::parameter_set configuration() const&
         requires config::configuration_provider<const SMSpec>
     {
         return spec_.configuration();
     }
+
+    // A temporary has no configuration: the set would refer to it after it is
+    // gone. Configure the object that will run.
+    config::parameter_set configuration() const&& = delete;
 
 private:
     SMSpec spec_;

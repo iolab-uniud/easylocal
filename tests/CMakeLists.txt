@@ -708,6 +708,16 @@ function(easylocal_add_compile_failure_test name source expected_diagnostic)
 endfunction()
 
 easylocal_add_compile_failure_test(
+    temporary-runner-configuration
+    temporary_runner_configuration.cpp
+    "configuration"
+)
+easylocal_add_compile_failure_test(
+    temporary-recipe-configuration
+    temporary_recipe_configuration.cpp
+    "configuration"
+)
+easylocal_add_compile_failure_test(
     app-pipeline-cost
     app_pipeline_cost.cpp
     "the last stage of a pipeline registered in an app must have the app's cost"

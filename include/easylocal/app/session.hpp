@@ -529,11 +529,15 @@ public:
     /// The parameters of the app, for reading: cost.*, neighborhood.* and
     /// `runners.<name>.*` (app.configuration()).
     [[nodiscard]]
-    config::parameter_set configuration() const
+    config::parameter_set configuration() const&
         requires requires(const App& application) { application.configuration(); }
     {
         return app_.configuration();
     }
+
+    /// Deleted: the set of a temporary would refer to it after it is gone.
+    /// Configure the object that will run, after its last copy.
+    config::parameter_set configuration() const&& = delete;
 
     /// Changes the parameters of the app, with the paths of configuration():
     /// all of them, validated, or none.

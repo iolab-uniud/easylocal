@@ -659,10 +659,10 @@ public:
     /// to the runner: whoever composes it adds a prefix, if any.
     ///
     /// The set refers to this runner, which must stay in place while it is
-    /// used.
+    /// used: a temporary runner has no configuration().
     template<class Self>
     [[nodiscard]]
-    config::parameter_set configuration(this Self&& self)
+    config::parameter_set configuration(this Self& self)
     {
         config::parameter_set parameters;
         self.algorithm_.add_configuration(parameters);
