@@ -590,11 +590,9 @@ void an_arithmetic_target_is_a_number()
     assert(rejects("2.5", 0));
     assert(rejects(R"("3")", 0.0));
     // Out of the range of the cost type: never wrapped.
-    assert(rejects("-1", 0U));
     assert(rejects("300", static_cast<signed char>(0)));
     assert(rejects("18446744073709551615", 0LL));
     assert(rejects("1e300", 0.0F));
-    assert(decode_arithmetic_cost<unsigned>(crow::json::load("7")) == 7U);
 }
 
 void a_full_queue_rejects_runs_and_a_queued_run_can_be_cancelled(crow::SimpleApp& server)

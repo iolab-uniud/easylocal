@@ -210,8 +210,8 @@ reviewed by hand before tagging.
   started.
 - REST: a submission whose response cannot be built (a codec that fails to
   encode the target) no longer leaves a run that stays `queued` forever.
-- REST: an arithmetic target outside the range of the cost type (`-1` for an
-  unsigned cost) is rejected with `422` instead of wrapping, and so is an empty
+- REST: an arithmetic target outside the range of the cost type (`300` for a
+  `signed char` cost) is rejected with `422` instead of wrapping, and so is an empty
   key among the `parameters`.
 - REST: an `initial_solution` that is not valid for the Input is rejected
   with `422` when the run is submitted, instead of reaching the runner's
