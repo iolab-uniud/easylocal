@@ -805,6 +805,7 @@ void session_reports_neighborhood_diagnostics()
 
     const auto preview = session.neighborhood_preview(1);
     assert(preview.moves == 2);
+    assert(preview.invalid == 0);
     assert(preview.entries.size() == 1);
 
     const auto statistics = session.neighborhood_statistics();

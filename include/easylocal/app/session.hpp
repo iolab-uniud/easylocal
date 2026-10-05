@@ -237,6 +237,8 @@ public:
     {
         /// Moves enumerated.
         std::size_t moves{};
+        /// Moves enumerated that are not valid.
+        std::size_t invalid{};
         /// The first valid moves, with their costs.
         std::vector<inspected_move> entries;
     };
@@ -832,8 +834,8 @@ public:
         return cost::equivalent(bound_->solution_manager(), incremental, full);
     }
 
-    /// The moves enumerated from the current solution, counted, and the first
-    /// max_entries valid ones with their costs.
+    /// The moves enumerated from the current solution, counted, the invalid
+    /// ones apart, and the first max_entries valid ones with their costs.
     [[nodiscard]]
     neighborhood_preview_result neighborhood_preview(
         const std::size_t max_entries = 8) const
@@ -851,11 +853,13 @@ public:
         {
             move_type candidate{raw_move};
             ++result.moves;
-            if (result.entries.size() == max_entries
-                || !static_cast<bool>(neighborhood.is_valid(*solution_, candidate)))
+            if (!static_cast<bool>(neighborhood.is_valid(*solution_, candidate)))
             {
+                ++result.invalid;
                 continue;
             }
+            if (result.entries.size() == max_entries)
+                continue;
             auto evaluated = evaluation.evaluate_move(*solution_, current, candidate);
             result.entries.push_back(
                 inspected_move{

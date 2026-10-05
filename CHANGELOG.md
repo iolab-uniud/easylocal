@@ -225,6 +225,9 @@ reviewed by hand before tagging.
   Pareto cost or a custom `better()`.
 - TextUI: after a run that fails, finds no runner or leaves an invalid
   solution, the Last run box says so instead of showing the previous run.
+- TextUI: the neighbor list counts the invalid moves apart, and its "... N
+  more" counts only the valid moves not listed;
+  `Session::neighborhood_preview` reports the invalid moves (`invalid`).
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

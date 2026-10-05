@@ -2125,13 +2125,16 @@ private:
                 options_.max_diagnostic_entries);
             std::ostringstream out;
             out << "Neighbors: " << result.moves;
+            if (result.invalid > 0)
+                out << " (" << result.invalid << " invalid, not listed)";
             for (const auto& entry : result.entries)
             {
                 out << '\n' << value_text(entry.move) << " => " << value_text(entry.cost);
             }
-            if (result.entries.size() < result.moves)
+            const auto valid = result.moves - result.invalid;
+            if (result.entries.size() < valid)
             {
-                out << "\n... " << (result.moves - result.entries.size()) << " more";
+                out << "\n... " << (valid - result.entries.size()) << " more";
             }
             show_diagnostic("Neighborhood list", out.str());
             set_status(status_kind::success, "Neighborhood listed");
