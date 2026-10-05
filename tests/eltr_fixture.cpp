@@ -1,7 +1,7 @@
 // Writes the same events as ELTR and as JSON Lines, for the decoder test
 // (tests/eltr_decode.py): every core event with an integral cost, a run with
 // a structured cost, application events in the binary trace only (one with a
-// schema, one without), and a trace of a hierarchical cost.
+// schema, one without), and a hierarchical cost with the default writers.
 #include <easylocal/cost.hpp>
 #include <easylocal/trace.hpp>
 
@@ -184,16 +184,20 @@ void write_structured(const std::filesystem::path& directory)
     binary.flush();
 }
 
+// A hierarchical cost with the default cost writers of both recorders.
 void write_hierarchical(const std::filesystem::path& directory)
 {
     using cost_type =
         easylocal::cost::hierarchical<easylocal::cost::lexicographic<int, int>, double>;
     std::ofstream binary_file{directory / "hierarchical.eltr", std::ios::binary};
+    std::ofstream json_file{directory / "hierarchical.jsonl"};
     easylocal::trace::binary_recorder<cost_type> binary{binary_file};
-    easylocal::trace::emit(
-        binary,
+    easylocal::trace::jsonl_recorder<cost_type> json{json_file};
+    emit_all(
         easylocal::trace::event::run_started<cost_type>{
-            cost_type{easylocal::cost::lexicographic<int, int>{1, 2}, 0.5}});
+            cost_type{easylocal::cost::lexicographic<int, int>{1, 2}, 0.5}},
+        binary,
+        json);
     binary.flush();
 }
 

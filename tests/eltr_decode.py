@@ -147,6 +147,11 @@ class FixtureTraces(unittest.TestCase):
                 list(decoded), [{"event": "run_started", "cost": {"hard": [1, 2], "soft": 0.5}}]
             )
 
+    def test_the_default_json_writer_writes_costs_as_they_decode(self):
+        self.assertEqual(
+            decode(self.path / "hierarchical.eltr"), self.expected("hierarchical.jsonl")
+        )
+
     def test_timestamps_end_the_core_events(self):
         with open(self.path / "timed.eltr", "rb") as stream:
             timed = eltr.Trace(stream)

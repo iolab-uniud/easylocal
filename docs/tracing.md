@@ -381,12 +381,14 @@ written before it, which the next record of the tag writes again), and the
 JSONL recorder formats a line before writing it at once.  The exception reaches
 the caller of `emit`.
 
-By default, JSONL persistence accepts costs that can be inserted into an
-`std::ostream`. A number is written as the shortest text that reads back to the
-same value, and NaN and the infinities, which JSON has no numbers for, as
-`null`; any other cost is inserted with the precision that keeps its numbers.
-Domain-specific or structured costs can instead provide a small compile-time
-writer; the writer owns the JSON representation and adds no virtual dispatch:
+The default JSON cost writer, `default_json_cost_writer`, writes the costs
+the default ELTR writer encodes, in the shape `eltr.py` decodes them to: a
+number as the shortest text that reads back to the same value, NaN and the
+infinities, which JSON has no numbers for, as `null`, a `cost::lexicographic`
+or a `cost::pareto` as the array of its levels and a `cost::hierarchical` as
+`{"hard": ..., "soft": ...}`, nested as the types are: `{"hard": [0, 2],
+"soft": 13.5}`. Another cost needs a small compile-time writer, which owns the
+JSON representation and adds no virtual dispatch:
 
 ```cpp
 struct cost_json

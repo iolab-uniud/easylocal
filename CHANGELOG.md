@@ -388,6 +388,15 @@ reviewed by hand before tagging.
   private. `trace::emit` rejects at compile time a tracer whose
   `observes<Event>` is true but that has no `emit()` taking the event, such
   as an `emit` declared for another cost type.
+- **Breaking:** the JSONL recorder writes the library's structured costs:
+  its default cost writer, `trace::default_json_cost_writer` (was
+  `ostream_json_cost_writer`), writes a `cost::lexicographic` or a
+  `cost::pareto` as the array of its levels and a `cost::hierarchical` as
+  `{"hard": ..., "soft": ...}`, nested as the types are, the shape `eltr.py`
+  decodes ELTR costs to; a JSONL trace of such a cost, and `cli::run`'s
+  `--trace file.jsonl`, no longer fail to compile or stop with an error. It
+  no longer falls back to `operator<<`, whose text need not be JSON: another
+  cost type takes a cost writer of its own.
 
 ### Fixed
 

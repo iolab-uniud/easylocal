@@ -212,7 +212,7 @@ private:
 // Whether a cost has the default JSON writer of the JSONL recorder.
 template<class Cost>
 inline constexpr bool json_cost_writer_available =
-    trace::json_cost_writer_for<trace::ostream_json_cost_writer, Cost>;
+    trace::json_cost_writer_for<trace::default_json_cost_writer, Cost>;
 
 // --trace: runs run_with(&tracer) with a recorder of the app's cost writing to
 // path, JSON Lines for a .jsonl name and ELTR otherwise, with timestamps and
@@ -232,8 +232,7 @@ int run_traced(
     {
         if (jsonl)
         {
-            err << "trace: this cost cannot be written as JSON: give it an operator<<, "
-                   "or trace to an ELTR file\n";
+            err << "trace: this cost has no JSON encoding: trace to an ELTR file\n";
             return 2;
         }
     }

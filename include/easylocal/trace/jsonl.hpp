@@ -3,6 +3,7 @@
 /// \file
 /// JSONL serialization: streaming recorder and post-run memory_recorder output.
 
+#include <easylocal/trace/detail/cost_shape.hpp>
 #include <easylocal/trace/events.hpp>
 #include <easylocal/trace/memory_recorder.hpp>
 #include <easylocal/trace/tracer.hpp>
@@ -90,30 +91,70 @@ inline void write_json_hash(std::ostream& out, const std::uint64_t hash)
     out.write(text, sizeof text);
 }
 
+// Whether a cost has a JSON encoding by its shape: a number, or levels and a
+// hard and a soft part whose own parts have one.
+template<class Cost>
+constexpr bool json_encodable_cost() noexcept
+{
+    if constexpr (number_cost<Cost>)
+        return true;
+    else if constexpr (leveled_shape<Cost>)
+        return []<std::size_t... Index>(std::index_sequence<Index...>) {
+            return (json_encodable_cost<level_type<Cost, Index>>() && ...);
+        }(std::make_index_sequence<Cost::levels>{});
+    else if constexpr (hard_soft_shape<Cost>)
+        return json_encodable_cost<hard_type<Cost>>()
+            && json_encodable_cost<soft_type<Cost>>();
+    else
+        return false;
+}
+
+// A cost as JSON, by its shape: a number, an array of levels, an object with
+// "hard" and "soft", nested as the types are, as eltr.py decodes ELTR costs.
+template<class Cost>
+void write_json_cost(std::ostream& out, const Cost& cost)
+{
+    if constexpr (number_cost<Cost>)
+    {
+        write_json_number(out, cost);
+    }
+    else if constexpr (leveled_shape<Cost>)
+    {
+        out << '[';
+        [&]<std::size_t... Index>(std::index_sequence<Index...>) {
+            ((out << (Index == 0 ? "" : ","),
+                 write_json_cost(out, cost.template get<Index>())),
+                ...);
+        }(std::make_index_sequence<Cost::levels>{});
+        out << ']';
+    }
+    else
+    {
+        out << "{\"hard\":";
+        write_json_cost(out, cost.hard());
+        out << ",\"soft\":";
+        write_json_cost(out, cost.soft());
+        out << '}';
+    }
+}
+
 } // namespace detail
 
-/// The default JSON cost writer: a number as the shortest text that reads
-/// back to it (null for NaN and the infinities), any other cost with
-/// `operator<<`, at the precision that keeps its numbers.
-struct ostream_json_cost_writer
+/// The JSON cost writer of the JSONL recorder by default: a number as the
+/// shortest text that reads back to it (null for NaN and the infinities), a
+/// cost::lexicographic or a cost::pareto as the array of its levels, a
+/// cost::hierarchical as `{"hard": ..., "soft": ...}`, nested as the types
+/// are; the shape of the costs `eltr.py` decodes from ELTR.
+///
+/// Another cost needs a writer of its own: the JSONL recorder takes it.
+struct default_json_cost_writer
 {
-    /// Writes cost to out, as a JSON number when it is one.
+    /// Writes cost to out.
     template<class Cost>
+        requires(detail::json_encodable_cost<Cost>())
     void operator()(std::ostream& out, const Cost& cost) const
-        requires requires { out << cost; }
     {
-        if constexpr ((std::integral<Cost> || std::floating_point<Cost>)
-            && !std::same_as<Cost, bool>)
-        {
-            detail::write_json_number(out, cost);
-        }
-        else
-        {
-            const auto precision =
-                out.precision(std::numeric_limits<double>::max_digits10);
-            out << cost;
-            out.precision(precision);
-        }
+        detail::write_json_cost(out, cost);
     }
 };
 
@@ -189,12 +230,13 @@ struct jsonl_options
 /// the application events; costs are written by CostWriter, routes as arrays
 /// of child indices. The stream is held by reference.
 /// Requires a CostWriter callable as `writer(out, cost)`.
-template<class Cost, class CostWriter = ostream_json_cost_writer>
+template<class Cost, class CostWriter = default_json_cost_writer>
 class jsonl_recorder
 {
     static_assert(
         json_cost_writer_for<CostWriter, Cost>,
-        "jsonl_recorder requires a cost writer callable as writer(ostream, cost)");
+        "no JSON encoding for this cost type: give the JSONL recorder a cost writer "
+        "callable as writer(std::ostream&, const Cost&)");
 
 public:
     /// The cost type of the events recorded.
@@ -469,13 +511,13 @@ void write_jsonl(
 /// Writes the events of a memory_recorder as JSONL, with the default cost
 /// writer, after the header line.
 template<class Cost>
-    requires json_cost_writer_for<ostream_json_cost_writer, Cost>
+    requires json_cost_writer_for<default_json_cost_writer, Cost>
 void write_jsonl(
     std::ostream& out,
     const memory_recorder<Cost>& recorder,
     const jsonl_options& options = {})
 {
-    write_jsonl(out, recorder, ostream_json_cost_writer{}, options);
+    write_jsonl(out, recorder, default_json_cost_writer{}, options);
 }
 
 } // namespace easylocal::trace

@@ -578,6 +578,30 @@ int main()
             "\"cost\":{\"hard\":1,\"soft\":5}") != std::string::npos,
         "streaming JSONL accepts a custom structured cost writer");
 
+    // The default JSON writer writes the library's structured costs in the
+    // shape eltr.py decodes ELTR costs to.
+    using leveled = easylocal::cost::lexicographic<int, int>;
+    using layered = easylocal::cost::hierarchical<leveled, double>;
+    std::ostringstream layered_stream;
+    easylocal::trace::jsonl_recorder<layered> layered_recorder{layered_stream};
+    easylocal::trace::emit(
+        layered_recorder,
+        easylocal::trace::event::run_started<layered>{layered{leveled{0, 2}, 13.5}});
+    easylocal::trace::emit(
+        layered_recorder,
+        easylocal::trace::event::run_started<layered>{
+            layered{leveled{1, 0}, std::numeric_limits<double>::infinity()}});
+    ok &= expect(
+        layered_stream.str().ends_with(
+            "{\"event\":\"run_started\",\"cost\":{\"hard\":[0,2],\"soft\":13.5}}\n"
+            "{\"event\":\"run_started\",\"cost\":{\"hard\":[1,0],\"soft\":null}}\n"),
+        "the default JSON writer writes levels as arrays and hard/soft as objects");
+    static_assert(
+        !easylocal::trace::json_cost_writer_for<
+            easylocal::trace::default_json_cost_writer,
+            structured_cost>,
+        "a cost of no known shape needs a JSON cost writer of its own");
+
     std::ostringstream binary_stream;
     easylocal::trace::binary_recorder<int> binary{binary_stream};
     easylocal::trace::emit(

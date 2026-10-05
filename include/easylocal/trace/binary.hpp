@@ -6,6 +6,7 @@
 /// A trace describes itself: its header gives the metadata of the run, the
 /// layout of the costs and the fields of every event (docs/tracing.md).
 
+#include <easylocal/trace/detail/cost_shape.hpp>
 #include <easylocal/trace/events.hpp>
 #include <easylocal/trace/tracer.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
@@ -327,13 +328,8 @@ inline std::string field_path(const std::string& prefix, const std::string_view 
     return prefix.empty() ? std::string{name} : prefix + "." + std::string{name};
 }
 
-// The cost types of easylocal::cost, recognized by their shape (the trace
-// layer does not depend on them): a cost::lexicographic has levels and
-// get<Index>(), a cost::hierarchical hard() and soft().
-template<class Cost, std::size_t Index>
-using level_type =
-    std::remove_cvref_t<decltype(std::declval<const Cost&>().template get<Index>())>;
-
+// The cost types of easylocal::cost, by their shape (detail/cost_shape.hpp),
+// when each of their parts has an encoding.
 template<class Cost, std::size_t... Index>
 consteval bool levels_encodable(std::index_sequence<Index...>)
 {
@@ -341,22 +337,12 @@ consteval bool levels_encodable(std::index_sequence<Index...>)
 }
 
 template<class Cost>
-concept leveled_cost = requires {
-    { Cost::levels } -> std::convertible_to<std::size_t>;
-} && levels_encodable<Cost>(std::make_index_sequence<Cost::levels>{});
-
-template<class Cost>
-using hard_type = std::remove_cvref_t<decltype(std::declval<const Cost&>().hard())>;
-
-template<class Cost>
-using soft_type = std::remove_cvref_t<decltype(std::declval<const Cost&>().soft())>;
+concept leveled_cost = leveled_shape<Cost>
+    && levels_encodable<Cost>(std::make_index_sequence<Cost::levels>{});
 
 template<class Cost>
 concept hard_soft_cost =
-    requires(const Cost& cost) {
-        cost.hard();
-        cost.soft();
-    } && default_binary_cost<hard_type<Cost>>::value
+    hard_soft_shape<Cost> && default_binary_cost<hard_type<Cost>>::value
     && default_binary_cost<soft_type<Cost>>::value;
 
 template<leveled_cost Cost>
