@@ -1098,9 +1098,11 @@ private:
 /// A tracer that writes the events as an ELTR binary stream, a block of
 /// encoded records at a time.
 ///
-/// The header is encoded at construction, and a block is written to the stream
-/// when it reaches the block size, by flush() and by the destructor. The
-/// stream is held by reference.
+/// The header is written and flushed at construction, and a block is written
+/// to the stream when it reaches the block size, by flush() and by the
+/// destructor. A run that ends without them, such as one that crashes, leaves
+/// a trace that decodes, without the events of the last block: at most
+/// `block_size` bytes. The stream is held by reference.
 /// Requires a CostWriter callable as `writer(out, cost)`, with `fields()`.
 template<class Cost, class CostWriter = default_binary_cost_writer<Cost>>
 class buffered_binary_recorder
@@ -1126,6 +1128,7 @@ public:
     {
         buffer_.reserve(block_size_);
         encoder_.append_header(buffer_, options.metadata);
+        flush();
     }
 
     /// Writes to out, costs with cost_writer.
@@ -1139,6 +1142,7 @@ public:
     {
         buffer_.reserve(block_size_);
         encoder_.append_header(buffer_, options.metadata);
+        flush();
     }
 
     buffered_binary_recorder(const buffered_binary_recorder&) = delete;
@@ -1216,8 +1220,10 @@ using binary_recorder = buffered_binary_recorder<Cost, CostWriter>;
 ///
 /// The search fills a block and hands it to the thread, waiting when the queue
 /// is full: no event is lost and the order is kept. One search only emits to
-/// it. The stream is held by reference, and the destructor writes the pending
-/// records.
+/// it. The stream is held by reference. The header is written and flushed at
+/// construction, and the destructor writes the pending records: a run that
+/// ends without it, such as one that crashes, loses the events of the blocks
+/// not yet written, about `block_size` times `async_queue_blocks + 1` bytes.
 /// Requires a CostWriter callable as `writer(out, cost)`, with `fields()`.
 template<class Cost, class CostWriter = default_binary_cost_writer<Cost>>
 class async_binary_recorder
@@ -1244,6 +1250,7 @@ public:
         current_ = sink_.acquire();
         current_.reserve(block_size_);
         encoder_.append_header(current_, options.metadata);
+        flush();
     }
 
     /// Writes to out, costs with cost_writer.
@@ -1258,6 +1265,7 @@ public:
         current_ = sink_.acquire();
         current_.reserve(block_size_);
         encoder_.append_header(current_, options.metadata);
+        flush();
     }
 
     async_binary_recorder(const async_binary_recorder&) = delete;

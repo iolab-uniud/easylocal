@@ -241,6 +241,10 @@ class HandcraftedTraces(unittest.TestCase):
         with self.assertRaisesRegex(eltr.FormatError, "truncated header"):
             eltr.Trace(io.BytesIO(b"ELTR\x01\x00\x00\x00\x10\x00\x00\x00"))
 
+    def test_an_empty_file_is_an_empty_trace(self):
+        with self.assertRaisesRegex(eltr.FormatError, "empty trace"):
+            eltr.Trace(io.BytesIO(b""))
+
     def test_a_trace_without_records(self):
         self.assertEqual(list(eltr.Trace(trace())), [])
 

@@ -168,6 +168,8 @@ class Trace:
         self.stream = stream
         self.allow_truncated = allow_truncated
         start = stream.read(12) or b""
+        if not start:
+            raise FormatError("empty trace (the recorder wrote nothing)")
         if len(start) < 8 or start[:4] != MAGIC:
             raise FormatError("not an ELTR trace (no ELTR header)")
         (self.version,) = U32.unpack_from(start, 4)

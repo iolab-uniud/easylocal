@@ -437,16 +437,39 @@ int main()
     sync_counting_streambuf binary_buffered_storage;
     std::ostream binary_buffered_output{&binary_buffered_storage};
     easylocal::trace::binary_recorder<int> binary_buffered{binary_buffered_output};
+    ok &= expect(
+        binary_buffered_storage.sync_calls == 1,
+        "binary recorder flushes its header at construction");
     easylocal::trace::emit(
         binary_buffered,
         easylocal::trace::event::run_started<int>{4});
     ok &= expect(
-        binary_buffered_storage.sync_calls == 0,
+        binary_buffered_storage.sync_calls == 1,
         "binary recorder does not flush per event");
     binary_buffered.flush();
     ok &= expect(
-        binary_buffered_storage.sync_calls == 1,
+        binary_buffered_storage.sync_calls == 2,
         "binary recorder flush is explicit");
+
+    // The header reaches the stream at construction: a run that ends before
+    // the first block is written still leaves a decodable trace.
+    {
+        std::ostringstream stream;
+        easylocal::trace::binary_recorder<int> recorder{stream};
+        easylocal::trace::emit(recorder, easylocal::trace::event::run_started<int>{4});
+        const auto data = stream.str();
+        ok &= expect(
+            data.size() > 12 && data.size() == records_offset(data),
+            "binary recorder writes its header at construction");
+    }
+    {
+        std::ostringstream stream;
+        easylocal::trace::async_binary_recorder<int> recorder{stream};
+        const auto data = stream.str();
+        ok &= expect(
+            data.size() > 12 && data.size() == records_offset(data),
+            "async binary recorder writes its header at construction");
+    }
 
     std::ostringstream structured_binary_stream;
     easylocal::trace::binary_recorder<structured_cost, structured_binary_cost_writer>

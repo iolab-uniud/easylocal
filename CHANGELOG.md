@@ -27,6 +27,9 @@ reviewed by hand before tagging.
   rejects draws until one fits, such as the tutorial's on 40 cities, no longer
   loops forever, and the random samples differ from each other.
   `deterministic_rng` remains for unit tests that script the draws.
+- The ELTR recorders write and flush the header at construction: a run that
+  crashes leaves a trace that decodes, without the events of the last block,
+  instead of an empty file. `eltr.py` reports an empty file as an empty trace.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

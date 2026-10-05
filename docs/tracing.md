@@ -98,6 +98,13 @@ blocks connects it to the writer; if the writer falls behind, the producer
 blocks rather than losing events.  Event order is therefore deterministic and
 tracing is lossless.
 
+Both recorders write and flush the header when they are constructed, so the
+file of a run that crashes is still a trace: it decodes up to the last block
+written, and loses only the events still buffered, at most a block
+(`block_size`) for the synchronous recorder, the current block and the queued
+ones for the asynchronous one.  `eltr.py` reports a file with no bytes at all
+as an empty trace.
+
 ```cpp
 std::ofstream out{"run-0042.eltrace", std::ios::binary};
 easylocal::trace::async_binary_recorder<cost_type> trace{out};
