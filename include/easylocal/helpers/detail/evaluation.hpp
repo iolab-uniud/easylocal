@@ -11,7 +11,7 @@
 #include <cassert>
 #include <concepts>
 #include <cstddef>
-#include <optional>
+#include <memory>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -92,6 +92,44 @@ public:
 private:
     ComponentValues component_values_;
     Cost cost_;
+};
+
+// A scratch solution, made at its first use and reused: a copy assignment keeps
+// its storage. A copy of it starts without one. (Not an optional, which GCC 15
+// at -O3 reports as maybe uninitialized.)
+template<class Solution>
+class scratch_solution
+{
+public:
+    scratch_solution() = default;
+    scratch_solution(const scratch_solution&) noexcept {}
+    scratch_solution& operator=(const scratch_solution&) noexcept
+    {
+        return *this;
+    }
+    scratch_solution(scratch_solution&&) noexcept = default;
+    scratch_solution& operator=(scratch_solution&&) noexcept = default;
+    ~scratch_solution() = default;
+
+    // The scratch solution, a copy of from.
+    Solution& assign(const Solution& from)
+    {
+        if (solution_ != nullptr)
+            *solution_ = from;
+        else
+            solution_ = std::make_unique<Solution>(from);
+        return *solution_;
+    }
+
+    // The scratch solution, or nullptr before the first assign().
+    [[nodiscard]]
+    Solution* get() const noexcept
+    {
+        return solution_.get();
+    }
+
+private:
+    std::unique_ptr<Solution> solution_;
 };
 
 // The evaluation of a move: its cost (with the component values), the move,
@@ -483,12 +521,8 @@ public:
         {
             // The solution with the move made, in a scratch solution reused
             // from one move to the next: a copy assignment keeps its storage.
-            if (scratch_.has_value())
-                *scratch_ = current_solution;
-            else
-                scratch_.emplace(current_solution);
+            auto& candidate_solution = scratch_.assign(current_solution);
             scratch_number_ = ++scratches_;
-            auto& candidate_solution = *scratch_;
             neighborhood_.make_move(candidate_solution, move);
             assert(solution_manager_.is_valid(candidate_solution));
 
@@ -560,11 +594,11 @@ public:
         // move made again, which keeps no solution per candidate.
         if constexpr (needs_materialized_candidate())
         {
-            if (scratch_.has_value() && candidate.scratch() != 0
+            if (scratch_.get() != nullptr && candidate.scratch() != 0
                 && candidate.scratch() == scratch_number_)
             {
                 using std::swap;
-                swap(solution, *scratch_);
+                swap(solution, *scratch_.get());
                 scratch_number_ = 0;
                 current = std::move(candidate.evaluation());
                 return;
@@ -581,7 +615,7 @@ private:
     const NHE& neighborhood_;
     // The candidate solution of the last move evaluated on one, its number
     // (0 once committed) and the count of the moves evaluated on it.
-    mutable std::optional<solution_type> scratch_;
+    mutable scratch_solution<solution_type> scratch_;
     mutable std::size_t scratch_number_{};
     mutable std::size_t scratches_{};
 };
