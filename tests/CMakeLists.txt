@@ -943,13 +943,39 @@ easylocal_add_compile_failure_test(
     "a registered runner's algorithm must run on its neighborhood"
 )
 
+# A test that runs a program and checks both its exit status and its output
+# (expect_output.cmake): EXIT_CODE is the status expected, 0 by default, and
+# OUTPUT a regular expression of the output, with \\n for a newline. The
+# program is a target or a path; the other arguments of COMMAND are passed to
+# it.
+function(easylocal_add_output_test name)
+    cmake_parse_arguments(PARSE_ARGV 1 arg "" "EXIT_CODE;OUTPUT" "COMMAND")
+    if(NOT DEFINED arg_EXIT_CODE)
+        set(arg_EXIT_CODE 0)
+    endif()
+    set(command ${arg_COMMAND})
+    list(POP_FRONT command program)
+    if(TARGET "${program}")
+        set(program "$<TARGET_FILE:${program}>")
+    endif()
+    list(PREPEND command "${program}")
+    list(JOIN command "$<SEMICOLON>" command)
+    add_test(
+        NAME ${name}
+        COMMAND "${CMAKE_COMMAND}"
+            "-DCOMMAND=${command}"
+            "-DEXIT_CODE=${arg_EXIT_CODE}"
+            "-DOUTPUT=${arg_OUTPUT}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/expect_output.cmake")
+endfunction()
+
 # The code of docs/quick-start.md and docs/tutorial is built and run here, so
 # the documentation cannot drift from the library.
 if(TARGET easylocal_quickstart)
-    add_test(NAME easylocal.example.quickstart COMMAND easylocal_quickstart)
-    set_tests_properties(
+    easylocal_add_output_test(
         easylocal.example.quickstart
-        PROPERTIES PASS_REGULAR_EXPRESSION "length 26 after 14 evaluations")
+        COMMAND easylocal_quickstart
+        OUTPUT "length 26 after 14 evaluations")
 endif()
 
 # The documentation's snippets must match the examples they are taken from.
@@ -962,182 +988,109 @@ if(Python3_Interpreter_FOUND)
 endif()
 
 if(TARGET easylocal_tutorial_toml)
-    add_test(NAME easylocal.example.tutorial-toml COMMAND easylocal_tutorial_toml)
-    set_tests_properties(
+    easylocal_add_output_test(
         easylocal.example.tutorial-toml
-        PROPERTIES PASS_REGULAR_EXPRESSION "2 parameter blocks from the file\ncost ")
+        COMMAND easylocal_tutorial_toml
+        OUTPUT "2 parameter blocks from the file\\ncost ")
 endif()
 
 if(TARGET easylocal_tutorial)
-    add_test(NAME easylocal.example.tutorial COMMAND easylocal_tutorial)
-    set_tests_properties(
+    easylocal_add_output_test(
         easylocal.example.tutorial
-        PROPERTIES PASS_REGULAR_EXPRESSION "first improvement 26\n")
+        COMMAND easylocal_tutorial
+        OUTPUT "first improvement 26\\n")
     add_test(NAME easylocal.example.tutorial-checks COMMAND easylocal_tutorial_checks)
-    add_test(
-        NAME easylocal.example.tutorial-cli
-        COMMAND easylocal_tutorial_cli
-            --instance ${PROJECT_SOURCE_DIR}/examples/tutorial/five.tsp --seed 1 --runner fi)
-    set_tests_properties(
+    easylocal_add_output_test(
         easylocal.example.tutorial-cli
-        PROPERTIES PASS_REGULAR_EXPRESSION "cost [0-9]+\ntime ")
-    add_test(
-        NAME easylocal.example.tutorial-staged
-        COMMAND easylocal_tutorial_staged --main.seed 1 --main.evaluations_per_city 20)
-    set_tests_properties(
+        COMMAND easylocal_tutorial_cli
+            --instance ${PROJECT_SOURCE_DIR}/examples/tutorial/five.tsp --seed 1 --runner fi
+        OUTPUT "cost [0-9]+\\ntime ")
+    easylocal_add_output_test(
         easylocal.example.tutorial-staged
-        PROPERTIES PASS_REGULAR_EXPRESSION "violations 0, length [0-9]+\n")
+        COMMAND easylocal_tutorial_staged --main.seed 1 --main.evaluations_per_city 20
+        OUTPUT "violations 0, length [0-9]+\\n")
 endif()
 
 if(TARGET easylocal_tutorial_pipeline)
-    add_test(
-        NAME easylocal.example.tutorial-pipeline
-        COMMAND easylocal_tutorial_pipeline)
-    set_tests_properties(
+    easylocal_add_output_test(
         easylocal.example.tutorial-pipeline
-        PROPERTIES PASS_REGULAR_EXPRESSION "stage feasible: [0-9]+ attempt.*\nstage climb: .*\nviolations 0, length [0-9]+")
+        COMMAND easylocal_tutorial_pipeline
+        OUTPUT "stage feasible: [0-9]+ attempt.*\\nstage climb: .*\\nviolations 0, length [0-9]+")
 endif()
 
 if(TARGET easylocal_pfsp_tabu)
-    add_test(
-        NAME easylocal.example.pfsp-tabu
-        COMMAND easylocal_pfsp_tabu --runners.tabu.max_iterations=50)
-    set_tests_properties(
+    easylocal_add_output_test(
         easylocal.example.pfsp-tabu
-        PROPERTIES PASS_REGULAR_EXPRESSION "\niterations 50\n")
+        COMMAND easylocal_pfsp_tabu --runners.tabu.max_iterations=50
+        OUTPUT "\\niterations 50\\n")
 endif()
 
 if(TARGET easylocal_assignment)
-    add_test(
-        NAME easylocal.example.assignment-cli-help
-        COMMAND easylocal_assignment --help
-    )
-    set_tests_properties(
+    easylocal_add_output_test(
         easylocal.example.assignment-cli-help
-        PROPERTIES
-            PASS_REGULAR_EXPRESSION "--runners.fi.max_evaluations <value>"
-    )
-
-    add_test(
-        NAME easylocal.example.assignment-cli-override
-        COMMAND easylocal_assignment --runners.fi.max_evaluations=1
-    )
-    set_tests_properties(
+        COMMAND easylocal_assignment --help
+        OUTPUT "--runners.fi.max_evaluations <value>")
+    easylocal_add_output_test(
         easylocal.example.assignment-cli-override
-        PROPERTIES
-            PASS_REGULAR_EXPRESSION "termination evaluation budget exhausted"
-    )
-
-    add_test(
-        NAME easylocal.example.assignment-config-file
+        COMMAND easylocal_assignment --runners.fi.max_evaluations=1
+        OUTPUT "termination evaluation budget exhausted")
+    easylocal_add_output_test(
+        easylocal.example.assignment-config-file
         COMMAND easylocal_assignment
             --config ${PROJECT_SOURCE_DIR}/examples/assignment/configs/small.cfg
-    )
-    set_tests_properties(
-        easylocal.example.assignment-config-file
-        PROPERTIES
-            PASS_REGULAR_EXPRESSION "termination evaluation budget exhausted"
-    )
+        OUTPUT "termination evaluation budget exhausted")
 endif()
 
 if(TARGET easylocal_exam_timetabling)
-    add_test(
-        NAME easylocal.example.exam-cli-help
-        COMMAND easylocal_exam_timetabling --help
-    )
-    set_tests_properties(
+    easylocal_add_output_test(
         easylocal.example.exam-cli-help
-        PROPERTIES
-            PASS_REGULAR_EXPRESSION "--runners.sa.temperature.cooling_rate <value>"
-    )
-
-    add_test(
-        NAME easylocal.example.exam-cli-override
-        COMMAND easylocal_exam_timetabling --runners.sa.temperature.allowed_iterations=1
-    )
-    set_tests_properties(
+        COMMAND easylocal_exam_timetabling --help
+        OUTPUT "--runners.sa.temperature.cooling_rate <value>")
+    easylocal_add_output_test(
         easylocal.example.exam-cli-override
-        PROPERTIES
-            PASS_REGULAR_EXPRESSION "\niterations 1\n"
-    )
-
-    add_test(
-        NAME easylocal.example.exam-config-file
+        COMMAND easylocal_exam_timetabling --runners.sa.temperature.allowed_iterations=1
+        OUTPUT "\\niterations 1\\n")
+    easylocal_add_output_test(
+        easylocal.example.exam-config-file
         COMMAND easylocal_exam_timetabling
             --config ${PROJECT_SOURCE_DIR}/examples/exam_timetabling/configs/small.cfg
-    )
-    set_tests_properties(
-        easylocal.example.exam-config-file
-        PROPERTIES
-            PASS_REGULAR_EXPRESSION "\niterations 1\n"
-    )
+        OUTPUT "\\niterations 1\\n")
 endif()
 
 if(TARGET easylocal_tsp_sa)
-    add_test(
-        NAME easylocal.example.tsp-cli-help
-        COMMAND easylocal_tsp_sa --help
-    )
-    set_tests_properties(
+    easylocal_add_output_test(
         easylocal.example.tsp-cli-help
-        PROPERTIES
-            PASS_REGULAR_EXPRESSION "--neighborhood.random_biases <value>"
-    )
-
-    add_test(
-        NAME easylocal.example.tsp-cli-override
-        COMMAND easylocal_tsp_sa --runners.sa.temperature.allowed_iterations=1
-    )
-    set_tests_properties(
+        COMMAND easylocal_tsp_sa --help
+        OUTPUT "--neighborhood.random_biases <value>")
+    easylocal_add_output_test(
         easylocal.example.tsp-cli-override
-        PROPERTIES
-            PASS_REGULAR_EXPRESSION "\niterations 1\n"
-    )
-
-    add_test(
-        NAME easylocal.example.tsp-config-file
+        COMMAND easylocal_tsp_sa --runners.sa.temperature.allowed_iterations=1
+        OUTPUT "\\niterations 1\\n")
+    easylocal_add_output_test(
+        easylocal.example.tsp-config-file
         COMMAND easylocal_tsp_sa
             --config ${PROJECT_SOURCE_DIR}/examples/tsp/configs/small.cfg
-    )
-    set_tests_properties(
-        easylocal.example.tsp-config-file
-        PROPERTIES
-            PASS_REGULAR_EXPRESSION "\niterations 1\n"
-    )
-
-    add_test(
-        NAME easylocal.example.tsp-config-precedence
+        OUTPUT "\\niterations 1\\n")
+    easylocal_add_output_test(
+        easylocal.example.tsp-config-precedence
         COMMAND easylocal_tsp_sa
             --config ${PROJECT_SOURCE_DIR}/examples/tsp/configs/small.cfg
             --runners.sa.temperature.allowed_iterations=2
-    )
-    set_tests_properties(
-        easylocal.example.tsp-config-precedence
-        PROPERTIES
-            PASS_REGULAR_EXPRESSION "\niterations 2\n"
-    )
-
-    add_test(
-        NAME easylocal.example.tsp-config-error
+        OUTPUT "\\niterations 2\\n")
+    # An invalid parameter, from a file or from the command line, is a usage
+    # error (exit status 2) that names the parameter and its domain.
+    easylocal_add_output_test(
+        easylocal.example.tsp-config-error
         COMMAND easylocal_tsp_sa
             --config ${PROJECT_SOURCE_DIR}/examples/tsp/configs/invalid.cfg
-    )
-    set_tests_properties(
-        easylocal.example.tsp-config-error
-        PROPERTIES
-            WILL_FAIL TRUE
-    )
-
-    add_test(
-        NAME easylocal.example.tsp-cli-error
+        EXIT_CODE 2
+        OUTPUT "runners\\.sa\\.temperature\\.cooling_rate: expected a value in \\(0, 1\\), got 1\\.5")
+    easylocal_add_output_test(
+        easylocal.example.tsp-cli-error
         COMMAND easylocal_tsp_sa
             --runners.sa.temperature.cooling_rate=1.5
-    )
-    set_tests_properties(
-        easylocal.example.tsp-cli-error
-        PROPERTIES
-            WILL_FAIL TRUE
-    )
+        EXIT_CODE 2
+        OUTPUT "runners\\.sa\\.temperature\\.cooling_rate: expected a value in \\(0, 1\\), got 1\\.5")
 endif()
 
 easylocal_add_test(
