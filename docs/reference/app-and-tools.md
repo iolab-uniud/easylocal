@@ -177,8 +177,9 @@ lie within the declared domain and name a parameter of the app or of
   `unlimited` limits are noted, not written. `cost.*` is never written: it
   defines the cost that irace compares.
 - `fixed.conf`: the parameters the command line changed when the stub was
-  written (but `instance`, `seed`, `solution`, `output`, `report` and
-  `tuning.*`), with paths made absolute, read by each run with `--config`;
+  written (but `instance`, `seed`, `solution`, `output`, `report`,
+  `tuning.irace` and `tuning.print`; `tuning.hard_weight` stays, so that every
+  run weighs the hard cost the same), with paths made absolute, read by each run with `--config`;
   the tuned values override them.
 - `target-runner`: a shell script that runs the program, by its absolute path,
   with `--config fixed.conf --tuning.print=cost --instance=... --seed=...` and

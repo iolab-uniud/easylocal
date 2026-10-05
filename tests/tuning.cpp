@@ -387,6 +387,13 @@ void fixed_values_are_shared_by_every_run()
         fixed,
         "files.table = " + std::filesystem::absolute("data/table.txt").string() + '\n'));
     std::filesystem::remove_all(directory);
+
+    // The weight of the hard cost is the program's: every run uses it.
+    const auto weighted =
+        run({"--tuning.irace", directory.string(), "--tuning.hard_weight", "1000"});
+    assert(weighted.status == 0);
+    assert(contains(read_file(directory / "fixed.conf"), "tuning.hard_weight = 1000\n"));
+    std::filesystem::remove_all(directory);
 }
 
 } // namespace

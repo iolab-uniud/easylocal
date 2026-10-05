@@ -238,7 +238,8 @@ inline int write_irace(
     {
         const auto& path = values[index].path;
         const bool per_run = path == "instance" || path == "seed" || path == "solution"
-            || path == "output" || path == "report" || path.starts_with("tuning.");
+            || path == "output" || path == "report" || path == "tuning.irace"
+            || path == "tuning.print";
         if (per_run || values[index].value == defaults[index].value)
             continue;
         auto value = values[index].value;

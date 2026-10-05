@@ -175,6 +175,8 @@ reviewed by hand before tagging.
   pipelines.
 - `--tuning.irace` leaves `--solution` out of fixed.conf (a starting solution
   belongs to an instance) and writes path parameters there as absolute paths.
+- `--tuning.hard_weight`, given when the irace stub is written, goes to
+  fixed.conf: irace runs no longer fall back to the default weight.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 
