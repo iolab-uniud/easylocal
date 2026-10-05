@@ -284,6 +284,10 @@ reviewed by hand before tagging.
   concepts: `acceptance_policy_for<Acceptance, Cost, RNG>` (formerly in
   `detail`) and the new `aspiration_for<A, Run>`, which constrains the four
   tabu searches.
+- **Breaking:** `pareto_search_result` derives from `search_result`, whose
+  fields it repeated, and adds the `front`: code that takes a
+  `search_result&` takes a Pareto result, and one built with designated
+  initializers builds its `search_result` base first.
 
 ### Added
 

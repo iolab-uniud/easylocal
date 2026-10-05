@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <compare>
+#include <concepts>
 #include <cstddef>
 #include <iostream>
 #include <optional>
@@ -150,6 +151,10 @@ int main()
                 {.history_length = 10, .min_iterations = 2000})
                 .bind(grid)
                 .run(Point{4, 9}, rng);
+        // A Pareto result is a search_result with a front.
+        static_assert(std::derived_from<
+            std::remove_cvref_t<decltype(result)>,
+            search_result<Point, cost::pareto<int, int>>>);
         static_assert(std::same_as<
             std::remove_cvref_t<decltype(result.front)>,
             std::vector<pareto_point<Point, cost::pareto<int, int>>>>);

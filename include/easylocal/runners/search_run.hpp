@@ -71,23 +71,12 @@ struct search_result
     termination_reason termination{};
 };
 
-/// The result of a search with a cost::pareto cost: a solution of the front
-/// with its cost, and the whole front (the non-dominated solutions reached,
-/// ordered by their objectives).
+/// The result of a search with a cost::pareto cost: a search_result, a
+/// solution of the front with its cost and the effort, and the whole front
+/// (the non-dominated solutions reached, ordered by their objectives).
 template<class Solution, class Cost>
-struct pareto_search_result
+struct pareto_search_result : search_result<Solution, Cost>
 {
-    /// The solution the algorithm returns: the best one found, for the built-in
-    /// algorithms.
-    Solution solution;
-    /// Its cost.
-    Cost cost;
-    /// Solutions and moves evaluated, the initial evaluation included.
-    std::size_t evaluations{};
-    /// Iterations, as the algorithm counts them.
-    std::size_t iterations{};
-    /// Why the run ended.
-    termination_reason termination{};
     /// The non-dominated solutions reached, ordered by their objectives.
     std::vector<pareto_point<Solution, Cost>> front;
 };
@@ -882,12 +871,14 @@ public:
         if constexpr (archives_front)
         {
             return result_type{
-                .solution = std::move(solution),
-                .cost = std::move(cost),
-                .evaluations = evaluations_,
-                .iterations = iterations_,
-                .termination = termination,
-                .front = archive_.sorted(),
+                search_result<solution_type, cost_type>{
+                    .solution = std::move(solution),
+                    .cost = std::move(cost),
+                    .evaluations = evaluations_,
+                    .iterations = iterations_,
+                    .termination = termination,
+                },
+                archive_.sorted(),
             };
         }
         else

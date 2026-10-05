@@ -308,13 +308,11 @@ public:
           neighborhood_{neighborhood_spec.construct(solution_manager_)}
     {
         assert(
-            std::addressof(solution_manager_.input()) ==
-                std::addressof(input_) &&
-            "SolutionManager must bind to the requested Instance");
+            std::addressof(solution_manager_.input()) == std::addressof(input_)
+            && "SolutionManager must bind to the requested Input");
         assert(
-            std::addressof(neighborhood_.input()) ==
-                std::addressof(input_) &&
-            "NeighborhoodExplorer must share the bound Instance");
+            std::addressof(neighborhood_.input()) == std::addressof(input_)
+            && "NeighborhoodExplorer must share the bound Input");
     }
 
     /// Not copyable or movable: its services refer to each other.
@@ -383,8 +381,8 @@ public:
             RunArgs...>
     {
         assert(
-            solution_manager_.is_valid(solution) &&
-            "initial Solution must be compatible with the bound Instance");
+            solution_manager_.is_valid(solution)
+            && "initial Solution must be compatible with the bound Input");
 
         const detail::runner_context<solution_manager_type, neighborhood_explorer_type>
             context{

@@ -295,7 +295,7 @@ Built-in algorithms return `search_result<Solution, Cost>`: `solution`, `cost`,
 `evaluations`, `iterations`, `termination` (`termination_reason::completed`,
 `local_optimum`, `evaluation_budget_exhausted`, `cancelled`, `target_reached`,
 `idle_limit_reached`, `time_limit_reached`). With a `cost::pareto` cost they return
-`pareto_search_result<Solution, Cost>`, which adds `front`: the non-dominated
+`pareto_search_result<Solution, Cost>`, a `search_result` that adds `front`: the non-dominated
 solutions the run reached, as `pareto_point{solution, cost}`, ordered by their
 objectives. The `search_run` keeps them in a `pareto_archive` as the run starts,
 evaluates solutions and commits moves, so every algorithm has a front without

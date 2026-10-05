@@ -15,7 +15,7 @@
 namespace easylocal::solvers
 {
 
-/// The simplest Solver: binds one Runner to an Instance, builds an initial
+/// The simplest Solver: binds one Runner to an Input, builds an initial
 /// solution, then runs the search once and returns its result.
 ///
 /// The Solver owns the RNG, seeded with 0 unless `.seed(n)` says otherwise;
