@@ -1838,8 +1838,9 @@ struct EliteListParameters
 template<class ListParameters, class CandidateParameters = candidates::FullParameters>
 struct TabuSearchParameters
 {
-    /// Iterations without improving the best cost after which the search stops.
-    std::size_t max_idle_iterations{1000};
+    /// Iterations without improving the best cost after which the search
+    /// stops; unlimited: it never stops for that.
+    limit max_idle_iterations{1000};
     /// Iterations in all; unlimited by default.
     limit max_iterations{unlimited};
     /// Evaluation budget, including the initial evaluation; unlimited by
@@ -1857,7 +1858,8 @@ struct TabuSearchParameters
         using self = TabuSearchParameters;
         const auto common = config::fields(
             config::field<"max_idle_iterations", &self::max_idle_iterations>(
-                "Maximum number of iterations without improving the best cost",
+                "Maximum number of iterations without improving the best cost, or "
+                "unlimited",
                 config::range(1, easylocal::unlimited)),
             config::field<"max_iterations", &self::max_iterations>(
                 "Maximum number of iterations, or unlimited",
@@ -2295,7 +2297,7 @@ private:
         return std::uniform_int_distribution<std::size_t>{0, count - 1}(rng);
     }
 
-    std::size_t max_idle_iterations_;
+    limit max_idle_iterations_;
     limit max_iterations_;
     limit max_evaluations_;
     TabuList tabu_list_;

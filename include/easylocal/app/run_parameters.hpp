@@ -156,15 +156,15 @@ struct RunParameters
         }
         auto result = base.without_target();
         if (*seconds)
-            result = result.timeout(**seconds);
+            result = result.with_timeout(**seconds);
         if (!max_evaluations.is_unlimited())
-            result = result.max_evaluations(max_evaluations);
+            result = result.with_max_evaluations(max_evaluations);
         run_options<Tracer, Cost> options{
             .control = result.control,
             .tracer = result.tracer,
             .target = target_cost<Cost>(input),
-            .time_limit = result.time_limit,
-            .evaluation_budget = result.evaluation_budget,
+            .timeout = result.timeout,
+            .max_evaluations = result.max_evaluations,
         };
         return options;
     }

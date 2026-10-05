@@ -608,7 +608,7 @@ bool run()
                         .initial_temperature = 2.0,
                         .final_temperature = 0.5,
                         .cooling_rate = 0.5,
-                        .max_iterations = 32,
+                        .allowed_iterations = 32,
                     }})
         | sm | neighborhood<HardNeighborhood>();
 
@@ -620,7 +620,7 @@ bool run()
                         .initial_temperature = 2.0,
                         .final_temperature = 0.5,
                         .cooling_rate = 0.5,
-                        .max_iterations = 32,
+                        .allowed_iterations = 32,
                     }})
         | sm | neighborhood<SoftNeighborhood>();
 
@@ -645,7 +645,7 @@ bool run()
                         .initial_temperature = 2.0,
                         .final_temperature = 0.5,
                         .cooling_rate = 0.5,
-                        .max_iterations = 32,
+                        .allowed_iterations = 32,
                     }})
         | (solution_manager<SolutionManager>()
             | cost::hard_soft(component<HardPart>(), component<SoftPart>()))
@@ -668,7 +668,7 @@ bool run()
                         .initial_temperature = 2.0,
                         .final_temperature = 0.5,
                         .cooling_rate = 0.5,
-                        .max_iterations = 32,
+                        .allowed_iterations = 32,
                     }})
         | (solution_manager<SolutionManager>()
             | cost::hard_soft(
@@ -691,7 +691,7 @@ bool run()
         .initial_temperature = 2.0,
         .final_temperature = 0.5,
         .cooling_rate = 0.5,
-        .max_iterations = 100000,
+        .allowed_iterations = 100000,
     };
     auto endless_hard_runner =
         easylocal::make_runner<
@@ -905,7 +905,7 @@ int main()
                         .initial_temperature = 2.0,
                         .final_temperature = 0.5,
                         .cooling_rate = 0.5,
-                        .max_iterations = 32,
+                        .allowed_iterations = 32,
                     }})
         | sm | nhe;
     auto configurable = solvers::pipeline(

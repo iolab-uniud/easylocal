@@ -134,7 +134,7 @@ void cli_layer_overrides_file_layer()
 {
     const auto file = parse_config_text(R"(
 application.seed = 41
-solver.temperature.max_iterations = 10
+solver.temperature.allowed_iterations = 10
 solver.temperature.cooling_rate = 0.7
 )");
     assert(file);
@@ -145,7 +145,7 @@ solver.temperature.cooling_rate = 0.7
             .value = "42",
         },
         text_override{
-            .path = "solver.temperature.max_iterations",
+            .path = "solver.temperature.allowed_iterations",
             .value = "20",
         },
     };
@@ -163,7 +163,7 @@ solver.temperature.cooling_rate = 0.7
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
-        .max_iterations = 200,
+        .allowed_iterations = 200,
     };
     easylocal::config::parameter_set tree;
     tree.add("application", app);
@@ -175,7 +175,7 @@ solver.temperature.cooling_rate = 0.7
 
     assert(applied);
     assert(app.seed == 42U);
-    assert(temperature.max_iterations == 20);
+    assert(temperature.allowed_iterations == 20);
     assert(temperature.cooling_rate == 0.7);
 }
 
@@ -198,7 +198,7 @@ solver.temperature.cooling_rate = 1.5
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
-        .max_iterations = 200,
+        .allowed_iterations = 200,
     };
     easylocal::config::parameter_set tree;
     tree.add("application", app);

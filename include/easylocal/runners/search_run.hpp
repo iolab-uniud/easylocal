@@ -19,6 +19,7 @@
 #include <easylocal/trace/events.hpp>
 #include <easylocal/trace/tracer.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
+#include <easylocal/utils/limit.hpp>
 #include <easylocal/utils/termination.hpp>
 
 #include <algorithm>
@@ -175,10 +176,10 @@ struct run_options
     /// The cost at which the run stops, if any.
     std::optional<Target> target{};
     /// The time after which the run stops, if any, counted from its start.
-    std::optional<std::chrono::steady_clock::duration> time_limit{};
-    /// The evaluations the run may make, if bounded, the initial one included;
-    /// the runner's own budget, if smaller, still applies.
-    std::optional<std::size_t> evaluation_budget{};
+    std::optional<std::chrono::steady_clock::duration> timeout{};
+    /// The evaluations the run may make, the initial one included; unlimited
+    /// by default. The runner's own budget, if smaller, still applies.
+    limit max_evaluations{unlimited};
     /// What the archive of a run with a cost::pareto cost keeps (default one
     /// point per non-dominated cost, unbounded).
     pareto_archive_parameters front{};
@@ -192,8 +193,8 @@ struct run_options
             .control = control,
             .tracer = tracer,
             .target = std::move(cost),
-            .time_limit = time_limit,
-            .evaluation_budget = evaluation_budget,
+            .timeout = timeout,
+            .max_evaluations = max_evaluations,
             .front = front,
         };
     }
@@ -207,35 +208,35 @@ struct run_options
             .control = control,
             .tracer = tracer,
             .target = std::nullopt,
-            .time_limit = time_limit,
-            .evaluation_budget = evaluation_budget,
+            .timeout = timeout,
+            .max_evaluations = max_evaluations,
             .front = front,
         };
     }
 
-    /// The same options with a time limit: with(control).timeout(5s).
+    /// The same options with a time limit: with(control).with_timeout(5s).
     ///
     /// Throws `std::invalid_argument` when the limit is negative or not a
     /// number.
     template<class Rep, class Period>
     [[nodiscard]]
-    run_options timeout(const std::chrono::duration<Rep, Period> limit) const
+    run_options with_timeout(const std::chrono::duration<Rep, Period> limit) const
     {
         auto options = *this;
-        options.time_limit = detail::steady_time_limit(limit);
+        options.timeout = detail::steady_time_limit(limit);
         return options;
     }
 
     /// The same options with an evaluation budget:
-    /// with(control).max_evaluations(10000).
+    /// with(control).with_max_evaluations(10000).
     ///
     /// The run stops, with termination_reason::evaluation_budget_exhausted,
     /// once it has made `count` evaluations, the initial one included.
     [[nodiscard]]
-    run_options max_evaluations(const std::size_t count) const
+    run_options with_max_evaluations(const limit count) const
     {
         auto options = *this;
-        options.evaluation_budget = count;
+        options.max_evaluations = count;
         return options;
     }
 
@@ -252,15 +253,15 @@ struct run_options
     }
 
     /// The same options with a time limit in seconds:
-    /// with(control).timeout(2.5).
+    /// with(control).with_timeout(2.5).
     ///
     /// Throws `std::invalid_argument` when the number is negative or not
     /// finite.
     [[nodiscard]]
-    run_options timeout(const double seconds) const
+    run_options with_timeout(const double seconds) const
     {
         auto options = *this;
-        options.time_limit = detail::steady_time_limit(seconds);
+        options.timeout = detail::steady_time_limit(seconds);
         return options;
     }
 };
@@ -313,7 +314,7 @@ template<class Rep, class Period>
 [[nodiscard]]
 run_options<trace::null_tracer> timeout(const std::chrono::duration<Rep, Period> limit)
 {
-    return run_options<trace::null_tracer>{}.timeout(limit);
+    return run_options<trace::null_tracer>{}.with_timeout(limit);
 }
 
 /// Run options with only an evaluation budget:
@@ -323,9 +324,9 @@ run_options<trace::null_tracer> timeout(const std::chrono::duration<Rep, Period>
 /// has made `count` evaluations, the initial one included; a runner's own
 /// budget, if smaller, still applies.
 [[nodiscard]]
-inline run_options<trace::null_tracer> max_evaluations(const std::size_t count)
+inline run_options<trace::null_tracer> max_evaluations(const limit count)
 {
-    return run_options<trace::null_tracer>{}.max_evaluations(count);
+    return run_options<trace::null_tracer>{}.with_max_evaluations(count);
 }
 
 /// Run options with only a time limit in seconds: easylocal::timeout(2.5).
@@ -334,7 +335,7 @@ inline run_options<trace::null_tracer> max_evaluations(const std::size_t count)
 [[nodiscard]]
 inline run_options<trace::null_tracer> timeout(const double seconds)
 {
-    return run_options<trace::null_tracer>{}.timeout(seconds);
+    return run_options<trace::null_tracer>{}.with_timeout(seconds);
 }
 
 /// One execution of a search algorithm. search_run exposes the search context
@@ -393,21 +394,17 @@ public:
         pareto_search_result<solution_type, cost_type>,
         search_result<solution_type, cost_type>>;
 
-    /// The evaluation limit of a run without a budget.
-    static constexpr std::size_t no_evaluation_limit =
-        std::numeric_limits<std::size_t>::max();
-
     /// A run of context, controlled by control and traced by tracer, with an
-    /// evaluation limit, a target cost (nullptr: none), a deadline (none: no
-    /// time limit) and the parameters of its archive (with a cost::pareto
-    /// cost).
+    /// evaluation limit (unlimited: none), a target cost (nullptr: none), a
+    /// deadline (none: no time limit) and the parameters of its archive (with a
+    /// cost::pareto cost).
     ///
     /// The bound runner makes it.
     search_run(
         const Context& context,
         const run_control& control,
         Tracer& tracer,
-        const std::size_t evaluation_limit = no_evaluation_limit,
+        const limit evaluation_limit = unlimited,
         const cost_type* target = nullptr,
         const std::optional<std::chrono::steady_clock::time_point> deadline =
             std::nullopt,
@@ -432,7 +429,7 @@ public:
         const Context&&,
         const run_control&,
         Tracer&,
-        std::size_t = no_evaluation_limit,
+        limit = unlimited,
         const cost_type* = nullptr,
         std::optional<std::chrono::steady_clock::time_point> = std::nullopt,
         pareto_archive_parameters = {}) = delete;
@@ -446,7 +443,7 @@ private:
         Evaluation evaluation,
         const run_control& control,
         Tracer& tracer,
-        const std::size_t evaluation_limit,
+        const limit evaluation_limit,
         const cost_type* target,
         const std::optional<std::chrono::steady_clock::time_point> deadline,
         const pareto_archive_parameters front)
@@ -585,9 +582,10 @@ public:
 
     /// The runner's own budget; the initial evaluation counts towards it. The
     /// caller's budget, if smaller, stays.
-    void limit_evaluations(const std::size_t max_evaluations) noexcept
+    void limit_evaluations(const limit max_evaluations) noexcept
     {
-        evaluation_limit_ = std::min(max_evaluations, caller_evaluation_limit_);
+        evaluation_limit_ =
+            std::min<std::size_t>(max_evaluations, caller_evaluation_limit_);
     }
 
     /// The target cost given by the caller, or nullptr.
@@ -897,9 +895,11 @@ public:
         std::remove_cvref_t<
             std::invoke_result_t<Wrap, const Evaluation&>>> with_evaluation(Wrap&& wrap)
     {
-        const auto left = evaluation_limit_ == no_evaluation_limit
-            ? no_evaluation_limit
-            : evaluation_limit_ - std::min(evaluations_, evaluation_limit_);
+        const auto left = evaluation_limit_.is_unlimited()
+            ? unlimited
+            : limit{
+                  evaluation_limit_
+                  - std::min<std::size_t>(evaluations_, evaluation_limit_)};
         return {
             context_,
             std::invoke(std::forward<Wrap>(wrap), std::as_const(evaluation_)),
@@ -1049,7 +1049,7 @@ private:
             run_progress{
                 .evaluations = evaluations_,
                 .iterations = iterations_,
-                .evaluation_limit = evaluation_limit_ == no_evaluation_limit
+                .evaluation_limit = evaluation_limit_.is_unlimited()
                     ? std::nullopt
                     : std::optional<std::size_t>{evaluation_limit_},
             });
@@ -1064,8 +1064,8 @@ private:
     std::size_t iterations_{};
     // The caller's budget (run_options::max_evaluations), which the runner's
     // own can only tighten.
-    std::size_t caller_evaluation_limit_{no_evaluation_limit};
-    std::size_t evaluation_limit_{no_evaluation_limit};
+    limit caller_evaluation_limit_{unlimited};
+    limit evaluation_limit_{unlimited};
     // Recorded by should_stop(); completed while the run goes on.
     termination_reason stop_reason_{termination_reason::completed};
     const cost_type* target_{};

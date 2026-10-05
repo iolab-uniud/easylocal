@@ -69,7 +69,7 @@ and the weights of the cost (`--cost.weights`):
 
 ```sh
 ./build/dev/examples/exam_timetabling/easylocal_exam_timetabling \
-  --runners.sa.temperature.max_iterations=10 --seed=42
+  --runners.sa.temperature.allowed_iterations=10 --seed=42
 ```
 
 `--target=0` stops the run at the first timetable with no penalty.

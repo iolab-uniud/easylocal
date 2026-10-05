@@ -63,7 +63,7 @@ tour found and its length. Its parameters are switches:
 ```sh
 ./build/dev/examples/tsp/easylocal_tsp_sa --help    # every switch
 ./build/dev/examples/tsp/easylocal_tsp_sa \
-  --runners.sa.temperature.max_iterations=50 \
+  --runners.sa.temperature.allowed_iterations=50 \
   --neighborhood.random_biases='[1, 4]'
 ./build/dev/examples/tsp/easylocal_tsp_sa --target=26   # stop at length 26
 ./build/dev/examples/tsp/easylocal_tsp_sa --config examples/tsp/configs/small.cfg

@@ -189,6 +189,23 @@ reviewed by hand before tagging.
   hexadecimal digits in JSONL (`jsonl_recorder`) and in the output of
   `eltr.py`, the STN's nodes and edges included: as JSON numbers, JavaScript
   and jq rounded them to doubles. ELTR keeps them as `u64`.
+- **Breaking:** one naming rule for counts and budgets. A `max_<count>` of a
+  run is an `easylocal::limit` cap that ends it: `max_idle_iterations` of Hill
+  Climbing, Late Acceptance and the tabu searches is a limit (`unlimited` can
+  be written in a configuration), and `FixedTemperature`'s `accepted_ratio` is
+  `max_accepted`, unlimited by default. The size of a schedule is
+  `allowed_<x>`: the `max_iterations` of `FixedLength`, `Cutoff`, `Hybrid` and
+  `FixedTemperature` is `allowed_iterations`
+  (`runners.sa.temperature.allowed_iterations`), Reheating's `max_reheats` is
+  `allowed_reheats`, and `Hybrid::sample_limit()` is
+  `samples_per_temperature()`, as in `FixedLength`. Pareto Late Acceptance's
+  `max_iterations`, the iterations before it may stop, is `min_iterations`.
+  `run_options` has the fields `timeout` and `max_evaluations` (a limit,
+  unlimited by default) instead of `time_limit` and `evaluation_budget`; its
+  members `timeout(...)` and `max_evaluations(n)` are `with_timeout(...)` and
+  `with_max_evaluations(n)`, like a pipeline stage's (the free functions
+  `timeout(...)` and `max_evaluations(n)` stay), and
+  `search_run::no_evaluation_limit` is gone: `easylocal::unlimited`.
 - The briefs of the `LimDynamic`, `Foo` and `RandomFoo` tabu lists and the
   runners reference expand their names (limited dynamic tenure, Fluctuation Of
   the Objective) and give their sources.

@@ -403,10 +403,10 @@ pipeline_stage<Runner> operator&(
     pipeline_stage<Runner> stage,
     const run_options<trace::null_tracer>& options)
 {
-    if (options.time_limit)
-        stage = std::move(stage).with_timeout(*options.time_limit);
-    if (options.evaluation_budget)
-        stage = std::move(stage).with_max_evaluations(*options.evaluation_budget);
+    if (options.timeout)
+        stage = std::move(stage).with_timeout(*options.timeout);
+    if (!options.max_evaluations.is_unlimited())
+        stage = std::move(stage).with_max_evaluations(options.max_evaluations);
     return stage;
 }
 

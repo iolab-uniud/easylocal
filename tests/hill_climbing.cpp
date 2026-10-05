@@ -194,6 +194,12 @@ int main()
             static_cast<bool>(configuration.apply(valid))
                 && climbing_parameters.max_idle_iterations == 5,
             "hill climbing configuration updates its parameters");
+        const std::array never_idle{
+            easylocal::config::text_override{"max_idle_iterations", "unlimited"}};
+        ok &= expect(
+            static_cast<bool>(configuration.apply(never_idle))
+                && climbing_parameters.max_idle_iterations.is_unlimited(),
+            "the idle limit of hill climbing can be unlimited from text");
     }
 
     {

@@ -245,7 +245,7 @@ int main()
         std::mt19937 rng{11U};
         const auto result =
             grid_runner<ParetoLateAcceptanceHillClimbing>(
-                {.history_length = 10, .max_iterations = 2000})
+                {.history_length = 10, .min_iterations = 2000})
                 .bind(grid)
                 .run(Point{4, 9}, rng);
         static_assert(std::same_as<
@@ -262,14 +262,14 @@ int main()
         ok &= expect(
             result.termination == termination_reason::idle_limit_reached
                 && result.iterations >= 2000,
-            "past max_iterations the search stops when mostly idle");
+            "past min_iterations the search stops when mostly idle");
     }
 
     {
         std::mt19937 rng{11U};
         const auto result =
             grid_runner<ParetoLateAcceptanceHillClimbing>(
-                {.history_length = 10, .max_iterations = 2000, .second_chance = false})
+                {.history_length = 10, .min_iterations = 2000, .second_chance = false})
                 .bind(grid)
                 .run(Point{4, 9}, rng);
         ok &= expect(valid_front(result.front), "without the second chance too");
@@ -297,7 +297,7 @@ int main()
         std::mt19937 rng{11U};
         const auto result =
             grid_runner<ParetoLateAcceptanceHillClimbing>(
-                {.history_length = 10, .max_iterations = 2000})
+                {.history_length = 10, .min_iterations = 2000})
                 .bind(grid)
                 .run(Point{4, 9}, rng, stop_at(target));
         ok &= expect(
@@ -400,7 +400,7 @@ int main()
         std::mt19937 rng{11U};
         const auto result =
             (easylocal::make_runner<ParetoLateAcceptanceHillClimbing>(
-                 {.history_length = 10, .max_iterations = 2000})
+                 {.history_length = 10, .min_iterations = 2000})
                 | (solution_manager<PointManager>()
                     | cost::apply(
                         Maximized{},

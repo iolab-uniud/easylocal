@@ -89,7 +89,7 @@ void iteration_exposes_names_descriptions_and_typed_references()
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
-        .max_iterations = 200,
+        .allowed_iterations = 200,
     };
 
     std::array<std::string_view, 6> names{};
@@ -102,7 +102,7 @@ void iteration_exposes_names_descriptions_and_typed_references()
             names[index++] = descriptor_type::name();
             assert(!descriptor.description.empty());
 
-            if constexpr (descriptor_type::name() == "max_iterations")
+            if constexpr (descriptor_type::name() == "allowed_iterations")
             {
                 static_assert(std::same_as<
                     std::remove_cvref_t<decltype(value)>,
@@ -117,10 +117,10 @@ void iteration_exposes_names_descriptions_and_typed_references()
             "initial_temperature",
             "final_temperature",
             "cooling_rate",
-            "max_iterations",
+            "allowed_iterations",
             "calibration_samples",
             "initial_acceptance"}));
-    assert(parameters.max_iterations == 250);
+    assert(parameters.allowed_iterations == 250);
 
     const auto& const_parameters = parameters;
     for_each_parameter(
@@ -137,7 +137,7 @@ void fixed_length_validation_checks_cross_field_invariants()
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
-        .max_iterations = 200,
+        .allowed_iterations = 200,
     };
     assert(valid.validate());
 
@@ -150,7 +150,7 @@ void fixed_length_validation_checks_cross_field_invariants()
     assert(!invalid.validate());
 
     invalid = valid;
-    invalid.max_iterations = 0;
+    invalid.allowed_iterations = 0;
     assert(!invalid.validate());
 
     invalid = valid;
@@ -256,7 +256,7 @@ void every_temperature_policy_has_a_parameter_block()
         .initial_temperature = 10.0,
         .final_temperature = 1.0,
         .cooling_rate = 0.5,
-        .max_iterations = 100,
+        .allowed_iterations = 100,
         .accepted_ratio = 1.5,
     };
     assert(!cutoff.validate());

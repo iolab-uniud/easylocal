@@ -36,7 +36,7 @@ set(ENV{PATH} "${_r_bin}:$ENV{PATH}")
 file(REMOVE_RECURSE "${EASYLOCAL_WORK_DIR}")
 execute_process(
     COMMAND "${EASYLOCAL_PROGRAM}" "--tuning.irace=${EASYLOCAL_WORK_DIR}"
-        --runners.sa.temperature.max_iterations=2000
+        --runners.sa.temperature.allowed_iterations=2000
     RESULT_VARIABLE _result
 )
 if(NOT _result EQUAL 0)

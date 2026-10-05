@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
                  .initial_temperature = 8.0,
                  .final_temperature = 0.25,
                  .cooling_rate = 0.75,
-                 .max_iterations = 200,
+                 .allowed_iterations = 200,
              }});
 
     // [tuning]

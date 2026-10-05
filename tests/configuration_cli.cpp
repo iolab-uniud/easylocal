@@ -157,7 +157,7 @@ void cli_batch_reuses_transactional_textual_overrides()
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
-        .max_iterations = 200,
+        .allowed_iterations = 200,
     };
 
     easylocal::config::parameter_set tree;
@@ -168,7 +168,7 @@ void cli_batch_reuses_transactional_textual_overrides()
         std::string_view{"--application.instance_file"},
         std::string_view{"sample.tsp"},
         std::string_view{"--solver.temperature.cooling_rate=0.8"},
-        std::string_view{"--solver.temperature.max_iterations"},
+        std::string_view{"--solver.temperature.allowed_iterations"},
         std::string_view{"500"},
     };
 
@@ -183,7 +183,7 @@ void cli_batch_reuses_transactional_textual_overrides()
     assert(applied);
     assert(app.instance_file == std::filesystem::path{"sample.tsp"});
     assert(temperature.cooling_rate == 0.8);
-    assert(temperature.max_iterations == 500);
+    assert(temperature.allowed_iterations == 500);
 }
 
 void cli_validation_errors_leave_configuration_unchanged()
@@ -193,7 +193,7 @@ void cli_validation_errors_leave_configuration_unchanged()
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
-        .max_iterations = 200,
+        .allowed_iterations = 200,
     };
 
     easylocal::config::parameter_set tree;
@@ -225,7 +225,7 @@ void help_is_generated_from_the_configuration_tree()
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
-        .max_iterations = 200,
+        .allowed_iterations = 200,
     };
 
     easylocal::config::parameter_set tree;

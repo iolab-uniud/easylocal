@@ -320,7 +320,7 @@ scenario, without running anything; the other switches on the same command
 line are the values every run starts from:
 
 ```text
-$ easylocal_tsp_sa --tuning.irace=tuning --runners.sa.temperature.max_iterations=20000
+$ easylocal_tsp_sa --tuning.irace=tuning --runners.sa.temperature.allowed_iterations=20000
 wrote tuning/parameters.txt
 wrote tuning/fixed.conf
 wrote tuning/target-runner
@@ -345,7 +345,7 @@ runners.sa.temperature.cooling_rate "--runners.sa.temperature.cooling_rate=" r (
 
 # Maximum number of annealing iterations (default 20000)
 # no finite domain: a range around the default to start from
-# runners.sa.temperature.max_iterations "--runners.sa.temperature.max_iterations=" i,log (2000, 200000)
+# runners.sa.temperature.allowed_iterations "--runners.sa.temperature.allowed_iterations=" i,log (2000, 200000)
 ```
 
 Here the initial acceptance is not tuned: it matters only when

@@ -30,9 +30,10 @@ struct ParetoLateAcceptanceHillClimbingParameters
     /// the others random ones.
     std::size_t history_length{20};
     /// Iterations after which the search stops as soon as the idle iterations
-    /// exceed idle_ratio of all the iterations.
-    std::size_t max_iterations{100000};
-    /// Share of the iterations that may be idle once max_iterations is past.
+    /// exceed idle_ratio of all the iterations: the least it runs, not a
+    /// limit.
+    std::size_t min_iterations{100000};
+    /// Share of the iterations that may be idle once min_iterations is past.
     double idle_ratio{0.02};
     /// A candidate that does not dominate the current solution may still
     /// replace the next solution of the history if it dominates it.
@@ -52,14 +53,14 @@ struct ParetoLateAcceptanceHillClimbingParameters
                 "Number of solutions in the history",
                 config::range(1, easylocal::unlimited)),
             config::field<
-                "max_iterations",
-                &ParetoLateAcceptanceHillClimbingParameters::max_iterations>(
+                "min_iterations",
+                &ParetoLateAcceptanceHillClimbingParameters::min_iterations>(
                 "Iterations after which the search may stop when mostly idle",
                 config::range(0, easylocal::unlimited)),
             config::field<
                 "idle_ratio",
                 &ParetoLateAcceptanceHillClimbingParameters::idle_ratio>(
-                "Share of idle iterations that ends the search after max_iterations",
+                "Share of idle iterations that ends the search after min_iterations",
                 config::range(0.0, 1.0)),
             config::field<
                 "second_chance",
@@ -90,7 +91,7 @@ struct ParetoLateAcceptanceHillClimbingParameters
 /// second_chance, a candidate that dominates the next solution replaces it, and
 /// the search goes on from the solution it replaced, two positions on, as in
 /// Da Ros's implementation; else it goes on from the next solution. Past
-/// max_iterations it stops as soon as more than idle_ratio of the iterations
+/// min_iterations it stops as soon as more than idle_ratio of the iterations
 /// are idle (no replacement since the last one). The result is the front of the
 /// run (search_run's archive of the non-dominated solutions reached), with its
 /// first solution by objectives.
@@ -165,7 +166,7 @@ public:
         auto current = history[0];
         while (!run.should_stop())
         {
-            if (run.iterations() >= parameters_.max_iterations
+            if (run.iterations() >= parameters_.min_iterations
                 && static_cast<double>(idle_iterations)
                     > parameters_.idle_ratio * static_cast<double>(run.iterations()))
             {

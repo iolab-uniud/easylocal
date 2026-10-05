@@ -52,7 +52,7 @@ void text_overrides_apply_to_multiple_typed_blocks()
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
-        .max_iterations = 200,
+        .allowed_iterations = 200,
     };
     NeighborhoodUnionParameters<2> neighborhood{
         .random_biases = {1.0, 1.0},
@@ -69,7 +69,7 @@ void text_overrides_apply_to_multiple_typed_blocks()
         text_override{"solver.temperature.initial_temperature", "4.0"},
         text_override{"solver.temperature.final_temperature", "0.05"},
         text_override{"solver.temperature.cooling_rate", "0.8"},
-        text_override{"solver.temperature.max_iterations", "500"},
+        text_override{"solver.temperature.allowed_iterations", "500"},
         text_override{"solver.neighborhood.random_biases", "[3, 1]"},
     };
 
@@ -81,7 +81,7 @@ void text_overrides_apply_to_multiple_typed_blocks()
     assert(temperature.initial_temperature == 4.0);
     assert(temperature.final_temperature == 0.05);
     assert(temperature.cooling_rate == 0.8);
-    assert(temperature.max_iterations == 500);
+    assert(temperature.allowed_iterations == 500);
     assert((neighborhood.random_biases == std::array{3.0, 1.0}));
 }
 
@@ -91,7 +91,7 @@ void cross_field_overrides_are_validated_as_one_block()
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
-        .max_iterations = 200,
+        .allowed_iterations = 200,
     };
 
     easylocal::config::parameter_set tree;
@@ -116,7 +116,7 @@ void invalid_batch_is_globally_atomic()
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
-        .max_iterations = 200,
+        .allowed_iterations = 200,
     };
 
     easylocal::config::parameter_set tree;
@@ -145,7 +145,7 @@ void parse_unknown_and_duplicate_errors_are_reported_without_commit()
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
-        .max_iterations = 200,
+        .allowed_iterations = 200,
     };
 
     easylocal::config::parameter_set tree;
@@ -204,7 +204,7 @@ void parameter_group_local_values_can_be_overridden()
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
-        .max_iterations = 200,
+        .allowed_iterations = 200,
     };
 
     easylocal::config::parameter_set tree;
@@ -229,7 +229,7 @@ void diagnostics_accumulate_across_independent_failures()
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
-        .max_iterations = 200,
+        .allowed_iterations = 200,
     };
     NeighborhoodUnionParameters<2> neighborhood{
         .random_biases = {1.0, 1.0},

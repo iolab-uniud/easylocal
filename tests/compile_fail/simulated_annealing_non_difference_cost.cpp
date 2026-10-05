@@ -106,7 +106,7 @@ int main()
                         .initial_temperature = 2.0,
                         .final_temperature = 1.0,
                         .cooling_rate = 0.5,
-                        .max_iterations = 1,
+                        .allowed_iterations = 1,
                     }})
         | (solution_manager<SolutionManager>() | component<StructuredValue>())
         | neighborhood<Neighborhood>();

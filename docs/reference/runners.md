@@ -48,7 +48,7 @@ asserts.
 | `runners::BestImprovement` | `moves` or cursor, `better` | `max_evaluations` (unlimited: until a local optimum) | committed moves |
 | `runners::HillClimbing` | `random_move`, `better`, `better_or_equivalent` | `max_idle_iterations`, `max_evaluations` | proposed moves |
 | `runners::LateAcceptanceHillClimbing` | `random_move`, `better`, `better_or_equivalent` | `history_length`, `max_idle_iterations`, `max_evaluations` | proposed moves |
-| `runners::ParetoLateAcceptanceHillClimbing` | `random_move`, `better`, a `cost::pareto` cost, `random_solution` | `history_length`, `max_iterations`, `idle_ratio`, `second_chance`, `max_evaluations` | proposed moves |
+| `runners::ParetoLateAcceptanceHillClimbing` | `random_move`, `better`, a `cost::pareto` cost, `random_solution` | `history_length`, `min_iterations`, `idle_ratio`, `second_chance`, `max_evaluations` | proposed moves |
 | `runners::GreatDeluge` | `random_move`, `better`, an arithmetic cost | `initial_level`, `min_level`, `level_rate`, `neighbors_sampled`, `max_evaluations` | proposed moves |
 | `runners::TabuSearch<List, Aspiration>` | `moves` or cursor, `better`, `inverse` | `max_idle_iterations`, `max_iterations`, `max_evaluations`, `tabu_list`: the list's | committed moves |
 | `runners::FirstImprovementTabuSearch<List, Aspiration>` | as TabuSearch | as TabuSearch, plus `candidates`: `improve_on_best` | committed moves |
@@ -56,10 +56,18 @@ asserts.
 | `runners::EliteCandidateTabuSearch<List, Aspiration>` | as TabuSearch, an arithmetic cost | as TabuSearch, plus `candidates`: `elite_size`, `quality` | committed moves |
 | `runners::SimulatedAnnealing<Temperature, Acceptance>` | `random_move`, `better`, an acceptance-compatible cost | a temperature policy (`temperature`), an acceptance policy, `max_evaluations` | proposed moves |
 
-The limits on a count, `max_evaluations` and `max_iterations`, are of type
-`easylocal::limit`: a number, or `easylocal::unlimited`, written `unlimited` in
-a configuration file, on the command line and in the TextUI. They are
-unlimited by default, and 0 is a limit of zero, not "no limit".
+The parameters follow one naming rule. A `max_<count>` of the run
+(`max_evaluations`, `max_iterations`, `max_idle_iterations`,
+`FixedTemperature`'s `max_accepted`) is a cap that ends the run when it is
+reached, of type `easylocal::limit`: a number, or `easylocal::unlimited`,
+written `unlimited` in a configuration file, on the command line and in the
+TextUI; 0 is a limit of zero, not "no limit". The size of a schedule, which
+shapes the search rather than stopping it, is `allowed_<x>`
+(`allowed_iterations` of the annealing schedules, `allowed_reheats`,
+`allowed_running_time`), and a threshold the search must pass first is
+`min_<x>` (`min_iterations` of Pareto Late Acceptance). The bounds of a value,
+such as `min_tenure` and `max_tenure`, keep their names. The caps are
+unlimited by default, except `max_idle_iterations` (1000).
 
 The budget is checked only before evaluating a move, so an empty neighborhood
 is a local optimum even when the budget is exhausted.
@@ -89,7 +97,7 @@ solution replaces it in the history when the candidate dominates it, and the
 search moves on to the next solution of the history. Otherwise, with
 `second_chance`, a candidate that dominates the next solution replaces it, and
 the search goes on from the solution it replaced, two positions on; else it
-moves on to the next solution. Past `max_iterations` the search ends with
+moves on to the next solution. Past `min_iterations` the search ends with
 `idle_limit_reached` as soon as more than `idle_ratio` of the iterations went
 without a replacement. Its result is the run's front, with the first solution
 by objectives as `solution`.
@@ -214,12 +222,12 @@ Simulated Annealing returns the best solution found. Temperature policies in
 | Policy | Parameters | Stops when |
 | --- | --- | --- |
 | `Classic` | initial/final temperature, cooling rate, samples per temperature | the final temperature is reached |
-| `FixedLength` | initial/final temperature, cooling rate, max iterations | max iterations are spent, spread over the levels |
-| `Cutoff` | as FixedLength, plus accepted ratio | max iterations; cools only after `accepted_ratio` of a level's share of them have been accepted, never on samples |
-| `Hybrid` | as Cutoff | max iterations; cools on samples or acceptances |
-| `FixedTemperature` | temperature, max iterations, accepted ratio | max iterations, or enough acceptances; never cools |
+| `FixedLength` | initial/final temperature, cooling rate, `allowed_iterations` | the allowed iterations are spent, spread over the levels |
+| `Cutoff` | as FixedLength, plus `accepted_ratio` | the allowed iterations are spent; cools only after `accepted_ratio` of a level's share of them have been accepted, never on samples |
+| `Hybrid` | as Cutoff | the allowed iterations are spent; cools on samples or acceptances (`samples_per_temperature()`, `accepted_limit()`) |
+| `FixedTemperature` | temperature, `allowed_iterations`, `max_accepted` (unlimited by default) | the allowed iterations are spent, or `max_accepted` moves are accepted; never cools |
 | `TimeBased` | initial/final temperature, cooling rate, running time, accepted per temperature (unlimited: cools only on time) | the running time is over or the final temperature is reached; levels share the time |
-| `Reheating<Descent>` | `descent`: the schedule's, plus max reheats, reheat ratio, first-descent share | the last descent ends; each reheat restarts from `reheat_ratio` times T0 |
+| `Reheating<Descent>` | `descent`: the schedule's, plus `allowed_reheats`, reheat ratio, first-descent share | the last descent ends; each reheat restarts from `reheat_ratio` times T0 |
 
 The levels of a schedule are counted once, from its temperatures: the
 smallest `k` with `initial_temperature * cooling_rate^k <= final_temperature`,
@@ -233,14 +241,14 @@ the machine, so equal seeds do not give equal runs.
 
 `Reheating<Descent>` reheats any schedule whose parameters have an
 `initial_temperature` (all but `FixedTemperature`): a first descent, then up to
-`max_reheats` descents that restart from `reheat_ratio` times the initial
-temperature. When the schedule has a budget, `max_iterations` or
+`allowed_reheats` descents that restart from `reheat_ratio` times the initial
+temperature. When the schedule has a budget, `allowed_iterations` or
 `allowed_running_time`, the first descent spends `first_descent_share` of it
 and the reheats divide the rest evenly, at least one iteration each, so
-`max_reheats` may not exceed the iterations the first descent leaves (a
+`allowed_reheats` may not exceed the iterations the first descent leaves (a
 requirement of the block); `Classic`, which has none, runs whole at every
 descent. The schedule's parameters are the group `descent`:
-`{.temperature = {.descent = {...}, .max_reheats = 2}}`,
+`{.temperature = {.descent = {...}, .allowed_reheats = 2}}`,
 `search.temperature.descent.*` in a configuration. It calibrates when the
 schedule does, keeping the reheat temperature above the final one.
 `Reheating<Hybrid>` is EasyLocal 3's annealing with reheating.
@@ -359,8 +367,8 @@ Great Deluge, Simulated Annealing and the tabu searches use it.
 | `with(control, tracer)` | both |
 | `stop_at(target)`, `with(...).stop_at(target)` | stop as soon as the best cost is at least as good as `target` |
 | `options.without_target()` | the same options without their target (a pipeline gives them to a stage that is not the last) |
-| `max_evaluations(n)`, `with(...).max_evaluations(n)` | stop once the run has made `n` evaluations, the initial one included; a runner's own `max_evaluations`, if smaller, still applies; termination `evaluation_budget_exhausted` |
-| `timeout(5s)`, `timeout(2.5)`, `with(...).timeout(...)` | stop once the time limit has passed since the run started: a `std::chrono` duration or a number of seconds; termination `time_limit_reached` |
+| `max_evaluations(n)`, `with(...).with_max_evaluations(n)` | stop once the run has made `n` evaluations, the initial one included; a runner's own `max_evaluations`, if smaller, still applies; termination `evaluation_budget_exhausted` |
+| `timeout(5s)`, `timeout(2.5)`, `with(...).with_timeout(...)` | stop once the time limit has passed since the run started: a `std::chrono` duration or a number of seconds; termination `time_limit_reached` |
 
 `run_control{stop_token, observer}` calls `observer(const run_progress&)` with
 `evaluations`, `iterations` and `evaluation_limit`. A frontend that shows the
@@ -368,7 +376,10 @@ progress from another thread stores it in a `shared_run_progress` from the
 observer and loads a copy when it draws, as the TextUI and the REST server do.
 
 The options combine in any order:
-`with(control).timeout(30s).max_evaluations(100000).stop_at(0)`. A
+`with(control).with_timeout(30s).with_max_evaluations(100000).stop_at(0)`.
+They are the fields `control`, `tracer`, `target`, `timeout` (none: no time
+limit) and `max_evaluations` (an `easylocal::limit`, unlimited by default) of
+`run_options`. A
 negative time limit, a NaN one (a number of seconds or a floating-point
 duration) and an infinite number of seconds throw `std::invalid_argument`; a
 duration beyond what the clock counts is the longest it can. `search_run`

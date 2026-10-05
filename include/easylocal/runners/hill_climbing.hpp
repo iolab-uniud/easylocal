@@ -22,8 +22,8 @@ namespace easylocal::runners
 struct HillClimbingParameters
 {
     /// Consecutive proposals without a strict improvement after which the
-    /// search stops.
-    std::size_t max_idle_iterations{1000};
+    /// search stops; unlimited: it never stops for that.
+    limit max_idle_iterations{1000};
     /// Evaluation budget, including the initial evaluation; unlimited by
     /// default.
     limit max_evaluations{unlimited};
@@ -37,7 +37,7 @@ struct HillClimbingParameters
                 "max_idle_iterations",
                 &HillClimbingParameters::max_idle_iterations>(
                 "Maximum number of consecutive proposals without "
-                "improvement",
+                "improvement, or unlimited",
                 config::range(1, easylocal::unlimited)),
             config::field<"max_evaluations", &HillClimbingParameters::max_evaluations>(
                 "Maximum number of solution evaluations, or unlimited",

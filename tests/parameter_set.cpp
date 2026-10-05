@@ -99,13 +99,13 @@ void same_typed_blocks_are_told_apart_by_their_prefixes()
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
-        .max_iterations = 200,
+        .allowed_iterations = 200,
     };
     FixedLengthParameters slow{
         .initial_temperature = 80.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.95,
-        .max_iterations = 2000,
+        .allowed_iterations = 2000,
     };
     NeighborhoodUnionParameters<2> biases{.random_biases = {3.0, 1.0}};
 
@@ -130,8 +130,8 @@ void same_typed_blocks_are_told_apart_by_their_prefixes()
     assert(fast_fields > 0 && fast_fields == slow_fields);
     assert(set.parameters().size() == 2 + 1 + fast_fields + slow_fields);
     assert(value_at(set, "input.instance_file") == "eil51.tsp");
-    assert(value_at(set, "fast.temperature.max_iterations") == "200");
-    assert(value_at(set, "slow.temperature.max_iterations") == "2000");
+    assert(value_at(set, "fast.temperature.allowed_iterations") == "200");
+    assert(value_at(set, "slow.temperature.allowed_iterations") == "2000");
     assert(value_at(set, "fast.neighborhood.random_biases") == "[3, 1]");
 
     // A view: the set shows what the blocks hold now.

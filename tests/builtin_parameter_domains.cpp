@@ -155,8 +155,8 @@ int main()
     expect_requirement(
         "reheating.budget",
         sa::ReheatingParameters<sa::FixedLengthParameters>{
-            .descent = {.max_iterations = 10},
-            .max_reheats = 3,
+            .descent = {.allowed_iterations = 10},
+            .allowed_reheats = 3,
             .first_descent_share = 0.9});
 
     for (const auto& path : missing)

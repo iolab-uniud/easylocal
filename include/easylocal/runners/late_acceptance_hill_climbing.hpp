@@ -26,8 +26,8 @@ struct LateAcceptanceHillClimbingParameters
     /// Number of past costs a candidate is compared with.
     std::size_t history_length{10};
     /// Consecutive proposals without improving the best cost after which the
-    /// search stops.
-    std::size_t max_idle_iterations{1000};
+    /// search stops; unlimited: it never stops for that.
+    limit max_idle_iterations{1000};
     /// Evaluation budget, including the initial evaluation; unlimited by
     /// default.
     limit max_evaluations{unlimited};
@@ -46,7 +46,7 @@ struct LateAcceptanceHillClimbingParameters
                 "max_idle_iterations",
                 &LateAcceptanceHillClimbingParameters::max_idle_iterations>(
                 "Maximum number of consecutive proposals without improving "
-                "the best cost",
+                "the best cost, or unlimited",
                 config::range(1, easylocal::unlimited)),
             config::field<
                 "max_evaluations",

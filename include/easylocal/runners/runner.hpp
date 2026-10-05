@@ -250,19 +250,18 @@ auto run_algorithm(
     if constexpr (arguments::has_options)
     {
         const auto& options = std::get<sizeof...(Args) - 1>(forwarded);
-        if (options.time_limit)
-            deadline = detail::deadline_after(*options.time_limit);
+        if (options.timeout)
+            deadline = detail::deadline_after(*options.timeout);
     }
 
     // The caller's evaluation budget, which the runner's own may tighten, and
     // what the archive keeps.
-    std::size_t evaluation_limit = search_run<Context, tracer_type>::no_evaluation_limit;
+    limit evaluation_limit = unlimited;
     pareto_archive_parameters front;
     if constexpr (arguments::has_options)
     {
         const auto& options = std::get<sizeof...(Args) - 1>(forwarded);
-        if (options.evaluation_budget)
-            evaluation_limit = *options.evaluation_budget;
+        evaluation_limit = options.max_evaluations;
         front = options.front;
     }
 

@@ -44,7 +44,7 @@ when the solve's time or evaluations are spent; its termination is then
 
 A solve's time limit and evaluation budget (`solve(input,
 easylocal::timeout(30s))`, `easylocal::max_evaluations(1'000'000)`, or both,
-`with(control).timeout(30s).max_evaluations(1'000'000)`) bound all its runs
+`with(control).with_timeout(30s).with_max_evaluations(1'000'000)`) bound all its runs
 together: `LocalSearch` gives them to its one run, `MultiStart` starts no run
 once they are spent and gives each start what is left, and a pipeline gives
 each stage what is left.

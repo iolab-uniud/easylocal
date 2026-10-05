@@ -371,7 +371,7 @@ struct FixedLengthParameters
     /// The factor that multiplies the temperature at each cooling.
     double cooling_rate{0.95};
     /// Proposals in all, spread over the temperature levels.
-    std::size_t max_iterations{100'000};
+    std::size_t allowed_iterations{100'000};
 
     /// Moves sampled at the initial solution to estimate the initial
     /// temperature; 0 keeps initial_temperature.
@@ -395,8 +395,10 @@ struct FixedLengthParameters
             config::field<"cooling_rate", &FixedLengthParameters::cooling_rate>(
                 "Multiplicative cooling factor",
                 config::range(0.0, 1.0).open()),
-            config::field<"max_iterations", &FixedLengthParameters::max_iterations>(
-                "Maximum number of annealing iterations",
+            config::field<
+                "allowed_iterations",
+                &FixedLengthParameters::allowed_iterations>(
+                "Proposals of the annealing, spread over its levels",
                 config::range(1, easylocal::unlimited)),
             config::field<
                 "calibration_samples",
@@ -427,7 +429,7 @@ struct FixedLengthParameters
     }
 };
 
-/// A geometric schedule with a budget of max_iterations proposals, spread
+/// A geometric schedule with a budget of allowed_iterations proposals, spread
 /// evenly over the temperature levels from initial_temperature to
 /// final_temperature.
 ///
@@ -444,7 +446,7 @@ public:
     explicit FixedLength(const FixedLengthParameters parameters)
         : parameters_{config::require_valid(parameters)},
           samples_per_temperature_{detail::positive_quotient(
-              parameters.max_iterations,
+              parameters.allowed_iterations,
               detail::temperature_level_count(
                   parameters.initial_temperature,
                   parameters.final_temperature,
@@ -508,15 +510,15 @@ public:
         }
     }
 
-    /// Whether max_iterations proposals have been made.
+    /// Whether allowed_iterations proposals have been made.
     [[nodiscard]]
     bool finished() const noexcept
     {
-        return iterations_ >= parameters_.max_iterations;
+        return iterations_ >= parameters_.allowed_iterations;
     }
 
-    /// The proposals of each temperature level: max_iterations over the number
-    /// of levels, at least 1.
+    /// The proposals of each temperature level: allowed_iterations over the
+    /// number of levels, at least 1.
     [[nodiscard]]
     std::size_t samples_per_temperature() const noexcept
     {
@@ -541,9 +543,9 @@ struct CutoffParameters
     /// The factor that multiplies the temperature at each cooling.
     double cooling_rate{0.95};
     /// Proposals in all, spread over the temperature levels.
-    std::size_t max_iterations{100'000};
+    std::size_t allowed_iterations{100'000};
     /// Accepted proposals that cool, as a share of a level's proposals
-    /// (max_iterations over the temperature levels).
+    /// (allowed_iterations over the temperature levels).
     double accepted_ratio{0.1};
 
     /// Moves sampled at the initial solution to estimate the initial
@@ -566,8 +568,8 @@ struct CutoffParameters
             config::field<"cooling_rate", &CutoffParameters::cooling_rate>(
                 "Multiplicative cooling factor",
                 config::range(0.0, 1.0).open()),
-            config::field<"max_iterations", &CutoffParameters::max_iterations>(
-                "Maximum number of annealing iterations",
+            config::field<"allowed_iterations", &CutoffParameters::allowed_iterations>(
+                "Proposals of the annealing, spread over its levels",
                 config::range(1, easylocal::unlimited)),
             config::field<"accepted_ratio", &CutoffParameters::accepted_ratio>(
                 "Fraction of accepted proposals that triggers cooling",
@@ -597,9 +599,9 @@ struct CutoffParameters
     }
 };
 
-/// A schedule with a budget of max_iterations proposals that cools on
+/// A schedule with a budget of allowed_iterations proposals that cools on
 /// acceptances only: after accepted_ratio times a level's share of the budget
-/// (max_iterations over the temperature levels) has been accepted.
+/// (allowed_iterations over the temperature levels) has been accepted.
 ///
 /// The annealing ends when the budget is spent.
 class Cutoff
@@ -616,7 +618,7 @@ public:
           // The proposals of a level, were the iterations shared evenly.
           accepted_limit_{detail::accepted_limit(
               detail::positive_quotient(
-                  parameters.max_iterations,
+                  parameters.allowed_iterations,
                   detail::temperature_level_count(
                       parameters.initial_temperature,
                       parameters.final_temperature,
@@ -681,15 +683,15 @@ public:
         }
     }
 
-    /// Whether max_iterations proposals have been made.
+    /// Whether allowed_iterations proposals have been made.
     [[nodiscard]]
     bool finished() const noexcept
     {
-        return iterations_ >= parameters_.max_iterations;
+        return iterations_ >= parameters_.allowed_iterations;
     }
 
     /// The acceptances that cool: accepted_ratio times a level's share of
-    /// max_iterations, at least 1.
+    /// allowed_iterations, at least 1.
     [[nodiscard]]
     std::size_t accepted_limit() const noexcept
     {
@@ -707,11 +709,12 @@ private:
 /// The parameters of the Hybrid schedule, those of Cutoff.
 using HybridParameters = CutoffParameters;
 
-/// The schedule of EasyLocal 3: a level ends after its share of max_iterations
-/// proposals or, earlier, after accepted_ratio of them have been accepted; the
-/// proposals an early cooling saves are spread over the remaining levels.
+/// The schedule of EasyLocal 3: a level ends after its share of
+/// allowed_iterations proposals or, earlier, after accepted_ratio of them have
+/// been accepted; the proposals an early cooling saves are spread over the
+/// remaining levels.
 ///
-/// The annealing ends when max_iterations proposals are spent.
+/// The annealing ends when allowed_iterations proposals are spent.
 class Hybrid
 {
 public:
@@ -727,8 +730,9 @@ public:
               parameters.initial_temperature,
               parameters.final_temperature,
               parameters.cooling_rate)},
-          initial_sample_limit_{
-              detail::positive_quotient(parameters.max_iterations, temperature_levels_)},
+          initial_sample_limit_{detail::positive_quotient(
+              parameters.allowed_iterations,
+              temperature_levels_)},
           accepted_limit_{
               detail::accepted_limit(initial_sample_limit_, parameters.accepted_ratio)}
     {
@@ -780,8 +784,8 @@ public:
     }
 
     /// Counts the proposal, and multiplies the temperature by cooling_rate
-    /// after sample_limit() proposals or accepted_limit() acceptances at the
-    /// same temperature.
+    /// after samples_per_temperature() proposals or accepted_limit()
+    /// acceptances at the same temperature.
     ///
     /// After an early cooling by acceptances, the proposals left are spread
     /// evenly over the remaining levels.
@@ -811,7 +815,7 @@ public:
             if (cutoff_saved_iterations)
             {
                 const auto remaining_iterations =
-                    parameters_.max_iterations - iterations_;
+                    parameters_.allowed_iterations - iterations_;
                 const auto remaining_levels =
                     temperature_levels_ > completed_levels_
                     ? temperature_levels_ - completed_levels_
@@ -827,23 +831,24 @@ public:
         }
     }
 
-    /// Whether max_iterations proposals have been made.
+    /// Whether allowed_iterations proposals have been made.
     [[nodiscard]]
     bool finished() const noexcept
     {
-        return iterations_ >= parameters_.max_iterations;
+        return iterations_ >= parameters_.allowed_iterations;
     }
 
-    /// The proposals of the current level: max_iterations over the levels or,
-    /// after an early cooling, the proposals left over the remaining levels.
+    /// The proposals of the current level: allowed_iterations over the levels
+    /// or, after an early cooling, the proposals left over the remaining
+    /// levels.
     [[nodiscard]]
-    std::size_t sample_limit() const noexcept
+    std::size_t samples_per_temperature() const noexcept
     {
         return current_sample_limit_;
     }
 
     /// The acceptances that end a level early: accepted_ratio times a level's
-    /// initial share of max_iterations, at least 1.
+    /// initial share of allowed_iterations, at least 1.
     [[nodiscard]]
     std::size_t accepted_limit() const noexcept
     {
@@ -869,9 +874,9 @@ struct FixedTemperatureParameters
     /// The constant temperature.
     double temperature{1.0};
     /// Proposals in all.
-    std::size_t max_iterations{100'000};
-    /// The share of max_iterations that, once accepted, ends the annealing.
-    double accepted_ratio{1.0};
+    std::size_t allowed_iterations{100'000};
+    /// Accepted proposals after which the annealing ends; unlimited by default.
+    limit max_accepted{unlimited};
 
     /// Moves sampled at the initial solution to estimate the temperature; 0
     /// keeps temperature.
@@ -887,12 +892,14 @@ struct FixedTemperatureParameters
             config::field<"temperature", &FixedTemperatureParameters::temperature>(
                 "Constant annealing temperature",
                 config::range(0.0, easylocal::unlimited).open_low()),
-            config::field<"max_iterations", &FixedTemperatureParameters::max_iterations>(
-                "Maximum number of annealing iterations",
+            config::field<
+                "allowed_iterations",
+                &FixedTemperatureParameters::allowed_iterations>(
+                "Proposals of the annealing",
                 config::range(1, easylocal::unlimited)),
-            config::field<"accepted_ratio", &FixedTemperatureParameters::accepted_ratio>(
-                "Fraction of max_iterations accepted proposals that ends the search",
-                config::range(0.0, 1.0).open_low()),
+            config::field<"max_accepted", &FixedTemperatureParameters::max_accepted>(
+                "Accepted proposals that end the annealing, or unlimited",
+                config::range(1, easylocal::unlimited)),
             config::field<
                 "calibration_samples",
                 &FixedTemperatureParameters::calibration_samples>(
@@ -917,8 +924,8 @@ struct FixedTemperatureParameters
     }
 };
 
-/// A constant temperature: the search ends after max_iterations proposals, or
-/// earlier once accepted_ratio * max_iterations of them have been accepted.
+/// A constant temperature: the search ends after allowed_iterations proposals,
+/// or earlier once max_accepted of them have been accepted.
 class FixedTemperature
 {
 public:
@@ -929,10 +936,7 @@ public:
     ///
     /// Throws `std::invalid_argument` when they are not valid.
     explicit FixedTemperature(const FixedTemperatureParameters parameters)
-        : parameters_{config::require_valid(parameters)},
-          accepted_limit_{detail::accepted_limit(
-              parameters.max_iterations,
-              parameters.accepted_ratio)}
+        : parameters_{config::require_valid(parameters)}
     {
         reset();
     }
@@ -990,25 +994,17 @@ public:
         accepted_ += accepted ? 1U : 0U;
     }
 
-    /// Whether max_iterations proposals or accepted_limit() acceptances have
+    /// Whether allowed_iterations proposals or max_accepted acceptances have
     /// been made.
     [[nodiscard]]
     bool finished() const noexcept
     {
-        return iterations_ >= parameters_.max_iterations || accepted_ >= accepted_limit_;
-    }
-
-    /// The acceptances that end the annealing: accepted_ratio times
-    /// max_iterations, at least 1.
-    [[nodiscard]]
-    std::size_t accepted_limit() const noexcept
-    {
-        return accepted_limit_;
+        return iterations_ >= parameters_.allowed_iterations
+            || accepted_ >= parameters_.max_accepted;
     }
 
 private:
     FixedTemperatureParameters parameters_;
-    std::size_t accepted_limit_{};
     std::size_t iterations_{};
     std::size_t accepted_{};
 };
@@ -1254,7 +1250,7 @@ namespace detail
 // iteration budget or a running time.
 template<class Parameters>
 concept iteration_budget = requires(Parameters parameters) {
-    { parameters.max_iterations } -> std::convertible_to<std::size_t>;
+    { parameters.allowed_iterations } -> std::convertible_to<std::size_t>;
 };
 
 template<class Parameters>
@@ -1289,12 +1285,12 @@ struct ReheatingParameters
     /// The schedule of the descents; the reheats restart it from a lower
     /// initial temperature.
     DescentParameters descent{};
-    /// Descents after the first one.
-    std::size_t max_reheats{3};
+    /// Descents after the first one: the size of the schedule, not a limit.
+    std::size_t allowed_reheats{3};
     /// The temperature a reheat restarts from, as a factor of the descent's
     /// initial_temperature.
     double reheat_ratio{0.5};
-    /// The share of the descent's budget (max_iterations or
+    /// The share of the descent's budget (allowed_iterations or
     /// allowed_running_time) spent by the first descent; the reheats divide the
     /// rest evenly.
     ///
@@ -1311,25 +1307,25 @@ struct ReheatingParameters
         const auto fields = config::fields(
             config::group<"descent", &ReheatingParameters::descent>(
                 "The schedule of each descent"),
-            config::field<"max_reheats", &ReheatingParameters::max_reheats>(
+            config::field<"allowed_reheats", &ReheatingParameters::allowed_reheats>(
                 "Number of reheats after the first descent",
                 config::range(0, easylocal::unlimited)),
             config::field<"reheat_ratio", &ReheatingParameters::reheat_ratio>(
                 "Restart temperature of a reheat, as a factor of the initial one",
                 config::range(0.0, easylocal::unlimited).open_low())
-                .only_if(config::value<"max_reheats"> > 0),
+                .only_if(config::value<"allowed_reheats"> > 0),
             config::field<
                 "first_descent_share",
                 &ReheatingParameters::first_descent_share>(
                 "Share of the budget spent by the first descent",
                 config::range(0.0, 1.0).open())
-                .only_if(config::value<"max_reheats"> > 0 && budgeted));
+                .only_if(config::value<"allowed_reheats"> > 0 && budgeted));
         // A reheat restarts above the final temperature.
         const auto above_final = [&] {
             if constexpr (detail::final_temperature_schedule<DescentParameters>)
             {
                 const auto rule = config::require(
-                    config::value<"max_reheats"> == 0
+                    config::value<"allowed_reheats"> == 0
                         || config::value<"descent.initial_temperature">
                                 * config::value<"reheat_ratio"> > config::value<
                                "descent.final_temperature">,
@@ -1344,15 +1340,15 @@ struct ReheatingParameters
         }();
         if constexpr (detail::iteration_budget<DescentParameters>)
         {
-            // The first descent spends ceil(max_iterations * share), and each
-            // reheat at least one of the rest.
+            // The first descent spends ceil(allowed_iterations * share), and
+            // each reheat at least one of the rest.
             const auto rest = config::require(
-                config::value<"max_reheats"> == 0
-                    || config::value<"descent.max_iterations">
+                config::value<"allowed_reheats"> == 0
+                    || config::value<"descent.allowed_iterations">
                                 * config::value<"first_descent_share">
-                            + config::value<"max_reheats">
-                        <= config::value<"descent.max_iterations">,
-                "max_reheats must not exceed the iterations the first descent leaves");
+                            + config::value<"allowed_reheats">
+                        <= config::value<"descent.allowed_iterations">,
+                "allowed_reheats must not exceed the iterations the first descent leaves");
             return std::tuple_cat(above_final, std::tuple<decltype(rest)>{rest});
         }
         else
@@ -1370,7 +1366,7 @@ struct ReheatingParameters
         const auto schedule = descent.validate();
         if (!schedule)
             return schedule;
-        if (max_reheats == 0)
+        if (allowed_reheats == 0)
             return config::validation_result::success();
         // Its domain has no upper bound: it lets infinity through.
         if (!std::isfinite(reheat_ratio))
@@ -1391,14 +1387,14 @@ struct ReheatingParameters
 };
 
 /// Reheats any schedule with an initial temperature: a first descent, then up
-/// to max_reheats descents restarting from reheat_ratio times the initial
+/// to allowed_reheats descents restarting from reheat_ratio times the initial
 /// temperature.
 ///
-/// When the schedule has a budget, max_iterations or allowed_running_time, the
-/// first descent spends first_descent_share of it and the reheats divide the
-/// rest evenly; otherwise each descent runs the whole schedule. It calibrates
-/// when the schedule does, and the reheat temperature stays above the final
-/// one. Reheating<Hybrid> is EasyLocal 3's annealing with reheating.
+/// When the schedule has a budget, allowed_iterations or allowed_running_time,
+/// the first descent spends first_descent_share of it and the reheats divide
+/// the rest evenly; otherwise each descent runs the whole schedule. It
+/// calibrates when the schedule does, and the reheat temperature stays above
+/// the final one. Reheating<Hybrid> is EasyLocal 3's annealing with reheating.
 template<detail::reheatable_policy Descent>
 class Reheating
 {
@@ -1460,23 +1456,23 @@ public:
     }
 
     /// Passes the proposal to the descent under way, and starts a reheat when
-    /// it finishes and fewer than max_reheats have been done.
+    /// it finishes and fewer than allowed_reheats have been done.
     void on_iteration(const bool accepted)
     {
         assert(!finished());
         descent_.on_iteration(accepted);
-        if (descent_.finished() && reheats_ < parameters_.max_reheats)
+        if (descent_.finished() && reheats_ < parameters_.allowed_reheats)
         {
             descent_ = Descent{reheat_descent(parameters_)};
             ++reheats_;
         }
     }
 
-    /// Whether the last descent, after max_reheats reheats, has finished.
+    /// Whether the last descent, after allowed_reheats reheats, has finished.
     [[nodiscard]]
     bool finished() const noexcept
     {
-        return reheats_ >= parameters_.max_reheats && descent_.finished();
+        return reheats_ >= parameters_.allowed_reheats && descent_.finished();
     }
 
     /// The reheats done so far.
@@ -1502,7 +1498,7 @@ private:
         if constexpr (detail::final_temperature_schedule<descent_parameters_type>)
         {
             const auto& descent = parameters_.descent;
-            const auto reheat_factor = parameters_.max_reheats == 0
+            const auto reheat_factor = parameters_.allowed_reheats == 0
                 ? 1.0
                 : std::min(1.0, parameters_.reheat_ratio);
             double cooling = 1.0;
@@ -1520,14 +1516,14 @@ private:
     static descent_parameters_type first_descent(const parameters_type& parameters)
     {
         auto descent = parameters.descent;
-        if (parameters.max_reheats == 0)
+        if (parameters.allowed_reheats == 0)
             return descent;
         if constexpr (detail::iteration_budget<descent_parameters_type>)
         {
-            descent.max_iterations = std::max(
+            descent.allowed_iterations = std::max(
                 std::size_t{1},
                 static_cast<std::size_t>(std::ceil(
-                    static_cast<double>(parameters.descent.max_iterations)
+                    static_cast<double>(parameters.descent.allowed_iterations)
                     * parameters.first_descent_share)));
         }
         else if constexpr (detail::time_budget<descent_parameters_type>)
@@ -1544,17 +1540,17 @@ private:
         descent.initial_temperature *= parameters.reheat_ratio;
         if constexpr (detail::iteration_budget<descent_parameters_type>)
         {
-            const auto first = first_descent(parameters).max_iterations;
-            const auto total = parameters.descent.max_iterations;
-            descent.max_iterations = detail::positive_quotient(
+            const auto first = first_descent(parameters).allowed_iterations;
+            const auto total = parameters.descent.allowed_iterations;
+            descent.allowed_iterations = detail::positive_quotient(
                 total > first ? total - first : 0,
-                parameters.max_reheats);
+                parameters.allowed_reheats);
         }
         else if constexpr (detail::time_budget<descent_parameters_type>)
         {
             descent.allowed_running_time = parameters.descent.allowed_running_time
                 * (1.0 - parameters.first_descent_share)
-                / static_cast<double>(parameters.max_reheats);
+                / static_cast<double>(parameters.allowed_reheats);
         }
         return descent;
     }

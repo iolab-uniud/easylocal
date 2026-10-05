@@ -132,8 +132,7 @@ int main()
 
     const Instance instance{};
     auto runner =
-        el::make_runner<el::runners::HillClimbing>(
-            {.max_idle_iterations = std::numeric_limits<std::size_t>::max()})
+        el::make_runner<el::runners::HillClimbing>({.max_idle_iterations = el::unlimited})
         | (el::solution_manager<SolutionManager>() | el::component<Value>())
         | el::neighborhood<EndlessNeighborhood>();
     auto bound = runner.bind(instance);
@@ -168,30 +167,30 @@ int main()
             && in_seconds.evaluations == 1,
         "a time limit in seconds");
     ok &= expect(
-        el::timeout(2.5).time_limit == el::timeout(2500ms).time_limit,
+        el::timeout(2.5).timeout == el::timeout(2500ms).timeout,
         "seconds and a duration give the same limit");
 
     // With the other options: each one is kept.
     std::stop_source stop;
     const el::run_control control{stop.get_token()};
-    const auto combined = el::with(control).timeout(30s).stop_at(7);
+    const auto combined = el::with(control).with_timeout(30s).stop_at(7);
     ok &= expect(
         combined.control == &control && combined.target == 7
-            && combined.time_limit == el::timeout(30s).time_limit,
+            && combined.timeout == el::timeout(30s).timeout,
         "timeout and stop_at combine");
     const auto reached = bound.run(bound.initial_solution(), rng, combined);
     ok &= expect(
         reached.termination == el::termination_reason::target_reached,
         "the target ends a run before its time limit");
-    const auto reversed = el::with(control).stop_at(7).timeout(30s);
+    const auto reversed = el::with(control).stop_at(7).with_timeout(30s);
     ok &= expect(
-        reversed.target == 7 && reversed.time_limit == combined.time_limit,
+        reversed.target == 7 && reversed.timeout == combined.timeout,
         "stop_at keeps a time limit set before");
 
     // A limit beyond what the clock counts is no limit; a negative one is an
     // error.
     ok &= expect(
-        el::timeout(std::chrono::hours::max()).time_limit == clock::duration::max(),
+        el::timeout(std::chrono::hours::max()).timeout == clock::duration::max(),
         "a limit beyond the clock is the largest one");
     bool rejected = false;
     try
@@ -250,8 +249,7 @@ int main()
     // The caller's budget tightens the runner's own, never widens it.
     auto frugal =
         el::make_runner<el::runners::HillClimbing>(
-            {.max_idle_iterations = std::numeric_limits<std::size_t>::max(),
-                .max_evaluations = 5})
+            {.max_idle_iterations = el::unlimited, .max_evaluations = 5})
         | (el::solution_manager<SolutionManager>() | el::component<Value>())
         | el::neighborhood<EndlessNeighborhood>();
     auto frugal_bound = frugal.bind(instance);
@@ -267,14 +265,18 @@ int main()
         "a smaller caller budget tightens the runner's own");
 
     // Every option keeps the others.
-    const auto all = el::with(control).timeout(30s).max_evaluations(7).stop_at(100);
+    const auto all =
+        el::with(control).with_timeout(30s).with_max_evaluations(7).stop_at(100);
     ok &= expect(
-        all.control == &control && all.target == 100 && all.evaluation_budget == 7
-            && all.time_limit == el::timeout(30s).time_limit,
+        all.control == &control && all.target == 100 && all.max_evaluations == 7
+            && all.timeout == el::timeout(30s).timeout,
         "max_evaluations combines with timeout and stop_at");
     ok &= expect(
-        el::with(control).max_evaluations(7).timeout(1s).evaluation_budget == 7,
+        el::with(control).with_max_evaluations(7).with_timeout(1s).max_evaluations == 7,
         "timeout keeps an evaluation budget set before");
+    ok &= expect(
+        el::with(control).max_evaluations.is_unlimited() && !el::with(control).timeout,
+        "run options have no evaluation budget and no time limit by default");
 
     // A solve's time limit bounds all its runs: a MultiStart of endless starts
     // stops at it.
@@ -346,12 +348,12 @@ int main()
     // The trace says why each run ended.
     el::trace::memory_recorder<int> timed_trace;
     static_cast<void>(
-        bound.run(bound.initial_solution(), rng, el::with(timed_trace).timeout(0s)));
+        bound.run(bound.initial_solution(), rng, el::with(timed_trace).with_timeout(0s)));
     el::trace::memory_recorder<int> budget_trace;
     static_cast<void>(bound.run(
         bound.initial_solution(),
         rng,
-        el::with(budget_trace).max_evaluations(3)));
+        el::with(budget_trace).with_max_evaluations(3)));
     using finished = el::trace::memory_recorder<int>::run_finished_record;
     const auto* const timed_end = std::get_if<finished>(&timed_trace.records().back());
     const auto* const budget_end = std::get_if<finished>(&budget_trace.records().back());

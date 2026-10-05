@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
                      .initial_temperature = 100.0,
                      .final_temperature = 1.0,
                      .cooling_rate = 0.5,
-                     .max_iterations = 30,
+                     .allowed_iterations = 30,
                  }});
 
     return easylocal::cli::run(

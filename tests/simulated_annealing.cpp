@@ -290,28 +290,28 @@ int main()
                     .initial_temperature = 8.0,
                     .final_temperature = 0.25,
                     .cooling_rate = 0.75,
-                    .max_iterations = 200,
+                    .allowed_iterations = 200,
                 }};
 
         easylocal::config::parameter_set configuration;
         configuration.add(annealing);
-        const auto max_iterations = [&] {
+        const auto allowed_iterations = [&] {
             for (const auto& parameter : configuration.parameters())
-                if (parameter.path == "temperature.max_iterations")
+                if (parameter.path == "temperature.allowed_iterations")
                     return parameter.value;
             return std::string{};
         };
         ok &= expect(
-            max_iterations() == "200",
+            allowed_iterations() == "200",
             "SA configuration exposes the nested temperature policy parameters");
 
         const std::array update{
-            easylocal::config::text_override{"temperature.max_iterations", "20"}};
+            easylocal::config::text_override{"temperature.allowed_iterations", "20"}};
         ok &= expect(
             static_cast<bool>(configuration.apply(update)),
             "SA configuration can update its nested temperature policy");
         ok &= expect(
-            max_iterations() == "20",
+            allowed_iterations() == "20",
             "SA nested configuration update changes the owned policy");
     }
 
@@ -347,7 +347,7 @@ int main()
             .initial_temperature = 8.0,
             .final_temperature = 1.0,
             .cooling_rate = 0.5,
-            .max_iterations = 12,
+            .allowed_iterations = 12,
         }};
         ok &= expect(policy.samples_per_temperature() == 4,
             "fixed-length policy distributes the iteration budget over temperature levels");
@@ -370,7 +370,7 @@ int main()
             .initial_temperature = 8.0,
             .final_temperature = 1.0,
             .cooling_rate = 0.5,
-            .max_iterations = 12,
+            .allowed_iterations = 12,
             .accepted_ratio = 0.5,
         }};
         ok &= expect(policy.accepted_limit() == 2,
@@ -390,16 +390,18 @@ int main()
             .initial_temperature = 8.0,
             .final_temperature = 1.0,
             .cooling_rate = 0.5,
-            .max_iterations = 12,
+            .allowed_iterations = 12,
             .accepted_ratio = 0.5,
         }};
-        ok &= expect(policy.sample_limit() == 4 && policy.accepted_limit() == 2,
+        ok &= expect(
+            policy.samples_per_temperature() == 4 && policy.accepted_limit() == 2,
             "hybrid policy starts with sampled and accepted limits");
         policy.on_iteration(true);
         policy.on_iteration(true);
         ok &= expect(policy.temperature() == 4.0,
             "hybrid policy applies the accepted cutoff early");
-        ok &= expect(policy.sample_limit() == 5,
+        ok &= expect(
+            policy.samples_per_temperature() == 5,
             "hybrid policy redistributes unused iterations over remaining levels");
         for (int i = 0; i < 5; ++i)
         {
@@ -412,12 +414,12 @@ int main()
     {
         temperature::FixedTemperature policy{temperature::FixedTemperatureParameters{
             .temperature = 2.0,
-            .max_iterations = 4,
-            .accepted_ratio = 0.5,
+            .allowed_iterations = 4,
+            .max_accepted = 2,
         }};
         ok &= expect(
-            policy.temperature() == 2.0 && policy.accepted_limit() == 2,
-            "fixed temperature derives its accepted limit from the ratio");
+            policy.temperature() == 2.0,
+            "fixed temperature starts at its temperature");
         policy.on_iteration(true);
         policy.on_iteration(false);
         ok &= expect(
@@ -429,10 +431,18 @@ int main()
         for (int i = 0; i < 4; ++i)
             policy.on_iteration(false);
         ok &= expect(policy.finished(), "fixed temperature ends on its iteration budget");
+
+        temperature::FixedTemperature unbounded{
+            temperature::FixedTemperatureParameters{.allowed_iterations = 3}};
+        for (int i = 0; i < 2; ++i)
+            unbounded.on_iteration(true);
+        ok &= expect(
+            !unbounded.finished()
+                && temperature::FixedTemperatureParameters{}.max_accepted.is_unlimited(),
+            "fixed temperature accepts without limit by default");
         ok &= expect(
             !temperature::FixedTemperatureParameters{.temperature = 0.0}.validate()
-                && !temperature::FixedTemperatureParameters{.accepted_ratio = 1.5}
-                    .validate(),
+                && !temperature::FixedTemperatureParameters{.max_accepted = 0}.validate(),
             "fixed temperature rejects invalid parameters");
     }
 
@@ -554,9 +564,9 @@ int main()
                 {.initial_temperature = 8.0,
                     .final_temperature = 1.0,
                     .cooling_rate = 0.5,
-                    .max_iterations = 12,
+                    .allowed_iterations = 12,
                     .accepted_ratio = 1.0},
-            .max_reheats = 2,
+            .allowed_reheats = 2,
             .reheat_ratio = 0.5,
             .first_descent_share = 0.5,
         }};
@@ -587,7 +597,7 @@ int main()
         ok &= expect(
             static_cast<bool>(HybridReheating{}.validate())
                 && static_cast<bool>(
-                    HybridReheating{.max_reheats = 0, .first_descent_share = 1.0}
+                    HybridReheating{.allowed_reheats = 0, .first_descent_share = 1.0}
                         .validate())
                 && !HybridReheating{.reheat_ratio = 0.0}.validate()
                 && !HybridReheating{.first_descent_share = 1.0}.validate()
@@ -604,7 +614,7 @@ int main()
                         .final_temperature = 1.0,
                         .cooling_rate = 0.5,
                         .samples_per_temperature = 2},
-                .max_reheats = 1,
+                .allowed_reheats = 1,
                 .reheat_ratio = 0.5,
                 .first_descent_share = 1.0}};
         std::size_t first_descent = 0;
@@ -631,8 +641,8 @@ int main()
         using FixedReheating =
             temperature::ReheatingParameters<temperature::FixedLengthParameters>;
         const FixedReheating tight{
-            .descent = {.max_iterations = 10},
-            .max_reheats = 1,
+            .descent = {.allowed_iterations = 10},
+            .allowed_reheats = 1,
             .first_descent_share = 0.9};
         temperature::Reheating<temperature::FixedLength> spent{tight};
         std::size_t proposals = 0;
@@ -645,7 +655,7 @@ int main()
             proposals == 10,
             "the descents of a reheated schedule spend its budget, no more");
         auto overspent = tight;
-        overspent.max_reheats = 3;
+        overspent.allowed_reheats = 3;
         ok &= expect(
             !overspent.validate(),
             "reheating rejects more reheats than the proposals the first descent leaves");
@@ -653,7 +663,7 @@ int main()
         // A time budget is divided like an iteration budget.
         temperature::Reheating<temperature::TimeBased> timed{
             {.descent = {.allowed_running_time = 8.0},
-                .max_reheats = 2,
+                .allowed_reheats = 2,
                 .first_descent_share = 0.5}};
         ok &= expect(
             timed.descent().parameters().allowed_running_time == 4.0,
@@ -789,7 +799,7 @@ int main()
                         .initial_temperature = 4.0,
                         .final_temperature = 1.0,
                         .cooling_rate = 0.5,
-                        .max_iterations = 2,
+                        .allowed_iterations = 2,
                     },
             })
             | (solution_manager<ChainSolutionManager>() | component<ChainValue>())
@@ -811,7 +821,7 @@ int main()
                         .initial_temperature = 4.0,
                         .final_temperature = 1.0,
                         .cooling_rate = 0.5,
-                        .max_iterations = 2,
+                        .allowed_iterations = 2,
                     },
                 .max_evaluations = 2,
             })
@@ -884,7 +894,7 @@ int main()
                             .initial_temperature = 100.0,
                             .final_temperature = 1.0,
                             .cooling_rate = 0.5,
-                            .max_iterations = 30,
+                            .allowed_iterations = 30,
                         }})
             | solution_manager_recipe
             | (neighborhood<exam::MoveExamNeighborhoodExplorer>()
@@ -963,7 +973,7 @@ int main()
             easylocal::make_runner<SimulatedAnnealing<temperature::FixedLength>>(
                 {.temperature =
                         temperature::FixedLengthParameters{
-                            .max_iterations = 40,
+                            .allowed_iterations = 40,
                             .calibration_samples = 30}})
             | solution_manager_recipe | neighborhood_recipe;
         std::mt19937 rng_a{11U};
@@ -979,7 +989,8 @@ int main()
         auto fixed =
             easylocal::make_runner<SimulatedAnnealing<temperature::FixedTemperature>>(
                 {.temperature =
-                        temperature::FixedTemperatureParameters{.max_iterations = 50}})
+                        temperature::FixedTemperatureParameters{
+                            .allowed_iterations = 50}})
             | solution_manager_recipe | neighborhood_recipe;
         const auto fixed_result = fixed.bind(instance).run(initial, rng);
         ok &= expect(

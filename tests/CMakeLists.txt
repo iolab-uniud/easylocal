@@ -1013,7 +1013,7 @@ if(TARGET easylocal_exam_timetabling)
 
     add_test(
         NAME easylocal.example.exam-cli-override
-        COMMAND easylocal_exam_timetabling --runners.sa.temperature.max_iterations=1
+        COMMAND easylocal_exam_timetabling --runners.sa.temperature.allowed_iterations=1
     )
     set_tests_properties(
         easylocal.example.exam-cli-override
@@ -1046,7 +1046,7 @@ if(TARGET easylocal_tsp_sa)
 
     add_test(
         NAME easylocal.example.tsp-cli-override
-        COMMAND easylocal_tsp_sa --runners.sa.temperature.max_iterations=1
+        COMMAND easylocal_tsp_sa --runners.sa.temperature.allowed_iterations=1
     )
     set_tests_properties(
         easylocal.example.tsp-cli-override
@@ -1069,7 +1069,7 @@ if(TARGET easylocal_tsp_sa)
         NAME easylocal.example.tsp-config-precedence
         COMMAND easylocal_tsp_sa
             --config ${PROJECT_SOURCE_DIR}/examples/tsp/configs/small.cfg
-            --runners.sa.temperature.max_iterations=2
+            --runners.sa.temperature.allowed_iterations=2
     )
     set_tests_properties(
         easylocal.example.tsp-config-precedence
