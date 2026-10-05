@@ -246,6 +246,10 @@ reviewed by hand before tagging.
 - The headers compile after `windows.h` without `NOMINMAX`: they call
   `(std::max)(a, b)` and `(std::numeric_limits<T>::max)()`, which its `min`
   and `max` macros do not expand.
+- `long double` costs and parameters compile with libc++, which has no
+  `std::from_chars` for them: they are read through `double` where the two
+  types are the same (Apple's arm64), with a stream in the classic locale
+  elsewhere.
 - `EASYLOCAL_SANITIZERS` (such as `address;undefined`) builds EasyLocal's own
   tests and examples with those sanitizers, a report stopping the program;
   the `asan` preset uses it, and the full CI runs it with GCC 16.

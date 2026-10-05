@@ -40,6 +40,12 @@ void numbers_and_brackets_are_read()
 {
     assert(el::cost::from_text<int>(" 12 ") == 12);
     assert(el::cost::from_text<double>("2.5") == 2.5);
+    // libc++ has no std::from_chars for long double.
+    assert(el::cost::from_text<long double>(" 2.5 ") == 2.5L);
+    assert(el::cost::from_text<long double>("-1e3") == -1000.0L);
+    assert(el::cost::from_text<long double>(el::cost::to_text(0.1L)) == 0.1L);
+    assert(error_of<long double>("2.5x") == "expected a number, found '2.5x'");
+    assert(error_of<long double>("+1") == "expected a number, found '+1'");
     assert(error_of<int>("1.5") == "expected an integer, found '1.5'");
     assert(error_of<double>("") == "expected a number, found ''");
 
