@@ -1028,8 +1028,7 @@ if(TARGET easylocal_tutorial_toml)
     easylocal_add_output_test(
         easylocal.example.tutorial-toml
         COMMAND easylocal_tutorial_toml
-        OUTPUT "2 parameter blocks from the file\\ncost ")
-        PROPERTIES PASS_REGULAR_EXPRESSION "5 values from the file\ncost 66\n")
+        OUTPUT "5 values from the file\\ncost 66\\n")
 endif()
 
 if(TARGET easylocal_tutorial)
