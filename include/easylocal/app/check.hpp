@@ -22,6 +22,7 @@
 #include <optional>
 #include <ostream>
 #include <random>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -79,7 +80,10 @@ public:
         return report_.checks();
     }
     /// The checks that failed.
-    [[nodiscard]] auto failures() const noexcept { return report_.failures(); }
+    [[nodiscard]] std::span<const testing::check_failure> failures() const noexcept
+    {
+        return report_.failures();
+    }
     /// The composition of the app the checks ran on.
     template<class Self>
     [[nodiscard]] auto& composition(this Self&& self) noexcept
