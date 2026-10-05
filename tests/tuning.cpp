@@ -250,9 +250,27 @@ struct Captured
     std::string err;
 };
 
+// A program parameter that names a file.
+struct Files
+{
+    std::filesystem::path table{};
+
+    static consteval auto parameter_schema()
+    {
+        return config::fields(
+            config::field<"table", &Files::table>("A file", easylocal::unlimited));
+    }
+
+    config::validation_result validate() const
+    {
+        return config::validation_result::success();
+    }
+};
+
 Captured run(
     std::initializer_list<std::string> arguments,
-    std::vector<easylocal::tuning_range> ranges = {})
+    std::vector<easylocal::tuning_range> ranges = {},
+    config::parameter_set own = {})
 {
     std::vector<std::string> storage{"/opt/bin/tsp"};
     storage.insert(storage.end(), arguments);
@@ -266,7 +284,10 @@ Captured run(
         tsp_app(),
         static_cast<int>(argv.size()),
         argv.data(),
-        {.tuning = std::move(ranges), .out = &out, .err = &err});
+        {.parameters = std::move(own),
+            .tuning = std::move(ranges),
+            .out = &out,
+            .err = &err});
     captured.out = out.str();
     captured.err = err.str();
     return captured;
@@ -341,6 +362,33 @@ void cli_writes_the_stub_without_an_instance()
     assert(contains(outside.err, "is outside its domain (0, 1)"));
 }
 
+// fixed.conf holds what every run shares: not the starting solution, which
+// belongs to an instance, and paths made absolute, since irace runs the
+// program from its own directory.
+void fixed_values_are_shared_by_every_run()
+{
+    const auto directory = fresh_directory("easylocal-tuning-fixed");
+    Files files;
+    config::parameter_set own;
+    own.add("files", files);
+    const auto written = run(
+        {"--tuning.irace",
+            directory.string(),
+            "--solution",
+            "start.txt",
+            "--files.table",
+            "data/table.txt"},
+        {},
+        own);
+    assert(written.status == 0);
+    const auto fixed = read_file(directory / "fixed.conf");
+    assert(!contains(fixed, "solution ="));
+    assert(contains(
+        fixed,
+        "files.table = " + std::filesystem::absolute("data/table.txt").string() + '\n'));
+    std::filesystem::remove_all(directory);
+}
+
 } // namespace
 
 int main()
@@ -350,4 +398,5 @@ int main()
     ranges_must_name_parameters_within_their_domains();
     cli_prints_only_the_cost();
     cli_writes_the_stub_without_an_instance();
+    fixed_values_are_shared_by_every_run();
 }

@@ -231,13 +231,20 @@ inline int write_irace(
         stub.runners.push_back(command_line.runner);
     else
         stub.runners.assign(names.begin(), names.end());
+    // What every run shares: not what belongs to one run, such as its
+    // instance or its starting solution, and paths made absolute, since irace
+    // runs the program from its own directory.
     for (std::size_t index = 0; index < values.size(); ++index)
     {
         const auto& path = values[index].path;
-        const bool per_run = path == "instance" || path == "seed" || path == "output"
-            || path == "report" || path.starts_with("tuning.");
-        if (!per_run && values[index].value != defaults[index].value)
-            stub.fixed.push_back({path, values[index].value});
+        const bool per_run = path == "instance" || path == "seed" || path == "solution"
+            || path == "output" || path == "report" || path.starts_with("tuning.");
+        if (per_run || values[index].value == defaults[index].value)
+            continue;
+        auto value = values[index].value;
+        if (values[index].kind == config::parameter_kind::path && !value.empty())
+            value = std::filesystem::absolute(value, error).string();
+        stub.fixed.push_back({path, std::move(value)});
     }
 
     const auto result = write_irace_stub(stub);

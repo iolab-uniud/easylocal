@@ -173,6 +173,8 @@ reviewed by hand before tagging.
   throw `std::invalid_argument` otherwise, and `check(app, ...)` reports it
   (and the real cause of an invalid app configuration) instead of blaming the
   pipelines.
+- `--tuning.irace` leaves `--solution` out of fixed.conf (a starting solution
+  belongs to an instance) and writes path parameters there as absolute paths.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 
