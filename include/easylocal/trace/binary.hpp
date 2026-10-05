@@ -22,10 +22,12 @@
 #include <cstring>
 #include <deque>
 #include <iterator>
+#include <limits>
 #include <mutex>
 #include <ostream>
 #include <ranges>
 #include <span>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -454,6 +456,9 @@ struct binary_buffer_options
     std::size_t block_size = 256U * 1024U;
     /// The blocks an async recorder can queue to its writer thread before the
     /// search waits (at least 1).
+    ///
+    /// The recorder allocates them, and one more, at construction: the queue
+    /// is finite, and an unlimited one throws `std::invalid_argument`.
     std::size_t async_queue_blocks = 4;
     /// Key-value pairs written in the header: the instance, the runner, the
     /// seed, the parameters, whatever tells the run apart.
@@ -925,6 +930,12 @@ public:
         const std::size_t queue_blocks)
         : out_{out}
     {
+        // The blocks are allocated here: an unlimited queue has no meaning.
+        if (queue_blocks == std::numeric_limits<std::size_t>::max())
+        {
+            throw std::invalid_argument{
+                "EasyLocal async trace recorder: async_queue_blocks must be finite"};
+        }
         const auto count = std::max<std::size_t>(queue_blocks, 1U) + 1U;
         for (std::size_t index = 0; index < count; ++index)
         {
@@ -1248,6 +1259,8 @@ public:
     static constexpr std::uint32_t format_version = detail::eltr_format_version;
 
     /// Writes to out, with a default-constructed cost writer.
+    ///
+    /// Throws `std::invalid_argument` for an unlimited `async_queue_blocks`.
     explicit async_binary_recorder(
         std::ostream& out,
         binary_buffer_options options = {})
@@ -1263,6 +1276,8 @@ public:
     }
 
     /// Writes to out, costs with cost_writer.
+    ///
+    /// Throws `std::invalid_argument` for an unlimited `async_queue_blocks`.
     async_binary_recorder(
         std::ostream& out,
         CostWriter cost_writer,

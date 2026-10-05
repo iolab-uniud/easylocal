@@ -131,6 +131,10 @@ easylocal::trace::binary_buffer_options options{
 easylocal::trace::async_binary_recorder<cost_type> trace{out, options};
 ```
 
+The asynchronous recorder allocates its queued blocks, and the one the search
+fills, at construction: `async_queue_blocks` is finite, and
+`easylocal::unlimited` throws `std::invalid_argument`.
+
 The async recorder is deliberately single-producer: it is designed to observe
 one search trajectory.  Synchronization happens at block boundaries, not for
 every event.  The writer thread may reduce search-thread stalls when persistence

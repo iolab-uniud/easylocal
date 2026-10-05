@@ -33,6 +33,8 @@ reviewed by hand before tagging.
 - An output error of `trace::async_binary_recorder` stops the recording, not
   the search: `emit` drops the events instead of throwing mid-search, and
   `good()` and `flush()` report the error, a failed final flush included.
+- `trace::async_binary_recorder` rejects an unlimited `async_queue_blocks` with
+  `std::invalid_argument`, instead of deadlocking at construction.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

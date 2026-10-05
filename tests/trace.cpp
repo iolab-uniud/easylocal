@@ -8,6 +8,7 @@
 #include <iostream>
 #include <limits>
 #include <sstream>
+#include <stdexcept>
 #include <streambuf>
 #include <string>
 #include <string_view>
@@ -625,6 +626,24 @@ int main()
         ok &= expect(
             flush_thrown && !recorder.good(),
             "async binary recorder reports a failed final flush through flush and good");
+    }
+
+    // The queued blocks are allocated at construction: an unlimited queue is
+    // rejected.
+    {
+        std::ostringstream stream;
+        bool rejected = false;
+        try
+        {
+            easylocal::trace::async_binary_recorder<int> recorder{
+                stream,
+                {.async_queue_blocks = std::numeric_limits<std::size_t>::max()}};
+        }
+        catch (const std::invalid_argument&)
+        {
+            rejected = true;
+        }
+        ok &= expect(rejected, "async binary recorder rejects an unlimited queue");
     }
 
     // The trajectory and tabu events, in ELTR: tags 8, 9 and 10, with the
