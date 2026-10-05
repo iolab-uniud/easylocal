@@ -414,10 +414,10 @@ struct default_binary_cost_writer
     }
 };
 
-/// An application event may describe its records with an ADL function
-/// describe_binary_event(std::type_identity<Event>) returning its
-/// binary_event_schema; the recorder then writes
-/// the schema before the first record of its tag, and decoders name its fields.
+/// An application event that describes its records with an ADL function
+/// `describe_binary_event(std::type_identity<Event>)` returning its
+/// binary_event_schema: the recorder writes the schema before the first record
+/// of its tag, and decoders name its fields.
 template<class Event>
 concept described_binary_event = requires {
     {
