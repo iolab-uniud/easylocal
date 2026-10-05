@@ -98,10 +98,12 @@ public:
 
     explicit parameters_holder(no_parameters) noexcept {}
 
+    // A reference, as the holder of real parameters gives one.
     [[nodiscard]]
-    no_parameters parameters() const noexcept
+    const no_parameters& parameters() const noexcept
     {
-        return {};
+        static constexpr no_parameters none{};
+        return none;
     }
 
     // The arguments of T's construction: args, by reference.
