@@ -31,8 +31,10 @@ auto piped_application = el::app("tsp") | sm | nhe
 - A runner is registered by its algorithm class and a name, optionally with its
   parameters (`parameters_type`). They are stored in the app and can be changed
   later with `runner_parameters<Algorithm>("name")`.
-- Simulated Annealing is registered with its temperature policy's parameters:
-  `runners::SimulatedAnnealing<Classic>` takes `ClassicParameters`.
+- Simulated Annealing is registered with its parameters, those of its
+  temperature policy as a group: `runners::SimulatedAnnealing<Classic>` takes
+  `SimulatedAnnealingParameters<ClassicParameters>`, whose `temperature` is the
+  policy's and whose `max_evaluations` bounds the run.
 - The two spellings are equivalent: `with_*` calls, or pipes with
   `el::runner<Algorithm>(name, parameters)` for each registration.
 
@@ -158,10 +160,10 @@ if (!session.run("sa", el::stop_at(session.read_cost("26"))))
 
 ## A command-line program
 
-`el::cli::run` turns an app into a complete program: it reads the instance,
-the seed, the runner and the app's parameters from the command line, runs the
-runner on a Session and prints the result. The whole `main` of
-`examples/tutorial/cli_main.cpp` is:
+`el::cli::run`, from `<easylocal/app/cli.hpp>`, turns an app into a complete
+program: it reads the instance, the seed, the runner and the app's parameters
+from the command line, runs the runner on a Session and prints the result.
+The whole `main` of `examples/tutorial/cli_main.cpp` is:
 
 <!-- snippet: tutorial/cli_main.cpp:cli -->
 ```cpp

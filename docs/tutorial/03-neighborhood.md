@@ -12,8 +12,9 @@ if an algorithm or a tool you use needs it:
 | Member | Needed by |
 | --- | --- |
 | `is_valid`, `make_move` | every algorithm |
-| `moves(solution)`, or the cursor `first_move` / `next_move` | algorithms that scan the neighborhood: First Improvement, Best Improvement |
-| `random_move(solution, rng)` | algorithms that sample it: Simulated Annealing |
+| `moves(solution)`, or the cursor `first_move` / `next_move` | algorithms that scan the neighborhood: First Improvement, Best Improvement, Tabu Search |
+| `random_move(solution, rng)` | algorithms that sample it: Simulated Annealing, Hill Climbing, Late Acceptance Hill Climbing, Great Deluge, Pareto Late Acceptance Hill Climbing |
+| `inverse(solution, move, tabu_move)` | Tabu Search: whether a move is forbidden by one applied earlier |
 | `name()` | the interactive tester (chapter 12) |
 
 So an explorer used only by Simulated Annealing needs `random_move` and no

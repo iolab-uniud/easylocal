@@ -13,6 +13,13 @@ reviewed by hand before tagging.
 
 ### Cost
 
+- `cost::from_text` rejects NaN, which compares with no cost (infinity is
+  still read).
+- The tutorial (chapter 2) and the reference say that costs are minimized,
+  and how to maximize; chapter 2 lists `cost::objectives` and the Pareto
+  cost among the structured costs. The reference says how to use one
+  parametric component twice (a named type for each).
+
 - **Breaking:** unsigned integers are no longer costs. A cost component or a
   `cost::apply` function that returns one, and a `cost::lexicographic`,
   `cost::pareto` or `cost::hierarchical` level of an unsigned type, fail to
@@ -466,6 +473,13 @@ reviewed by hand before tagging.
 - The README and the quick start say not to build with `-ffast-math` (or
   `-ffinite-math-only`, `/fp:fast`), which lets the compiler drop the
   library's checks for NaN and infinite values.
+- The tutorial runs its annealing again after `load_and_apply`, so the
+  parameters of the command line show (`configured annealing`); chapter 3
+  lists every algorithm that needs `moves()`, `random_move()` or `inverse()`;
+  chapter 11 gives Simulated Annealing's parameter block and the header of
+  `cli::run`; the configuration reference warns that `-ffast-math` breaks
+  the handling of NaN and infinity.
+
 - The tutorial no longer takes the launcher of chapter 12 from `examples/tsp`:
   `examples/tutorial/launcher_main.cpp` opens a 2-opt and a swap app of the
   tutorial's own TSP. `AGENTS.md` says what each example directory is.

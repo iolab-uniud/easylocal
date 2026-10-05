@@ -42,7 +42,8 @@ error: solver.search.temperature: final_temperature must be smaller than initial
 ```
 
 Values are applied in place and validated, so the runner sees them when it is
-bound. They are applied all or none: when one value is invalid, nothing changes.
+bound: the program binds and runs `sa` again after `load_and_apply`, and
+prints its result as `configured annealing`. They are applied all or none: when one value is invalid, nothing changes.
 The set refers to the runner, so the runner must stay where it is while the set
 is used.
 

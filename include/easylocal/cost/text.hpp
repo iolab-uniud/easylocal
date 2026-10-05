@@ -98,6 +98,12 @@ Cost from_text(std::string_view text)
                         ? "expected a number"
                         : "expected an integer"}
                 + ", found '" + std::string{text} + "'"};
+        // NaN is no cost: it compares with nothing.
+        if constexpr (std::floating_point<cost_type>)
+        {
+            if (!(*value == *value))
+                throw std::invalid_argument{"expected a number, found 'nan'"};
+        }
         return *value;
     }
     else if constexpr (hierarchical_type<cost_type>)

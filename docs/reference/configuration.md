@@ -59,7 +59,10 @@ The name of a field or group is a segment of its paths: a letter or `_`,
 then letters, digits and `_`. The schema is computed once at compile time, so
 a mistake in it does not compile, and the error names `parameter_schema()`.
 
-For an array or a vector the domain applies to each element. A domain that
+For an array or a vector the domain applies to each element. The library
+handles NaN and infinity in parameters and costs (a domain rejects NaN, a
+range with no upper bound includes infinity): `-ffast-math`, which assumes
+neither occurs, breaks these checks. A domain that
 does not fit the field's type, a range whose bounds are not in order or a
 logarithmic range from zero do not compile, and neither do a range of two
 types, `range(0.0, 1)`, or a count where a domain goes, `field<...>("...", 5)`:

@@ -2,6 +2,10 @@
 
 ## Cost components
 
+Costs are minimized: a lower cost is better, for every algorithm. To maximize
+a profit, return what is lost, or the negated profit, through `cost::apply`
+(see [Cost semantics](#cost-semantics) for a cost whose order is its own).
+
 A **cost component** computes one term of the objective:
 
 <!-- snippet: tutorial/tsp.hpp:cost-component!component-text -->
@@ -103,6 +107,7 @@ The expression has one node per way of combining costs:
 | `cost::sum(t1, ..., tn)` | `Σ wᵢ · costᵢ` over arithmetic costs; `child * w` gives a term its weight (default 1) |
 | `cost::in_order(c1, ..., cn)` | a `cost::lexicographic` cost: compared child by child |
 | `cost::hard_soft(hard, soft)` | a `cost::hierarchical` cost: `hard` has strict priority over `soft` |
+| `cost::objectives(c1, ..., cn)` | a `cost::pareto` cost: one value per objective, compared by Pareto dominance |
 | `cost::apply(f, c1, ..., cn)` | `f(cost₁, ..., costₙ)`, for anything else |
 
 The children of a node are components or other expressions, so the structure
@@ -130,8 +135,10 @@ auto sm = el::solution_manager<TimetableManager>()
 
 ## Structured costs
 
-Not every objective is one number. `<easylocal/cost.hpp>` provides two cost
-types made of several values:
+Not every objective is one number. `<easylocal/cost.hpp>` provides three cost
+types made of several values (the third, `cost::pareto`, built by
+`cost::objectives`, compares by Pareto dominance, for a search that returns a
+front: see [Cost](../reference/cost.md)):
 
 - `cost::lexicographic<Ts...>` compares its values in order: the second one
   matters only between costs whose first one is equal, and so on;

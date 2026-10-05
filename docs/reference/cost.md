@@ -4,7 +4,10 @@
 and `<easylocal/helpers/recipes.hpp>` (`component`, `delta`)
 
 The cost of a solution is computed by **cost components**, combined by a
-**cost expression** into a value of a **cost type**. Moves are evaluated
+**cost expression** into a value of a **cost type**. Costs are minimized: a
+lower cost is better; to maximize, return what is lost or the negated profit,
+or give a root `cost::apply` its own `compare` (Great Deluge, whose levels are
+fractions of the cost, needs positive costs). Moves are evaluated
 incrementally by **delta cost components**. Together with the SolutionManager they
 form the *cost layer*; the delta cost components bound to a NeighborhoodExplorer
 form the *delta cost layer*.
@@ -31,7 +34,10 @@ form the *delta cost layer*.
   a first argument of that type, the parameters are the defaults. The recipe
   holds them, and builds the component from them when a runner or an app is
   bound.
-- A component type may appear only once in a cost expression.
+- A component type may appear only once in a cost expression: the type is the
+  identity of the component. To use one parametric component twice (two
+  thresholds), derive a named type for each, `struct LongEdges8 :
+  LongEdges<8> {};`, or give each its own parameters as a class.
 - `name()` and `describe(solution)` are for people: `Session::cost_report()`,
   `cli::run`'s `--report` and the TextUI's solution window show each
   component's value with them. Without `describe`, only the value is shown.

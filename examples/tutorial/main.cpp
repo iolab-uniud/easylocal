@@ -199,6 +199,12 @@ int main(int argc, char* argv[])
     }
     // [configuration] ------------------------------------------------------
 
+    // The annealing again, with the parameters of the command line.
+    std::mt19937_64 configured_rng{42};
+    auto configured_search = sa.bind(tsp);
+    const auto configured_annealing =
+        configured_search.run(configured_search.initial_solution(), configured_rng);
+
     // [app] ----------------------------------------------------------------
     auto application =
         el::app("tsp")
@@ -329,7 +335,8 @@ int main(int argc, char* argv[])
         << fewest.count << "\nexcess " << excess_cost.hard() << ", " << excess_cost.soft()
         << "\nlimited " << limited_cost.hard() << ", " << limited_cost.soft()
         << "\nco-located " << colocated.run(colocated.initial_solution()).cost
-        << "\nannealing " << annealed.cost << "\nunion "
+        << "\nannealing " << annealed.cost << "\nconfigured annealing "
+        << configured_annealing.cost << "\nunion "
         << union_search.run(union_search.initial_solution(), union_rng).cost
         << "\nmulti-start " << best.cost << "\nsession " << session_cost << " ("
         << describe(session_tour) << "), " << costs.moves << " moves checked, "

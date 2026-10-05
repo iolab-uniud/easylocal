@@ -40,6 +40,9 @@ void numbers_and_brackets_are_read()
 {
     assert(el::cost::from_text<int>(" 12 ") == 12);
     assert(el::cost::from_text<double>("2.5") == 2.5);
+    // Infinity is a cost; NaN, which compares with nothing, is not.
+    assert(el::cost::from_text<double>("inf") > 1e308);
+    assert(error_of<double>("nan") == "expected a number, found 'nan'");
     // libc++ has no std::from_chars for long double.
     assert(el::cost::from_text<long double>(" 2.5 ") == 2.5L);
     assert(el::cost::from_text<long double>("-1e3") == -1000.0L);
