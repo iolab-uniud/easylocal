@@ -83,6 +83,11 @@ reviewed by hand before tagging.
   (`range(0.0, 1)`, `range(1, std::size_t{1000})`), which compiled and threw
   `std::invalid_argument`, or picked the unlimited overload, no longer
   compile. `limit x = unlimited;` and `limit{unlimited}` are unchanged.
+- A range with no upper bound honours `open_high()`: `range(0.0,
+  unlimited).open_high()` leaves out infinity, and `range(1,
+  unlimited).open_high()` leaves out `unlimited` for a limit, where both were
+  accepted. Its text shows the end, `[1, unlimited]`, or `[1, unlimited)`
+  without it, where both read `[1, unlimited)`.
 - `check(app, ...)` reports, as `runner parameters`, a registered runner whose
   `parameters_type` is not a parameter block (and not empty): the app runs it,
   but no frontend can change its parameters. The tutorial's `RandomDescent`

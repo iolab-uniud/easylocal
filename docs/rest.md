@@ -280,7 +280,7 @@ The generic surface under a chosen prefix is:
 | --- | --- | --- |
 | `GET` | `/assignment/` | application/executor metadata |
 | `GET` | `/assignment/runners` | registered runner names |
-| `GET` | `/assignment/parameters` | the app's parameters: `path`, `description`, `value` (as text), `kind` (`boolean`, `integer`, `real`, `limit`, `text`, `path`, `list`), `domain` (as text, such as `[1, unlimited)`; absent when none is declared), `active` (whether its condition holds) and `condition` (as text, with full paths; absent when it has none) |
+| `GET` | `/assignment/parameters` | the app's parameters: `path`, `description`, `value` (as text), `kind` (`boolean`, `integer`, `real`, `limit`, `text`, `path`, `list`), `domain` (as text, such as `[1, unlimited]`; absent when none is declared), `active` (whether its condition holds) and `condition` (as text, with full paths; absent when it has none) |
 | `POST` | `/assignment/runners/<runner>/runs` | enqueue a run |
 | `GET` | `/assignment/runs/<id>` | inspect status/progress |
 | `GET` | `/assignment/runs/<id>/solution` | retrieve terminal solution and cost (and the front, with a Pareto cost) |

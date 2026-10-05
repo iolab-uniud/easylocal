@@ -14,6 +14,7 @@
 #include <concepts>
 #include <cstddef>
 #include <filesystem>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -110,9 +111,9 @@ constexpr range_domain<Number> range(const Number low, const Number high)
 }
 
 /// The numbers from low up, with no upper bound: `config::range(0.0,
-/// easylocal::unlimited).open_low()` is the positive numbers (infinity
-/// included), `range(1, unlimited)` a count of at least one, or unlimited for
-/// a limit.
+/// easylocal::unlimited).open_low()` is the positive numbers, infinity
+/// included, `range(1, unlimited)` a count of at least one, or unlimited for
+/// a limit; `.open_high()` leaves out infinity (and unlimited, for a limit).
 ///
 /// Requires an integer or floating-point type, not bool.
 template<easylocal::detail::number Number>
@@ -266,8 +267,10 @@ constexpr bool range_contains(
 {
     if constexpr (std::same_as<Value, easylocal::limit>)
     {
+        // Unlimited is the upper end of a range with no upper bound, which
+        // open_high() excludes.
         if (value.is_unlimited())
-            return domain.unbounded;
+            return domain.unbounded && !domain.high_open;
         return range_contains(domain, static_cast<std::size_t>(value));
     }
     else
@@ -281,7 +284,15 @@ constexpr bool range_contains(
             ? number_less(domain.low, value)
             : !number_less(value, domain.low);
         if (domain.unbounded)
+        {
+            // +infinity is the upper end, which open_high() excludes.
+            if constexpr (std::floating_point<Value>)
+            {
+                if (domain.high_open && value > std::numeric_limits<Value>::max())
+                    return false;
+            }
             return above;
+        }
         const bool below = domain.high_open
             ? number_less(value, domain.high)
             : !number_less(domain.high, value);
@@ -434,8 +445,9 @@ struct domain_info
         return kind != shape::none;
     }
 
-    /// The domain as text: "(0, 1]", "[1, 1000] log", "[1, unlimited)",
-    /// "{tabu, random}", "unlimited" for any value; empty for no domain.
+    /// The domain as text: "(0, 1]", "[1, 1000] log", "[1, unlimited]" (with
+    /// unlimited, or infinity, which "[1, unlimited)" excludes), "{tabu,
+    /// random}", "unlimited" for any value; empty for no domain.
     [[nodiscard]]
     std::string text() const
     {
@@ -446,7 +458,7 @@ struct domain_info
             result += low_text;
             result += ", ";
             result += high_unlimited ? "unlimited" : high_text;
-            result += high_open || high_unlimited ? ')' : ']';
+            result += high_open ? ')' : ']';
             if (logarithmic)
                 result += " log";
         }
@@ -478,8 +490,9 @@ struct domain_info
             return false;
         const auto contains_number = [this](const double value) {
             const bool above = low_open ? low < value : low <= value;
-            const bool below =
-                high_unlimited || (high_open ? value < high : value <= high);
+            const bool below = high_unlimited
+                ? !(high_open && value > std::numeric_limits<double>::max())
+                : (high_open ? value < high : value <= high);
             return above && below;
         };
         if (kind == shape::range)
@@ -489,9 +502,11 @@ struct domain_info
                 const bool above = low < other.low
                     || (low == other.low && (!low_open || other.low_open));
                 const bool below = high_unlimited
-                    || (!other.high_unlimited
-                        && (other.high < high
-                            || (other.high == high && (!high_open || other.high_open))));
+                    ? (!other.high_unlimited || !high_open || other.high_open)
+                    : (!other.high_unlimited
+                          && (other.high < high
+                              || (other.high == high
+                                  && (!high_open || other.high_open))));
                 return above && below;
             }
             for (const auto& choice : other.choices)

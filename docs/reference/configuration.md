@@ -48,7 +48,7 @@ config::field<"policy", &P::policy>("Tabu list", config::one_of("fixed", "random
 | Domain | Values |
 | --- | --- |
 | `range(low, high)` | the numbers from `low` to `high`, both included, of one type; for a number or a `limit` |
-| `range(low, easylocal::unlimited)` | the numbers from `low` up, with no upper bound: infinity for a floating-point field, `unlimited` for a `limit` |
+| `range(low, easylocal::unlimited)` | the numbers from `low` up, with no upper bound, its upper end included: infinity for a floating-point field, `unlimited` for a `limit` (`[1, unlimited]`); `.open_high()` leaves the end out, a finite number or a count (`[1, unlimited)`) |
 | `.open()`, `.open_low()`, `.open_high()` | the same range without both bounds, the lower or the upper one |
 | `.log()` | the same range, which a configurator samples on a logarithmic scale; `low` must be positive |
 | `one_of(a, b, ...)` | the values given: text for a `std::string`, numbers for a number (numbers of different types are held as their common type: `one_of(1, 1.5, 2)` holds 1.0, 1.5 and 2.0) |

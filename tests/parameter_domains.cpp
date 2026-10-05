@@ -226,10 +226,29 @@ void ranges_may_be_unlimited()
     config::parameter_set set;
     set.add("open", parameters);
     const auto listed = set.parameters();
-    assert(listed[0].domain.text() == "(0, unlimited)");
-    assert(listed[1].domain.text() == "[1, unlimited)");
+    assert(listed[0].domain.text() == "(0, unlimited]");
+    assert(listed[1].domain.text() == "[1, unlimited]");
     assert(listed[2].domain.text() == "unlimited");
     assert(listed[2].domain.kind == config::domain_info::shape::unbounded);
+
+    // open_high() leaves out the upper end: infinity, or unlimited.
+    constexpr auto finite = config::range(0.0, easylocal::unlimited).open_high();
+    static_assert(config::domain_contains(finite, 1e300));
+    static_assert(
+        !config::domain_contains(finite, std::numeric_limits<double>::infinity()));
+    static_assert(config::domain_contains(
+        config::range(0.0, easylocal::unlimited),
+        std::numeric_limits<double>::infinity()));
+    constexpr auto counted = config::range(1, easylocal::unlimited).open_high();
+    static_assert(config::domain_contains(counted, easylocal::limit{5}));
+    static_assert(
+        !config::domain_contains(counted, easylocal::limit{easylocal::unlimited}));
+    assert(config::describe_domain(counted).text() == "[1, unlimited)");
+    assert(!config::describe_domain(counted).contains(
+        config::describe_domain(config::range(1, easylocal::unlimited))));
+    assert(
+        config::describe_domain(config::range(1, easylocal::unlimited))
+            .contains(config::describe_domain(counted)));
     assert(config::undeclared_domains(set).empty());
 
     TunedParameters tuned;
