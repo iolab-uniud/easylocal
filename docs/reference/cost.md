@@ -141,14 +141,24 @@ The cost semantics read as follows, for costs `a` and `b`:
   `a <=> b` is `std::partial_ordering::unordered`. A and B are, as are any
   two points of the front: each is better in one objective.
 
-So a runner moves from E to B or C, never from B to A, and from a point of the
-front only to a point that dominates it. The Pareto front is the set of the
-points that no other dominates, and a search with a pareto cost keeps the
-non-dominated solutions it reaches in its archive and returns them as its
-front (see [Runners](runners.md#results)). Pareto Late Acceptance Hill
-Climbing explores from several solutions at once to spread over the front.
-The runners that need a numeric delta (Simulated Annealing, Great Deluge) or a
-total order do not accept a pareto cost.
+So a descent (First and Best Improvement, Hill Climbing) moves from E to B or
+C, never from B to A, and from a point of the front only to a point that
+dominates it. The Pareto front is the set of the points that no other
+dominates, and a search with a pareto cost keeps the non-dominated solutions it
+reaches in its archive and returns them as its front (see
+[Runners](runners.md#results)). Pareto Late Acceptance Hill Climbing explores
+from several solutions at once to spread over the front.
+
+The runners whose acceptance only compares costs accept a pareto cost: First
+and Best Improvement, Hill Climbing, Late Acceptance, Pareto Late Acceptance
+and the tabu searches, except Aspiration Plus and Elite Candidate, whose
+levels are factors of the cost, with any tabu list but `Foo` and `RandomFoo`,
+which need a delta. Late Acceptance and Tabu Search may move to a point that
+does not dominate the current one: Late Acceptance accepts a candidate no worse
+than an older cost, and Tabu Search applies the best admissible move even when
+it worsens, choosing among equivalent candidates only, so the first of two
+unordered ones stays. The runners that need a numeric delta (Simulated
+Annealing, Great Deluge) do not accept a pareto cost.
 
 `cost::delta(candidate, current)` is the numeric difference used by
 delta-based acceptance; user cost types provide it as a free function found by

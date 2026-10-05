@@ -912,7 +912,7 @@ private:
         archive_.offer(
             solution,
             cost,
-            [this](const solution_type& lhs, const solution_type& rhs) {
+            [&](const solution_type& lhs, const solution_type& rhs) {
                 if constexpr (requires(const Context& context) {
                                   requires has_solution_equality<std::remove_cvref_t<
                                       decltype(context.solution_manager())>>;

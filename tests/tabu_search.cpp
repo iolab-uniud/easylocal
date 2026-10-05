@@ -166,6 +166,84 @@ auto line_runner(
         | neighborhood<LineExplorer>(every_move_tabu);
 }
 
+// A fork: from 0 a move reaches 1, 2 or 3, whose costs in two objectives are
+// (2, 2), (0, 5) and (3, 3); 0 costs (9, 9). (2, 2) and (0, 5) are unordered,
+// as are (0, 5) and (3, 3), but (2, 2) dominates (3, 3).
+class ForkManager
+{
+public:
+    using input_type = LineInstance;
+    using solution_type = Position;
+
+    explicit ForkManager(const LineInstance& instance) noexcept : instance_{instance} {}
+
+    [[nodiscard]] auto input() const noexcept -> const LineInstance&
+    {
+        return instance_;
+    }
+
+    [[nodiscard]] static auto is_valid(const Position& position) noexcept -> bool
+    {
+        return position.value >= 0 && position.value <= 3;
+    }
+
+private:
+    const LineInstance& instance_;
+};
+
+class ForkExplorer
+{
+public:
+    using input_type = LineInstance;
+    using solution_type = Position;
+    using move_type = Step;
+
+    explicit ForkExplorer(const ForkManager& manager) : instance_{manager.input()} {}
+
+    [[nodiscard]] auto input() const noexcept -> const LineInstance&
+    {
+        return instance_;
+    }
+
+    [[nodiscard]] static auto is_valid(const Position&, const Step& step) noexcept -> bool
+    {
+        return step.delta >= 1 && step.delta <= 3;
+    }
+
+    // From 0 only.
+    static void make_move(Position& position, const Step& step) noexcept
+    {
+        position.value = step.delta;
+    }
+
+    [[nodiscard]] static auto moves(const Position& position)
+        -> easylocal::generator<Step>
+    {
+        if (position.value == 0)
+            for (const auto delta : {1, 2, 3})
+                co_yield Step{delta};
+    }
+
+    [[nodiscard]] static auto inverse(const Position&, const Step&, const Step&) -> bool
+    {
+        return false;
+    }
+
+private:
+    const LineInstance& instance_;
+};
+
+template<std::size_t Objective>
+struct ForkObjective
+{
+    [[nodiscard]] static auto evaluate(const Position& position) noexcept -> int
+    {
+        constexpr std::array<std::array<int, 2>, 4> costs{
+            {{9, 9}, {2, 2}, {0, 5}, {3, 3}}};
+        return costs[static_cast<std::size_t>(position.value)][Objective];
+    }
+};
+
 auto expect(const bool condition, const std::string_view description) -> bool
 {
     if (!condition)
@@ -572,6 +650,29 @@ int main()
                 && result.evaluations < without_escape.evaluations && result.cost == 0,
             "the reactive list escapes with random moves, counted as iterations");
         ok &= expect(escapes_applied, "an escape is traced with the moves it applied");
+    }
+
+    {
+        // With a pareto cost only equivalent candidates are ties: (0, 5) does
+        // not replace (2, 2), so (3, 3), which (2, 2) dominates, is never
+        // applied.
+        auto runner = easylocal::make_runner<TabuSearch<>>({.max_iterations = 1})
+            | (solution_manager<ForkManager>()
+                | easylocal::cost::objectives(
+                    component<ForkObjective<0>>(),
+                    component<ForkObjective<1>>()))
+            | neighborhood<ForkExplorer>();
+        auto bound = runner.bind(instance);
+        bool never_dominated = true;
+        for (unsigned seed = 0; seed < 50; ++seed)
+        {
+            std::mt19937 rng{seed};
+            const auto result = bound.run(Position{0}, rng);
+            never_dominated = never_dominated && result.solution.value != 3;
+        }
+        ok &= expect(
+            never_dominated,
+            "tabu search applies the best candidate, not one dominated by it");
     }
 
     {

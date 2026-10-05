@@ -131,6 +131,12 @@ reviewed by hand before tagging.
   draw. `tabu_escape` is emitted after the escape's random moves, with the
   number applied, instead of before them with the number asked, which the
   run's limits could cut short.
+- With a `cost::pareto` cost, Tabu Search counted an unordered candidate as a
+  tie with the chosen one, so it could apply a move dominated by one it had
+  seen: a tie is an equivalent cost (`run.equivalent`), as before for total
+  orders. The cost reference says which runners accept a pareto cost. A run
+  with a pareto cost on a problem without solution equality no longer warns
+  about an unused lambda capture.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

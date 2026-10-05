@@ -1853,7 +1853,9 @@ public:
     // Scans moves: the best admissible candidate, ties broken uniformly at
     // random (each of k equivalent candidates replaces the choice with
     // probability 1/k), until stop_at(run, candidate, current, best) holds;
-    // on_admissible(move, cost, position) sees every admissible candidate.
+    // on_admissible(move, cost, position) sees every admissible candidate. A
+    // tie is an equivalent cost: with a partial order (a cost::pareto cost) an
+    // unordered candidate does not replace the choice.
     template<
         class Run,
         class State,
@@ -1937,7 +1939,7 @@ public:
                 result.chosen_aspirated = tenure.has_value();
                 ties = 1;
             }
-            else if (!run.better(result.chosen->cost(), candidate.cost())
+            else if (tie(run, candidate.cost(), result.chosen->cost())
                 && draw(rng, ++ties) == 0)
             {
                 result.chosen = std::move(candidate);
@@ -2124,6 +2126,22 @@ private:
                 .previous_tenure = previous_tenure,
                 .tenure = tenure,
             });
+    }
+
+    // Whether candidate, not better than chosen, ties with it: equivalent by
+    // the cost semantics or, without equivalent(), not worse.
+    template<class Run, class Cost>
+    [[nodiscard]]
+    static bool tie(const Run& run, const Cost& candidate, const Cost& chosen)
+    {
+        if constexpr (requires {
+                          {
+                              run.equivalent(candidate, chosen)
+                          } -> std::convertible_to<bool>;
+                      })
+            return run.equivalent(candidate, chosen);
+        else
+            return !run.better(chosen, candidate);
     }
 
     // Uniform in [0, count).
