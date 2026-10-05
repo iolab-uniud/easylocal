@@ -512,6 +512,25 @@ int main()
                 && capped.solution.value == 4,
             "aspiration plus examines plus moves after the first under the level, up to max_moves");
 
+        // With a negative best cost (-6 at 5) the level stays above it: at
+        // factor 1.5 it is -3, so the left step (-8) is under it and the scan
+        // stops there; 1.5 * -6 = -9 would have skipped it for the right one.
+        using NegativeUneven = Profile<-1, -1, -1, -1, -8, -6, -10, -1, -1, -1, -1>;
+        const auto negative =
+            line_runner<AspirationPlusTabuSearch<>, NegativeUneven>(
+                {.max_iterations = 1,
+                    .tabu_list = {.tenure = 2},
+                    .candidates =
+                        {.min_moves = 1,
+                            .max_moves = 10,
+                            .plus = 0,
+                            .aspiration_level = 1.5}})
+                .bind(instance)
+                .run(Position{5}, rng);
+        ok &= expect(
+            negative.solution.value == 4 && negative.evaluations == 2,
+            "the aspiration level is above a negative best cost");
+
         // From 1 nothing improves: the best admissible move is applied.
         const auto worse =
             line_runner<FirstImprovementTabuSearch<>, Valley>(

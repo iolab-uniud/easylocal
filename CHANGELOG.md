@@ -225,6 +225,11 @@ reviewed by hand before tagging.
   run, and `until_feasible()` with its zero hard cost, from ever stopping. A
   committed cost that misses the target only within `cost::tolerance{}` is
   evaluated in full before the run decides, without counting in the budget.
+- The aspiration level of `AspirationPlusTabuSearch` and the quality level of
+  `EliteCandidateTabuSearch` are `b + (factor - 1) * |b|` for the best cost
+  `b`, unchanged for a positive one: `factor * b` put them below a negative or
+  zero best cost, so the elite list evaluated more moves than plain Tabu
+  Search.
 - The randomized contract checks (`easylocal::testing` and `check(app, ...)`)
   draw from a `std::mt19937_64` seeded with the new `check_options::seed`,
   instead of `deterministic_rng`'s four fixed values: a `random_move()` that

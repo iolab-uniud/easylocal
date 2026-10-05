@@ -1886,6 +1886,15 @@ namespace detail
 template<class Context>
 concept tabu_search_context = enumerating_strict_improvement_context<Context>;
 
+// A level of the cost within factor (at least 1) of best: factor times best
+// when best is positive, as far above it when it is zero or negative, so that
+// the level is never better than best.
+[[nodiscard]]
+inline double relaxed_level(const double best, const double factor) noexcept
+{
+    return best + (factor - 1.0) * std::abs(best);
+}
+
 // A list that escapes with random moves needs a neighborhood that draws them.
 template<class List, class Run, class RNG>
 concept tabu_escape_supported =
@@ -2334,8 +2343,9 @@ private:
 };
 
 /// Tabu Search stopping the scan at the first admissible move that improves the
-/// current cost or, with improve_on_best, the best cost; without one, the best
-/// admissible move of the whole neighborhood is applied, as in TabuSearch.
+/// current cost or, with improve_on_best (the group candidates,
+/// candidates::FirstImprovementParameters), the best cost; without one, the
+/// best admissible move of the whole neighborhood is applied, as in TabuSearch.
 ///
 /// Requires what TabuSearch requires.
 template<class TabuList = tabu::FixedLength, class Aspiration = aspiration::ByObjective>
@@ -2393,12 +2403,14 @@ private:
 
 /// Tabu Search with Glover's aspiration plus candidate strategy: each scan
 /// examines admissible moves until plus more after the first one whose cost is
-/// under the aspiration level (aspiration_level times the best cost), but at
-/// least min_moves and at most max_moves of them, and applies the best of those
-/// examined.
+/// under the aspiration level, but at least min_moves and at most max_moves of
+/// them, and applies the best of those examined (the group candidates,
+/// candidates::AspirationPlusParameters).
 ///
-/// The aspiration level is a value of the cost, so the cost is arithmetic.
-/// Requires what TabuSearch requires, with an arithmetic cost.
+/// The aspiration level is best + (aspiration_level - 1) * |best|, for the best
+/// cost best: aspiration_level times it when it is positive, and never below
+/// it. It is a value of the cost, so the cost is arithmetic. Requires what
+/// TabuSearch requires, with an arithmetic cost.
 template<class TabuList = tabu::FixedLength, class Aspiration = aspiration::ByObjective>
 class AspirationPlusTabuSearch
 {
@@ -2439,7 +2451,8 @@ public:
             std::move(solution),
             rng,
             [this](const Run&, const typename Run::cost_type& best) {
-                const auto level = aspiration_level_ * static_cast<double>(best);
+                const auto level =
+                    detail::relaxed_level(static_cast<double>(best), aspiration_level_);
                 return
                     [this, level, examined = std::size_t{0}, first = std::size_t{0}](
                         const Run&,
@@ -2467,11 +2480,13 @@ private:
 /// Tabu Search with Glover's elite candidate list: a full scan applies the best
 /// admissible move and keeps the elite_size best other admissible moves; the
 /// following iterations evaluate only the kept moves still valid, and apply the
-/// best admissible one while its cost is not above quality times the best cost.
+/// best admissible one while its cost is not above the quality level (the group
+/// candidates, candidates::EliteListParameters).
 ///
-/// Otherwise a new full scan builds a new list. The quality level is a value of
-/// the cost, so the cost is arithmetic. Requires what TabuSearch requires, with
-/// an arithmetic cost.
+/// Otherwise a new full scan builds a new list. The quality level is best +
+/// (quality - 1) * |best|, for the best cost best: quality times it when it is
+/// positive, and never below it. It is a value of the cost, so the cost is
+/// arithmetic. Requires what TabuSearch requires, with an arithmetic cost.
 template<class TabuList = tabu::FixedLength, class Aspiration = aspiration::ByObjective>
 class EliteCandidateTabuSearch
 {
@@ -2515,7 +2530,8 @@ public:
         {
             if (const auto reason = engine_.limit_reached(run, state))
                 return engine_.finish(run, state, *reason);
-            const auto level = quality_ * static_cast<double>(state.best.cost);
+            const auto level =
+                detail::relaxed_level(static_cast<double>(state.best.cost), quality_);
 
             // The kept moves still valid, while the best is good enough.
             std::erase_if(elite, [&](const move_type& move) {

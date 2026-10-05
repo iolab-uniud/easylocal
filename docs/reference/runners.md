@@ -129,14 +129,16 @@ Two runners implement Glover's candidate list strategies, whose levels are
 values of the cost (an arithmetic cost):
 
 - `AspirationPlusTabuSearch` examines admissible moves until `plus` more after
-  the first one under the aspiration level (`aspiration_level` times the best
-  cost), but at least `min_moves` and at most `max_moves`, and applies the best
-  examined.
+  the first one under the aspiration level, but at least `min_moves` and at
+  most `max_moves`, and applies the best examined.
 - `EliteCandidateTabuSearch` keeps, from a full scan, the `elite_size` best
   admissible moves besides the one applied; the next iterations evaluate only
   the kept moves still valid and apply the best admissible one while its cost
-  is at most `quality` times the best cost, otherwise a full scan builds a new
-  list.
+  is at most the quality level, otherwise a full scan builds a new list.
+
+Both levels are a factor `f` (`aspiration_level`, `quality`) of the best cost
+`b`, kept on the worse side of it whatever its sign: `b + (f - 1) * |b|`, which
+is `f * b` for a positive best cost.
 
 Tabu lists in `runners::tabu`; their parameters are the group `tabu_list`:
 
