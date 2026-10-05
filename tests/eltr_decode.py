@@ -207,6 +207,25 @@ class FixtureTraces(unittest.TestCase):
         )
         self.assertEqual(result["distinct_solutions"], 2)
 
+    def test_a_run_without_run_finished_is_unfinished(self):
+        schemas = [
+            (1, "run_started", [("cost", 15)]),
+            (7, "run_finished", [("evaluations", 7), ("iterations", 7), ("cost", 15)]),
+        ]
+        started = (1, struct.pack("<q", 5))
+        finished = (7, struct.pack("<QQq", 1, 1, 4))
+        # The first run threw; the second finished; the third threw.
+        records = [started, started, finished, started]
+        result = eltr.summary(eltr.Trace(trace(schemas=schemas, records=records)))
+        self.assertEqual(
+            result["runs"],
+            [
+                {"initial_cost": 5, "unfinished": True},
+                {"initial_cost": 5, "final_cost": 4, "evaluations": 1, "iterations": 1},
+                {"initial_cost": 5, "unfinished": True},
+            ],
+        )
+
     def test_search_trajectory_network(self):
         with open(self.path / "integral.eltr", "rb") as stream:
             network = eltr.search_trajectory_network(eltr.Trace(stream))

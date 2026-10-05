@@ -128,6 +128,18 @@ All solvers expose `supports_initial`, `supports_random`,
 `supports(initialization::Mode)`, `initialization_mode()` (get and set) and
 `rng()`; for a pipeline they refer to its first stage.
 
+## Exceptions
+
+An exception thrown during a run, by a hook of the problem (a cost component,
+a move of the neighborhood explorer, the SolutionManager) or by the tracer,
+is not caught: it ends the run and leaves `runner.run()` and `solver.solve()`
+as it is. A solver loses the runs before it: MultiStart's best start so far, a
+pipeline's earlier stages and their reports. The run emits no `run_finished`,
+so a trace ends with an unfinished run ([Tracing](../tracing.md)). An app
+passes it on as well: `Session::run` leaves the current solution as it was and
+`last_run_effort()` empty, and `cli::run` writes `error: <what>` (`unknown
+exception` for what is not a `std::exception`) and returns 1.
+
 ## Initialization
 
 | Spelling | Checked |

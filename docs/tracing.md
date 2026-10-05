@@ -42,6 +42,13 @@ auto trace = easylocal::trace::without<easylocal::trace::event::solution_visited
 runner.run(solution, rng, easylocal::with(trace));
 ```
 
+A run that an exception ends, thrown by a hook of the problem (a cost
+component, a move, the Input) or by a tracer, emits no `run_finished`: the
+recorder keeps what it received, a binary recorder writes its pending block
+when it is destroyed, and `eltr.py --format summary` marks the run
+`"unfinished": true`. The exception reaches the caller of `run()` or
+`solve()` ([Solvers](reference/solvers.md#exceptions)).
+
 The solvers emit `run_context` before each run they start, with the name and
 index of the pipeline stage (empty and 0 outside a pipeline) and the attempt,
 or the start of a MultiStart, from 0: in a trace of a whole solve, it tells the

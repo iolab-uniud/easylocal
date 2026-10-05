@@ -122,6 +122,9 @@ reviewed by hand before tagging.
   apart in a trace, the stages on the hard cost included. The memory and JSONL
   recorders keep it, and `eltr.py --format summary` gives each run its stage
   and attempt.
+- `eltr.py --format summary` marks `"unfinished": true` a run without
+  `run_finished`, which an exception ended or a truncated trace cut. The
+  solvers reference says how an exception thrown mid-run propagates.
 - `cli::run` records the trace of the run with `--trace <file>`: JSON Lines
   for a `.jsonl` name, ELTR otherwise, with timestamps and with the program and
   its parameters as metadata. A pipeline stage on another cost than the app's

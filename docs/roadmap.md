@@ -45,6 +45,25 @@ its solutions the current one.
 
 **When.** The Session, the command line and REST next, as one change; the
 TextUI page after them.
+## A failed run in the trace and in the result
+
+**Why.** An exception thrown in the middle of a run, by a hook of the problem
+or by the tracer, ends the run without a trace record and leaves `solve()`
+with nothing: MultiStart loses its best start so far, a pipeline its earlier
+stages and their reports. A trace shows only that the run did not finish
+(`eltr.py` marks it unfinished), not why, and a long solve that fails at its
+last start returns nothing of the work done.
+
+**What.**
+
+- a `run_aborted` core event, emitted by `search_run` when an exception
+  leaves the run, with the counters and the cost reached, before the
+  exception goes on;
+- a `solve_failed` exception thrown by the solvers, which carries the best
+  result so far and the stage reports, with the original exception nested.
+
+**When.** Not scheduled: when a long-running use, such as a REST service or a
+tuning campaign, needs the partial results.
 
 ## Python and Julia bindings
 

@@ -23,7 +23,9 @@ read without rounding. A record without a schema becomes {"event": "user" (or
 "unknown" for a core tag), "tag": ..., "payload": hex}.
 
 The summary lists the runs in order, each with its stage, stage index and
-attempt when a solver emitted a run_context before it.
+attempt when a solver emitted a run_context before it, and "unfinished": true
+for a run without run_finished: one that an exception ended, or the last one
+of a truncated trace.
 
 The STN output is the search trajectory network of the solution_visited
 events (recorded when the problem has a solution hash): one node per distinct
@@ -281,17 +283,24 @@ def summary(trace: Trace) -> dict[str, Any]:
     runs: list[dict[str, Any]] = []
     solutions = set()
     context: dict[str, Any] = {}
+    # Whether the last run has started and not finished.
+    running = False
     for record in trace:
         name = record["event"]
         counts[name if name not in ("user", "unknown") else f"{name}:{record['tag']}"] += 1
         if name == "run_context":
             context = {key: record[key] for key in ("stage", "stage_index", "attempt")}
         elif name == "run_started":
+            # A run that an exception ended has no run_finished.
+            if running:
+                runs[-1]["unfinished"] = True
             runs.append({**context, "initial_cost": record["cost"]})
             context = {}
+            running = True
         elif name == "run_finished":
-            if not runs or "final_cost" in runs[-1]:
+            if not running:
                 runs.append({})
+            running = False
             runs[-1].update(
                 final_cost=record["cost"],
                 evaluations=record["evaluations"],
@@ -301,6 +310,8 @@ def summary(trace: Trace) -> dict[str, Any]:
                 runs[-1]["termination"] = record["termination"]
         elif name == "solution_visited":
             solutions.add(record["hash"])
+    if running:
+        runs[-1]["unfinished"] = True
     result: dict[str, Any] = {
         "metadata": trace.metadata,
         "events": dict(counts),
@@ -312,8 +323,8 @@ def summary(trace: Trace) -> dict[str, Any]:
 
 
 def search_trajectory_network(trace: Trace) -> dict[str, Any]:
-    nodes: dict[int, dict[str, Any]] = {}
-    edges: Counter[tuple[int, int]] = Counter()
+    nodes: dict[str, dict[str, Any]] = {}
+    edges: Counter[tuple[str, str]] = Counter()
     previous = None
     for record in trace:
         if record["event"] == "run_started":
