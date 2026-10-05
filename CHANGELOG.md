@@ -643,6 +643,12 @@ reviewed by hand before tagging.
   file of the shared Input, which one of them may have loaded.
 - TextUI: the launcher keeps one session per app, so leaving an app no
   longer discards its runner and problem parameters and its seed.
+- `easylocal::generator`, the fallback of `std::generator` for libc++
+  (AppleClang), no longer copies an `std::exception_ptr` at every resume nor
+  moves each yielded value into an `std::optional`: the iterator refers to a
+  yielded rvalue, as `std::generator` does. Best Improvement over a 2-opt
+  `moves()` generator with an O(1) delta runs about 2.5 times faster
+  (15 to 6 ns per evaluation).
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

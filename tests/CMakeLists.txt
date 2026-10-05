@@ -237,6 +237,14 @@ easylocal_add_test(
 )
 
 easylocal_add_test(
+    generator
+    SOURCES
+        generator.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
+
+easylocal_add_test(
     run-control
     SOURCES
         run_control.cpp

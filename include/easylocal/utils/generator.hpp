@@ -1,10 +1,10 @@
 #pragma once
 
 /// \file
-/// easylocal::generator<T>: a coroutine that yields values of type T, lazily,
-/// as an input range.
+/// `easylocal::generator<T>`: a coroutine that yields values of type T,
+/// lazily, as an input range.
 ///
-/// It is std::generator<T> where the standard library provides it, and a
+/// It is `std::generator<T>` where the standard library provides it, and a
 /// minimal equivalent otherwise (libc++ does not ship `<generator>` yet). Its
 /// intended use is NeighborhoodExplorer::moves(): the moves are produced one at
 /// a time, while the runner consumes them, instead of being materialized in a
@@ -20,7 +20,7 @@ namespace easylocal
 {
 
 /// A coroutine that yields values of type T, lazily, as an input range:
-/// std::generator<T>, which the standard library provides.
+/// `std::generator<T>`, which the standard library provides.
 template<class T>
 using generator = std::generator<T>;
 
@@ -32,7 +32,7 @@ using generator = std::generator<T>;
 #include <cstddef>
 #include <exception>
 #include <iterator>
-#include <optional>
+#include <memory>
 #include <ranges>
 #include <type_traits>
 #include <utility>
@@ -40,12 +40,14 @@ using generator = std::generator<T>;
 namespace easylocal
 {
 
-/// The subset of std::generator<T> the framework relies on: co_yield of a
+/// The subset of `std::generator<T>` the framework relies on: co_yield of a
 /// value, a single pass over the yielded values, exceptions propagated to the
 /// consumer.
 ///
-/// Unlike std::generator, values are always copied or moved into the coroutine
-/// frame and co_yield ranges::elements_of(...) is not supported.
+/// As in std::generator, a yielded rvalue is not copied: the iterator refers
+/// to it while the coroutine is suspended. A yielded lvalue is copied, since
+/// the consumer may move from the value; `co_yield ranges::elements_of(...)`
+/// is not supported.
 template<class T>
 class generator : public std::ranges::view_interface<generator<T>>
 {
@@ -77,12 +79,38 @@ public:
             return {};
         }
 
-        /// Stores the value of a `co_yield` and suspends the coroutine.
-        std::suspend_always yield_value(T value) noexcept(
-            std::is_nothrow_move_constructible_v<T>)
+        /// Refers to the value of a `co_yield` of an rvalue, which lives
+        /// while the coroutine is suspended, and suspends the coroutine.
+        std::suspend_always yield_value(T&& value) noexcept
         {
-            value_.emplace(std::move(value));
+            value_ = std::addressof(value);
             return {};
+        }
+
+        /// Copies the value of a `co_yield` of an lvalue, which the consumer
+        /// may move from, and suspends the coroutine.
+        auto yield_value(const T& value) noexcept(std::is_nothrow_copy_constructible_v<T>)
+        {
+            // The awaiter holds the copy, and lives in the coroutine frame
+            // while the coroutine is suspended.
+            struct copy_awaiter
+            {
+                T copy;
+                promise_type* promise;
+
+                static bool await_ready() noexcept
+                {
+                    return false;
+                }
+
+                void await_suspend(std::coroutine_handle<>) noexcept
+                {
+                    promise->value_ = std::addressof(copy);
+                }
+
+                static void await_resume() noexcept {}
+            };
+            return copy_awaiter{value, this};
         }
 
         /// A generator only yields: co_await is not allowed in its body.
@@ -102,7 +130,8 @@ public:
     private:
         friend class generator;
 
-        std::optional<T> value_;
+        // The value of the last co_yield, while the coroutine is suspended.
+        T* value_{};
         std::exception_ptr exception_;
     };
 
@@ -194,13 +223,16 @@ public:
 private:
     explicit generator(handle_type coroutine) noexcept : coroutine_{coroutine} {}
 
+    // Resumes the coroutine; the exception it threw, if any, is tested
+    // before it is moved out, so that a resume copies no exception_ptr.
     static void advance(handle_type coroutine)
     {
-        coroutine.promise().value_.reset();
+        auto& promise = coroutine.promise();
+        promise.value_ = nullptr;
         coroutine.resume();
-        if (auto exception = std::exchange(coroutine.promise().exception_, {}))
+        if (promise.exception_) [[unlikely]]
         {
-            std::rethrow_exception(std::move(exception));
+            std::rethrow_exception(std::exchange(promise.exception_, {}));
         }
     }
 
