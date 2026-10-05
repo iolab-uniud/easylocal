@@ -534,7 +534,11 @@ inline std::vector<std::pair<std::uint8_t, binary_event_schema>> core_event_sche
                 {evaluations, iterations, {"cost", cost}, {"termination", string}}}},
         {tag(solution_visited),
             {"solution_visited",
-                {evaluations, iterations, {"hash", u64}, {"cost", cost}}}},
+                {evaluations,
+                    iterations,
+                    {"hash", u64},
+                    {"cost", cost},
+                    {"previous_hash", u64}}}},
         {tag(aspiration_applied),
             {"aspiration_applied", {evaluations, iterations, {"cost", cost}}}},
         {tag(tabu_escape), {"tabu_escape", {evaluations, iterations, {"moves", u64}}}},
@@ -675,6 +679,7 @@ void encode_core_event(
     out.u64(value.iterations);
     out.u64(value.hash);
     cost_writer(out, value.cost);
+    out.u64(value.previous_hash);
 }
 
 template<class Cost, class CostWriter>

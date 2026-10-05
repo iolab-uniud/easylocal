@@ -372,6 +372,8 @@ public:
             detail::write_json_hash(out, value.hash);
             out << ",\"cost\":";
             cost_writer_(out, value.cost);
+            out << ",\"previous_hash\":";
+            detail::write_json_hash(out, value.previous_hash);
             out << "}\n";
         });
     }

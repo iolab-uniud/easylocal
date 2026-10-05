@@ -771,6 +771,7 @@ public:
         std::optional<cost_type> previous_cost;
         if constexpr (traced)
             previous_cost.emplace(current.cost());
+        const auto previous_hash = visit_hash(solution);
         evaluation_.commit(solution, current, std::move(candidate));
         evaluate_near_target(solution, current);
         observe_cost(current.cost());
@@ -788,7 +789,7 @@ public:
                     });
             });
         }
-        visited(solution, current.cost());
+        visited(solution, current.cost(), previous_hash);
         if constexpr (archives_front)
             archive(solution, current.cost());
     }
@@ -983,23 +984,41 @@ private:
             return {};
     }
 
-    // The solution_visited event, when the tracer observes it and the problem
-    // has a solution hash.
-    void visited(const solution_type& solution, const cost_type& cost)
+    // Whether the run emits solution_visited: the tracer observes it and the
+    // problem has a solution hash.
+    static constexpr bool traces_visits =
+        trace::observes<Tracer, trace::event::solution_visited<cost_type>>
+        && requires(const Context& context) {
+               requires has_solution_hash<
+                   std::remove_cvref_t<decltype(context.solution_manager())>>;
+           };
+
+    // The hash of solution, for a run that traces visits, and 0 otherwise.
+    [[nodiscard]]
+    std::uint64_t visit_hash(const solution_type& solution) const
     {
-        if constexpr (trace::observes<Tracer, trace::event::solution_visited<cost_type>>
-            && requires(const Context& context) {
-                   requires has_solution_hash<
-                       std::remove_cvref_t<decltype(context.solution_manager())>>;
-               })
+        if constexpr (traces_visits)
+            return easylocal::solution_hash(context_.solution_manager(), solution);
+        else
+            return 0;
+    }
+
+    // The solution_visited event, reached from the solution of hash previous
+    // (0 for a solution not reached by a move), when the run traces visits.
+    void visited(
+        const solution_type& solution,
+        const cost_type& cost,
+        const std::uint64_t previous = 0)
+    {
+        if constexpr (traces_visits)
         {
             emit(
                 trace::event::solution_visited<cost_type>{
                     .evaluations = evaluations_,
                     .iterations = iterations_,
-                    .hash =
-                        easylocal::solution_hash(context_.solution_manager(), solution),
+                    .hash = visit_hash(solution),
                     .cost = cost,
+                    .previous_hash = previous,
                 });
         }
     }

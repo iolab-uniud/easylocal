@@ -146,14 +146,17 @@ void write_integral(const std::filesystem::path& directory)
         emit_all(event::move_evaluated<long>{1, 0, 40 + run, -7, &inner}, binary, json);
         emit_all(event::move_accepted<long>{1, 1, 40 + run, -7, &inner}, binary, json);
         emit_all(event::move_accepted<long>{2, 2, -7, -7, nullptr}, binary, json);
-        emit_all(event::solution_visited<long>{2, 2, 7, -7}, binary, json);
+        emit_all(
+            event::solution_visited<long>{2, 2, 7, -7, 0xfeedfacecafebeefULL},
+            binary,
+            json);
         emit_all(event::incumbent_updated<long>{2, 2, 40 + run, -7}, binary, json);
         emit_all(event::aspiration_applied<long>{2, 2, -7}, binary, json);
         emit_all(event::tabu_escape{3, 3, 5}, binary, json);
         emit_all(event::tabu_tenure_changed{3, 3, 1, 2}, binary, json);
         emit_all(event::local_optimum<long>{4, 3, -7}, binary, json);
         emit_all(
-            event::solution_visited<long>{4, 3, 0xfeedfacecafebeefULL, 40},
+            event::solution_visited<long>{4, 3, 0xfeedfacecafebeefULL, 40, 7},
             binary,
             json);
         easylocal::trace::emit(binary, temperature_changed{3, 0.5});

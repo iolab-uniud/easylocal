@@ -29,8 +29,9 @@ of a truncated trace.
 
 The STN output is the search trajectory network of the solution_visited
 events (recorded when the problem has a solution hash): one node per distinct
-hash, with its cost and number of visits, and one edge per consecutive pair of
-visits within a run, with its count.
+hash, with its cost and number of visits, and one edge per move, from its
+previous_hash to its hash, with its count; a visit that no move reached (the
+start of a run, a sample of a population) has no edge.
 
 Standard library only: `uv run scripts/eltr.py` or `python3`. As a module,
 `Trace(stream)` reads the header (`metadata`, `cost_fields`, `schemas`) and
@@ -322,6 +323,9 @@ def summary(trace: Trace) -> dict[str, Any]:
     return result
 
 
+NO_HASH = "0" * 16
+
+
 def search_trajectory_network(trace: Trace) -> dict[str, Any]:
     nodes: dict[str, dict[str, Any]] = {}
     edges: Counter[tuple[str, str]] = Counter()
@@ -334,8 +338,12 @@ def search_trajectory_network(trace: Trace) -> dict[str, Any]:
                 record["hash"], {"hash": record["hash"], "cost": record["cost"], "visits": 0}
             )
             node["visits"] += 1
-            if previous is not None:
-                edges[(previous, record["hash"])] += 1
+            # The solution the move was applied to, NO_HASH for one no move
+            # reached (a start, a sample); a trace without the field links
+            # consecutive visits.
+            source = record.get("previous_hash", previous)
+            if source is not None and source != NO_HASH:
+                edges[(source, record["hash"])] += 1
             previous = record["hash"]
     return {
         "metadata": trace.metadata,

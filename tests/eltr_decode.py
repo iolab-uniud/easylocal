@@ -252,6 +252,27 @@ class FixtureTraces(unittest.TestCase):
             ],
         )
 
+    def test_a_visit_without_a_move_has_no_edge(self):
+        class Records(list):
+            metadata = {}
+
+        def visit(hash, previous):
+            return {"event": "solution_visited", "hash": hash, "cost": 1, "previous_hash": previous}
+
+        a, b, c = "000000000000000a", "000000000000000b", "000000000000000c"
+        network = eltr.search_trajectory_network(
+            Records(
+                [
+                    {"event": "run_started", "cost": 1},
+                    visit(a, eltr.NO_HASH),
+                    # A sample of a population, then a move from the start.
+                    visit(b, eltr.NO_HASH),
+                    visit(c, a),
+                ]
+            )
+        )
+        self.assertEqual(network["edges"], [{"source": a, "target": c, "count": 1}])
+
     def run_cli(self, *arguments):
         return subprocess.run(
             [sys.executable, eltr.__file__, *map(str, arguments)],

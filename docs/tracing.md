@@ -24,10 +24,13 @@ that is the reason), and `random_move()` forwards `neighborhood_selection` event
 track a best-so-far solution, such as Simulated Annealing, call
 `incumbent_updated()`; custom events can be sent with `run.emit(event)`.
 
-`start()` and `commit()` also emit `solution_visited`, with the hash of the
-solution reached (`solution_hash`, see
-[SolutionManager](reference/solution-manager.md)) and its cost: the nodes of
-Search Trajectory Networks and Local Optima Networks. It is emitted only when
+`start()`, `commit()` and `evaluate_solution()` also emit `solution_visited`,
+with the hash of the solution reached (`solution_hash`, see
+[SolutionManager](reference/solution-manager.md)), its cost and
+`previous_hash`, the hash of the solution the move was applied to (0 at the
+start of a run and for a solution no move reached, such as a sample of
+Pareto Late Acceptance's history): the nodes and the edges of Search
+Trajectory Networks and Local Optima Networks. It is emitted only when
 the problem has a solution hash, and the hash is computed only when the tracer
 observes the event, so the hash costs nothing to a run that does not record
 it. The 64-bit hash is a `u64` in ELTR and, in JSONL and in the output of
@@ -259,7 +262,7 @@ application event that describes itself. The core events are:
 | 5 | `local_optimum` | evaluations, iterations, cost |
 | 6 | `neighborhood_selection` | attempt, child, bias, active_bias_total, conditional_probability, produced_move, neighborhood |
 | 7 | `run_finished` | evaluations, iterations, cost, termination (its name, as `to_string` writes it) |
-| 8 | `solution_visited` | evaluations, iterations, hash, cost |
+| 8 | `solution_visited` | evaluations, iterations, hash, cost, previous_hash |
 | 9 | `aspiration_applied` | evaluations, iterations, cost |
 | 10 | `tabu_escape` | evaluations, iterations, moves |
 | 11 | `tabu_tenure_changed` | evaluations, iterations, previous_tenure, tenure |
@@ -300,7 +303,8 @@ and attempt when a `run_context` came before it. As a module, `eltr.Trace(stream
 The `stn` format builds the network from the `solution_visited` events, which
 are recorded when the problem has a [solution hash](reference/solution-manager.md):
 one node per distinct hash, with its cost and number of visits, and one edge per
-consecutive pair of visits within a run.
+move, from its `previous_hash` to its `hash`; a visit no move reached has no
+edge, so an algorithm that keeps several solutions gets the right edges.
 
 ### Extending ELTR without touching EasyLocal
 

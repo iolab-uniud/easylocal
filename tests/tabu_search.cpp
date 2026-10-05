@@ -416,6 +416,19 @@ int main()
         ok &= expect(
             aspired_moves == 3 && visited == traced.iterations + 1,
             "the trace records aspirated moves and every solution visited");
+        // Each visit after the start comes from the one before it.
+        std::vector<easylocal::trace::event::solution_visited<int>> visits;
+        for (const auto& record : trace.records())
+        {
+            using recorder = easylocal::trace::memory_recorder<int>;
+            if (const auto* visit =
+                    std::get_if<recorder::solution_visited_record>(&record))
+                visits.push_back(*visit);
+        }
+        bool linked = !visits.empty() && visits.front().previous_hash == 0;
+        for (std::size_t index = 1; index < visits.size(); ++index)
+            linked = linked && visits[index].previous_hash == visits[index - 1].hash;
+        ok &= expect(linked, "a visit names the solution its move was applied to");
 
         // Without solution_visited the search computes no hash at all.
         std::mt19937 filtered_rng{7U};

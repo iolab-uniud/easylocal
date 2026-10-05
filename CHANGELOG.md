@@ -402,6 +402,14 @@ reviewed by hand before tagging.
   `--trace file.jsonl`, no longer fail to compile or stop with an error. It
   no longer falls back to `operator<<`, whose text need not be JSON: another
   cost type takes a cost writer of its own.
+- **Breaking:** `solution_visited` has a `previous_hash`, the hash of the
+  solution the move was applied to, 0 at the start of a run and for a
+  solution no move reached (`evaluate_solution()`, such as a sample of
+  Pareto Late Acceptance's history); it ends the event in ELTR and in JSONL.
+  `eltr.py --format stn` draws an edge per move, from `previous_hash` to
+  `hash`, instead of one per pair of consecutive visits, which was wrong for
+  an algorithm that keeps several solutions. A run that traces visits hashes
+  the solution before and after each move.
 
 ### Fixed
 

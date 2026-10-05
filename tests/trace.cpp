@@ -879,7 +879,8 @@ int main()
     }
 
     // The trajectory and tabu events, in ELTR: tags 8, 9 and 10, with the
-    // hash as a little-endian u64 after the counters.
+    // hash as a little-endian u64 after the counters, the previous hash after
+    // the cost.
     {
         std::ostringstream stream;
         easylocal::trace::binary_recorder<int> recorder{stream};
@@ -890,6 +891,7 @@ int main()
                 .iterations = 2,
                 .hash = 0x0102030405060708ULL,
                 .cost = 9,
+                .previous_hash = 0x1112131415161718ULL,
             });
         easylocal::trace::emit(
             recorder,
@@ -910,12 +912,17 @@ int main()
         const auto byte = [&data, records](const std::size_t index) {
             return static_cast<unsigned char>(data[records + index]);
         };
-        std::uint64_t hash = 0;
-        for (std::size_t index = 0; index < 8; ++index)
-            hash |= static_cast<std::uint64_t>(byte(5 + 16 + index)) << (8 * index);
+        const auto u64_at = [&byte](const std::size_t offset) {
+            std::uint64_t value = 0;
+            for (std::size_t index = 0; index < 8; ++index)
+                value |= static_cast<std::uint64_t>(byte(offset + index)) << (8 * index);
+            return value;
+        };
         ok &= expect(
-            data.size() == records + (5 + 32) + (5 + 24) + (5 + 24) && byte(0) == 8
-                && byte(37) == 9 && byte(66) == 10 && hash == 0x0102030405060708ULL,
+            data.size() == records + (5 + 40) + (5 + 24) + (5 + 24) && byte(0) == 8
+                && byte(45) == 9 && byte(74) == 10
+                && u64_at(5 + 16) == 0x0102030405060708ULL
+                && u64_at(5 + 32) == 0x1112131415161718ULL,
             "binary recorder encodes solution_visited, aspiration_applied and tabu_escape");
 
         std::ostringstream jsonl;
@@ -927,10 +934,13 @@ int main()
                 .iterations = 2,
                 .hash = 42,
                 .cost = 9,
+                .previous_hash = 43,
             });
         ok &= expect(
             jsonl.str().find("\"event\":\"solution_visited\"") != std::string::npos
-                && jsonl.str().find("\"hash\":\"000000000000002a\"") != std::string::npos,
+                && jsonl.str().find("\"hash\":\"000000000000002a\"") != std::string::npos
+                && jsonl.str().find("\"previous_hash\":\"000000000000002b\"")
+                    != std::string::npos,
             "JSONL recorder writes solution_visited with its hash in hexadecimal");
     }
 

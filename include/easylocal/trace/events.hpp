@@ -154,9 +154,10 @@ struct neighborhood_selection
     const neighborhood_route_node* neighborhood{};
 };
 
-/// The solution reached at the start of a run and after each applied move,
+/// A solution reached: at the start of a run, after each applied move, and
+/// when an algorithm evaluates another solution (a sample of its population),
 /// identified by its hash (solution_hash): the nodes of search trajectory and
-/// local optima networks.
+/// local optima networks, whose edges go from previous_hash to hash.
 ///
 /// Emitted only when the problem has a solution hash.
 template<class Cost>
@@ -170,6 +171,9 @@ struct solution_visited
     std::uint64_t hash{};
     /// The cost of the solution.
     Cost cost;
+    /// The solution hash of the solution the move was applied to, 0 for a
+    /// solution not reached by a move: the start of a run, a sample.
+    std::uint64_t previous_hash{};
 };
 
 /// The move just applied was tabu, admitted by the aspiration criterion.
