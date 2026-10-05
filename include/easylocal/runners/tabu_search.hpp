@@ -1153,7 +1153,7 @@ private:
     ObjectiveBasedParameters parameters_;
 };
 
-/// The parameters of the LimDynamic tabu list.
+/// The parameters of the LimDynamic (limited dynamic tenure) tabu list.
 struct LimDynamicParameters
 {
     /// The tenure after an improvement of the best cost.
@@ -1191,9 +1191,13 @@ struct LimDynamicParameters
     }
 };
 
-/// A tenure that grows by one at each iteration after idle_threshold iterations
-/// without improving the best cost, and falls back to min_tenure when the best
-/// improves or the tenure reaches max_tenure.
+/// LimDynamic, a limited dynamic tenure: it grows by one at each iteration
+/// after idle_threshold iterations without improving the best cost, and falls
+/// back to min_tenure when the best improves or the tenure reaches max_tenure.
+///
+/// The name is the one of Da Ros, Di Gaspero and Schaerf's performance analysis
+/// of tabu list strategies, where it is compared with the other lists of
+/// easylocal::runners::tabu.
 class LimDynamic
 {
 public:
@@ -1364,7 +1368,7 @@ private:
 
 } // namespace detail
 
-/// The parameters of the Foo tabu list.
+/// The parameters of the Foo (Fluctuation Of the Objective) tabu list.
 struct FooParameters
 {
     /// Iterations between two tenure changes.
@@ -1405,9 +1409,10 @@ struct FooParameters
     }
 };
 
-/// The Fluctuation Of the Objective scheme (Blöchliger and Zufferey): a tenure
-/// that grows by increment when the costs reached in the last window spread
-/// less than fluctuation (the search is stuck), and shrinks by one otherwise.
+/// FOO, the Fluctuation Of the Objective scheme of Blöchliger and Zufferey's
+/// reactive tabu search for graph coloring: a tenure that grows by increment
+/// when the costs reached in the last window spread less than fluctuation (the
+/// search is stuck), and shrinks by one otherwise.
 ///
 /// The fluctuation is in cost units, so it depends on the instance; the cost
 /// needs cost::delta. The tenure applies to every move the list holds, so a
@@ -1488,7 +1493,8 @@ private:
     FooParameters parameters_;
 };
 
-/// The parameters of the RandomFoo tabu list.
+/// The parameters of the RandomFoo (randomized Fluctuation Of the Objective)
+/// tabu list.
 struct RandomFooParameters
 {
     /// The smallest window drawn.
@@ -1552,8 +1558,9 @@ struct RandomFooParameters
     }
 };
 
-/// Foo with its window, increment and fluctuation drawn uniformly in their
-/// ranges at the start and again at the end of each window.
+/// RandomFoo, a randomized Fluctuation Of the Objective: Foo with its window,
+/// increment and fluctuation drawn uniformly in their ranges at the start and
+/// again at the end of each window.
 class RandomFoo
 {
 public:

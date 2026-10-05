@@ -150,9 +150,9 @@ Tabu lists in `runners::tabu`; their parameters are the group `tabu_list`:
 | `Reactive` (TS4) | `increase`, `decrease`, `repetitions`, `chaos`, `cycle_length`, `max_tenure`, `verify_equality` | for a tenure that reacts to revisited solutions; needs the solution hash and `random_move` |
 | `Frequency` (TS5) | `threshold` | while its attribute was applied in more than `threshold` of the iterations; needs `tabu_attribute`, not `inverse` |
 | `ObjectiveBased` | `tenure` | while its cost is equivalent to one reached in the last `tenure` iterations, by the cost semantics (`equivalent`); needs neither inverse nor attribute |
-| `LimDynamic` | `min_tenure`, `max_tenure`, `idle_threshold` | for a tenure that grows by one after `idle_threshold` idle iterations and falls back to `min_tenure` on an improvement or at `max_tenure` |
-| `Foo` | `window`, `increment`, `fluctuation` | for a tenure that grows by `increment` when the costs of the last `window` iterations spread less than `fluctuation`, and shrinks by one otherwise; needs `cost::delta` |
-| `RandomFoo` | ranges of the three | as `Foo`, drawing them again at each window |
+| `LimDynamic` (limited dynamic) | `min_tenure`, `max_tenure`, `idle_threshold` | for a tenure that grows by one after `idle_threshold` idle iterations and falls back to `min_tenure` on an improvement or at `max_tenure` |
+| `Foo` (FOO, Fluctuation Of the Objective) | `window`, `increment`, `fluctuation` | for a tenure that grows by `increment` when the costs of the last `window` iterations spread less than `fluctuation`, and shrinks by one otherwise; needs `cost::delta` |
+| `RandomFoo` (randomized FOO) | ranges of the three | as `Foo`, drawing them again at each window |
 
 Most lists forbid moves through the neighborhood's `inverse`, `Frequency`
 through its `tabu_attribute`, `ObjectiveBased` through the candidate's cost,
@@ -171,6 +171,12 @@ times counts as chaos; after more than `chaos` counts the memory is reset and
 the search escapes with `1 + (1 + r) * average / 2` random moves (`r` uniform
 in `[0, 1)`), applied whatever their cost, counted as iterations and
 recorded in the list like the others.
+
+The names of the lists are those of Da Ros, Di Gaspero and Schaerf's
+performance analysis of tabu list strategies: `LimDynamic` is a limited
+dynamic tenure, `Foo` the Fluctuation Of the Objective scheme of Blöchliger and
+Zufferey, and `RandomFoo` its variant that draws the parameters again at each
+window.
 
 The lists with one tenure for all moves (`Reactive`, `LimDynamic`, `Foo`,
 `RandomFoo`) apply the current tenure to every move they hold: a move is tabu

@@ -189,6 +189,9 @@ reviewed by hand before tagging.
   hexadecimal digits in JSONL (`jsonl_recorder`) and in the output of
   `eltr.py`, the STN's nodes and edges included: as JSON numbers, JavaScript
   and jq rounded them to doubles. ELTR keeps them as `u64`.
+- The briefs of the `LimDynamic`, `Foo` and `RandomFoo` tabu lists and the
+  runners reference expand their names (limited dynamic tenure, Fluctuation Of
+  the Objective) and give their sources.
 - **Breaking:** the four tabu searches share one parameter block,
   `TabuSearchParameters<ListParameters, CandidateParameters>`: the parameters
   of the candidate strategy are the group `candidates`
