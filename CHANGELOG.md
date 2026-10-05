@@ -112,6 +112,9 @@ reviewed by hand before tagging.
   unlimited).open_high()` leaves out `unlimited` for a limit, where both were
   accepted. Its text shows the end, `[1, unlimited]`, or `[1, unlimited)`
   without it, where both read `[1, unlimited)`.
+- `config::override_result` is `[[nodiscard]]`, and so are
+  `parameter_set::apply` and `Session::configure`, whose ignored result hid a
+  misspelt path.
 - `check(app, ...)` reports, as `runner parameters`, a registered runner whose
   `parameters_type` is not a parameter block (and not empty): the app runs it,
   but no frontend can change its parameters. The tutorial's `RandomDescent`

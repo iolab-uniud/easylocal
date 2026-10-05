@@ -21,7 +21,7 @@ Each kind of hook may be written in three ways, tried in this order:
 | read an Input | `static Input::read(std::istream&)`; `read_input(std::type_identity<Input>, std::istream&)` by ADL; `operator>>` on a default-constructed Input | `read_input`, `load_input`, Session, TextUI |
 | read a Solution | `static Solution::read(const Input&, std::istream&)`; `read_solution(const Input&, std::istream&)` by ADL; `operator>>` on `Solution{input}` | `read_solution`, `load_solution`, Session, TextUI |
 | write a Solution | `Solution::write(const Input&, std::ostream&) const`; `write_solution(const Input&, const Solution&, std::ostream&)` by ADL; `operator<<` | `write_solution`, `save_solution`, Session, TextUI |
-| describe a value | `describe() const` member; `describe(const T&)` by ADL; `operator<<` | `describe`, TextUI |
+| describe a value | `describe() const` member; `describe(const T&)` by ADL; `operator<<`; a `std::variant`, or a union move, by what it holds | `describe`, TextUI |
 | read a cost | `read_cost(const Input&, std::string_view)` by ADL; else `cost::from_text` | `read_cost`, Session, TextUI, `RunParameters` (see Cost) |
 | compare solutions | the SolutionManager's `equal(const Solution&, const Solution&)`; `operator==` on Solution ([solution identity](solution-manager.md#solution-identity)) | the checks of `easylocal::testing`, `Session::check_move_independence`, TextUI, reactive tabu list |
 | compare moves | `operator==` on Move | tests, Session and TextUI |

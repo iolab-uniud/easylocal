@@ -134,8 +134,9 @@ struct override_diagnostic
 /// What parameter_set::apply() did: the number of blocks it changed, and the
 /// errors.
 ///
-/// It converts to true when there are no errors.
-struct override_result
+/// It converts to true when there are no errors. It is [[nodiscard]]: a
+/// misspelt path is an error, which would otherwise be ignored silently.
+struct [[nodiscard]] override_result
 {
     /// The number of blocks changed; 0 when there are errors.
     std::size_t applied_parameter_blocks{};

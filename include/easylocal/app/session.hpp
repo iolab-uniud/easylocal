@@ -563,6 +563,7 @@ public:
     /// reports follow them; the current solution stays and the selected move is
     /// cleared. The runners read their parameters at each run. When the
     /// rebuilding throws, the app gets its previous values back first.
+    [[nodiscard]]
     config::override_result configure(
         const std::span<const config::text_override> overrides)
         requires requires(App& application) { application.configuration(); }
