@@ -14,6 +14,7 @@
 #include <iostream>
 #include <optional>
 #include <random>
+#include <stdexcept>
 #include <stop_token>
 #include <string_view>
 #include <thread>
@@ -409,6 +410,44 @@ int main()
             && staged_result.stages[0].cost == "7" && staged_result.cost == 7
             && staged_result.termination == termination_reason::target_reached,
         "a pipeline stops its last stage, only, at the caller's target");
+
+    // First Improvement is deterministic: attempts from the same solution
+    // would repeat one run, without restart().
+    const auto rejects = [](const auto& make) {
+        try
+        {
+            static_cast<void>(make());
+        }
+        catch (const std::invalid_argument&)
+        {
+            return true;
+        }
+        return false;
+    };
+    ok &= expect(
+        rejects([&] {
+            return solvers::pipeline(
+                solvers::stage("first", fi),
+                solvers::stage("again", fi) & solvers::attempts(2));
+        }),
+        "a later stage of a deterministic runner with attempts is rejected");
+    ok &= expect(
+        rejects([&] {
+            return solvers::pipeline(solvers::stage("again", fi) & solvers::attempts(2))
+                .initialization(initialization::initial)
+                .solve(ten);
+        }),
+        "a first stage of a deterministic runner from the initial solution too");
+    ok &= expect(
+        !rejects([&] {
+            return solvers::pipeline(
+                solvers::stage("first", fi),
+                solvers::stage("again", fi) & solvers::attempts(2)
+                    & solvers::restart(initialization::initial))
+                .initialization(initialization::initial)
+                .solve(ten);
+        }),
+        "a stage that restarts its attempts is accepted");
 
     auto multi_start =
         make_solver<solvers::MultiStart>(fi, solvers::MultiStartParameters{.starts = 5})

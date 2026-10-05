@@ -316,8 +316,7 @@ void pipelines_are_registered_and_run_by_name()
         easylocal::make_runner<BestImprovement>({.max_evaluations = 100}) | sm | nhe;
     const auto stages = [&] {
         return solvers::pipeline(
-            solvers::stage("feasible", descent) & solvers::until_feasible()
-                & solvers::attempts(3),
+            solvers::stage("feasible", descent) & solvers::until_feasible(),
             solvers::stage("best", best));
     };
 
@@ -325,8 +324,7 @@ void pipelines_are_registered_and_run_by_name()
         | easylocal::runner<FirstImprovement>("fi")
         | easylocal::pipeline(
             "cascade",
-            solvers::stage("feasible", descent) & solvers::until_feasible()
-                & solvers::attempts(3),
+            solvers::stage("feasible", descent) & solvers::until_feasible(),
             solvers::stage("best", best))
         | easylocal::runner<BestImprovement>("bi");
 
@@ -388,7 +386,7 @@ void pipelines_are_registered_and_run_by_name()
         | easylocal::pipeline(
             "cascade",
             solvers::stage<FirstImprovement>("feasible", {.max_evaluations = 100})
-                & solvers::until_feasible() & solvers::attempts(3),
+                & solvers::until_feasible(),
             solvers::stage<BestImprovement>("best", {.max_evaluations = 100}));
     std::mt19937_64 algorithm_rng{3};
     const auto by_algorithm = algorithms.run("cascade", instance, initial, algorithm_rng);

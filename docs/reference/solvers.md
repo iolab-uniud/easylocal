@@ -130,9 +130,14 @@ solution with the caller's RNG: the first stage's attempts all start from that
 solution, unless the stage restarts them (`& restart(initialization::random)`,
 a multi-start). It is how an app runs a pipeline registered by name.
 
-Attempts from the same solution repeat the same run for a runner that takes no
-RNG and keeps no state between runs (First and Best Improvement): give such a
-stage a target, or restart its attempts from random solutions.
+An algorithm that declares itself deterministic (`static constexpr bool
+deterministic = true`, as First and Best Improvement do) repeats the same run
+from the same solution: a stage of one with more than one attempt that would
+all start from the same solution, without `restart(...)`, is rejected with
+`std::invalid_argument`, which suggests `restart(initialization::random)`.
+That is a stage after the first, at the pipeline's construction, or the first
+stage when it starts from the initial solution or, in an app, from the current
+solution, at the run; a custom algorithm without the trait is not checked.
 
 The result is the last stage's, with the effort of every stage and attempt,
 and `result.stages`: per stage its name, attempts, evaluations, iterations,

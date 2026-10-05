@@ -56,6 +56,10 @@ public:
     /// The parameter block of the algorithm.
     using parameters_type = FirstImprovementParameters;
 
+    /// It draws nothing at random: from the same solution, every run is the
+    /// same, which a pipeline stage's attempts must not repeat.
+    static constexpr bool deterministic = true;
+
     /// From its parameters.
     ///
     /// Throws `std::invalid_argument` when they are not valid.

@@ -106,7 +106,10 @@ const auto result = solver.seed(7).solve(tsp);
 - `attempts(5)` repeats the stage, here from a new random tour, while it has
   not reached its target, and keeps the best run. The attempts of a later
   stage start from the solution it received, unless
-  `restart(initialization::random)` starts them from new random tours.
+  `restart(initialization::random)` starts them from new random tours. First
+  and Best Improvement are deterministic: their attempts from the same
+  solution would repeat one run, so such a stage is rejected unless it
+  restarts them.
 - `result.stages` reports each stage (attempts, effort, termination, cost),
   and the parameters of a stage are under its name (`climb.search.*`,
   `feasible.attempts`). `examples/tutorial/pipeline_main.cpp` is the complete

@@ -115,6 +115,18 @@ typename BoundRunner::solution_type make_start_solution(
         return bound_runner.initial_solution();
 }
 
+// Whether every solution kind builds is the same one: the initial solution,
+// chosen or the only one the bound runner builds.
+template<class BoundRunner, class RNG>
+[[nodiscard]]
+constexpr bool fixed_start(const initialization_kind kind) noexcept
+{
+    if constexpr (!bound_runner_with_random_solution<BoundRunner, RNG>)
+        return true;
+    else
+        return kind == initialization_kind::initial;
+}
+
 // What a builder of a solver returns: a reference to the solver on an lvalue,
 // the moved solver on a temporary.
 template<class Self>

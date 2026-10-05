@@ -314,6 +314,14 @@ public:
         return target_;
     }
 
+    /// Whether the attempts after the first start from a new solution
+    /// (with_restart()).
+    [[nodiscard]]
+    bool restarts() const noexcept
+    {
+        return restart_.has_value();
+    }
+
     /// The stage's own parameters (attempts, timeout, max_evaluations).
     template<class Self>
     [[nodiscard]]
@@ -809,6 +817,48 @@ inline constexpr bool is_pipeline_stage_v = false;
 template<class Runner>
 inline constexpr bool is_pipeline_stage_v<pipeline_stage<Runner>> = true;
 
+// The algorithm of a runner, for the traits of the built-in algorithms.
+template<class Runner>
+struct runner_algorithm
+{
+};
+
+template<class Algorithm, class SMSpec, class NHESpec>
+struct runner_algorithm<easylocal::Runner<Algorithm, SMSpec, NHESpec>>
+{
+    using type = Algorithm;
+};
+
+// Whether a stage's runner runs an algorithm that declares itself
+// deterministic (static constexpr bool deterministic = true): every run from
+// the same solution is the same.
+template<class Runner>
+inline constexpr bool deterministic_runner_v = requires {
+    requires runner_algorithm<Runner>::type::deterministic;
+};
+
+// Throws std::invalid_argument when a stage would repeat the same run: more
+// than one attempt of a deterministic algorithm, every attempt from the same
+// solution (fixed_start), without restart().
+template<class Stage>
+void check_repeated_attempts(const Stage& stage, const bool fixed_start)
+{
+    if constexpr (is_pipeline_stage_v<Stage>)
+    {
+        if constexpr (deterministic_runner_v<typename Stage::runner_type>)
+        {
+            if (fixed_start && stage.parameters().attempts > 1 && !stage.restarts())
+            {
+                throw std::invalid_argument{
+                    "pipeline stage '" + stage.name()
+                    + "': its algorithm is deterministic, so its attempts from the "
+                      "same solution would repeat the same run; give it "
+                      "& restart(initialization::random), or one attempt"};
+            }
+        }
+    }
+}
+
 template<class T>
 inline constexpr bool is_algorithm_stage_v = false;
 
@@ -1024,6 +1074,10 @@ public:
     [[nodiscard]]
     auto solve(const input_type& input, const Options&... options)
     {
+        check_attempts(
+            easylocal::detail::fixed_start<
+                typename first_stage_type::bound_runner_type,
+                RNG>(this->kind()));
         return execute(
             input,
             [this](const auto& bound_runner) {
@@ -1050,6 +1104,7 @@ public:
         Rng& rng,
         const Options&... options) const
     {
+        check_attempts(true);
         return execute(
             input,
             [&solution](const auto&) { return solution; },
@@ -1085,10 +1140,25 @@ private:
         const easylocal::detail::initialization_kind kind)
         : start_type{std::move(rng), kind}, stages_{std::move(stages)}
     {
-        // The names cannot change afterwards: checked once.
+        // The names cannot change afterwards: checked once. The stages after
+        // the first start every attempt from the solution they receive.
         std::apply(
             [](const auto&... stage) { detail::check_stage_names(stage...); },
             stages_);
+        check_attempts(false);
+    }
+
+    // Throws std::invalid_argument when a stage of a deterministic algorithm
+    // would repeat the same run in its attempts; first_fixed tells whether the
+    // first stage's attempts all start from the same solution.
+    void check_attempts(const bool first_fixed) const
+    {
+        [&]<std::size_t... Index>(std::index_sequence<Index...>) {
+            (detail::check_repeated_attempts(
+                 std::get<Index>(stages_),
+                 Index == 0 ? first_fixed : true),
+                ...);
+        }(std::index_sequence_for<Stages...>{});
     }
 
     // The stages from the first one, whose attempts start from

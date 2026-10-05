@@ -397,6 +397,13 @@ reviewed by hand before tagging.
   algorithm (built from its parameters, or copied): state a custom algorithm
   keeps no longer passes from one run to the next, as for the runs of an app.
   An algorithm without a parameter block must be copyable to run.
+- **Breaking:** a pipeline stage of a deterministic algorithm (First and Best
+  Improvement declare `static constexpr bool deterministic = true`) with more
+  than one attempt, all from the same solution and without `restart(...)`,
+  throws `std::invalid_argument`, which suggests
+  `restart(initialization::random)`: its attempts repeated the same run. A
+  later stage is checked when the pipeline is built, the first one when it
+  runs from a fixed start.
 
 ### Added
 

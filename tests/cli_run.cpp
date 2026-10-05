@@ -376,8 +376,8 @@ int main()
             "1",
             "--runner",
             "cascade",
-            "--runners.cascade.second.attempts",
-            "2"});
+            "--runners.cascade.second.max_evaluations",
+            "100000"});
     assert(cascaded.status == 0);
     assert(cascaded.out.starts_with("cost 26\ntime "));
 
