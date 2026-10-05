@@ -82,11 +82,16 @@ public:
         }
     }
 
+    /// Not copyable or movable: its workers refer to it.
     execution_pool(const execution_pool&) = delete;
+    /// Not copyable or movable: its workers refer to it.
     execution_pool& operator=(const execution_pool&) = delete;
+    /// Not copyable or movable: its workers refer to it.
     execution_pool(execution_pool&&) = delete;
+    /// Not copyable or movable: its workers refer to it.
     execution_pool& operator=(execution_pool&&) = delete;
 
+    /// Stops the workers, as stop() does.
     ~execution_pool()
     {
         stop();

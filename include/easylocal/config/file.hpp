@@ -57,6 +57,7 @@ struct config_file_parse_result
     /// The errors, in the order of the lines.
     std::vector<config_file_diagnostic> diagnostics;
 
+    /// Whether there are no diagnostics.
     [[nodiscard]]
     explicit operator bool() const noexcept
     {

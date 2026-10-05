@@ -455,9 +455,13 @@ public:
         register_routes();
     }
 
+    /// Not copyable or movable: its routes refer to it.
     app_blueprint(const app_blueprint&) = delete;
+    /// Not copyable or movable: its routes refer to it.
     app_blueprint& operator=(const app_blueprint&) = delete;
+    /// Not copyable or movable: its routes refer to it.
     app_blueprint(app_blueprint&&) = delete;
+    /// Not copyable or movable: its routes refer to it.
     app_blueprint& operator=(app_blueprint&&) = delete;
 
     /// Stops the runs: those queued end cancelled without starting, those

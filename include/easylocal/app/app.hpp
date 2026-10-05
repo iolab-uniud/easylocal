@@ -425,9 +425,13 @@ public:
     {
     }
 
+    /// Not copyable or movable: its services refer to each other.
     BoundApp(const BoundApp&) = delete;
+    /// Not copyable or movable: its services refer to each other.
     BoundApp& operator=(const BoundApp&) = delete;
+    /// Not copyable or movable: its services refer to each other.
     BoundApp(BoundApp&&) = delete;
+    /// Not copyable or movable: its services refer to each other.
     BoundApp& operator=(BoundApp&&) = delete;
 
     /// The Input the app is bound to.

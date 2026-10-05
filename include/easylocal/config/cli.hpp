@@ -59,6 +59,7 @@ struct cli_parse_result
     /// The errors, in the order of the arguments.
     std::vector<cli_diagnostic> diagnostics;
 
+    /// Whether there are no diagnostics.
     [[nodiscard]]
     explicit operator bool() const noexcept
     {

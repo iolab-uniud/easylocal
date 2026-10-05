@@ -141,6 +141,7 @@ struct override_result
     /// The errors; when there are any, nothing was changed.
     std::vector<override_diagnostic> diagnostics;
 
+    /// Whether there are no diagnostics.
     [[nodiscard]]
     explicit operator bool() const noexcept
     {

@@ -59,6 +59,7 @@ struct setup_result
     /// The errors of every step.
     std::vector<setup_diagnostic> diagnostics;
 
+    /// Whether there are no diagnostics.
     [[nodiscard]]
     explicit operator bool() const noexcept
     {

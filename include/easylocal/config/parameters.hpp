@@ -36,6 +36,7 @@ struct validation_result
     /// Why the block is not valid; empty when it is.
     std::string_view message{};
 
+    /// Whether the block is valid.
     [[nodiscard]]
     constexpr explicit operator bool() const noexcept
     {

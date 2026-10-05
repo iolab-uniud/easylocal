@@ -85,6 +85,7 @@ struct configuration_validation_result
     /// One diagnostic for each invalid block.
     std::vector<configuration_validation_diagnostic> diagnostics;
 
+    /// Whether there are no diagnostics.
     [[nodiscard]]
     explicit operator bool() const noexcept
     {
