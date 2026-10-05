@@ -93,10 +93,12 @@ exactly). The interactive tester of chapter 12 runs the same checks from
 its Move page: `C`, `D` and `U`.
 
 The last two compare values: `check_move_independence` compares the solution
-after each move with the others, `check_random_move_distribution` compares
-sampled moves with enumerated ones, each only with those of the same cost
-when the costs are ordered, as the tour lengths are. So far the tutorial's
-types had no
+after each move with the others, as the search does (the SolutionManager's
+`equal`, or the solution's `==`), and `check_random_move_distribution` compares
+sampled moves with enumerated ones. The first compares only with those of the
+same hash, or of the same cost when the costs are ordered, as the tour lengths
+are; the second only with those of the same cost.
+So far the tutorial's types had no
 equality: to use these two checks, add it. Without it, everything else works:
 calling one of the two does not compile, and the interactive tester does not
 offer them (`D` and `U`), while its other neighborhood diagnostics stay.

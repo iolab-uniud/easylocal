@@ -23,6 +23,7 @@ Each kind of hook may be written in three ways, tried in this order:
 | write a Solution | `Solution::write(const Input&, std::ostream&) const`; `write_solution(const Input&, const Solution&, std::ostream&)` by ADL; `operator<<` | `write_solution`, `save_solution`, Session, TextUI |
 | describe a value | `describe() const` member; `describe(const T&)` by ADL; `operator<<` | `describe`, TextUI |
 | read a cost | `read_cost(const Input&, std::string_view)` by ADL; else `cost::from_text` | `read_cost`, Session, TextUI, `RunParameters` (see Cost) |
+| compare solutions | the SolutionManager's `equal(const Solution&, const Solution&)`; `operator==` on Solution ([solution identity](solution-manager.md#solution-identity)) | the checks of `easylocal::testing`, `Session::check_move_independence`, TextUI, reactive tabu list |
 | compare moves | `operator==` on Move | tests, Session and TextUI |
 
 The TextUI shows a Solution without a describe hook as its write hook writes

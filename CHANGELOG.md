@@ -180,6 +180,11 @@ reviewed by hand before tagging.
 - `testing::run_checks` takes the report of `check(app)` with the component
   reports; `check_cost_component` no longer counts a check that cannot fail,
   and values its comparison cannot compare are a compile error.
+- `Session::check_move_independence` compares solutions as the search does,
+  with `solutions_equal` (the SolutionManager's `equal`, or `==`), and is
+  available whenever solutions compare so; with a solution hash it compares a
+  solution only with those of the same hash, in linear time instead of
+  quadratic (minutes on a 400-city 2-opt neighborhood).
 
 ### Runners and solvers
 

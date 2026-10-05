@@ -1015,9 +1015,46 @@ void session_reports_neighborhood_diagnostics()
     assert(distribution.min_frequency <= distribution.max_frequency);
 }
 
+// A SolutionManager that identifies every two assignments, with a hash that
+// agrees: the Session's checks compare solutions as the search does.
+class IdentifyingManager : public AssignmentSolutionManager
+{
+public:
+    using AssignmentSolutionManager::AssignmentSolutionManager;
+
+    static bool equal(const AssignmentSolution&, const AssignmentSolution&) noexcept
+    {
+        return true;
+    }
+
+    static std::uint64_t hash(const AssignmentSolution&) noexcept
+    {
+        return 7;
+    }
+};
+
+void session_compares_solutions_with_the_solution_manager()
+{
+    auto application =
+        easylocal::app("identifying")
+            .with_solution_manager(
+                easylocal::solution_manager<IdentifyingManager>()
+                | assignment::assignment_cost())
+            .with_neighborhood(easylocal::neighborhood<ReassignJobNeighborhoodExplorer>())
+            .with_runner<easylocal::runners::FirstImprovement>("fi");
+    easylocal::Session session{std::move(application)};
+    session.set_input(make_input(3));
+    session.set_solution(AssignmentSolution{.assignment = {0, 0}});
+    const auto independence = session.check_move_independence();
+    assert(independence.moves == 2);
+    assert(independence.null_moves == 2);
+    assert(independence.repeated_states == 0);
+}
+
 int main()
 {
     the_neighborhood_checks_group_by_cost();
+    session_compares_solutions_with_the_solution_manager();
     app_copy_preserves_graph_configuration();
     session_can_copy_an_lvalue_app();
     session_can_take_ownership_of_an_rvalue_app();

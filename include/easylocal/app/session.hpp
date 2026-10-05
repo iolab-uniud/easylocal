@@ -31,12 +31,14 @@
 #include <optional>
 #include <ostream>
 #include <random>
+#include <ranges>
 #include <span>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -150,9 +152,10 @@ public:
     static constexpr bool supports_cost_consistency_check =
         supports_deterministic_moves && cost::has_equivalent<solution_manager_type>;
     /// Whether check_move_independence is available: the neighborhood
-    /// enumerates its moves and solutions compare with `==`.
+    /// enumerates its moves and solutions compare, with the SolutionManager's
+    /// `equal` or the solution's `==` (solutions_equal).
     static constexpr bool supports_move_independence_check =
-        supports_deterministic_moves && std::equality_comparable<solution_type>;
+        supports_deterministic_moves && has_solution_equality<solution_manager_type>;
     /// Whether check_random_move_distribution is available: the neighborhood
     /// enumerates and draws its moves, and moves compare with `==`.
     static constexpr bool supports_random_distribution_check =
@@ -986,10 +989,12 @@ public:
     /// Counts the enumerated moves that leave the current solution unchanged,
     /// and those that lead to a solution an earlier move led to.
     ///
-    /// With a totally ordered cost each solution reached is evaluated and
-    /// compared only with those of the same cost, so the check is about linear
-    /// in the moves; otherwise each is compared with every earlier one, in
-    /// time quadratic in the size of the neighborhood.
+    /// Solutions are compared as the search compares them (solutions_equal:
+    /// the SolutionManager's `equal`, or `==`). A solution is compared only
+    /// with those of the same hash, or, without a hash, of the same cost when
+    /// costs are totally ordered, so the check takes about linear time;
+    /// otherwise it compares each with every solution reached before,
+    /// quadratic in the size of the neighborhood.
     [[nodiscard]]
     move_independence_result check_move_independence() const
         requires supports_move_independence_check
@@ -998,12 +1003,13 @@ public:
         assert(solution_);
 
         move_independence_result result;
+        const auto& solution_manager = bound_->solution_manager();
         const auto& neighborhood = bound_->neighborhood();
         std::vector<solution_type> reached;
-        // With totally ordered costs, a state is compared only with those of
-        // the same cost: linear in the moves, not quadratic.
-        constexpr bool by_cost = std::totally_ordered<cost_type>;
-        std::map<cost_type, std::vector<std::size_t>> same_cost;
+        // The indices in reached of the solutions of each hash.
+        std::unordered_map<std::uint64_t, std::vector<std::size_t>> by_hash;
+        // Without a hash, those of each cost, when costs are totally ordered.
+        std::map<cost_type, std::vector<std::size_t>> by_cost;
 
         for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
         {
@@ -1017,30 +1023,43 @@ public:
 
             auto candidate = *solution_;
             neighborhood.make_move(candidate, move);
-            if (candidate == *solution_)
+            if (solutions_equal(solution_manager, candidate, *solution_))
             {
                 ++result.null_moves;
                 continue;
             }
 
-            bool repeated = false;
-            if constexpr (by_cost)
+            const auto same = [&](const std::size_t index) {
+                return solutions_equal(solution_manager, candidate, reached[index]);
+            };
+            if constexpr (has_solution_hash<solution_manager_type>)
             {
-                auto& bucket = same_cost[bound_->solution_manager().evaluate(candidate)];
-                repeated = std::ranges::any_of(bucket, [&](const std::size_t index) {
-                    return candidate == reached[index];
-                });
-                if (!repeated)
-                    bucket.push_back(reached.size());
+                auto& bucket = by_hash[solution_hash(solution_manager, candidate)];
+                if (std::ranges::any_of(bucket, same))
+                {
+                    ++result.repeated_states;
+                    continue;
+                }
+                bucket.push_back(reached.size());
             }
-            else
+            else if constexpr (std::totally_ordered<cost_type>)
             {
-                repeated = std::ranges::find(reached, candidate) != reached.end();
+                auto& bucket = by_cost[solution_manager.evaluate(candidate)];
+                if (std::ranges::any_of(bucket, same))
+                {
+                    ++result.repeated_states;
+                    continue;
+                }
+                bucket.push_back(reached.size());
             }
-            if (repeated)
+            else if (std::ranges::any_of(
+                         std::views::iota(std::size_t{0}, reached.size()),
+                         same))
+            {
                 ++result.repeated_states;
-            else
-                reached.push_back(std::move(candidate));
+                continue;
+            }
+            reached.push_back(std::move(candidate));
         }
         return result;
     }
