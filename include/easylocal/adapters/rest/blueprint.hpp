@@ -196,7 +196,7 @@ template<cost::arithmetic Cost>
     {
         const double value = payload.d();
         if (!std::isfinite(value)
-            || std::abs(value) > static_cast<double>(std::numeric_limits<Cost>::max()))
+            || std::abs(value) > static_cast<double>((std::numeric_limits<Cost>::max)()))
             throw std::invalid_argument{"'target' is out of the range of the cost"};
         return static_cast<Cost>(value);
     }

@@ -195,7 +195,7 @@ struct solve_budget
         if constexpr (requires { std::size_t{result.evaluations}; })
         {
             if (evaluations)
-                *evaluations -= std::min(*evaluations, std::size_t{result.evaluations});
+                *evaluations -= (std::min)(*evaluations, std::size_t{result.evaluations});
         }
     }
 
@@ -213,8 +213,7 @@ struct solve_budget
         }();
         if (deadline)
         {
-            limited.time_limit = std::max(
-                std::chrono::steady_clock::duration::zero(),
+            limited.time_limit = (std::max)(std::chrono::steady_clock::duration::zero(),
                 *deadline - std::chrono::steady_clock::now());
         }
         limited.evaluation_limit = evaluations ? limit{*evaluations} : unlimited;

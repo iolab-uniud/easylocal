@@ -167,7 +167,7 @@ public:
     pipeline_stage with_timeout(const std::chrono::duration<Rep, Period> limit) &&
     {
         const auto steady = easylocal::detail::steady_time_limit(limit);
-        parameters_.timeout = steady == std::chrono::steady_clock::duration::max()
+        parameters_.timeout = steady == (std::chrono::steady_clock::duration::max)()
             ? std::numeric_limits<double>::infinity()
             : std::chrono::duration<double>{steady}.count();
         return std::move(*this);

@@ -156,7 +156,7 @@ struct progress_snapshot
     {
         return 0.0F;
     }
-    const auto bounded = std::min(progress.current, *progress.total);
+    const auto bounded = (std::min)(progress.current, *progress.total);
     return static_cast<float>(bounded) / static_cast<float>(*progress.total);
 }
 
@@ -410,13 +410,13 @@ inline ftxui::Element text_lines(const std::string_view value)
 [[nodiscard]] inline int terminal_available_width(const int margin = 4) noexcept
 {
     const auto dimensions = ftxui::Terminal::Size();
-    return std::max(1, dimensions.dimx - margin);
+    return (std::max)(1, dimensions.dimx - margin);
 }
 
 [[nodiscard]] inline int terminal_available_height(const int margin = 2) noexcept
 {
     const auto dimensions = ftxui::Terminal::Size();
-    return std::max(1, dimensions.dimy - margin);
+    return (std::max)(1, dimensions.dimy - margin);
 }
 
 [[nodiscard]] constexpr int page_scroll_selection(
@@ -1982,7 +1982,7 @@ private:
         // vertical scroll indicator.  The value is recomputed on every redraw
         // after a terminal resize.
         const auto available = detail::terminal_available_width();
-        return static_cast<std::size_t>(std::max(1, available - 8));
+        return static_cast<std::size_t>((std::max)(1, available - 8));
     }
 
     // The window of a text viewer: its lines as a scrollable menu and a Close
@@ -2700,7 +2700,7 @@ private:
         body.push_back(separator());
         body.push_back(buttons->Render() | center);
         return window(text(" " + parameter_title_ + " "), vbox(std::move(body)))
-            | size(WIDTH, EQUAL, std::min(76, detail::terminal_available_width()))
+            | size(WIDTH, EQUAL, (std::min)(76, detail::terminal_available_width()))
             | size(HEIGHT, LESS_THAN, detail::terminal_available_height()) | border;
     }
 
@@ -3170,8 +3170,8 @@ private:
         const ftxui::Component& close) const
     {
         using namespace ftxui;
-        const auto width = std::min(76, detail::terminal_available_width());
-        const auto height = std::min(20, detail::terminal_available_height());
+        const auto width = (std::min)(76, detail::terminal_available_width());
+        const auto height = (std::min)(20, detail::terminal_available_height());
         return window(
                    text(" " + diagnostic_title_ + " "),
                    vbox({
@@ -3188,7 +3188,7 @@ private:
     [[nodiscard]] ftxui::Element render_progress_modal(const ftxui::Component& stop) const
     {
         using namespace ftxui;
-        const auto width = std::min(60, detail::terminal_available_width());
+        const auto width = (std::min)(60, detail::terminal_available_width());
         return window(
                    text(" Progress "),
                    vbox({
