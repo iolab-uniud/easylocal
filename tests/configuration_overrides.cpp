@@ -356,6 +356,28 @@ void cost_expression_weights_are_runtime_configurable()
     assert(cost.soft().get<1>() == 20);
 }
 
+void cost_expression_weights_must_be_finite()
+{
+    auto recipe = easylocal::solution_manager<CostSolutionManager>()
+        | easylocal::cost::sum(
+            easylocal::cost::weighted(easylocal::component<ScaledValue<1>>(), 0.5),
+            easylocal::component<ScaledValue<2>>());
+    easylocal::config::parameter_set tree;
+    tree.add("cost", recipe.configuration());
+
+    for (const auto* const weights : {"[inf, 1]", "[1, nan]", "[-inf, 1]"})
+    {
+        const std::array overrides{text_override{"cost.weights", weights}};
+        const auto result = apply_overrides(tree, overrides);
+        assert(!result);
+        assert(result.applied_parameter_blocks == 0);
+    }
+
+    // A negative weight may be intended: it is kept.
+    constexpr std::array negative{text_override{"cost.weights", "[-1.5, 1]"}};
+    assert(apply_overrides(tree, negative));
+}
+
 void const_parameter_nodes_are_reported_as_read_only()
 {
     const AppParameters app{};
@@ -388,5 +410,6 @@ int main()
     parameter_group_local_values_can_be_overridden();
     diagnostics_accumulate_across_independent_failures();
     cost_expression_weights_are_runtime_configurable();
+    cost_expression_weights_must_be_finite();
     const_parameter_nodes_are_reported_as_read_only();
 }

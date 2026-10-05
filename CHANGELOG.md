@@ -62,6 +62,8 @@ reviewed by hand before tagging.
   after the conversion (`-count` wrapped an unsigned count). Their R text
   writes infinity and NaN as `Inf` and `NaN` and escapes the quotes and
   backslashes of a text; `text_with`'s second parameter is now `r_syntax`.
+- The weights of a `cost::sum` must be finite: a configuration that sets one
+  to NaN or infinity is rejected (a negative weight is still accepted).
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

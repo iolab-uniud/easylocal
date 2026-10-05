@@ -14,6 +14,7 @@
 #include <concepts>
 #include <cstddef>
 #include <functional>
+#include <limits>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -272,6 +273,14 @@ struct sum_parameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
+        // A negative weight may be intended; NaN and infinity are not.
+        if constexpr (std::floating_point<Weight>)
+        {
+            for (const auto weight : weights)
+                if (!(weight >= std::numeric_limits<Weight>::lowest()
+                        && weight <= std::numeric_limits<Weight>::max()))
+                    return config::validation_result::failure("weights must be finite");
+        }
         return config::validation_result::success();
     }
 };

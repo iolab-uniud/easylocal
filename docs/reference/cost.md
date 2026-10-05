@@ -60,7 +60,8 @@ solution_manager<SM>()
 - At the root, the function of a `cost::apply` may define `better`,
   `equivalent` and `better_or_equivalent` (see Cost semantics).
 - Configuration: the expression is exposed under `cost`. A `sum` has its
-  `weights` (one per term), a `hard_soft` names its children `hard` and
+  `weights` (one per term, finite: a negative weight is accepted, NaN and
+  infinity are not), a `hard_soft` names its children `hard` and
   `soft`, `in_order`, `objectives` and `apply` name them by position (`0`,
   `1`, ...); only
   configurable children appear. In the example above: `cost.hard.weights`.
