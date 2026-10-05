@@ -12,6 +12,7 @@
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/solvers/multi_start.hpp>
 #include <easylocal/solvers/pipeline.hpp>
+#include <easylocal/trace/memory_recorder.hpp>
 
 #include <algorithm>
 #include <compare>
@@ -22,6 +23,7 @@
 #include <random>
 #include <string_view>
 #include <type_traits>
+#include <variant>
 
 namespace
 {
@@ -85,6 +87,37 @@ public:
     static std::optional<Step> random_move(const Point&, RNG&)
     {
         return std::nullopt;
+    }
+};
+
+// The history's random point is always (5, 0), and the only move is one step
+// right, which worsens both objectives of Left and Column on the row y = 0:
+// only a second chance accepts a move.
+class FixedHistoryManager : public PointManager
+{
+public:
+    using PointManager::PointManager;
+
+    template<std::uniform_random_bit_generator RNG>
+    static Point random_solution(RNG&)
+    {
+        return Point{5, 0};
+    }
+};
+
+class RightStepNeighborhood : public StepNeighborhood
+{
+public:
+    explicit RightStepNeighborhood(const FixedHistoryManager& manager) noexcept
+        : StepNeighborhood{manager}
+    {
+    }
+
+    template<std::uniform_random_bit_generator RNG>
+    static std::optional<Step> random_move(const Point& point, RNG&)
+    {
+        const Step right{1, 0};
+        return is_valid(point, right) ? std::optional<Step>{right} : std::nullopt;
     }
 };
 
@@ -170,6 +203,36 @@ int main()
             result.termination == termination_reason::idle_limit_reached
                 && result.iterations >= 2000,
             "past min_iterations the search stops when mostly idle");
+    }
+
+    {
+        // From (3, 0) the step to (4, 0) is worse than the current point but
+        // better than the next one of the history, (5, 0): the second chance
+        // takes it, once; without it no move is accepted.
+        const auto accepted = [&](const bool second_chance) {
+            std::mt19937 rng{11U};
+            trace::memory_recorder<cost::pareto<int, int>> recorder;
+            static_cast<void>((
+                easylocal::make_runner<ParetoLateAcceptanceHillClimbing>(
+                    {.history_length = 2,
+                        .min_iterations = 5,
+                        .idle_ratio = 0.5,
+                        .second_chance = second_chance})
+                | (solution_manager<FixedHistoryManager>()
+                    | cost::objectives(component<Left>(), component<Column>()))
+                | neighborhood<RightStepNeighborhood>())
+                    .bind(grid)
+                    .run(Point{3, 0}, rng, with(recorder)));
+            std::size_t count = 0;
+            for (const auto& record : recorder.records())
+                count += std::holds_alternative<
+                    trace::memory_recorder<cost::pareto<int, int>>::move_accepted_record>(
+                    record);
+            return count;
+        };
+        ok &= expect(
+            accepted(true) == 1 && accepted(false) == 0,
+            "the second chance accepts a move that dominates the next solution");
     }
 
     {
