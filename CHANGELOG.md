@@ -109,6 +109,12 @@ reviewed by hand before tagging.
   least one iteration, so with fewer iterations left than `max_reheats` the
   descents spent more than the budget: the parameters require `max_reheats`
   to be at most the iterations the first descent leaves.
+- The rules between the parameters of `RandomTenure`, `LimDynamic`,
+  `RandomFoo`, `AspirationPlusTabuSearch` and `Reheating` (a minimum not above
+  its maximum, a reheat temperature above the final one) were checked only by
+  `validate()`, so `--tuning.irace` wrote no `[forbidden]` line for them and
+  irace sampled configurations that the target runner rejected, which stopped
+  the tuning: they are `config::require` requirements of the schemas.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

@@ -1,6 +1,8 @@
 // Every parameter of the built-in blocks declares its domain: a range, one_of,
 // or easylocal::unlimited for any value (booleans have true and false). A new
-// parameter without one fails this test, as check(app) fails for an app.
+// parameter without one fails this test, as check(app) fails for an app. The
+// rules between parameters are requirements of the schemas, which an irace
+// scenario writes as forbidden configurations.
 #include <easylocal/app/cli.hpp>
 #include <easylocal/app/run_parameters.hpp>
 #include <easylocal/app/tuning.hpp>
@@ -18,6 +20,7 @@
 #include <easylocal/solvers/multi_start.hpp>
 #include <easylocal/solvers/pipeline.hpp>
 
+#include <algorithm>
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -41,6 +44,22 @@ void expect_domains(const std::string& name)
     set.add(name, block);
     for (auto& path : config::undeclared_domains(set))
         missing.push_back(std::move(path));
+}
+
+std::vector<std::string> unlisted;
+
+// A block that breaks a rule between its parameters breaks a requirement of its
+// schema, not only its validate().
+template<class Block>
+void expect_requirement(const std::string& name, Block block)
+{
+    config::parameter_set set;
+    set.add(name, block);
+    const auto requirements = set.requirements();
+    if (std::ranges::none_of(requirements, [](const config::requirement_info& rule) {
+            return !rule.satisfied;
+        }))
+        unlisted.push_back(name);
 }
 
 template<class... Lists>
@@ -102,7 +121,41 @@ int main()
     expect_domains<easylocal::TuningParameters>("tuning");
     expect_domains<easylocal::cli::parameters>("cli");
 
+    expect_requirement(
+        "random_tenure",
+        tabu::RandomTenureParameters{.min_tenure = 5, .max_tenure = 4});
+    expect_requirement(
+        "lim_dynamic",
+        tabu::LimDynamicParameters{.min_tenure = 5, .max_tenure = 5});
+    expect_requirement(
+        "random_foo.window",
+        tabu::RandomFooParameters{.min_window = 5, .max_window = 4});
+    expect_requirement(
+        "random_foo.increment",
+        tabu::RandomFooParameters{.min_increment = 5, .max_increment = 4});
+    expect_requirement(
+        "random_foo.fluctuation",
+        tabu::RandomFooParameters{.min_fluctuation = 2.0, .max_fluctuation = 1.0});
+    expect_requirement(
+        "aspiration_plus",
+        runners::AspirationPlusTabuSearchParameters<tabu::FixedLengthParameters>{
+            .min_moves = 5,
+            .max_moves = 4});
+    expect_requirement(
+        "reheating.temperature",
+        sa::ReheatingParameters<sa::ClassicParameters>{
+            .descent = {.initial_temperature = 8.0, .final_temperature = 6.0},
+            .reheat_ratio = 0.5});
+    expect_requirement(
+        "reheating.budget",
+        sa::ReheatingParameters<sa::FixedLengthParameters>{
+            .descent = {.max_iterations = 10},
+            .max_reheats = 3,
+            .first_descent_share = 0.9});
+
     for (const auto& path : missing)
         std::cerr << path << " declares no domain\n";
-    return missing.empty() ? EXIT_SUCCESS : EXIT_FAILURE;
+    for (const auto& name : unlisted)
+        std::cerr << name << ": a rule between parameters is not a requirement\n";
+    return missing.empty() && unlisted.empty() ? EXIT_SUCCESS : EXIT_FAILURE;
 }

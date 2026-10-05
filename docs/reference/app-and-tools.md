@@ -159,7 +159,10 @@ lie within the declared domain and name a parameter of the app or of
   commented out as inactive. Each `require` that names a tuned parameter
   becomes a `[forbidden]` expression, `!(...)`, after its message; with values
   in place of some names, the expression with every name follows as a comment,
-  and so does the condition of a commented-out line. The other
+  and so does the condition of a commented-out line. The built-in runners
+  and policies state every rule between their parameters (a minimum not above
+  its maximum) as a `require`, so irace samples no configuration they
+  reject. The other
   parameters, whose domain has no upper bound or is any value, are commented
   out, with a range of a factor of ten around a positive value, within the
   lower bound, to start from, or `(LOW, HIGH)` with the lower bound when it has

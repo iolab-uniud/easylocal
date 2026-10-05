@@ -476,19 +476,17 @@ struct RandomTenureParameters
                 config::range(1, easylocal::unlimited)),
             config::field<"max_tenure", &self::max_tenure>(
                 "Maximum number of iterations a move stays tabu",
-                config::range(1, easylocal::unlimited)));
+                config::range(1, easylocal::unlimited)),
+            config::require(
+                config::value<"min_tenure"> <= config::value<"max_tenure">,
+                "max_tenure must not be below min_tenure"));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        if (max_tenure < min_tenure)
-            return config::validation_result::failure(
-                "max_tenure must not be below min_tenure");
-        return config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 
@@ -1143,19 +1141,17 @@ struct LimDynamicParameters
                 config::range(1, easylocal::unlimited)),
             config::field<"idle_threshold", &self::idle_threshold>(
                 "Iterations without improvement after which the tenure grows",
-                config::range(0, easylocal::unlimited)));
+                config::range(0, easylocal::unlimited)),
+            config::require(
+                config::value<"min_tenure"> < config::value<"max_tenure">,
+                "max_tenure must exceed min_tenure"));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        if (max_tenure <= min_tenure)
-            return config::validation_result::failure(
-                "max_tenure must exceed min_tenure");
-        return config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 
@@ -1477,7 +1473,16 @@ struct RandomFooParameters
                 config::range(0.0, easylocal::unlimited)),
             config::field<"max_fluctuation", &self::max_fluctuation>(
                 "Largest fluctuation threshold",
-                config::range(0.0, easylocal::unlimited)));
+                config::range(0.0, easylocal::unlimited)),
+            config::require(
+                config::value<"min_window"> <= config::value<"max_window">,
+                "min_window must not be above max_window"),
+            config::require(
+                config::value<"min_increment"> <= config::value<"max_increment">,
+                "min_increment must not be above max_increment"),
+            config::require(
+                config::value<"min_fluctuation"> <= config::value<"max_fluctuation">,
+                "min_fluctuation must not be above max_fluctuation"));
     }
 
     /// Whether the parameters are valid, and why not.
@@ -1486,17 +1491,9 @@ struct RandomFooParameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
-        if (max_window < min_window)
-            return config::validation_result::failure(
-                "min_window must not be above max_window");
-        if (max_increment < min_increment)
-            return config::validation_result::failure(
-                "min_increment must not be above max_increment");
+        // Their domains have no upper bound: they let infinity through.
         if (!std::isfinite(min_fluctuation) || !std::isfinite(max_fluctuation))
             return config::validation_result::failure("the fluctuations must be finite");
-        if (max_fluctuation < min_fluctuation)
-            return config::validation_result::failure(
-                "min_fluctuation must not be above max_fluctuation");
         return config::validation_result::success();
     }
 };
@@ -2250,7 +2247,10 @@ struct AspirationPlusTabuSearchParameters
             config::field<"aspiration_level", &self::aspiration_level>(
                 "The aspiration level, as a factor of the best cost",
                 config::range(1.0, easylocal::unlimited)),
-            config::group<"tabu_list", &self::tabu_list>("The tabu list"));
+            config::group<"tabu_list", &self::tabu_list>("The tabu list"),
+            config::require(
+                config::value<"min_moves"> <= config::value<"max_moves">,
+                "min_moves must not be above max_moves"));
     }
 
     /// Whether the parameters are valid, and why not.
@@ -2259,9 +2259,6 @@ struct AspirationPlusTabuSearchParameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
-        if (max_moves < min_moves)
-            return config::validation_result::failure(
-                "min_moves must not be above max_moves");
         // Its domain has no upper bound: it lets infinity through.
         if (!std::isfinite(aspiration_level))
             return config::validation_result::failure("aspiration_level must be finite");

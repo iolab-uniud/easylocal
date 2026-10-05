@@ -1315,6 +1315,24 @@ struct ReheatingParameters
                 "Share of the budget spent by the first descent",
                 config::range(0.0, 1.0).open())
                 .only_if(config::value<"max_reheats"> > 0 && budgeted));
+        // A reheat restarts above the final temperature.
+        const auto above_final = [&] {
+            if constexpr (detail::final_temperature_schedule<DescentParameters>)
+            {
+                const auto rule = config::require(
+                    config::value<"max_reheats"> == 0
+                        || config::value<"descent.initial_temperature">
+                                * config::value<"reheat_ratio"> > config::value<
+                               "descent.final_temperature">,
+                    "reheat_ratio must keep the reheat temperature above "
+                    "final_temperature");
+                return std::tuple_cat(fields, std::tuple<decltype(rule)>{rule});
+            }
+            else
+            {
+                return fields;
+            }
+        }();
         if constexpr (detail::iteration_budget<DescentParameters>)
         {
             // The first descent spends ceil(max_iterations * share), and each
@@ -1326,11 +1344,11 @@ struct ReheatingParameters
                             + config::value<"max_reheats">
                         <= config::value<"descent.max_iterations">,
                 "max_reheats must not exceed the iterations the first descent leaves");
-            return std::tuple_cat(fields, std::tuple<decltype(rest)>{rest});
+            return std::tuple_cat(above_final, std::tuple<decltype(rest)>{rest});
         }
         else
         {
-            return fields;
+            return above_final;
         }
     }
 
@@ -1345,17 +1363,9 @@ struct ReheatingParameters
             return schedule;
         if (max_reheats == 0)
             return config::validation_result::success();
-        if (!std::isfinite(reheat_ratio) || reheat_ratio <= 0.0)
-            return config::validation_result::failure("reheat_ratio must be positive");
-        if constexpr (detail::final_temperature_schedule<DescentParameters>)
-        {
-            if (descent.initial_temperature * reheat_ratio <= descent.final_temperature)
-            {
-                return config::validation_result::failure(
-                    "reheat_ratio must keep the reheat temperature above "
-                    "final_temperature");
-            }
-        }
+        // Its domain has no upper bound: it lets infinity through.
+        if (!std::isfinite(reheat_ratio))
+            return config::validation_result::failure("reheat_ratio must be finite");
         if constexpr (detail::iteration_budget<DescentParameters>
             || detail::time_budget<DescentParameters>)
         {
