@@ -63,6 +63,12 @@ together: `LocalSearch` gives them to its one run, `MultiStart` starts no run
 once they are spent and gives each start what is left, and a pipeline gives
 each stage what is left.
 
+The observer of the caller's `run_control` sees the progress of the whole
+solve: MultiStart and a pipeline give each run the caller's stop token with an
+observer that adds the evaluations and iterations of the runs before it, and
+the evaluation limit it reports is the solve's, so a progress bar never goes
+back from one start, attempt or stage to the next.
+
 ## Pipeline
 
 A pipeline runs its stages in order over the same Input and Solution: the

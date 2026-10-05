@@ -130,13 +130,116 @@ void emit_run_context(
     }
 }
 
+// The effort of several runs, for results that report it (search_result
+// does; a custom result may not).
+struct search_effort
+{
+    std::size_t evaluations{};
+    std::size_t iterations{};
+
+    template<class Result>
+    void add(const Result& result) noexcept
+    {
+        if constexpr (requires { evaluations += result.evaluations; })
+            evaluations += result.evaluations;
+        if constexpr (requires { iterations += result.iterations; })
+            iterations += result.iterations;
+    }
+
+    template<class Result>
+    void assign_to(Result& result) const noexcept
+    {
+        if constexpr (requires { result.evaluations = evaluations; })
+            result.evaluations = evaluations;
+        if constexpr (requires { result.iterations = iterations; })
+            result.iterations = iterations;
+    }
+};
+
+// The caller's run control, from the run options of a solve (none without).
+template<class... Options>
+[[nodiscard]]
+const run_control* control_of(const Options&... options) noexcept
+{
+    if constexpr (sizeof...(Options) == 0)
+        return nullptr;
+    else
+        return (options.control, ...);
+}
+
+// The progress of a solve, as the caller's observer sees it: each run gets the
+// caller's stop token with an observer that adds the evaluations and the
+// iterations of the runs before it, so that the progress of MultiStart's
+// starts and a pipeline's stages never goes back. Without an observer, the
+// runs get the caller's control itself. It refers to itself: it is neither
+// copied nor moved.
+class solve_progress
+{
+public:
+    explicit solve_progress(const run_control* caller) : caller_{caller}
+    {
+        if (caller_ != nullptr && caller_->observes_progress())
+            control_.emplace(caller_->stop_token(), forwarder_);
+    }
+
+    solve_progress(const solve_progress&) = delete;
+    solve_progress& operator=(const solve_progress&) = delete;
+    solve_progress(solve_progress&&) = delete;
+    solve_progress& operator=(solve_progress&&) = delete;
+    ~solve_progress() = default;
+
+    // The control of the next run.
+    [[nodiscard]]
+    const run_control* control() const noexcept
+    {
+        return control_.has_value() ? &*control_ : caller_;
+    }
+
+    // Counts the effort of a run that ended.
+    template<class Result>
+    void add(const Result& result) noexcept
+    {
+        before_.add(result);
+    }
+
+private:
+    struct forwarder
+    {
+        const solve_progress* self;
+
+        void operator()(const run_progress& progress) const
+        {
+            self->report(progress);
+        }
+    };
+
+    void report(const run_progress& progress) const
+    {
+        caller_->report(
+            run_progress{
+                .evaluations = before_.evaluations + progress.evaluations,
+                .iterations = before_.iterations + progress.iterations,
+                .evaluation_limit = progress.evaluation_limit.has_value()
+                    ? std::optional<
+                          std::size_t>{before_.evaluations + *progress.evaluation_limit}
+                    : std::nullopt,
+            });
+    }
+
+    const run_control* caller_;
+    search_effort before_;
+    forwarder forwarder_{this};
+    std::optional<run_control> control_;
+};
+
 // What is left of a solve's limits: its deadline and its evaluations (none:
-// not bounded). A solve gives each run what is left, and counts what the run
-// used.
+// not bounded), and the progress of the solve, if it reports one. A solve
+// gives each run what is left, and counts what the run used.
 struct solve_budget
 {
     std::optional<std::chrono::steady_clock::time_point> deadline;
     std::optional<std::size_t> evaluations;
+    solve_progress* progress{};
 
     // The budget of a solve starting now, from its run options.
     template<class... Options>
@@ -200,7 +303,8 @@ struct solve_budget
     }
 
     // The run options of a run within the budget: the solve's own (or none),
-    // with the time and the evaluations left as their limits.
+    // with the time and the evaluations left as their limits, and the
+    // control of the solve's progress.
     template<class... Options>
     [[nodiscard]]
     auto options_for_run(const Options&... options) const
@@ -217,6 +321,8 @@ struct solve_budget
                 *deadline - std::chrono::steady_clock::now());
         }
         limited.evaluation_limit = evaluations ? limit{*evaluations} : unlimited;
+        if (progress != nullptr)
+            limited.control = progress->control();
         return limited;
     }
 
@@ -228,40 +334,6 @@ private:
             deadline = deadline_after(*options.time_limit);
         if (!options.evaluation_limit.is_unlimited())
             evaluations = options.evaluation_limit;
-    }
-};
-
-// The effort of several runs, for results that report it (search_result
-// does; a custom result may not).
-struct search_effort
-{
-    std::size_t evaluations{};
-    std::size_t iterations{};
-
-    template<class Result>
-    void add(const Result& result) noexcept
-    {
-        if constexpr (requires { evaluations += result.evaluations; })
-        {
-            evaluations += result.evaluations;
-        }
-        if constexpr (requires { iterations += result.iterations; })
-        {
-            iterations += result.iterations;
-        }
-    }
-
-    template<class Result>
-    void assign_to(Result& result) const noexcept
-    {
-        if constexpr (requires { result.evaluations = evaluations; })
-        {
-            result.evaluations = evaluations;
-        }
-        if constexpr (requires { result.iterations = iterations; })
-        {
-            result.iterations = iterations;
-        }
     }
 };
 
@@ -416,6 +488,8 @@ auto run_attempts(
         front.add(bound_runner, result);
         attempt_budget.consume(result);
         budget.consume(result);
+        if (budget.progress != nullptr)
+            budget.progress->add(result);
     };
     account(best);
     auto termination = ends(best);

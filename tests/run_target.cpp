@@ -7,6 +7,7 @@
 #include <easylocal/solvers.hpp>
 #include <easylocal/trace/events.hpp>
 
+#include <algorithm>
 #include <chrono>
 #include <concepts>
 #include <cstddef>
@@ -18,6 +19,7 @@
 #include <thread>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace
 {
@@ -254,6 +256,24 @@ private:
     CountingParameters parameters_;
 };
 
+// The evaluations of every progress report.
+struct ProgressLog
+{
+    std::vector<std::size_t> evaluations;
+    std::vector<std::optional<std::size_t>> limits;
+
+    void operator()(const easylocal::run_progress& progress)
+    {
+        evaluations.push_back(progress.evaluations);
+        limits.push_back(progress.evaluation_limit);
+    }
+
+    [[nodiscard]] auto monotonic() const -> bool
+    {
+        return !evaluations.empty() && std::ranges::is_sorted(evaluations);
+    }
+};
+
 auto expect(bool condition, std::string_view message) -> bool
 {
     if (!condition)
@@ -400,6 +420,30 @@ int main()
     ok &= expect(
         all_starts.termination == unbounded.termination,
         "MultiStart ends as its last start did, after all its starts");
+
+    // The progress of a solve goes on from one run to the next, up to the
+    // evaluations of the whole solve.
+    {
+        std::stop_source source;
+        ProgressLog log;
+        const run_control observed{source.get_token(), log};
+        const auto all = multi_start.solve(ten, with(observed));
+        ok &= expect(
+            log.monotonic() && log.evaluations.back() == all.evaluations,
+            "MultiStart reports the progress of the whole solve");
+        ProgressLog staged_log;
+        const run_control staged_observed{source.get_token(), staged_log};
+        auto two = solvers::pipeline(
+            solvers::stage("first", fi) & solvers::max_evaluations(4),
+            solvers::stage("second", fi))
+                       .initialization(initialization::initial);
+        const auto two_result = two.solve(ten, with(staged_observed).max_evaluations(8));
+        ok &= expect(
+            staged_log.monotonic()
+                && staged_log.evaluations.back() == two_result.evaluations
+                && staged_log.limits.back() == std::optional<std::size_t>{8},
+            "a pipeline reports the progress and the budget of the whole solve");
+    }
 
     RunCounter starts;
     const auto first_hit = multi_start.solve(ten, with(no_stop, starts).stop_at(0));

@@ -378,6 +378,8 @@ Great Deluge, Simulated Annealing and the tabu searches use it.
 `evaluations`, `iterations` and `evaluation_limit`. A frontend that shows the
 progress from another thread stores it in a `shared_run_progress` from the
 observer and loads a copy when it draws, as the TextUI and the REST server do.
+`control.stop_token()` gives the token back, for a control of its own that
+shares it.
 
 The options combine in any order:
 `with(control).timeout(30s).max_evaluations(100000).stop_at(0)`.

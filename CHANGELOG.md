@@ -272,6 +272,11 @@ reviewed by hand before tagging.
   and a floating-point target for an integer cost (`target(0.5)` was
   truncated), at compile time. `pipeline_stage::limits()`, which returned a
   detail type, is private.
+- The progress that MultiStart and a pipeline report to the caller's observer
+  is the solve's: each run adds to the evaluations and iterations of the runs
+  before it, and the evaluation limit is the solve's, so progress bars no
+  longer jump back at every start, attempt or stage. `run_control` gives its
+  `stop_token()`.
 
 ### Added
 

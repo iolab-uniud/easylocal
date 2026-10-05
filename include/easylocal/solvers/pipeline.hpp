@@ -1106,8 +1106,11 @@ private:
         reports.reserve(stage_count);
         easylocal::detail::search_effort effort;
         // The solve's time limit and evaluation budget bound all the stages
-        // together.
+        // together, and its progress goes on from one stage to the next.
         auto budget = easylocal::detail::solve_budget::of(options...);
+        easylocal::detail::solve_progress progress{
+            easylocal::detail::control_of(options...)};
+        budget.progress = &progress;
         auto last = run_from<0>(
             input,
             std::nullopt,

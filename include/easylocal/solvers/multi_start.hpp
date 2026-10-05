@@ -144,6 +144,9 @@ public:
         // The solve's time limit and evaluation budget bound all the starts
         // together.
         auto budget = easylocal::detail::solve_budget::of(options...);
+        easylocal::detail::solve_progress progress{
+            easylocal::detail::control_of(options...)};
+        budget.progress = &progress;
         auto outcome = easylocal::detail::run_attempts(
             bound_runner,
             parameters_.starts,

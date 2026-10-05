@@ -65,6 +65,12 @@ public:
         return stop_token_.stop_requested();
     }
 
+    /// The stop token through which the caller cancels the run.
+    [[nodiscard]] std::stop_token stop_token() const noexcept
+    {
+        return stop_token_;
+    }
+
     /// Whether an observer receives the progress.
     [[nodiscard]] bool observes_progress() const noexcept
     {
