@@ -219,17 +219,16 @@ template<class Tester>
                : tester_page::solution;
 }
 
+// A value as the tester shows it: as the Session's reports write it (a cost as
+// the target field reads it, [hard, soft], [v1, v2, ...]; anything else by its
+// describe hook or operator<<), and a composite whose parts are printable,
+// such as a cost of described levels or a tuple, part by part.
 template<class T>
 [[nodiscard]] std::string value_text(const T& value)
 {
-    if constexpr (easylocal::has_describe<T>)
+    if constexpr (easylocal::cost::text_readable<T> || easylocal::describable<T>)
     {
-        return easylocal::describe(value);
-    }
-    // A cost as the target field reads it: [hard, soft], [v1, v2, ...].
-    else if constexpr (easylocal::cost::text_readable<T>)
-    {
-        return easylocal::cost::to_text(value);
+        return easylocal::detail::report_text(value);
     }
     else if constexpr (easylocal::cost::hierarchical_type<T>)
     {
@@ -247,10 +246,6 @@ template<class T>
         }(std::make_index_sequence<std::remove_cvref_t<T>::levels>{});
         result += ']';
         return result;
-    }
-    else if constexpr (easylocal::describable<T>)
-    {
-        return easylocal::describe(value);
     }
     else if constexpr (requires { value.hard(); value.soft(); })
     {
