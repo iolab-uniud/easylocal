@@ -99,6 +99,10 @@ reviewed by hand before tagging.
   reference gains a "Values as text" section, with the limit that a text
   element of a list cannot hold a comma, and the frontend functions it left
   out.
+- `parameter_set::apply` and `apply_overrides` take overrides that own
+  their text, as a configuration file and the TOML adapter give them: the
+  extra `override_views` step, whose views dangled with a temporary, is no
+  longer needed.
 - `parameter_set::apply` validates the blocks the batch does not touch too,
   and `load_and_apply` relies on it: its heuristic over the paths of the
   batch rejected an override of a nested field that repaired a requirement

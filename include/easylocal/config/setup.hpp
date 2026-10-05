@@ -165,10 +165,8 @@ inline setup_result load_and_apply(
         std::span<const owned_text_override>{file_configuration.overrides},
         std::span<const text_override>{cli.overrides});
 
-    const auto effective_views = override_views(
-        std::span<const owned_text_override>{effective_overrides});
     const auto overrides =
-        parameters.apply(std::span<const text_override>{effective_views});
+        parameters.apply(std::span<const owned_text_override>{effective_overrides});
     // apply() validates every block, the touched ones on their copies, before
     // committing anything: invalid defaults pass when the batch fixes them.
     detail::append_diagnostics(result, overrides);

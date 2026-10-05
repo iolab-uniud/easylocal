@@ -453,6 +453,14 @@ public:
         return result;
     }
 
+    /// The same, from overrides that own their text, as a configuration file
+    /// or the TOML adapter gives them.
+    override_result apply(const std::span<const owned_text_override> overrides) const
+    {
+        const auto views = override_views(overrides);
+        return apply(std::span<const text_override>{views});
+    }
+
 private:
     struct entry_type
     {
@@ -636,6 +644,15 @@ private:
 inline override_result apply_overrides(
     const parameter_set& parameters,
     const std::span<const text_override> overrides)
+{
+    return parameters.apply(overrides);
+}
+
+/// The same, from overrides that own their text.
+[[nodiscard]]
+inline override_result apply_overrides(
+    const parameter_set& parameters,
+    const std::span<const owned_text_override> overrides)
 {
     return parameters.apply(overrides);
 }

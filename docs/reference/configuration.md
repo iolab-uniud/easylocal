@@ -145,7 +145,7 @@ parameters.add("solver", runner.configuration());  // another set, under a prefi
 | `parameters()` | every parameter: `path`, `description`, `value` (as text), `read_only`, `kind` (`boolean`, `integer`, `real`, `limit`, `text`, `path`, `list`), `domain` (a `domain_info`, empty when none is declared), `active` (whether its condition holds) and `condition` (an `expression_info` with full paths, empty when it has none) |
 | `requirements()` | the requirements of every block: `path` of the block, `message`, `expression` (full paths) and `satisfied` |
 | `validate()` | the fields outside their domains, the requirements that do not hold and the diagnostics of every block's `validate()`, by path |
-| `apply(text_overrides)` | apply `path = value` overrides, all or none |
+| `apply(text_overrides)` | apply `path = value` overrides (views, or overrides that own their text, as a file gives them), all or none |
 
 A set refers to the objects it was built from: they must outlive it and stay
 in place. Adding a path that is already in the set throws
@@ -235,7 +235,6 @@ position (`element 2: expected a number`), and the size of an array
 | `config::parse_cli(argc, argv)` | the overrides `--path=value` and `--path value`, `--config <file>` and `--help` of a command line, with its errors |
 | `config::parse_config_text(text)` | the overrides of the text of a configuration file, as `load_config_file` reads them |
 | `config::overlay_overrides(base, top)` | one batch of two: the overrides of `top` replace those of `base` with the same path |
-| `config::override_views(overrides)` | views of owned overrides, for `apply` |
 | `config::require_valid(set)` | throws `std::invalid_argument` unless every block is valid |
 | `config::undeclared_domains(set)` | the paths of the parameters that declare no domain |
 | `config::load_and_apply(argc, argv, parameters)` | apply `--config <file>` and `--path.to.field=value` |
