@@ -30,8 +30,10 @@ struct unlimited_t
 class limit
 {
 public:
+    /// No limit: unlimited.
     constexpr limit() noexcept = default;
 
+    /// A limit of count.
     // NOLINTNEXTLINE(google-explicit-constructor): a number is a limit
     constexpr limit(const std::size_t count) noexcept : count_{count} {}
 
@@ -39,6 +41,7 @@ public:
     // NOLINTNEXTLINE(google-explicit-constructor): unlimited is a limit
     constexpr limit(unlimited_t) noexcept {}
 
+    /// The count: unlimited is the largest std::size_t.
     // NOLINTNEXTLINE(google-explicit-constructor): a limit is compared as a count
     [[nodiscard]]
     constexpr operator std::size_t() const noexcept

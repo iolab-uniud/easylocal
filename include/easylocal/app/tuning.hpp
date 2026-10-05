@@ -199,6 +199,7 @@ struct irace_stub_result
     /// cannot be written.
     std::vector<std::string> errors;
 
+    /// Whether there are no errors.
     [[nodiscard]]
     explicit operator bool() const noexcept
     {

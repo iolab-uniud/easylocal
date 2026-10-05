@@ -337,9 +337,13 @@ public:
             "NeighborhoodExplorer must share the bound Instance");
     }
 
+    /// Not copyable or movable: its services refer to each other.
     BoundRunner(const BoundRunner&) = delete;
+    /// Not copyable or movable: its services refer to each other.
     BoundRunner& operator=(const BoundRunner&) = delete;
+    /// Not copyable or movable: its services refer to each other.
     BoundRunner(BoundRunner&&) = delete;
+    /// Not copyable or movable: its services refer to each other.
     BoundRunner& operator=(BoundRunner&&) = delete;
 
     /// The Input the runner is bound to.
@@ -546,11 +550,13 @@ public:
             "make_runner<Algorithm>(parameters)");
     }
 
+    /// From the source of its algorithm, as make_runner() creates it.
     explicit Runner(detail::algorithm_source<Algorithm> algorithm)
         : algorithm_{std::move(algorithm)}
     {
     }
 
+    /// The runner with the SolutionManager recipe spec, as `runner | spec`.
     template<class SMSpec>
         requires detail::is_solution_manager_spec_v<std::remove_cvref_t<SMSpec>> &&
                  std::copy_constructible<Algorithm> &&
@@ -568,6 +574,7 @@ public:
         };
     }
 
+    /// The runner with the SolutionManager recipe spec, as `runner | spec`.
     template<class SMSpec>
         requires detail::is_solution_manager_spec_v<std::remove_cvref_t<SMSpec>> &&
                  std::constructible_from<
@@ -595,14 +602,18 @@ template<class Algorithm, class SMSpec>
 class Runner<Algorithm, SMSpec, detail::unconfigured_t>
 {
 public:
+    /// The SolutionManager built from the recipe.
     using solution_manager_type = detail::service_t<SMSpec>;
 
+    /// From its algorithm and SolutionManager recipe, as
+    /// with_solution_manager() creates it.
     Runner(detail::algorithm_source<Algorithm> algorithm, SMSpec solution_manager_spec)
         : algorithm_{std::move(algorithm)},
           solution_manager_spec_{std::move(solution_manager_spec)}
     {
     }
 
+    /// The runner with the neighborhood recipe spec, as `runner | spec`.
     template<class NHESpec>
         requires detail::is_neighborhood_spec_v<std::remove_cvref_t<NHESpec>> &&
                  detail::runner_neighborhood_explorer<
@@ -625,6 +636,7 @@ public:
         };
     }
 
+    /// The runner with the neighborhood recipe spec, as `runner | spec`.
     template<class NHESpec>
         requires detail::is_neighborhood_spec_v<std::remove_cvref_t<NHESpec>> &&
                  detail::runner_neighborhood_explorer<
@@ -660,10 +672,14 @@ template<class Algorithm, class SMSpec, class NHESpec>
 class Runner<Algorithm, SMSpec, NHESpec>
 {
 public:
+    /// The SolutionManager built from the recipe.
     using solution_manager_type = detail::service_t<SMSpec>;
+    /// The neighborhood explorer built from the recipe.
     using neighborhood_explorer_type = detail::service_t<NHESpec>;
+    /// The Input of the problem.
     using input_type = typename solution_manager_type::input_type;
 
+    /// From its algorithm and recipes, as with_neighborhood() creates it.
     Runner(
         detail::algorithm_source<Algorithm> algorithm,
         SMSpec solution_manager_spec,
@@ -683,6 +699,8 @@ public:
         return algorithm_.parameters();
     }
 
+    /// The algorithm's parameters, to read or change from code; the algorithm
+    /// is built from them when the runner is bound.
     [[nodiscard]]
     const auto& parameters() const noexcept
         requires detail::parameterized_algorithm<Algorithm>
@@ -708,6 +726,7 @@ public:
         return parameters;
     }
 
+    /// The same runner on the hard branch of a hierarchical cost.
     [[nodiscard]]
     auto with_hard_cost() const &
         requires detail::hierarchical_solution_manager<solution_manager_type> &&
@@ -725,6 +744,7 @@ public:
         };
     }
 
+    /// The same runner on the hard branch of a hierarchical cost.
     [[nodiscard]]
     auto with_hard_cost() &&
         requires detail::hierarchical_solution_manager<solution_manager_type>
@@ -739,6 +759,7 @@ public:
         };
     }
 
+    /// The runner bound to input, which must outlive the BoundRunner.
     [[nodiscard]]
     auto bind(const input_type& input) const &
         requires std::copy_constructible<Algorithm> &&
@@ -753,6 +774,7 @@ public:
         };
     }
 
+    /// The runner bound to input, which must outlive the BoundRunner.
     [[nodiscard]]
     auto bind(const input_type& input) &&
         requires (SMSpec::template constructible_from<const input_type>) &&
@@ -766,9 +788,17 @@ public:
         };
     }
 
+    /// Deleted: the BoundRunner borrows the Input, which a temporary would
+    /// leave dangling.
     auto bind(input_type&&) const & = delete;
+    /// Deleted: the BoundRunner borrows the Input, which a temporary would
+    /// leave dangling.
     auto bind(const input_type&&) const & = delete;
+    /// Deleted: the BoundRunner borrows the Input, which a temporary would
+    /// leave dangling.
     auto bind(input_type&&) && = delete;
+    /// Deleted: the BoundRunner borrows the Input, which a temporary would
+    /// leave dangling.
     auto bind(const input_type&&) && = delete;
 
 private:

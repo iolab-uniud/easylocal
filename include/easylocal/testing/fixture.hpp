@@ -93,7 +93,9 @@ public:
     {
     }
 
+    /// Not copyable: its SolutionManager refers to its Input.
     fixture(const fixture&) = delete;
+    /// Not copyable: its SolutionManager refers to its Input.
     fixture& operator=(const fixture&) = delete;
 
     /// The Input.

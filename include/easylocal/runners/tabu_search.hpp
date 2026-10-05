@@ -408,6 +408,7 @@ public:
     class state
     {
     public:
+        /// An empty list whose moves stay tabu for tenure iterations.
         explicit state(const std::size_t tenure) : tenure_{tenure}
         {
             moves_.reserve(tenure);
@@ -528,6 +529,7 @@ public:
     class state
     {
     public:
+        /// An empty list, with its parameters.
         explicit state(const RandomTenureParameters& parameters) : parameters_{parameters}
         {
         }
@@ -631,6 +633,7 @@ public:
     class state
     {
     public:
+        /// An empty list, with its parameters.
         explicit state(const CyclicParameters& parameters) : parameters_{parameters} {}
 
         /// The iterations the candidate stays tabu, the most among the moves
@@ -781,6 +784,7 @@ public:
     class state
     {
     public:
+        /// An empty list, with its parameters.
         explicit state(const ReactiveParameters& parameters)
             : parameters_{parameters},
               average_cycle_{static_cast<double>(parameters.cycle_length)}
@@ -1003,6 +1007,7 @@ public:
     class state
     {
     public:
+        /// An empty list, with its parameters.
         explicit state(const FrequencyParameters& parameters) : parameters_{parameters} {}
 
         /// The iterations before the frequency of the candidate's attribute
@@ -1109,6 +1114,7 @@ public:
         /// The candidates carry their cost, which the list compares.
         static constexpr bool needs_cost = true;
 
+        /// An empty list whose moves stay tabu for tenure iterations.
         explicit state(const std::size_t tenure) : tenure_{tenure} {}
 
         /// The iterations the candidate's cost stays tabu when it is
@@ -1219,6 +1225,7 @@ public:
     class state
     {
     public:
+        /// An empty list, with its parameters.
         explicit state(const LimDynamicParameters& parameters)
             : parameters_{parameters}, tenure_{parameters.min_tenure}
         {
@@ -1439,6 +1446,7 @@ public:
     class state
     {
     public:
+        /// An empty list, with its parameters.
         explicit state(const FooParameters& parameters) : parameters_{parameters}
         {
             tenure_.set_tenure(parameters.increment);
@@ -1582,6 +1590,7 @@ public:
     class state
     {
     public:
+        /// An empty list, with its parameters.
         explicit state(const RandomFooParameters& parameters) : parameters_{parameters} {}
 
         /// The iterations the candidate stays tabu with the current tenure, or

@@ -245,31 +245,37 @@ struct is_expression : std::false_type
 {
 };
 
+/// A `sum` node is one.
 template<class... Terms>
 struct is_expression<sum_expression<Terms...>> : std::true_type
 {
 };
 
+/// An `in_order` node is one.
 template<class... Children>
 struct is_expression<in_order_expression<Children...>> : std::true_type
 {
 };
 
+/// An `objectives` node is one.
 template<class... Children>
 struct is_expression<objectives_expression<Children...>> : std::true_type
 {
 };
 
+/// A `hard_soft` node is one.
 template<class Hard, class Soft>
 struct is_expression<hard_soft_expression<Hard, Soft>> : std::true_type
 {
 };
 
+/// An `apply` node is one.
 template<class Function, class... Children>
 struct is_expression<apply_expression<Function, Children...>> : std::true_type
 {
 };
 
+/// An `approximately` node is one.
 template<class Child>
 struct is_expression<approximately_expression<Child>> : std::true_type
 {

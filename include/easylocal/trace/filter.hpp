@@ -29,6 +29,7 @@ template<class Tracer, template<class...> class... Excluded>
 class without_events
 {
 public:
+    /// The wrapper of tracer.
     explicit without_events(Tracer& tracer) noexcept : tracer_{tracer} {}
 
     /// Whether the wrapper receives Event: when the tracer observes it and it

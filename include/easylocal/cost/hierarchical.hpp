@@ -140,10 +140,12 @@ constexpr long double delta(
     return std::numeric_limits<long double>::infinity();
 }
 
+/// The zero of a hierarchical cost: the zero of the hard and of the soft cost.
 template<class HardCost, class SoftCost>
     requires has_zero<HardCost> && has_zero<SoftCost>
 struct zero_cost<hierarchical<HardCost, SoftCost>>
 {
+    /// The zero of both levels.
     [[nodiscard]]
     static constexpr hierarchical<HardCost, SoftCost> value()
     {
@@ -157,6 +159,7 @@ struct is_hierarchical : std::false_type
 {
 };
 
+/// A `cost::hierarchical` is one.
 template<class HardCost, class SoftCost>
 struct is_hierarchical<hierarchical<HardCost, SoftCost>>
     : std::true_type

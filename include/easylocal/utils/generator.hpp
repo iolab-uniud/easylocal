@@ -120,6 +120,7 @@ public:
         /// An input iterator.
         using iterator_concept = std::input_iterator_tag;
 
+        /// An iterator of no generator.
         iterator() = default;
 
         /// The current value, to be moved from.
@@ -155,17 +156,20 @@ public:
         handle_type coroutine_{};
     };
 
+    /// Takes the coroutine of other, which is left empty.
     generator(generator&& other) noexcept
         : coroutine_{std::exchange(other.coroutine_, {})}
     {
     }
 
+    /// Takes the coroutine of other, destroying its own.
     generator& operator=(generator other) noexcept
     {
         std::swap(coroutine_, other.coroutine_);
         return *this;
     }
 
+    /// Destroys the coroutine.
     ~generator()
     {
         if (coroutine_)

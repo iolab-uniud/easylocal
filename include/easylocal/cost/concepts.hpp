@@ -64,9 +64,11 @@ struct zero_cost
 {
 };
 
+/// The zero of a cost that can be value-initialized: Cost{}.
 template<std::default_initializable Cost>
 struct zero_cost<Cost>
 {
+    /// Cost{}.
     [[nodiscard]]
     static constexpr Cost value()
     {

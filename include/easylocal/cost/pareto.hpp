@@ -78,6 +78,7 @@ public:
         return std::partial_ordering::equivalent;
     }
 
+    /// Whether every objective is equal.
     [[nodiscard]]
     friend constexpr bool operator==(const pareto&, const pareto&) = default;
 
@@ -98,10 +99,12 @@ private:
     std::tuple<Values...> values_;
 };
 
+/// The zero of a Pareto cost: the zero of every objective.
 template<class... Values>
     requires(has_zero<Values> && ...)
 struct zero_cost<pareto<Values...>>
 {
+    /// The zero of every objective.
     [[nodiscard]]
     static constexpr pareto<Values...> value()
     {
@@ -115,6 +118,7 @@ struct is_pareto : std::false_type
 {
 };
 
+/// A `cost::pareto` is one.
 template<class... Values>
 struct is_pareto<pareto<Values...>> : std::true_type
 {

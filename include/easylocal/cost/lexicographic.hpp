@@ -48,16 +48,19 @@ public:
         return std::get<Index>(values_);
     }
 
+    /// Level by level, the first level first.
     auto operator<=>(const lexicographic&) const = default;
 
 private:
     std::tuple<Values...> values_;
 };
 
+/// The zero of a lexicographic cost: the zero of every level.
 template<class... Values>
     requires (has_zero<Values> && ...)
 struct zero_cost<lexicographic<Values...>>
 {
+    /// The zero of every level.
     [[nodiscard]]
     static constexpr lexicographic<Values...> value()
     {
@@ -71,6 +74,7 @@ struct is_lexicographic : std::false_type
 {
 };
 
+/// A `cost::lexicographic` is one.
 template<class... Values>
 struct is_lexicographic<lexicographic<Values...>> : std::true_type
 {

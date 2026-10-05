@@ -1227,9 +1227,12 @@ public:
         flush();
     }
 
+    /// Not copyable: it owns the output.
     buffered_binary_recorder(const buffered_binary_recorder&) = delete;
+    /// Not copyable: it owns the output.
     buffered_binary_recorder& operator=(const buffered_binary_recorder&) = delete;
 
+    /// Writes the pending records, ignoring an output error.
     ~buffered_binary_recorder()
     {
         try
@@ -1359,9 +1362,13 @@ public:
         static_cast<void>(sink_.flush_output());
     }
 
+    /// Not copyable: it owns the output and its writer thread.
     async_binary_recorder(const async_binary_recorder&) = delete;
+    /// Not copyable: it owns the output and its writer thread.
     async_binary_recorder& operator=(const async_binary_recorder&) = delete;
 
+    /// Writes the pending records and waits for the writer thread, ignoring an
+    /// output error.
     ~async_binary_recorder()
     {
         try

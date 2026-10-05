@@ -434,7 +434,9 @@ public:
         std::optional<std::chrono::steady_clock::time_point> = std::nullopt,
         pareto_archive_parameters = {}) = delete;
 
+    /// Not copyable: the run of one search.
     search_run(const search_run&) = delete;
+    /// Not copyable: the run of one search.
     search_run& operator=(const search_run&) = delete;
 
 private:

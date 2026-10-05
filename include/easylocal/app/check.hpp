@@ -51,6 +51,7 @@ struct app_check_coverage
 class app_check_report
 {
 public:
+    /// An empty report on subject, the name of the app.
     explicit app_check_report(std::string_view subject)
         : report_{subject}
     {
@@ -61,6 +62,7 @@ public:
     {
         return report_.passed();
     }
+    /// Whether every check passed.
     [[nodiscard]] explicit operator bool() const noexcept { return passed(); }
     /// The number of checks made.
     [[nodiscard]] std::size_t checks() const noexcept
