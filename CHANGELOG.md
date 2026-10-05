@@ -240,6 +240,10 @@ reviewed by hand before tagging.
 - The assignment example writes its hooks in one style, as members: its
   instance is read by `AssignmentInstance::read`, and `instance_io.hpp`, with
   the free `read_input`, is gone.
+- The tutorial's pipeline example registers its stages in an app as
+  algorithm stages (`stage<A>(...)`, one on its own neighborhood, the first
+  restarted from random tours), and chapter 8 and the solvers reference
+  describe them.
 
 ### Changed
 

@@ -1,13 +1,15 @@
 // The tutorial's TSP solved by a pipeline of three stages, each with its own
 // runner, neighborhood or cost: a descent on the hard cost until the tour is
 // feasible, repeated from new random tours; a descent on the whole cost; a
-// hill climbing on random moves of two neighborhoods.
+// hill climbing on random moves of two neighborhoods; then the same stages
+// in an app, on its recipes.
 #include "tsp.hpp"
 
 #include <easylocal/easylocal.hpp>
 
 #include <algorithm>
 #include <iostream>
+#include <random>
 
 #ifndef EASYLOCAL_TUTORIAL_INSTANCE
 #define EASYLOCAL_TUTORIAL_INSTANCE "five.tsp"
@@ -62,5 +64,28 @@ int main()
     std::cout << "violations " << result.cost.hard() << ", length " << result.cost.soft()
               << ", evaluations " << result.evaluations << '\n';
     // [pipeline-report] ----------------------------------------------------
+
+    // [app-pipeline] -------------------------------------------------------
+    // The same stages registered in an app, as algorithms on the app's
+    // recipes: its cost, so its cost.* parameters apply to every stage, and
+    // its neighborhood, or the stage's own. The app runs the pipeline from the
+    // current solution; restart() starts the first stage's other attempts from
+    // new random tours.
+    auto application = el::app("tsp") | sm | two_opt
+        | el::pipeline(
+            "cascade",
+            stage<runners::FirstImprovement>("feasible") & until_feasible() & attempts(5)
+                & restart(el::initialization::random),
+            stage<runners::FirstImprovement>("descent"),
+            stage<runners::HillClimbing>("climb", {.max_idle_iterations = 200}, both));
+    const auto initial = application.bind(tsp).solution_manager().initial_solution();
+    std::mt19937_64 rng{7};
+    // run() returns no result for a name that is not registered.
+    if (const auto cascade = application.run("cascade", tsp, initial, rng))
+    {
+        std::cout << "cascade: violations " << cascade->cost.hard() << ", length "
+                  << cascade->cost.soft() << '\n';
+    }
+    // [app-pipeline] -------------------------------------------------------
     return 0;
 }

@@ -112,20 +112,44 @@ const auto result = solver.seed(7).solve(tsp);
   `feasible.attempts`). `examples/tutorial/pipeline_main.cpp` is the complete
   program.
 
-An app registers a pipeline beside its runners, under a name of the same list:
+An app registers a pipeline beside its runners, under a name of the same list.
+Its stages may be algorithms, `stage<Algorithm>(name, parameters)`, which run
+on the app's recipes rather than on recipes of their own:
 
+<!-- snippet: tutorial/pipeline_main.cpp:app-pipeline -->
 ```cpp
+// The same stages registered in an app, as algorithms on the app's
+// recipes: its cost, so its cost.* parameters apply to every stage, and
+// its neighborhood, or the stage's own. The app runs the pipeline from the
+// current solution; restart() starts the first stage's other attempts from
+// new random tours.
 auto application = el::app("tsp") | sm | two_opt
-    | el::runner<runners::FirstImprovement>("fi")
-    | el::pipeline("cascade",
-          stage("feasible", descent) & until_feasible() & attempts(5),
-          stage("climb", climbing));
+    | el::pipeline(
+        "cascade",
+        stage<runners::FirstImprovement>("feasible") & until_feasible() & attempts(5)
+            & restart(el::initialization::random),
+        stage<runners::FirstImprovement>("descent"),
+        stage<runners::HillClimbing>("climb", {.max_idle_iterations = 200}, both));
+const auto initial = application.bind(tsp).solution_manager().initial_solution();
+std::mt19937_64 rng{7};
+// run() returns no result for a name that is not registered.
+if (const auto cascade = application.run("cascade", tsp, initial, rng))
+{
+    std::cout << "cascade: violations " << cascade->cost.hard() << ", length "
+              << cascade->cost.soft() << '\n';
+}
 ```
 
-Here each stage carries its own recipes, and its own `cost.*` parameters. A
-stage of an algorithm, `stage<runners::FirstImprovement>("feasible")`, runs on
-the app's recipes instead, so the app's cost and its parameters are shared by
-every stage.
+- A stage of an algorithm runs on the app's SolutionManager and cost, so the
+  app's `cost.*` parameters apply to every stage, and on the app's
+  neighborhood, or on its own, the third argument (`both` for the climb).
+- `until_feasible()` derives the hard-cost stage from the app's cost, and the
+  stage options are those of a stage of a runner.
+- An app runs the pipeline from the current solution, so every attempt of the
+  first stage would start from it: `restart(el::initialization::random)`
+  starts the attempts after the first from new random tours.
+- `stage("climb", climbing)`, a stage of a runner, may still be registered: it
+  keeps its own recipes and its own `cost.*` parameters.
 
 The command line (`--runner cascade`), the TextUI and the REST service then run
 it by name from the current solution, as they run a runner, and configure its

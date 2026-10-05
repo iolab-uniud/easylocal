@@ -136,6 +136,43 @@ runner's (`<name>.search.*`, `<name>.cost.*`, ...), `<name>.attempts` and
 `<name>.max_evaluations` (`unlimited` by default).
 Stage names must be distinct and non-empty.
 
+### Algorithm stages
+
+A pipeline [registered in an app](app-and-tools.md#pipelines) may name its
+stages by algorithm rather than by runner: `stage<Algorithm>(name,
+parameters)`, or `stage<Algorithm>(name, parameters, neighborhood)` with a
+neighborhood recipe of its own. Such a stage has no recipes: when the app runs
+the pipeline, it becomes the stage of the runner of `Algorithm` on the app's
+SolutionManager and cost, and on the app's neighborhood or its own, with the
+recipes and the parameters the app had when it was bound.
+
+```cpp
+using namespace easylocal::solvers;
+auto application = app("tsp") | sm | two_opt
+    | pipeline("cascade",
+          stage<FirstImprovement>("feasible") & until_feasible() & attempts(5)
+              & restart(initialization::random),
+          stage<SimulatedAnnealing<Classic>>("anneal", {...}),
+          stage("polish", polishing));  // a stage of a runner, with its own recipes
+```
+
+| | Stage of a runner, `stage(name, runner)` | Stage of an algorithm, `stage<A>(name, ...)` |
+| --- | --- | --- |
+| Where | any pipeline | a pipeline registered in an app |
+| Cost and SolutionManager | the runner's own | the app's |
+| Neighborhood | the runner's own | the app's, or the third argument |
+| Options | `&` and the `with_*` methods | `&`: `attempts`, `timeout`, `max_evaluations`, `target`, `until_feasible`, `restart` |
+| Parameters, under `runners.<pipeline>.<stage>` | `attempts`, `timeout`, `max_evaluations`, `search.*`, `cost.*`, `neighborhood.*` | `attempts`, `timeout`, `max_evaluations`, `search.*` and, with its own neighborhood, `neighborhood.*` |
+
+The two kinds mix in one pipeline. The app's `cost.*` parameters apply to
+every stage of an algorithm, where each stage of a runner has a copy of its
+own. `until_feasible()` derives the hard-cost stage from the app's cost, which
+must be hierarchical; a `target` is written in the stage's cost, as for a
+stage of a runner; `restart` is checked against the app's SolutionManager. A
+stage of an algorithm with its own neighborhood is checked when it is
+registered, as a [runner with its own neighborhood](app-and-tools.md) is: the
+neighborhood explores the app's Solution and the algorithm runs on it.
+
 ### two_stage()
 
 `solvers::two_stage(first, second)` is the pipeline of the hierarchical
