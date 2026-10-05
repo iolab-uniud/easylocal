@@ -530,10 +530,13 @@ void check_bound(
         std::addressof(solution_manager.input()) == std::addressof(input),
         "solution manager input binding",
         "SolutionManager::input() does not refer to the app Input");
-    report.check(
-        std::addressof(neighborhood.input()) == std::addressof(input),
-        "neighborhood input binding",
-        "NeighborhoodExplorer::input() does not refer to the app Input");
+    if constexpr (requires { neighborhood.input(); })
+    {
+        report.check(
+            std::addressof(neighborhood.input()) == std::addressof(input),
+            "neighborhood input binding",
+            "NeighborhoodExplorer::input() does not refer to the app Input");
+    }
 
     bool valid_solution = false;
     testing::detail::guarded(checks, "check solution", "is_valid(solution)", [&] {

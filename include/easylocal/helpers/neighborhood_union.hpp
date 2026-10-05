@@ -13,7 +13,6 @@
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/recipes.hpp>
 #include <easylocal/trace/events.hpp>
-#include <easylocal/trace/tracer.hpp>
 
 #include <algorithm>
 #include <array>
@@ -593,21 +592,26 @@ public:
             valid_random_biases(random_biases_) &&
             "neighborhood random biases must be finite and non-negative");
 #ifndef NDEBUG
-        const auto* const expected =
-            std::addressof(std::get<0>(explorers_).input());
+        // input() is optional for an explorer: checked when they all have one.
+        if constexpr ((requires(const Explorers& explorer) { explorer.input(); } && ...))
+        {
+            const auto* const expected = std::addressof(std::get<0>(explorers_).input());
 
-        std::apply(
-            [expected](const auto&... explorer) {
-                assert(
-                    ((std::addressof(explorer.input()) == expected) && ...) &&
-                    "all child NeighborhoodExplorers in a union must share the same Instance");
-            },
-            explorers_);
+            std::apply(
+                [expected](const auto&... explorer) {
+                    assert(
+                        ((std::addressof(explorer.input()) == expected) && ...)
+                        && "all child NeighborhoodExplorers in a union must share the same Input");
+                },
+                explorers_);
+        }
 #endif
     }
 
+    // The Input of the children, when each of them gives it.
     [[nodiscard]]
     const input_type& input() const noexcept
+        requires(requires(const Explorers& explorer) { explorer.input(); } && ...)
     {
         return std::get<0>(explorers_).input();
     }

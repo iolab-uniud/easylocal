@@ -959,8 +959,32 @@ easylocal_add_compile_failure_test(
 easylocal_add_compile_failure_test(
     delta-not-constructible
     delta_not_constructible.cpp
-    "a delta cost component must be constructible either from the bound Instance followed by its recipe arguments or from its recipe arguments alone"
+    "a delta cost component must be constructible either from the bound Input followed by its recipe arguments or from its recipe arguments alone"
     "NonConstructibleDeltaA"
+)
+easylocal_add_compile_failure_test(
+    recipe-make-move-by-value
+    recipe_make_move_by_value.cpp
+    "make_move must change the Solution it is given: take it as `Solution&`"
+    "CopyingNeighborhood"
+)
+easylocal_add_compile_failure_test(
+    mutable-make-move
+    mutable_make_move.cpp
+    "the make_move of a NeighborhoodExplorer is const"
+    "MutableNeighborhood"
+)
+easylocal_add_compile_failure_test(
+    final-explorer-delta
+    final_explorer_delta.cpp
+    "a NeighborhoodExplorer that takes a delta cost component cannot be final"
+    "FinalNeighborhood"
+)
+easylocal_add_compile_failure_test(
+    solution-manager-arguments
+    solution_manager_arguments.cpp
+    "a SolutionManager must be constructible from the Input followed by its recipe arguments"
+    "BaseSolutionManager"
 )
 easylocal_add_compile_failure_test(
     range-of-mixed-numbers
@@ -994,7 +1018,7 @@ easylocal_add_compile_failure_test(
 easylocal_add_compile_failure_test(
     component-not-constructible
     component_not_constructible.cpp
-    "a cost component must be constructible either from the bound Instance followed by its recipe arguments or from its recipe arguments alone"
+    "a cost component must be constructible either from the bound Input followed by its recipe arguments or from its recipe arguments alone"
     "NonConstructibleComponent"
 )
 easylocal_add_compile_failure_test(

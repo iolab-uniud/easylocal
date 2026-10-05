@@ -557,7 +557,9 @@ private:
           registrations_{registrations}
     {
         assert(std::addressof(solution_manager_.input()) == std::addressof(input_));
-        assert(std::addressof(neighborhood_.input()) == std::addressof(input_));
+        // input() is optional for an explorer: checked when it has one.
+        if constexpr (requires { neighborhood_.input(); })
+            assert(std::addressof(neighborhood_.input()) == std::addressof(input_));
     }
 
     template<std::size_t Index>

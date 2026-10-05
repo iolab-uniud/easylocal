@@ -357,9 +357,9 @@ int main()
     static_assert(!easylocal::detail::unique_types_v<
         typename CapacitySpec::component_type,
         typename CapacitySpec::component_type>);
-    static_assert(!easylocal::detail::unique_delta_component_specs_v<
-        CapacityDeltaSpec,
-        SecondCapacityDeltaSpec>);
+    static_assert(!easylocal::detail::unique_types_v<
+        typename CapacityDeltaSpec::component_type,
+        typename SecondCapacityDeltaSpec::component_type>);
 
     // Distinct subclasses are distinct component identities, even when they
     // reuse the same implementation and value_type.

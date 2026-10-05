@@ -18,6 +18,10 @@ class BrokenNeighborhood
     : public easylocal::neighborhood_explorer_base<SolutionManager, Move>
 {
 public:
+    [[nodiscard]] static bool is_valid(const Solution&, const Move&) noexcept
+    {
+        return true;
+    }
     void make_move(Solution&, const Move&) const noexcept {}
 };
 

@@ -84,7 +84,7 @@ public:
                     static_assert(
                         std::constructible_from<DeltaEvaluator, const StoredArgs&...>,
                         "a delta cost component must be constructible either from the "
-                        "bound Instance followed by its recipe arguments or from "
+                        "bound Input followed by its recipe arguments or from "
                         "its recipe arguments alone");
                     return binding_type{DeltaEvaluator(args...)};
                 }
@@ -153,12 +153,6 @@ class delta_cost_layer : public BaseNHE
 public:
     using base_type = BaseNHE;
     using delta_bindings_type = std::tuple<typename DeltaSpecs::binding_type...>;
-
-    static_assert(
-        unique_types_v<typename DeltaSpecs::component_type...>,
-        "a neighborhood recipe may attach at most one delta cost component "
-        "to each component type; the conflicting component type is shown in "
-        "the template instantiation context");
 
     delta_cost_layer(
         BaseNHE base,

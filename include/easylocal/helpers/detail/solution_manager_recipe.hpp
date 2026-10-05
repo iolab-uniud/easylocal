@@ -9,11 +9,13 @@
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/helpers/detail/cost_expression.hpp>
 #include <easylocal/helpers/detail/cost_layer.hpp>
+#include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
 #include <easylocal/utils/detail/meta.hpp>
 
 #include <concepts>
 #include <cstddef>
+#include <exception>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -22,40 +24,59 @@
 namespace easylocal::detail
 {
 
-template<class BaseSM, class Instance, class Tuple>
+template<class BaseSM, class Input, class Tuple>
 struct base_solution_manager_constructible;
 
-template<class BaseSM, class Instance, class... Args>
-struct base_solution_manager_constructible<BaseSM, Instance, std::tuple<Args...>>
-    : std::bool_constant<
-          std::constructible_from<BaseSM, const Instance&, const Args&...>>
+template<class BaseSM, class Input, class... Args>
+struct base_solution_manager_constructible<BaseSM, Input, std::tuple<Args...>>
+    : std::bool_constant<std::constructible_from<BaseSM, const Input&, const Args&...>>
 {
 };
 
-template<class BaseSM, class Instance, class Tuple>
+template<class BaseSM, class Input, class Tuple>
 inline constexpr bool base_solution_manager_constructible_v =
-    base_solution_manager_constructible<BaseSM, Instance, Tuple>::value;
+    base_solution_manager_constructible<BaseSM, Input, Tuple>::value;
 
 template<class BaseSM, class BaseArgsTuple>
 [[nodiscard]]
 BaseSM construct_base_solution_manager(
-    const typename BaseSM::input_type& instance,
+    const typename BaseSM::input_type& input,
     const config::detail::parameters_holder<BaseSM>& parameters,
     const BaseArgsTuple& base_args)
 {
-    static_assert(
-        base_solution_manager_constructible_v<
+    using arguments_type =
+        config::detail::construction_arguments_t<BaseSM, BaseArgsTuple>;
+    constexpr bool constructible = base_solution_manager_constructible_v<
+        BaseSM,
+        typename BaseSM::input_type,
+        arguments_type>;
+    // The hint about the inherited constructors, only where it applies: a
+    // SolutionManager derived from the base, built from the Input alone.
+    constexpr bool derived_without_constructors = std::tuple_size_v<arguments_type> == 0
+        && std::derived_from<
             BaseSM,
-            typename BaseSM::input_type,
-            config::detail::construction_arguments_t<BaseSM, BaseArgsTuple>>,
+            solution_manager_base<
+                typename BaseSM::input_type,
+                typename BaseSM::solution_type>>;
+    static_assert(
+        constructible || !derived_without_constructors,
         "a SolutionManager derived from solution_manager_base must inherit "
-        "the base constructors; did you forget `using solution_manager_base::solution_manager_base;`? "
-        "(a SolutionManager with a parameters_type is constructed from the "
-        "Input, its parameters and its recipe arguments)");
-
-    return std::apply(
-        [&](const auto&... args) { return BaseSM(instance, args...); },
-        parameters.arguments(base_args));
+        "the base constructors; did you forget `using solution_manager_base::solution_manager_base;`?");
+    static_assert(
+        constructible || derived_without_constructors,
+        "a SolutionManager must be constructible from the Input followed by its "
+        "recipe arguments (its parameters first, when it has a parameters_type)");
+    if constexpr (constructible)
+    {
+        return std::apply(
+            [&](const auto&... args) { return BaseSM(input, args...); },
+            parameters.arguments(base_args));
+    }
+    else
+    {
+        // Reported above; no further errors.
+        std::terminate();
+    }
 }
 
 template<class BaseSM, class Leaves>

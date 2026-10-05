@@ -163,7 +163,9 @@ int main()
 
     static_assert(CanAdaptCursor<CursorExplorer>);
     static_assert(!CanAdaptCursor<NonDefaultMoveExplorer>);
-    static_assert(easylocal::detail::has_ambiguous_moves_interface_v<DualProtocolExplorer>);
+    static_assert(
+        easylocal::cursor_neighborhood_for<DualProtocolExplorer, Solution>
+        && easylocal::native_moves_neighborhood_for<DualProtocolExplorer, Solution>);
 
     const CursorExplorer explorer;
     const Solution solution{.size = 4};

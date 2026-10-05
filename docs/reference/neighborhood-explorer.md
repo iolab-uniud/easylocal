@@ -12,7 +12,8 @@ move is valid and how it changes a solution.
 | --- | --- | --- |
 | `input_type`, `solution_type`, `move_type` | yes | everything |
 | `is_valid(const Solution&, const Move&) const -> bool` | yes | debug assertions, checks |
-| `make_move(Solution&, const Move&) const` | yes | every runner |
+| `make_move(Solution&, const Move&) const` | yes; the Solution by reference, which it changes | every runner |
+| `input() const -> const Input&` | no (`neighborhood_explorer_base` gives it) | the checks that the services share the Input |
 | `moves(const Solution&) const` → input range of moves | one of the two, for deterministic algorithms | First/Best Improvement, Session and TextUI |
 | `first_move(const Solution&, Move&)`, `next_move(const Solution&, Move&)` → `bool` | | |
 | `random_move(const Solution&, RNG&) const -> std::optional<Move>` | for stochastic algorithms | Simulated Annealing, Session and TextUI |
@@ -39,6 +40,10 @@ solution, move, tabu_move)` and `easylocal::tabu_attribute(nhe, move)`.
 - `inverse` has no default: which moves a tabu move forbids (the same pair of
   jobs, or any move of either job) is a modelling choice of the neighborhood,
   and can be one of its parameters.
+- The recipe checks the contract member by member when it is written (when the
+  explorer declares its `solution_type`, else when it is bound), so a missing
+  `is_valid`, a `make_move` that is not `const`, or one that takes the
+  Solution by value (and changes a copy) is named in the error.
 - The explorer is constructed from the SolutionManager:
   `NHE(const SM&, args...)`, `args` from `neighborhood<NHE>(args...)`. The
   construction uses parentheses, so the arguments convert as the constructor

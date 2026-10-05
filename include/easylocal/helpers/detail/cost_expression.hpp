@@ -74,16 +74,14 @@ public:
         return self.parameters_;
     }
 
-    template<class Instance>
+    template<class Input>
     [[nodiscard]]
-    Component construct(const Instance& instance) const
+    Component construct(const Input& instance) const
     {
         return std::apply(
             [&](const auto&... args) -> Component {
-                if constexpr (std::constructible_from<
-                                  Component,
-                                  const Instance&,
-                                  decltype(args)...>)
+                if constexpr (
+                    std::constructible_from<Component, const Input&, decltype(args)...>)
                 {
                     return Component(instance, args...);
                 }
@@ -92,7 +90,7 @@ public:
                     static_assert(
                         std::constructible_from<Component, decltype(args)...>,
                         "a cost component must be constructible either from the "
-                        "bound Instance followed by its recipe arguments or from "
+                        "bound Input followed by its recipe arguments or from "
                         "its recipe arguments alone (its parameters first, when "
                         "it has a parameters_type)");
                     return Component(args...);

@@ -145,11 +145,6 @@ concept random_neighborhood_for =
 namespace detail
 {
 
-template<class Explorer>
-inline constexpr bool has_ambiguous_moves_interface_v =
-    cursor_neighborhood_for<Explorer, typename Explorer::solution_type> &&
-    native_moves_neighborhood_for<Explorer, typename Explorer::solution_type>;
-
 #if defined(NDEBUG) && (defined(__GNUC__) || defined(__clang__))
 #define EASYLOCAL_DETAIL_CURSOR_FORCE_INLINE inline __attribute__((always_inline))
 #else

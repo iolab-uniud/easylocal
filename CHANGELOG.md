@@ -20,6 +20,21 @@ reviewed by hand before tagging.
   so Simulated Annealing never accepted an improving move.
   `cost::arithmetic` excludes them, weights included.
 
+### Problem model
+
+- A neighborhood recipe checks the explorer's contract member by member when
+  it is written (when the explorer declares its `solution_type`, else when it
+  is bound): a missing `move_type` or `is_valid`, a `make_move` that is not
+  `const`, and a `make_move` that takes the Solution by value or by const
+  reference, which compiled, changed a copy and made Hill Climbing run
+  forever, are each reported with the signature to write. A `final` explorer
+  given a delta cost component, and recipe arguments that construct no
+  SolutionManager, get their own message; the hint about inherited
+  constructors appears only where it applies.
+- An explorer's `input()` is optional, as the contract says: the debug checks
+  of an app and of a neighborhood union, and `check(app, ...)`, use it only
+  when the explorer has it.
+
 ### Parameters
 
 - **Breaking:** one rule makes a class configurable: its `parameters_type` is

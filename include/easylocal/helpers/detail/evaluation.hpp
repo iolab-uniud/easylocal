@@ -273,8 +273,10 @@ consteval bool validate_delta_binding()
         static_assert(
             delta_binding_compatible<SM, NHE, Binding>(),
             "attached delta cost component is incompatible with the bound component "
-            "value, Solution, or Move type; the offending component and delta "
-            "evaluator types are shown in the template instantiation context");
+            "value, Solution, or Move type: delta_evaluate(const Solution&, const Move&) "
+            "returns the change of the component value; the offending component and "
+            "delta cost component types are shown in the template instantiation "
+            "context");
     }
 
     return true;
