@@ -75,6 +75,9 @@ reviewed by hand before tagging.
 - The TOML adapter reads each value by its TOML type: `true` read as the
   integer 1, so no boolean parameter could be set from TOML (nor an array of
   booleans), and a float such as `3.0` set an integer parameter.
+- A configuration file (`--config`) that is a directory is an error, where it
+  read as empty, and a UTF-8 byte order mark at its start is skipped instead
+  of becoming part of the first path.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

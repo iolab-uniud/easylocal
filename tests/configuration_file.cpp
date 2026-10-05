@@ -100,6 +100,36 @@ void missing_file_is_reported()
     assert(parsed.diagnostics[0].line == 0);
 }
 
+void directory_is_not_a_configuration_file()
+{
+    const auto parsed = load_config_file(std::filesystem::temp_directory_path());
+
+    assert(!parsed);
+    assert(parsed.diagnostics.size() == 1);
+    assert(parsed.diagnostics[0].error == config_file_error::open_error);
+    assert(parsed.diagnostics[0].message == "configuration file is a directory");
+}
+
+void byte_order_mark_is_skipped()
+{
+    const auto parsed = parse_config_text("\xEF\xBB\xBFsolver.seed = 3\n");
+
+    assert(parsed);
+    assert(parsed.overrides.size() == 1);
+    assert(parsed.overrides[0].path == "solver.seed");
+    assert(parsed.overrides[0].value == "3");
+}
+
+void comments_are_whole_lines()
+{
+    // A # after a value belongs to the value.
+    const auto parsed = parse_config_text("  # a comment\nname = a#b\n");
+
+    assert(parsed);
+    assert(parsed.overrides.size() == 1);
+    assert(parsed.overrides[0].value == "a#b");
+}
+
 void cli_layer_overrides_file_layer()
 {
     const auto file = parse_config_text(R"(
@@ -190,6 +220,9 @@ int main()
     compact_file_syntax_is_parsed();
     file_parser_accumulates_structural_diagnostics();
     missing_file_is_reported();
+    directory_is_not_a_configuration_file();
+    byte_order_mark_is_skipped();
+    comments_are_whole_lines();
     cli_layer_overrides_file_layer();
     invalid_effective_batch_is_atomic();
     return 0;

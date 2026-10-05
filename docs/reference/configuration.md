@@ -162,6 +162,7 @@ prefix.
 | Function | Purpose |
 | --- | --- |
 | `config::load_and_apply(argc, argv, parameters)` | apply `--config <file>` and `--path.to.field=value` |
+| `config::load_config_file(path)` | the overrides of a file of `path = value` lines: `#` starts a whole-line comment (a `#` after a value is part of it), a UTF-8 byte order mark is skipped, a directory is an error |
 | `config::cli_help(program, parameters)` | help text with current values |
 | `config::print_diagnostics(out, result)` | report errors |
 | `config::apply_overrides(parameters, text_overrides)` | the same as `parameters.apply(...)` |

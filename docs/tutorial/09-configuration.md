@@ -164,7 +164,8 @@ values that break a requirement.
 ## Configuration files
 
 `load_and_apply` also reads a file given as `--config <file>`, with one
-`path = value` per line and `#` for comments:
+`path = value` per line and `#` for comments, which take whole lines (a `#`
+after a value is part of the value):
 
 ```text
 # annealing.conf

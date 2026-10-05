@@ -1,8 +1,8 @@
 #pragma once
 
 /// \file
-/// Plain-text configuration files: one path = value per line, # comments,
-/// read as the overrides of a parameter_set.
+/// Plain-text configuration files: one path = value per line, whole-line #
+/// comments, read as the overrides of a parameter_set.
 
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/utils/detail/text.hpp>
@@ -13,6 +13,7 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -23,7 +24,7 @@ namespace easylocal::config
 /// An error of a configuration file.
 enum class config_file_error
 {
-    /// The file cannot be opened.
+    /// The file cannot be opened, or is a directory.
     open_error,
     /// A line that is not `path = value`, a comment or blank.
     malformed_line,
@@ -65,13 +66,16 @@ struct config_file_parse_result
 
 /// Reads the overrides `path = value` of a configuration text, one per line.
 ///
-/// Blank lines and lines that start with `#` are skipped; paths and values are
-/// trimmed of spaces. A line in error gives a diagnostic, and the reading goes
-/// on.
+/// Blank lines and lines that start with `#` are skipped: comments take whole
+/// lines, and a `#` after a value belongs to the value. Paths and values are
+/// trimmed of spaces, and a UTF-8 byte order mark at the start is skipped. A
+/// line in error gives a diagnostic, and the reading goes on.
 [[nodiscard]]
-inline config_file_parse_result parse_config_text(const std::string_view text)
+inline config_file_parse_result parse_config_text(std::string_view text)
 {
     config_file_parse_result result{};
+    if (text.starts_with("\xEF\xBB\xBF"))
+        text.remove_prefix(3);
     std::unordered_map<std::string, std::size_t> first_definition;
 
     std::size_t line_number = 0;
@@ -148,22 +152,28 @@ inline config_file_parse_result parse_config_text(const std::string_view text)
 
 /// Reads the overrides of a configuration file, as parse_config_text does.
 ///
-/// A file that cannot be opened gives an `open_error` diagnostic.
+/// A file that cannot be opened, or a directory, gives an `open_error`
+/// diagnostic.
 [[nodiscard]]
 inline config_file_parse_result load_config_file(const std::filesystem::path& path)
 {
-    std::ifstream input{path};
-    if (!input)
-    {
+    const auto failure = [&](std::string message) {
         config_file_parse_result result{};
         result.diagnostics.push_back({
             .error = config_file_error::open_error,
             .line = 0,
             .text = path.string(),
-            .message = "cannot open configuration file",
+            .message = std::move(message),
         });
         return result;
-    }
+    };
+    // A directory opens as a stream on some systems, and reads as empty.
+    if (std::error_code error; std::filesystem::is_directory(path, error))
+        return failure("configuration file is a directory");
+
+    std::ifstream input{path};
+    if (!input)
+        return failure("cannot open configuration file");
 
     std::ostringstream buffer;
     buffer << input.rdbuf();
