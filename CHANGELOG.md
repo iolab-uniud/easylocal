@@ -393,6 +393,10 @@ reviewed by hand before tagging.
   not the runner's cost, which recorded nothing of the run; a pipeline gives a
   stage on another cost (`until_feasible()`) the caller's recorder through a
   tracer that forwards only the events without a cost.
+- **Breaking:** `BoundRunner::run()` is const, and each run starts from a new
+  algorithm (built from its parameters, or copied): state a custom algorithm
+  keeps no longer passes from one run to the next, as for the runs of an app.
+  An algorithm without a parameter block must be copyable to run.
 
 ### Added
 

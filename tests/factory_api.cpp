@@ -144,6 +144,28 @@ struct MoveOnlyAlgorithm
     }
 };
 
+// An algorithm that counts its runs: a bound runner runs a new copy each
+// time, so every run is its first.
+struct CountingAlgorithm
+{
+    int runs{};
+
+    template<class Context>
+    [[nodiscard]] auto run(
+        const Context& context,
+        typename Context::solution_type solution)
+    {
+        ++runs;
+        struct Result
+        {
+            typename Context::solution_type solution;
+            typename Context::cost_type cost;
+            int run;
+        };
+        return Result{solution, context.evaluation().evaluate(solution).cost(), runs};
+    }
+};
+
 // Components whose recipe arguments are doubles, given as ints: the recipes
 // construct with parentheses, as std::constructible_from checks, so an int
 // converts to a double instead of being rejected as narrowing.
@@ -353,6 +375,14 @@ int main()
         typename decltype(configured_runner)::cost_type>);
     auto move_only_bound = move_only.bind(instance);
     assert(move_only_bound.run(Solution{}).cost == 0);
+
+    // No state passes from one run to the next, on a const bound runner too.
+    const auto counting = Runner{CountingAlgorithm{}}
+        | (solution_manager<SolutionManager>() | component<CostComponent>())
+        | neighborhood<NeighborhoodExplorer>();
+    const auto counting_bound = counting.bind(instance);
+    assert(counting_bound.run(Solution{}).run == 1);
+    assert(counting_bound.run(Solution{}).run == 1);
 
     const auto local_result = local_solver.solve(instance);
     assert(local_result.solution.value == 0);

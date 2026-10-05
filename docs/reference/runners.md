@@ -441,6 +441,8 @@ the deltas left at 1e-17. The same options are accepted by every solver's
   null check.
 - **Tracing is compile-time.** Without a tracer, events are not even
   constructed, nor the routes of the moves of a neighborhood union.
-- **Per-run state is local.** `run` is `const`; algorithms are reusable values.
+- **Per-run state is local.** `BoundRunner::run` is `const`, and each run
+  starts from a new algorithm, built from the parameters or copied: a custom
+  algorithm may keep state during a run, never from one run to the next.
 - **The algorithm class is its own key.** No tag types: the class names the
   algorithm in `make_runner` and in app registrations.

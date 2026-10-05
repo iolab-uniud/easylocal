@@ -273,9 +273,104 @@ auto run_algorithm(
 
 } // namespace detail
 
+namespace detail
+{
+
+// An algorithm whose parameters are a parameter block it is built from: a
+// Runner holds the parameters and builds the algorithm when it is bound.
+template<class Algorithm>
+concept parameterized_algorithm = config::detail::parameterized<Algorithm>
+    && std::constructible_from<Algorithm, const typename Algorithm::parameters_type&>;
+
+// What a Runner holds of its algorithm: the algorithm itself, without
+// parameters, or, for a parameterized algorithm, its parameters, from which it
+// is built at bind.
+template<class Algorithm>
+class algorithm_source
+{
+    static_assert(config::detail::check_declared_parameters<Algorithm>());
+    static_assert(
+        !config::detail::parameterized<Algorithm>,
+        "an algorithm whose parameters_type is a parameter block is built from it: "
+        "give it a constructor from `const parameters_type&`");
+
+public:
+    explicit algorithm_source(Algorithm algorithm) : algorithm_{std::move(algorithm)} {}
+
+    [[nodiscard]]
+    Algorithm make() const&
+        requires std::copy_constructible<Algorithm>
+    {
+        return algorithm_;
+    }
+
+    [[nodiscard]]
+    Algorithm make() &&
+    {
+        return std::move(algorithm_);
+    }
+
+    // Nothing to check: the algorithm was built by its constructor.
+    void validate() const noexcept {}
+
+    template<class Self>
+    void add_configuration(this Self&&, config::parameter_set&)
+    {
+    }
+
+private:
+    Algorithm algorithm_;
+};
+
+template<parameterized_algorithm Algorithm>
+class algorithm_source<Algorithm>
+{
+public:
+    using parameters_type = typename Algorithm::parameters_type;
+
+    // Throws std::invalid_argument when the parameters are not valid.
+    explicit algorithm_source(parameters_type parameters)
+        : parameters_{std::move(parameters)}
+    {
+        config::require_valid(parameters_);
+    }
+
+    // Throws std::invalid_argument when the parameters, which parameters()
+    // may have changed, are not valid.
+    [[nodiscard]]
+    Algorithm make() const
+    {
+        return Algorithm{config::require_valid(parameters_)};
+    }
+
+    // Throws std::invalid_argument when the parameters are not valid.
+    void validate() const
+    {
+        static_cast<void>(config::require_valid(parameters_));
+    }
+
+    template<class Self>
+    [[nodiscard]]
+    auto& parameters(this Self&& self) noexcept
+    {
+        return self.parameters_;
+    }
+
+    template<class Self>
+    void add_configuration(this Self&& self, config::parameter_set& parameters)
+    {
+        parameters.add("search", self.parameters_);
+    }
+
+private:
+    parameters_type parameters_;
+};
+
+} // namespace detail
+
 /// A runner bound to an Input: the services built for it (a SolutionManager
 /// and a neighborhood explorer) and the algorithm, which run(solution, ...)
-/// runs on them.
+/// runs on them, each run from a new copy of it.
 ///
 /// Runner::bind returns it; it borrows the Input, which must outlive it, and
 /// cannot be copied or moved, since its services refer to each other. Requires
@@ -304,9 +399,13 @@ public:
         solution_manager_type,
         neighborhood_explorer_type>());
 
-    /// The services of the recipes built for input, with the algorithm.
+    /// The services of the recipes built for input, with what the runner holds
+    /// of its algorithm (the algorithm, or its parameters), as Runner::bind
+    /// passes it.
+    ///
+    /// Throws `std::invalid_argument` when the parameters are not valid.
     BoundRunner(
-        Algorithm algorithm,
+        detail::algorithm_source<Algorithm> algorithm,
         const input_type& input,
         const SMSpec& solution_manager_spec,
         const NHESpec& neighborhood_spec)
@@ -315,6 +414,7 @@ public:
           solution_manager_{solution_manager_spec.construct(input_)},
           neighborhood_{neighborhood_spec.construct(solution_manager_)}
     {
+        algorithm_.validate();
         assert(
             std::addressof(solution_manager_.input()) == std::addressof(input_)
             && "SolutionManager must bind to the requested Input");
@@ -377,13 +477,16 @@ public:
 
     /// Runs the algorithm from solution and returns its result.
     ///
-    /// The algorithm's arguments (such as an RNG) may be followed by run
-    /// options, such as easylocal::with(control, tracer). The solution must be
-    /// valid for the Input.
+    /// Each run starts from a new algorithm, built from its parameters or
+    /// copied, so no state passes from one run to the next. The algorithm's
+    /// arguments (such as an RNG) may be followed by run options, such as
+    /// easylocal::with(control, tracer). The solution must be valid for the
+    /// Input.
     template<class... RunArgs>
     [[nodiscard]]
-    auto run(solution_type solution, RunArgs&&... run_args)
-        requires detail::algorithm_runnable<
+    auto run(solution_type solution, RunArgs&&... run_args) const
+        requires std::copy_constructible<detail::algorithm_source<Algorithm>>
+        && detail::algorithm_runnable<
             Algorithm,
             detail::runner_context<solution_manager_type, neighborhood_explorer_type>,
             RunArgs...>
@@ -398,105 +501,21 @@ public:
                 neighborhood_,
         };
 
+        auto algorithm = algorithm_.make();
         return detail::run_algorithm(
-            algorithm_,
+            algorithm,
             context,
             std::move(solution),
             std::forward<RunArgs>(run_args)...);
     }
 
 private:
-    Algorithm algorithm_;
+    detail::algorithm_source<Algorithm> algorithm_;
     const input_type& input_;
     solution_manager_type solution_manager_;
     neighborhood_explorer_type neighborhood_;
 };
 
-namespace detail
-{
-
-// An algorithm whose parameters are a parameter block it is built from: a
-// Runner holds the parameters and builds the algorithm when it is bound.
-template<class Algorithm>
-concept parameterized_algorithm = config::detail::parameterized<Algorithm>
-    && std::constructible_from<Algorithm, const typename Algorithm::parameters_type&>;
-
-// What a Runner holds of its algorithm: the algorithm itself, without
-// parameters, or, for a parameterized algorithm, its parameters, from which it
-// is built at bind.
-template<class Algorithm>
-class algorithm_source
-{
-    static_assert(config::detail::check_declared_parameters<Algorithm>());
-    static_assert(
-        !config::detail::parameterized<Algorithm>,
-        "an algorithm whose parameters_type is a parameter block is built from it: "
-        "give it a constructor from `const parameters_type&`");
-
-public:
-    explicit algorithm_source(Algorithm algorithm) : algorithm_{std::move(algorithm)} {}
-
-    [[nodiscard]]
-    Algorithm make() const&
-        requires std::copy_constructible<Algorithm>
-    {
-        return algorithm_;
-    }
-
-    [[nodiscard]]
-    Algorithm make() &&
-    {
-        return std::move(algorithm_);
-    }
-
-    template<class Self>
-    void add_configuration(this Self&&, config::parameter_set&)
-    {
-    }
-
-private:
-    Algorithm algorithm_;
-};
-
-template<parameterized_algorithm Algorithm>
-class algorithm_source<Algorithm>
-{
-public:
-    using parameters_type = typename Algorithm::parameters_type;
-
-    // Throws std::invalid_argument when the parameters are not valid.
-    explicit algorithm_source(parameters_type parameters)
-        : parameters_{std::move(parameters)}
-    {
-        config::require_valid(parameters_);
-    }
-
-    // Throws std::invalid_argument when the parameters, which parameters()
-    // may have changed, are not valid.
-    [[nodiscard]]
-    Algorithm make() const
-    {
-        return Algorithm{config::require_valid(parameters_)};
-    }
-
-    template<class Self>
-    [[nodiscard]]
-    auto& parameters(this Self&& self) noexcept
-    {
-        return self.parameters_;
-    }
-
-    template<class Self>
-    void add_configuration(this Self&& self, config::parameter_set& parameters)
-    {
-        parameters.add("search", self.parameters_);
-    }
-
-private:
-    parameters_type parameters_;
-};
-
-} // namespace detail
 
 /// A search algorithm with the recipes of the services it runs on: a
 /// SolutionManager (with its cost expression) and a neighborhood explorer.
@@ -752,7 +771,7 @@ public:
         && (NHESpec::template constructible_from<solution_manager_type>)
     {
         return BoundRunner<Algorithm, SMSpec, NHESpec>{
-            algorithm_.make(),
+            algorithm_,
             input,
             solution_manager_spec_,
             neighborhood_spec_,
@@ -766,7 +785,7 @@ public:
                  (NHESpec::template constructible_from<solution_manager_type>)
     {
         return BoundRunner<Algorithm, SMSpec, NHESpec>{
-            std::move(algorithm_).make(),
+            std::move(algorithm_),
             input,
             solution_manager_spec_,
             neighborhood_spec_,
