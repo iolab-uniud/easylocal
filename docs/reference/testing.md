@@ -24,8 +24,11 @@ SolutionManager `SM{input}`; it is neither copyable nor movable.
 | `fixture{input, solution[, options]}` | the given Solution (checked for validity) |
 | `fixture{input[, options]}` | the SolutionManager's `initial_solution()` |
 
-`check_options` holds `random_samples` (default 32) and `max_enumerated_moves`
-(default 1024). `Equivalent` compares values (component values, `value + delta`
+`check_options` holds `random_samples` (default 32), `max_enumerated_moves`
+(default 1024) and `seed`: the randomized checks draw from a `std::mt19937_64`
+seeded with it, so the same seed repeats the same draws (`check(app, ...)` uses
+the default seed). `deterministic_rng`, which cycles through a few fixed values,
+is for unit tests that script the draws, not for sampling. `Equivalent` compares values (component values, `value + delta`
 against the full evaluation); replace it for tolerance-based comparisons.
 
 ## Checks

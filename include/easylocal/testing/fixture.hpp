@@ -11,20 +11,29 @@
 
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <random>
 #include <type_traits>
 #include <utility>
 
 namespace easylocal::testing
 {
 
-/// The options of the contract checks: how many moves and solutions they try.
+/// The options of the contract checks: how many moves and solutions they try,
+/// and the seed of their random draws.
+///
+/// The randomized checks draw from a `std::mt19937_64` seeded with `seed`: the
+/// same seed repeats the same draws, another seed tries other moves and
+/// solutions.
 struct check_options
 {
     /// The random moves and solutions drawn per check (default 32).
     std::size_t random_samples{32};
     /// The enumerated moves visited per traversal (default 1024).
     std::size_t max_enumerated_moves{1024};
+    /// The seed of the random draws (default the generator's default seed).
+    std::uint64_t seed{std::mt19937_64::default_seed};
 };
 
 /// The data every component check runs on: an Input, a valid Solution and the

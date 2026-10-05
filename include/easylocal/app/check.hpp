@@ -10,6 +10,7 @@
 #include <easylocal/cost/semantics.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/testing/check.hpp>
+#include <easylocal/testing/fixture.hpp>
 #include <easylocal/utils/detail/meta.hpp>
 
 #include <concepts>
@@ -17,6 +18,7 @@
 #include <exception>
 #include <memory>
 #include <ostream>
+#include <random>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -308,12 +310,9 @@ template<class App, class Instance, class Solution>
             max_moves);
     }
 
-    if constexpr (random_neighborhood_for<
-                      neighborhood_type,
-                      Solution,
-                      testing::deterministic_rng>)
+    if constexpr (random_neighborhood_for<neighborhood_type, Solution, std::mt19937_64>)
     {
-        testing::deterministic_rng rng;
+        std::mt19937_64 rng{testing::check_options{}.seed};
         for (std::size_t sample = 0; sample < 16; ++sample)
         {
             auto move = easylocal::random_move(neighborhood, solution, rng);

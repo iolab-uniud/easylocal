@@ -10,6 +10,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <random>
 
 namespace easylocal::testing
 {
@@ -40,11 +41,9 @@ template<check_fixture Fixture>
             "initial_solution() returned an invalid Solution");
     }
 
-    if constexpr (easylocal::has_random_solution<
-                      solution_manager_type,
-                      deterministic_rng>)
+    if constexpr (easylocal::has_random_solution<solution_manager_type, std::mt19937_64>)
     {
-        deterministic_rng rng;
+        std::mt19937_64 rng{fixture.options().seed};
         for (std::size_t sample = 0; sample < fixture.options().random_samples; ++sample)
         {
             const auto random = solution_manager.random_solution(rng);

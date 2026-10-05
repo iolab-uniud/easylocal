@@ -19,6 +19,14 @@ reviewed by hand before tagging.
   compile with a message: the difference of two unsigned costs wraps around,
   so Simulated Annealing never accepted an improving move.
   `cost::arithmetic` excludes them, weights included.
+### Fixed
+
+- The randomized contract checks (`easylocal::testing` and `check(app, ...)`)
+  draw from a `std::mt19937_64` seeded with the new `check_options::seed`,
+  instead of `deterministic_rng`'s four fixed values: a `random_move()` that
+  rejects draws until one fits, such as the tutorial's on 40 cities, no longer
+  loops forever, and the random samples differ from each other.
+  `deterministic_rng` remains for unit tests that script the draws.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

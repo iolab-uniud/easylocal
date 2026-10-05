@@ -10,6 +10,7 @@
 
 #include <concepts>
 #include <cstddef>
+#include <random>
 #include <string_view>
 
 namespace easylocal::testing
@@ -114,9 +115,9 @@ template<check_fixture Fixture, class NHE>
             max_moves);
     }
 
-    if constexpr (random_neighborhood_for<NHE, solution_type, deterministic_rng>)
+    if constexpr (random_neighborhood_for<NHE, solution_type, std::mt19937_64>)
     {
-        deterministic_rng rng;
+        std::mt19937_64 rng{fixture.options().seed};
         for (std::size_t sample = 0; sample < fixture.options().random_samples; ++sample)
         {
             auto move = easylocal::random_move(neighborhood, solution, rng);

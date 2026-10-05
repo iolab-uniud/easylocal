@@ -11,6 +11,7 @@
 
 #include <concepts>
 #include <cstddef>
+#include <random>
 #include <type_traits>
 
 namespace easylocal::testing
@@ -121,10 +122,10 @@ template<class Fixture, class NHE, class Component, class Delta>
     else
     {
         static_assert(
-            random_neighborhood_for<NHE, solution_type, deterministic_rng>,
+            random_neighborhood_for<NHE, solution_type, std::mt19937_64>,
             "the delta check needs moves: the NeighborhoodExplorer must enumerate "
             "or sample them");
-        deterministic_rng rng;
+        std::mt19937_64 rng{fixture.options().seed};
         for (std::size_t sample = 0; sample < fixture.options().random_samples; ++sample)
         {
             if (auto move = easylocal::random_move(neighborhood, solution, rng))

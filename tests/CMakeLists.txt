@@ -294,6 +294,14 @@ easylocal_add_test(
 )
 
 easylocal_add_test(
+    testing-random-draws
+    SOURCES
+        testing_random_draws.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
+
+easylocal_add_test(
     assignment-model
     SOURCES
         assignment_model.cpp

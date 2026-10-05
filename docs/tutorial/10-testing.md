@@ -42,8 +42,8 @@ For a co-located delta (chapter 4) omit the third type, as for
 `delta_evaluate`.
 
 Without a Solution, `fixture<SM>{input}` uses the SolutionManager's initial
-solution. A third argument sets the sampling limits
-(`{.random_samples = 16, .max_enumerated_moves = 256}`), and a second template
+solution. A third argument sets the sampling limits and the seed of the random
+draws (`{.random_samples = 16, .max_enumerated_moves = 256, .seed = 7}`), and a second template
 argument replaces `==` for comparing values, for instance with a tolerance. A
 component that cannot be built from the Input alone is passed as an object:
 `check_cost_component(f, TourLength{...})`; the same holds for

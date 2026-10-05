@@ -5,7 +5,7 @@
 /// failures of a component's checks, run_checks prints the reports and gives
 /// the exit code of a test program.
 ///
-/// Also deterministic_rng for reproducible checks.
+/// Also deterministic_rng, for unit tests that script the random draws.
 
 #include <concepts>
 #include <cstddef>
@@ -116,8 +116,12 @@ inline void print_report(
     }
 }
 
-/// A random bit generator that cycles through a fixed list of values, for
-/// reproducible checks.
+/// A random bit generator that cycles through a fixed list of values, for unit
+/// tests that script the random draws.
+///
+/// Not for sampling: with a few values, a random_move() that rejects draws
+/// until one fits may never end. The contract checks draw from a seeded
+/// `std::mt19937_64` (check_options::seed).
 class deterministic_rng
 {
 public:
