@@ -1123,9 +1123,14 @@ if(TARGET easylocal_assignment)
         COMMAND easylocal_assignment --runners.fi.max_evaluations=1
         OUTPUT "termination evaluation budget exhausted")
     easylocal_add_output_test(
-        easylocal.example.assignment-config-file
+        easylocal.example.assignment-sample-config
         COMMAND easylocal_assignment
             --config ${PROJECT_SOURCE_DIR}/examples/assignment/configs/small.cfg
+        OUTPUT "^cost ")
+    easylocal_add_output_test(
+        easylocal.example.assignment-config-file
+        COMMAND easylocal_assignment
+            --config ${CMAKE_CURRENT_SOURCE_DIR}/configs/assignment-short.cfg
         OUTPUT "termination evaluation budget exhausted")
 endif()
 
@@ -1139,9 +1144,14 @@ if(TARGET easylocal_exam_timetabling)
         COMMAND easylocal_exam_timetabling --runners.sa.temperature.allowed_iterations=1
         OUTPUT "\\niterations 1\\n")
     easylocal_add_output_test(
-        easylocal.example.exam-config-file
+        easylocal.example.exam-sample-config
         COMMAND easylocal_exam_timetabling
             --config ${PROJECT_SOURCE_DIR}/examples/exam_timetabling/configs/small.cfg
+        OUTPUT "\\niterations 200\\n")
+    easylocal_add_output_test(
+        easylocal.example.exam-config-file
+        COMMAND easylocal_exam_timetabling
+            --config ${CMAKE_CURRENT_SOURCE_DIR}/configs/exam-short.cfg
         OUTPUT "\\niterations 1\\n")
 endif()
 
@@ -1155,14 +1165,19 @@ if(TARGET easylocal_tsp_sa)
         COMMAND easylocal_tsp_sa --runners.sa.temperature.allowed_iterations=1
         OUTPUT "\\niterations 1\\n")
     easylocal_add_output_test(
-        easylocal.example.tsp-config-file
+        easylocal.example.tsp-sample-config
         COMMAND easylocal_tsp_sa
             --config ${PROJECT_SOURCE_DIR}/examples/tsp/configs/small.cfg
+        OUTPUT "\\niterations 1000\\n")
+    easylocal_add_output_test(
+        easylocal.example.tsp-config-file
+        COMMAND easylocal_tsp_sa
+            --config ${CMAKE_CURRENT_SOURCE_DIR}/configs/tsp-short.cfg
         OUTPUT "\\niterations 1\\n")
     easylocal_add_output_test(
         easylocal.example.tsp-config-precedence
         COMMAND easylocal_tsp_sa
-            --config ${PROJECT_SOURCE_DIR}/examples/tsp/configs/small.cfg
+            --config ${CMAKE_CURRENT_SOURCE_DIR}/configs/tsp-short.cfg
             --runners.sa.temperature.allowed_iterations=2
         OUTPUT "\\niterations 2\\n")
     # An invalid parameter, from a file or from the command line, is a usage
@@ -1170,7 +1185,7 @@ if(TARGET easylocal_tsp_sa)
     easylocal_add_output_test(
         easylocal.example.tsp-config-error
         COMMAND easylocal_tsp_sa
-            --config ${PROJECT_SOURCE_DIR}/examples/tsp/configs/invalid.cfg
+            --config ${CMAKE_CURRENT_SOURCE_DIR}/configs/tsp-invalid.cfg
         EXIT_CODE 2
         OUTPUT "runners\\.sa\\.temperature\\.cooling_rate: expected a value in \\(0, 1\\), got 1\\.5")
     easylocal_add_output_test(

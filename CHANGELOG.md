@@ -382,6 +382,11 @@ reviewed by hand before tagging.
 - The tutorial no longer takes the launcher of chapter 12 from `examples/tsp`:
   `examples/tutorial/launcher_main.cpp` opens a 2-opt and a swap app of the
   tutorial's own TSP. `AGENTS.md` says what each example directory is.
+- The `configs/small.cfg` of the assignment, exam timetabling and TSP
+  examples are commented sample configurations of a real run, where they were
+  test fixtures that cut the run to one iteration; the fixtures, and the
+  invalid TSP configuration, are in `tests/configs`, and a test runs each
+  sample.
 - The exam timetabling README's target example, `--target=8`, can be reached:
   no timetable of `small.exam` has the penalty 0 it gave.
 - The TSP readers of the tutorial and of `examples/tsp`, and the tutorial's
