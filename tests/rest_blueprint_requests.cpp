@@ -17,6 +17,7 @@
 #include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/runners/hill_climbing.hpp>
 #include <easylocal/runners/pareto_late_acceptance_hill_climbing.hpp>
+#include <easylocal/runners/simulated_annealing.hpp>
 #include <easylocal/solvers/pipeline.hpp>
 
 #include <crow.h>
@@ -26,6 +27,7 @@
 #include <condition_variable>
 #include <cstddef>
 #include <mutex>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -661,7 +663,11 @@ void a_problem_with_text_hooks_needs_no_codec()
             | easylocal::component<TourLength>())
         | (easylocal::neighborhood<TwoOptExplorer>()
             | easylocal::delta<TourLength, TwoOptLengthDelta>())
-        | easylocal::runner<easylocal::runners::FirstImprovement>("fi");
+        | easylocal::runner<easylocal::runners::FirstImprovement>("fi")
+        | easylocal::runner<easylocal::runners::SimulatedAnnealing<
+            easylocal::runners::temperature::Classic>>("sa");
+    // A copy, for the Session that repeats a REST run below.
+    const auto session_application = application;
     auto api = easylocal::rest::blueprint(
         "/text",
         std::move(application),
@@ -739,6 +745,35 @@ void a_problem_with_text_hooks_needs_no_codec()
         R"({"input": )" + input
         + R"(, "start": "random", "initial_solution": "0 1 2 3 4"})");
     assert(both.code == 422);
+
+    // A seed reproduces a stochastic run, its random start included, and a
+    // Session with the same seed and the same commands reaches the same tour.
+    const auto annealed = [&](const std::string& seed) {
+        const auto run = send(
+            server,
+            crow::HTTPMethod::POST,
+            "/text/runners/sa/runs",
+            R"({"input": )" + input + R"(, "max_evaluations": 200, "seed": )" + seed
+                + "}");
+        assert(run.code == 202);
+        const auto run_id = text(run.body["id"]);
+        wait_for_run(server, "/text/runs/" + run_id, "succeeded");
+        return text(
+            send(server, crow::HTTPMethod::GET, "/text/runs/" + run_id + "/solution")
+                .body["solution"]);
+    };
+    const auto annealed_once = annealed("11");
+    assert(annealed("11") == annealed_once);
+
+    std::istringstream input_text{
+        "5\n0 2 9 10 7\n2 0 6 4 3\n9 6 0 8 5\n10 4 8 0 6\n7 3 5 6 0\n"};
+    easylocal::Session
+        session{session_application, easylocal::read_input<Tsp>(input_text), 11};
+    session.use_random_solution(session.rng());
+    assert(session.run("sa", easylocal::max_evaluations(200)));
+    std::ostringstream session_tour;
+    session.save_solution(session_tour);
+    assert(session_tour.str() == annealed_once);
 }
 
 // With a cost::pareto cost the solution resource has the run's front: each

@@ -230,6 +230,10 @@ seeded_body="${tmp_dir}/seeded.json"
 request POST "${base_url}/runners/fi/runs" 202 "$seeded_body" \
     '{"input":{"demand":[4,4,2],"capacity":[5,5]},"seed":12345}'
 grep -Eq '"seed"[[:space:]]*:[[:space:]]*12345' "$seeded_body" || fail "explicit run seed is not reported"
+# Forgotten once it ends, so that the retention below counts only its runs.
+seeded_id="$(json_string "$seeded_body" id)"
+wait_for_status "$seeded_id" succeeded "${tmp_dir}/seeded-status.json"
+request DELETE "${base_url}/runs/${seeded_id}" 204 "${tmp_dir}/seeded-removed.json"
 
 unknown_body="${tmp_dir}/unknown.json"
 request POST "${base_url}/runners/missing/runs" 404 "$unknown_body" "$structured_input"
@@ -303,9 +307,10 @@ grep -q '"solution"' "$slow_solution_body" || fail "cancelled run has no partial
 grep -Eq '"status"[[:space:]]*:[[:space:]]*"cancelled"' "$slow_solution_body" || fail "partial solution has wrong status"
 request DELETE "${base_url}/runs/${slow_run_id}" 204 "${tmp_dir}/slow-removed.json"
 
-# Retention is bounded to completed_run_capacity.  With capacity 3, completing
-# four undeleted runs must evict the oldest terminal record and retain the last
-# three.  Active runs are never part of this eviction queue.
+# Retention is bounded to completed_run_capacity.  Every earlier run was
+# deleted, so with capacity 3 the fourth run to complete evicts exactly one
+# record, the first, and the last three stay.  Active runs are never part of
+# this eviction queue.
 retained_ids=()
 for index in 1 2 3 4; do
     body="${tmp_dir}/retention-submit-${index}.json"
