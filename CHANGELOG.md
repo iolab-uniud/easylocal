@@ -125,6 +125,11 @@ reviewed by hand before tagging.
 
 ### Changed
 
+- **Breaking:** `trace::jsonl_recorder` starts with a header line,
+  `{"event":"trace","version":1,"metadata":{...}}`, the first line of
+  `eltr.py`'s JSONL output without the cost layout; the new
+  `trace::jsonl_options` gives its metadata, to the recorder and to
+  `write_jsonl`. A reader of the events skips the line with event `trace`.
 - **Breaking:** the solution hashes of `solution_visited` are strings of 16
   hexadecimal digits in JSONL (`jsonl_recorder`) and in the output of
   `eltr.py`, the STN's nodes and edges included: as JSON numbers, JavaScript

@@ -98,8 +98,18 @@ class FixtureTraces(unittest.TestCase):
         cls.directory.cleanup()
 
     def expected(self, name):
-        lines = (self.path / name).read_text().splitlines()
-        return [json.loads(line) for line in lines]
+        """The records of a JSONL trace, after its header line."""
+        lines = [json.loads(line) for line in (self.path / name).read_text().splitlines()]
+        self.assertEqual(lines[0]["event"], "trace")
+        return lines[1:]
+
+    def test_the_jsonl_header_line_is_the_decoder_trace_line(self):
+        header = json.loads((self.path / "integral.jsonl").read_text().splitlines()[0])
+        with open(self.path / "integral.eltr", "rb") as stream:
+            decoded = eltr.Trace(stream).describe()
+        # The cost layout is ELTR's own: JSON costs describe themselves.
+        del decoded["cost"]
+        self.assertEqual(header, decoded)
 
     def test_the_header_describes_the_trace(self):
         with open(self.path / "integral.eltr", "rb") as stream:

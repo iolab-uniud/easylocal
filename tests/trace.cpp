@@ -372,7 +372,8 @@ int main()
     easylocal::trace::write_jsonl(search_output, search);
     ok &= expect(
         search_output.str()
-            == "{\"event\":\"move_accepted\",\"evaluations\":3,\"iterations\":1,"
+            == "{\"event\":\"trace\",\"version\":1,\"metadata\":{}}\n"
+               "{\"event\":\"move_accepted\",\"evaluations\":3,\"iterations\":1,"
                "\"previous_cost\":10,\"cost\":7,\"neighborhood\":[2,1]}\n"
                "{\"event\":\"incumbent_updated\",\"evaluations\":3,\"iterations\":1,"
                "\"previous_cost\":10,\"cost\":7}\n"
@@ -475,6 +476,17 @@ int main()
         post_run_output.str() == live_output.str()
             && post_run_output.str().find("\"neighborhood\":[2,1]") != std::string::npos,
         "post-run JSONL writes every event as the streaming recorder does");
+
+    // The header line, first, with the metadata as a JSON object.
+    std::ostringstream headed_output;
+    const easylocal::trace::jsonl_recorder<int> headed{
+        headed_output,
+        {.metadata = {{"instance", "a\"b"}, {"seed", "7"}}}};
+    ok &= expect(
+        headed_output.str()
+            == "{\"event\":\"trace\",\"version\":1,\"metadata\":{\"instance\":"
+               "\"a\\\"b\",\"seed\":\"7\"}}\n",
+        "the JSONL recorder starts with a header line with its metadata");
 
     std::ostringstream structured_stream;
     easylocal::trace::jsonl_recorder<structured_cost, structured_cost_writer>
@@ -742,7 +754,8 @@ int main()
         ok &= expect(
             json_threw
                 && jsonl.str()
-                    == "{\"event\":\"run_started\",\"cost\":1}\n"
+                    == "{\"event\":\"trace\",\"version\":1,\"metadata\":{}}\n"
+                       "{\"event\":\"run_started\",\"cost\":1}\n"
                        "{\"event\":\"run_started\",\"cost\":2}\n",
             "JSONL recorder writes no part of a line whose cost writer throws");
     }
@@ -838,7 +851,8 @@ int main()
         easylocal::trace::write_jsonl(jsonl, memory);
         ok &= expect(
             jsonl.str()
-                == "{\"event\":\"run_context\",\"stage\":\"a \\\"b\\\"\\u000a\","
+                == "{\"event\":\"trace\",\"version\":1,\"metadata\":{}}\n"
+                   "{\"event\":\"run_context\",\"stage\":\"a \\\"b\\\"\\u000a\","
                    "\"stage_index\":2,\"attempt\":3}\n",
             "a run_context is recorded and written as JSON");
     }

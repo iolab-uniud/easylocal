@@ -106,7 +106,9 @@ void write_integral(const std::filesystem::path& directory)
     easylocal::trace::binary_recorder<long> binary{
         binary_file,
         {.metadata = {{"instance", "fixture"}, {"runner", "none"}}}};
-    easylocal::trace::jsonl_recorder<long> json{json_file};
+    easylocal::trace::jsonl_recorder<long> json{
+        json_file,
+        {.metadata = {{"instance", "fixture"}, {"runner", "none"}}}};
 
     const easylocal::trace::neighborhood_route_node outer{.child = 2};
     const easylocal::trace::neighborhood_route_node inner{.child = 1, .parent = &outer};

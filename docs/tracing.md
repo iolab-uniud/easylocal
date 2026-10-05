@@ -94,7 +94,19 @@ object per line, as during the run. File naming, directory layout and stream
 ownership are left to the application.
 
 For long runs, EasyLocal provides constant-memory streaming recorders.
-`trace::jsonl_recorder<Cost>` writes a human-readable JSONL representation.
+`trace::jsonl_recorder<Cost>` writes a human-readable JSONL representation. Its
+first line, written at construction, is a header, the same line `eltr.py`
+starts its output with, without the ELTR cost layout: the format version and
+the metadata of `jsonl_options`, whatever tells the run apart, as text.
+
+```cpp
+easylocal::trace::jsonl_recorder<cost_type> trace{
+    out,
+    {.metadata = {{"instance", "ta001"}, {"seed", "42"}}}};
+// {"event":"trace","version":1,"metadata":{"instance":"ta001","seed":"42"}}
+```
+
+`write_jsonl(out, recorder, options)` takes the same options.
 The canonical experimental format is the versioned `ELTR` binary stream.  It
 describes itself: a header gives the metadata of the run, the layout of the
 costs and the fields of every event, so a reader needs nothing but the file.

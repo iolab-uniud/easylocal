@@ -17,9 +17,11 @@
 #include <limits>
 #include <ostream>
 #include <sstream>
+#include <string>
 #include <string_view>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace easylocal::trace
 {
@@ -152,11 +154,21 @@ inline std::ostringstream& jsonl_line_buffer()
 
 } // namespace detail
 
+/// The options of a jsonl_recorder: the metadata of its header line.
+struct jsonl_options
+{
+    /// Key-value pairs written in the header line: the instance, the runner,
+    /// the seed, the parameters, whatever tells the run apart.
+    std::vector<std::pair<std::string, std::string>> metadata{};
+};
+
 /// A tracer that writes each event to a stream as it is emitted, one JSON
 /// object per line with an `"event"` field naming it.
 ///
-/// It observes every event; costs are written by CostWriter, routes as arrays
-/// of child indices. The stream is held by reference.
+/// The first line, written at construction, is the header:
+/// `{"event":"trace","version":1,"metadata":{...}}`, as `eltr.py` starts its
+/// JSONL output. It observes every event; costs are written by CostWriter,
+/// routes as arrays of child indices. The stream is held by reference.
 /// Requires a CostWriter callable as `writer(out, cost)`.
 template<class Cost, class CostWriter = ostream_json_cost_writer>
 class jsonl_recorder
@@ -166,19 +178,26 @@ class jsonl_recorder
         "jsonl_recorder requires a cost writer callable as writer(ostream, cost)");
 
 public:
-    /// Writes to out, with a default-constructed cost writer.
-    explicit jsonl_recorder(std::ostream& out) noexcept
+    /// The version of the JSONL trace format written, in the header line.
+    static constexpr unsigned format_version = 1;
+
+    /// Writes to out, with a default-constructed cost writer, after the header
+    /// line.
+    explicit jsonl_recorder(std::ostream& out, const jsonl_options& options = {})
         requires std::default_initializable<CostWriter>
         : out_{out}
     {
+        write_header(options);
     }
 
-    /// Writes to out, costs with cost_writer.
-    jsonl_recorder(std::ostream& out, CostWriter cost_writer)
-        noexcept(std::is_nothrow_move_constructible_v<CostWriter>)
-        : out_{out},
-          cost_writer_{std::move(cost_writer)}
+    /// Writes to out, costs with cost_writer, after the header line.
+    jsonl_recorder(
+        std::ostream& out,
+        CostWriter cost_writer,
+        const jsonl_options& options = {})
+        : out_{out}, cost_writer_{std::move(cost_writer)}
     {
+        write_header(options);
     }
 
     /// Whether the recorder receives Event: always.
@@ -350,6 +369,25 @@ public:
     }
 
 private:
+    void write_header(const jsonl_options& options)
+    {
+        write_line([&](std::ostream& out) {
+            out << "{\"event\":\"trace\",\"version\":" << format_version
+                << ",\"metadata\":{";
+            bool first = true;
+            for (const auto& [key, value] : options.metadata)
+            {
+                if (!first)
+                    out << ',';
+                first = false;
+                detail::write_json_string(out, key);
+                out << ':';
+                detail::write_json_string(out, value);
+            }
+            out << "}}\n";
+        });
+    }
+
     // Formats a line with the stream's format, then writes it at once: a
     // cost writer that throws leaves no part of it in the stream.
     template<class Format>
@@ -369,28 +407,30 @@ private:
     EASYLOCAL_NO_UNIQUE_ADDRESS CostWriter cost_writer_{};
 };
 
-/// Writes the events of a memory_recorder as JSONL, one line per event as
-/// jsonl_recorder writes them during a run.
+/// Writes the events of a memory_recorder as JSONL, after the header line,
+/// one line per event as jsonl_recorder writes them during a run.
 template<class Cost, class CostWriter>
     requires json_cost_writer_for<CostWriter, Cost>
 void write_jsonl(
     std::ostream& out,
     const memory_recorder<Cost>& recorder,
-    CostWriter cost_writer)
+    CostWriter cost_writer,
+    const jsonl_options& options = {})
 {
-    jsonl_recorder<Cost, CostWriter> json{out, std::move(cost_writer)};
+    jsonl_recorder<Cost, CostWriter> json{out, std::move(cost_writer), options};
     recorder.replay(json);
 }
 
 /// Writes the events of a memory_recorder as JSONL, with the default cost
-/// writer.
+/// writer, after the header line.
 template<class Cost>
     requires json_cost_writer_for<ostream_json_cost_writer, Cost>
 void write_jsonl(
     std::ostream& out,
-    const memory_recorder<Cost>& recorder)
+    const memory_recorder<Cost>& recorder,
+    const jsonl_options& options = {})
 {
-    write_jsonl(out, recorder, ostream_json_cost_writer{});
+    write_jsonl(out, recorder, ostream_json_cost_writer{}, options);
 }
 
 } // namespace easylocal::trace
