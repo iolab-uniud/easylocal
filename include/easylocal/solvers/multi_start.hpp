@@ -51,7 +51,8 @@ struct MultiStartParameters
 /// otherwise; `.initialization(tag)` chooses how each start is built,
 /// `initialization::automatic` by default (random when the SolutionManager
 /// builds random solutions), a tag the SolutionManager does not support being
-/// rejected at compile time.
+/// rejected at compile time. Requires a runner whose SolutionManager has
+/// initial_solution() or random_solution(rng), and a cost with better().
 template<class RunnerType, std::uniform_random_bit_generator RNG = std::mt19937_64>
 class MultiStart
     : public easylocal::detail::solver_start<

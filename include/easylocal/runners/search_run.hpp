@@ -1,13 +1,15 @@
 #pragma once
 
 /// \file
-/// search_run: one execution of a search algorithm.
+/// search_run, one execution of a search algorithm, with run_options, the
+/// caller's options, and the result types.
 ///
 /// Algorithms are written in terms of its primitives (evaluate, commit,
 /// random_move, ...), while it keeps the counters, the evaluation budget,
-/// cancellation, progress, the target cost and the trace events. Also
-/// run_options/with() for the caller's options, termination_reason and the
-/// result types.
+/// cancellation, progress, the target cost and the trace events.
+/// `with(control, tracer)` and the free functions `stop_at`, `timeout` and
+/// `max_evaluations` build the run options; termination_reason is in
+/// utils/termination.hpp.
 
 #include <easylocal/cost/pareto.hpp>
 #include <easylocal/cost/tolerance.hpp>

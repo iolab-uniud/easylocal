@@ -83,7 +83,7 @@ public:
     ///
     /// Throws `std::invalid_argument` when they are not valid.
     explicit LateAcceptanceHillClimbing(
-        const LateAcceptanceHillClimbingParameters parameters)
+        const LateAcceptanceHillClimbingParameters& parameters)
         : parameters_{config::require_valid(parameters)}
     {
     }

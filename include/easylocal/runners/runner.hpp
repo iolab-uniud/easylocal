@@ -495,10 +495,10 @@ private:
 /// A search algorithm with the recipes of the services it runs on: a
 /// SolutionManager (with its cost expression) and a neighborhood explorer.
 ///
-/// It is composed step by step, make_runner<Algorithm>(parameters) | sm_recipe
-/// | nhe_recipe, each step a specialization; bind(input) then builds the
-/// services for an Input and returns the bound runner, whose run(solution, ...)
-/// runs the algorithm.
+/// It is composed step by step, `make_runner<Algorithm>(parameters) |
+/// sm_recipe | nhe_recipe`, each step a specialization; bind(input) then builds
+/// the services for an Input and returns the bound runner, whose run(solution,
+/// ...) runs the algorithm.
 template<
     class Algorithm,
     class SMSpec = detail::unconfigured_t,
@@ -519,7 +519,7 @@ public:
     }
 
     /// A parameterized algorithm is built from its parameters when the runner
-    /// is bound: make_runner<Algorithm>(parameters) creates the runner.
+    /// is bound: `make_runner<Algorithm>(parameters)` creates the runner.
     template<class Self = Algorithm>
         requires detail::parameterized_algorithm<Self>
     explicit Runner(Algorithm)
@@ -817,7 +817,7 @@ template<class Algorithm>
 Runner(Algorithm) -> Runner<std::remove_cvref_t<Algorithm>>;
 
 /// A runner for a parameterized algorithm, from its parameters:
-/// make_runner<FirstImprovement>({.max_evaluations = 1000}).
+/// `make_runner<FirstImprovement>({.max_evaluations = 1000})`.
 ///
 /// Throws `std::invalid_argument` when the parameters are not valid; binding
 /// the runner checks them again, after a change through parameters().

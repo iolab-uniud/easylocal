@@ -69,7 +69,7 @@ public:
     /// From its parameters.
     ///
     /// Throws `std::invalid_argument` when they are not valid.
-    explicit HillClimbing(const HillClimbingParameters parameters)
+    explicit HillClimbing(const HillClimbingParameters& parameters)
         : parameters_{config::require_valid(parameters)}
     {
     }

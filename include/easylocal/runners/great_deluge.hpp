@@ -102,7 +102,7 @@ public:
     /// From its parameters.
     ///
     /// Throws `std::invalid_argument` when they are not valid.
-    explicit GreatDeluge(const GreatDelugeParameters parameters)
+    explicit GreatDeluge(const GreatDelugeParameters& parameters)
         : parameters_{config::require_valid(parameters)}
     {
     }

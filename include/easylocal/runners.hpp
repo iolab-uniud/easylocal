@@ -1,6 +1,8 @@
 #pragma once
 
-// Runner framework and built-in search algorithms (easylocal::runners).
+/// \file
+/// The runner framework and the built-in search algorithms
+/// (easylocal::runners), in one header.
 // IWYU pragma: begin_exports
 #include <easylocal/runners/best_improvement.hpp>
 #include <easylocal/runners/first_improvement.hpp>

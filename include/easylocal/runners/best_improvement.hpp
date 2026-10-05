@@ -45,6 +45,9 @@ struct BestImprovementParameters
 /// Best Improvement (steepest descent): at each iteration the best move of the
 /// whole neighborhood is applied, while it strictly improves the cost.
 ///
+/// Of equally good moves it applies the first in the order of moves(): ties
+/// are broken deterministically.
+///
 /// It stops at a local optimum, or when the evaluation budget is spent; the
 /// current solution is also the best one. Requires a neighborhood explorer that
 /// enumerates its moves (moves(), or a cursor) and a cost with better().
@@ -57,7 +60,7 @@ public:
     /// From its parameters.
     ///
     /// Throws `std::invalid_argument` when they are not valid.
-    explicit BestImprovement(const BestImprovementParameters parameters)
+    explicit BestImprovement(const BestImprovementParameters& parameters)
         : parameters_{config::require_valid(parameters)}
     {
     }

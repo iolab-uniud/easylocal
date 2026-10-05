@@ -531,7 +531,7 @@ auto run_attempts(
 } // namespace detail
 
 /// Constructs a Solver from its arguments, e.g.
-/// make_solver<solvers::MultiStart>(runner, solvers::MultiStartParameters{...}).
+/// `make_solver<solvers::MultiStart>(runner, solvers::MultiStartParameters{...})`.
 ///
 /// The Solver class template is its own key; its arguments are deduced.
 template<template<class...> class Solver, class... Args>

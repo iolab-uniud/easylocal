@@ -280,7 +280,7 @@ public:
     /// From its parameters.
     ///
     /// Throws `std::invalid_argument` when they are not valid.
-    explicit Classic(const ClassicParameters parameters)
+    explicit Classic(const ClassicParameters& parameters)
         : parameters_{config::require_valid(parameters)},
           temperature_levels_{detail::temperature_level_count(
               parameters.initial_temperature,
@@ -419,7 +419,7 @@ public:
     /// From its parameters.
     ///
     /// Throws `std::invalid_argument` when they are not valid.
-    explicit FixedLength(const FixedLengthParameters parameters)
+    explicit FixedLength(const FixedLengthParameters& parameters)
         : parameters_{config::require_valid(parameters)},
           samples_per_temperature_{detail::positive_quotient(
               parameters.allowed_iterations,
@@ -575,7 +575,7 @@ public:
     /// From its parameters.
     ///
     /// Throws `std::invalid_argument` when they are not valid.
-    explicit Cutoff(const CutoffParameters parameters)
+    explicit Cutoff(const CutoffParameters& parameters)
         : parameters_{config::require_valid(parameters)},
           // The proposals of a level, were the iterations shared evenly.
           accepted_limit_{detail::accepted_limit(
@@ -686,7 +686,7 @@ public:
     /// From its parameters.
     ///
     /// Throws `std::invalid_argument` when they are not valid.
-    explicit Hybrid(const HybridParameters parameters)
+    explicit Hybrid(const HybridParameters& parameters)
         : parameters_{config::require_valid(parameters)},
           temperature_levels_{detail::temperature_level_count(
               parameters.initial_temperature,
@@ -887,7 +887,7 @@ public:
     /// From its parameters.
     ///
     /// Throws `std::invalid_argument` when they are not valid.
-    explicit FixedTemperature(const FixedTemperatureParameters parameters)
+    explicit FixedTemperature(const FixedTemperatureParameters& parameters)
         : parameters_{config::require_valid(parameters)}
     {
         reset();
@@ -1040,7 +1040,7 @@ public:
     /// From its parameters.
     ///
     /// Throws `std::invalid_argument` when they are not valid.
-    explicit BasicTimeBased(const TimeBasedParameters parameters)
+    explicit BasicTimeBased(const TimeBasedParameters& parameters)
         : parameters_{config::require_valid(parameters)},
           temperature_levels_{detail::temperature_level_count(
               parameters.initial_temperature,
@@ -1333,7 +1333,7 @@ struct ReheatingParameters
 /// the first descent spends first_descent_share of it and the reheats divide
 /// the rest evenly; otherwise each descent runs the whole schedule. It
 /// calibrates when the schedule does, and the reheat temperature stays above
-/// the final one. Reheating<Hybrid> is EasyLocal 3's annealing with reheating.
+/// the final one. `Reheating<Hybrid>` is EasyLocal 3's annealing with reheating.
 template<detail::reheatable_policy Descent>
 class Reheating
 {
@@ -1664,9 +1664,10 @@ consteval bool validate_simulated_annealing_acceptance()
 ///
 /// The annealing ends when the schedule finishes, and returns the best solution
 /// found. A calibrating schedule estimates its initial temperature first, from
-/// random moves evaluated at the initial solution. Requires a neighborhood
-/// explorer with random_move(), a cost with better(), and a cost the acceptance
-/// policy can compare (MetropolisAcceptance: cost::delta).
+/// random moves evaluated at the initial solution. Its parameters_type, for a
+/// schedule with parameters P, is `SimulatedAnnealingParameters<P>`. Requires a
+/// neighborhood explorer with random_move(), a cost with better(), and a cost the
+/// acceptance policy can compare (MetropolisAcceptance: cost::delta).
 template<
     temperature_policy TemperaturePolicy = temperature::Classic,
     class Acceptance = MetropolisAcceptance>

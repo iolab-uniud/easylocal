@@ -59,7 +59,7 @@ public:
     /// From its parameters.
     ///
     /// Throws `std::invalid_argument` when they are not valid.
-    explicit FirstImprovement(const FirstImprovementParameters parameters)
+    explicit FirstImprovement(const FirstImprovementParameters& parameters)
         : parameters_{config::require_valid(parameters)}
     {
     }

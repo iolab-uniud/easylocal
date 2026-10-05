@@ -23,7 +23,8 @@ namespace easylocal::solvers
 /// so a seed reproduces the solve. `.initialization(tag)` chooses the initial
 /// solution, `initialization::automatic` by default (random when the
 /// SolutionManager builds random solutions); a tag the SolutionManager does not
-/// support is rejected at compile time.
+/// support is rejected at compile time. Requires a runner whose SolutionManager
+/// has initial_solution() or random_solution(rng).
 template<class RunnerType, std::uniform_random_bit_generator RNG = std::mt19937_64>
 class LocalSearch
     : public easylocal::detail::solver_start<

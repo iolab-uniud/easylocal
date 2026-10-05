@@ -1,6 +1,7 @@
 #pragma once
 
-// Built-in Solvers (easylocal::solvers) and make_solver().
+/// \file
+/// The built-in solvers (easylocal::solvers) and make_solver(), in one header.
 // IWYU pragma: begin_exports
 #include <easylocal/solvers/initialization.hpp>
 #include <easylocal/solvers/local_search.hpp>

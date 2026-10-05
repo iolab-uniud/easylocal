@@ -109,7 +109,7 @@ public:
     ///
     /// Throws `std::invalid_argument` when they are not valid.
     explicit ParetoLateAcceptanceHillClimbing(
-        const ParetoLateAcceptanceHillClimbingParameters parameters)
+        const ParetoLateAcceptanceHillClimbingParameters& parameters)
         : parameters_{config::require_valid(parameters)}
     {
     }

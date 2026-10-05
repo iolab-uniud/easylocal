@@ -260,7 +260,7 @@ inline constexpr bool tabu_state_needs_cost_v = requires {
 } // namespace detail
 
 /// A tabu list policy: a value holding its parameters, from which each run
-/// makes the list's state with make_state<Run>().
+/// makes the list's state with `make_state<Run>()`.
 ///
 /// The state answers tabu_tenure(candidate): the iterations left before the
 /// candidate is no longer tabu, or nothing when it is admissible; update(step,
@@ -1458,7 +1458,9 @@ struct FooParameters
 /// search is stuck), and shrinks by one otherwise.
 ///
 /// The fluctuation is in cost units, so it depends on the instance; the cost
-/// needs cost::delta. The tenure applies to every move the list holds, so a
+/// needs cost::delta. With a cost::hierarchical cost, the spread of a window
+/// whose hard cost changed is infinite, the delta between two hard levels, and
+/// the tenure shrinks. The tenure applies to every move the list holds, so a
 /// growth makes tabu again the moves of the last tenure + increment - 1
 /// iterations.
 class Foo
@@ -1939,7 +1941,8 @@ struct TabuSearchParameters
         }
     }
 
-    /// The tabu list and the candidate strategy are validated as groups.
+    /// Whether the parameters are valid, and why not: the tabu list's and the
+    /// candidate strategy's too, as groups.
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
