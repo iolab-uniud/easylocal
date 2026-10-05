@@ -9,7 +9,6 @@
 #include <chrono>
 #include <cstddef>
 #include <thread>
-#include <type_traits>
 #include <utility>
 
 namespace assignment::demo
@@ -75,40 +74,6 @@ private:
     std::chrono::milliseconds delay_;
 };
 
-template<class Context>
-class DelayedContext
-{
-public:
-    using solution_type = Context::solution_type;
-    using cost_type = Context::cost_type;
-    using neighborhood_explorer_type = Context::neighborhood_explorer_type;
-
-    DelayedContext(const Context& context, std::chrono::milliseconds delay)
-        : context_{context}, delay_{delay}
-    {
-    }
-
-    const neighborhood_explorer_type& neighborhood_explorer() const
-    {
-        return context_.neighborhood_explorer();
-    }
-
-    auto evaluation() const
-    {
-        using evaluation_type = std::remove_cvref_t<decltype(context_.evaluation())>;
-        return DelayedEvaluation<evaluation_type>{context_.evaluation(), delay_};
-    }
-
-    bool better(const cost_type& candidate, const cost_type& reference) const
-    {
-        return context_.better(candidate, reference);
-    }
-
-private:
-    const Context& context_;
-    std::chrono::milliseconds delay_;
-};
-
 } // namespace detail
 
 class SlowFirstImprovement
@@ -121,11 +86,16 @@ public:
     {
     }
 
+    // First Improvement on the same run, with every evaluation delayed: the
+    // target, the budget and the time limit of the run still hold.
     template<class Run>
     auto run(Run& run, Run::solution_type solution) const
     {
-        const auto context = delayed(run.context());
-        auto delayed_run = run.with_context(context);
+        auto delayed_run = run.with_evaluation([this](auto evaluation) {
+            return detail::DelayedEvaluation<decltype(evaluation)>{
+                std::move(evaluation),
+                delay()};
+        });
         return algorithm().run(delayed_run, std::move(solution));
     }
 
@@ -138,14 +108,10 @@ private:
             }};
     }
 
-    template<class Context>
-    auto delayed(const Context& context) const
+    std::chrono::milliseconds delay() const
     {
-        return detail::DelayedContext<Context>{
-            context,
-            std::chrono::milliseconds{
-                static_cast<std::chrono::milliseconds::rep>(parameters_.delay_ms)},
-        };
+        return std::chrono::milliseconds{
+            static_cast<std::chrono::milliseconds::rep>(parameters_.delay_ms)};
     }
 
     SlowFirstImprovementParameters parameters_;

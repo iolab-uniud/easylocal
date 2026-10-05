@@ -19,6 +19,17 @@ reviewed by hand before tagging.
   compile with a message: the difference of two unsigned costs wraps around,
   so Simulated Annealing never accepted an improving move.
   `cost::arithmetic` excludes them, weights included.
+### Changed
+
+- **Breaking:** `search_run::with_context(ctx)` is replaced by
+  `run.with_evaluation(wrap)`, which keeps the run's context and swaps only its
+  evaluation facility for `wrap(run.evaluation())`. A decorated context
+  without `better_or_equivalent()` or a SolutionManager silently dropped the
+  target, the solution events and the archive identity: the assignment
+  example's `slow-fi` ignored `--target`. `search_run` takes the facility as a
+  third template parameter, and `run.evaluation()` returns the one it
+  evaluates with.
+
 ### Fixed
 
 - The randomized contract checks (`easylocal::testing` and `check(app, ...)`)
@@ -83,9 +94,8 @@ reviewed by hand before tagging.
   `std::invalid_argument`, as `timeout(seconds)` does, instead of converting
   NaN to the clock's integer ticks (undefined behaviour).
 - `with(control)` and `with(control, tracer)` with a temporary `run_control`,
-  `search_run::with_context` with a temporary context, and a `search_run` built
-  over a temporary context no longer compile: each kept a reference that
-  dangled once the expression ended.
+  and a `search_run` built over a temporary context, no longer compile: each
+  kept a reference that dangled once the expression ended.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

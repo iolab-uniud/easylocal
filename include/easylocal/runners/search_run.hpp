@@ -25,6 +25,7 @@
 #include <cmath>
 #include <concepts>
 #include <cstddef>
+#include <functional>
 #include <limits>
 #include <optional>
 #include <stdexcept>
@@ -326,11 +327,26 @@ inline run_options<trace::null_tracer> timeout(const double seconds)
 /// Algorithms describe only their search logic in terms of these primitives.
 /// With a cost::pareto cost it also keeps the archive of the non-dominated
 /// solutions reached (start, evaluate_solution and commit offer them), and the
-/// result carries that front.
-template<class Context, class Tracer = trace::null_tracer>
+/// result carries that front. Evaluation is the facility that evaluates the
+/// solutions and the moves: the context's, or the one with_evaluation() wraps
+/// around it.
+template<
+    class Context,
+    class Tracer = trace::null_tracer,
+    class Evaluation = runners::detail::context_evaluation_type<Context>>
 class search_run
 {
-    using evaluation_facility_type = runners::detail::context_evaluation_type<Context>;
+    using evaluation_facility_type = Evaluation;
+
+    static_assert(
+        runners::detail::evaluation_facility_for<Evaluation, Context>,
+        "the evaluation facility of a run must evaluate the context's solutions and "
+        "moves, with its cost");
+
+    // A search_run over the same context with another evaluation facility,
+    // which with_evaluation() builds.
+    template<class, class, class>
+    friend class search_run;
 
 public:
     /// The search context the bound runner provides.
@@ -376,14 +392,17 @@ public:
         const cost_type* target = nullptr,
         const std::optional<std::chrono::steady_clock::time_point> deadline =
             std::nullopt)
-        : context_{context},
-          evaluation_{context.evaluation()},
-          control_{control},
-          tracer_{tracer},
-          caller_evaluation_limit_{evaluation_limit},
-          evaluation_limit_{evaluation_limit},
-          target_{target},
-          deadline_{deadline}
+        requires std::same_as<
+            Evaluation,
+            runners::detail::context_evaluation_type<Context>>
+        : search_run{
+              context,
+              context.evaluation(),
+              control,
+              tracer,
+              evaluation_limit,
+              target,
+              deadline}
     {
     }
 
@@ -399,6 +418,27 @@ public:
     search_run(const search_run&) = delete;
     search_run& operator=(const search_run&) = delete;
 
+private:
+    search_run(
+        const Context& context,
+        Evaluation evaluation,
+        const run_control& control,
+        Tracer& tracer,
+        const std::size_t evaluation_limit,
+        const cost_type* target,
+        const std::optional<std::chrono::steady_clock::time_point> deadline)
+        : context_{context},
+          evaluation_{std::move(evaluation)},
+          control_{control},
+          tracer_{tracer},
+          caller_evaluation_limit_{evaluation_limit},
+          evaluation_limit_{evaluation_limit},
+          target_{target},
+          deadline_{deadline}
+    {
+    }
+
+public:
     // Context access.
 
     /// The search context.
@@ -415,11 +455,12 @@ public:
         return context_.neighborhood_explorer();
     }
 
-    /// Raw evaluation facility: bypasses counters, budget and trace events.
+    /// Raw evaluation facility, the one the run evaluates with: bypasses
+    /// counters, budget and trace events.
     [[nodiscard]]
-    auto evaluation() const
+    Evaluation evaluation() const
     {
-        return context_.evaluation();
+        return evaluation_;
     }
 
     /// The Input, when the context has one.
@@ -780,37 +821,37 @@ public:
         }
     }
 
-    /// A run over a decorated context sharing this run's control, tracer,
-    /// deadline, what is left of its evaluation budget and (for the same cost
-    /// type) target, e.g. for algorithms that delegate to another algorithm.
+    /// A run that evaluates through wrap(evaluation()), a facility that
+    /// decorates this run's (a delay, a cache, a count), and shares everything
+    /// else: the context and its cost relations, the control, the tracer, the
+    /// deadline, the target and what is left of the evaluation budget.
     ///
     /// The new run counts its own effort from its start(): an algorithm calls
-    /// it instead of starting this run, and returns the new run's result.
-    template<class OtherContext>
+    /// it instead of starting this run, and returns the new run's result. The
+    /// facility has evaluate(solution), evaluate_move(solution, current, move)
+    /// and commit(solution, current, candidate), as the context's does.
+    template<class Wrap>
+        requires std::invocable<Wrap, const Evaluation&>
     [[nodiscard]]
-    search_run<OtherContext, Tracer> with_context(const OtherContext& context)
+    search_run<
+        Context,
+        Tracer,
+        std::remove_cvref_t<
+            std::invoke_result_t<Wrap, const Evaluation&>>> with_evaluation(Wrap&& wrap)
     {
-        const typename OtherContext::cost_type* target = nullptr;
-        if constexpr (std::same_as<typename OtherContext::cost_type, cost_type>)
-        {
-            target = target_;
-        }
         const auto left = evaluation_limit_ == no_evaluation_limit
             ? no_evaluation_limit
             : evaluation_limit_ - std::min(evaluations_, evaluation_limit_);
-        return search_run<OtherContext, Tracer>{
-            context,
+        return {
+            context_,
+            std::invoke(std::forward<Wrap>(wrap), std::as_const(evaluation_)),
             control_,
             tracer_,
             left,
-            target,
+            target_,
             deadline_,
         };
     }
-
-    /// Deleted: the new run would refer to a temporary context.
-    template<class OtherContext>
-    search_run<OtherContext, Tracer> with_context(const OtherContext&&) = delete;
 
 private:
     // Whether the deadline has passed. The clock is read at the first check,

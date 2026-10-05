@@ -7,6 +7,7 @@
 #include <easylocal/solvers.hpp>
 #include <easylocal/trace/events.hpp>
 
+#include <chrono>
 #include <concepts>
 #include <cstddef>
 #include <iostream>
@@ -14,6 +15,7 @@
 #include <random>
 #include <stop_token>
 #include <string_view>
+#include <thread>
 #include <type_traits>
 #include <utility>
 
@@ -130,13 +132,6 @@ static_assert(!options_with_control<easylocal::run_control>);
 static_assert(options_with_control_and_tracer<const easylocal::run_control&>);
 static_assert(!options_with_control_and_tracer<easylocal::run_control>);
 
-// Whether a run makes a run over a context of this kind: not a temporary,
-// which the new run would outlive.
-template<class Run, class Context>
-concept run_with_context = requires(Run& run, Context&& context) {
-    run.with_context(std::forward<Context>(context));
-};
-
 struct NoParameters
 {
 };
@@ -153,8 +148,6 @@ public:
     auto run(Run& run, Run::solution_type solution) const
     {
         using context_type = typename Run::context_type;
-        static_assert(run_with_context<Run, const context_type&>);
-        static_assert(!run_with_context<Run, context_type>);
         static_assert(!std::constructible_from<
             Run,
             context_type,
@@ -164,6 +157,101 @@ public:
             easylocal::runners::FirstImprovementParameters{}}
             .run(run, std::move(solution));
     }
+};
+
+// An evaluation facility that counts the evaluations of another, and waits
+// before each one.
+template<class Evaluation>
+class CountedEvaluation
+{
+public:
+    using solution_type = Evaluation::solution_type;
+    using evaluation_type = Evaluation::evaluation_type;
+    using move_type = Evaluation::move_type;
+    using candidate_type = Evaluation::candidate_type;
+
+    CountedEvaluation(
+        Evaluation evaluation,
+        std::size_t& count,
+        std::chrono::milliseconds delay)
+        : evaluation_{std::move(evaluation)}, count_{count}, delay_{delay}
+    {
+    }
+
+    [[nodiscard]] auto evaluate(const solution_type& solution) const -> evaluation_type
+    {
+        tick();
+        return evaluation_.evaluate(solution);
+    }
+
+    [[nodiscard]] auto evaluate_move(
+        const solution_type& solution,
+        const evaluation_type& current,
+        const move_type& move) const -> candidate_type
+    {
+        tick();
+        return evaluation_.evaluate_move(solution, current, move);
+    }
+
+    void commit(
+        solution_type& solution,
+        evaluation_type& current,
+        candidate_type&& candidate) const
+    {
+        evaluation_.commit(solution, current, std::move(candidate));
+    }
+
+private:
+    void tick() const
+    {
+        ++count_;
+        if (delay_.count() != 0)
+            std::this_thread::sleep_for(delay_);
+    }
+
+    Evaluation evaluation_;
+    std::size_t& count_;
+    std::chrono::milliseconds delay_;
+};
+
+// The parameters of CountingFirstImprovement: the wait before each evaluation.
+struct CountingParameters
+{
+    std::size_t delay_ms{};
+};
+
+// The evaluations of all the runs of CountingFirstImprovement.
+std::size_t counted_evaluations = 0;
+
+// First Improvement through a run whose evaluations are counted.
+class CountingFirstImprovement
+{
+public:
+    using parameters_type = CountingParameters;
+
+    explicit CountingFirstImprovement(CountingParameters parameters)
+        : parameters_{parameters}
+    {
+    }
+
+    template<class Run>
+    auto run(Run& run, Run::solution_type solution) const
+    {
+        const std::chrono::milliseconds delay{
+            static_cast<std::chrono::milliseconds::rep>(parameters_.delay_ms)};
+        auto counted = run.with_evaluation([delay](auto evaluation) {
+            return CountedEvaluation<decltype(evaluation)>{
+                std::move(evaluation),
+                counted_evaluations,
+                delay};
+        });
+        return easylocal::runners::FirstImprovement{
+            easylocal::runners::FirstImprovementParameters{}}
+            .run(counted, std::move(solution));
+    }
+
+private:
+    CountingParameters parameters_;
 };
 
 auto expect(bool condition, std::string_view message) -> bool
@@ -245,6 +333,32 @@ int main()
 
     auto probe = make_runner<LifetimeProbe>(NoParameters{}) | sm | nhe;
     ok &= expect(probe.bind(ten).run(Value{3}).cost == 0, "a delegating runner runs");
+
+    // A run with a decorated evaluation keeps the target, the budget and the
+    // time limit of the run it comes from.
+    auto counting =
+        make_runner<CountingFirstImprovement>(CountingParameters{}) | sm | nhe;
+    auto bound_counting = counting.bind(ten);
+    const auto counted_target = bound_counting.run(Value{10}, stop_at(4));
+    ok &= expect(
+        counted_target.cost == 4
+            && counted_target.termination == termination_reason::target_reached
+            && counted_evaluations == counted_target.evaluations,
+        "a run with a decorated evaluation stops at the target and evaluates through it");
+    const auto counted_budget = bound_counting.run(Value{10}, max_evaluations(3));
+    ok &= expect(
+        counted_budget.evaluations == 3
+            && counted_budget.termination
+                == termination_reason::evaluation_budget_exhausted,
+        "a run with a decorated evaluation keeps the evaluation budget");
+    auto slow = make_runner<CountingFirstImprovement>(CountingParameters{.delay_ms = 2})
+        | sm | nhe;
+    const Countdown far{100000};
+    const auto counted_time =
+        slow.bind(far).run(Value{100000}, timeout(std::chrono::milliseconds{30}));
+    ok &= expect(
+        counted_time.termination == termination_reason::time_limit_reached,
+        "a run with a decorated evaluation keeps the time limit");
 
     // Solvers.
     auto local_search = make_solver<solvers::LocalSearch>(

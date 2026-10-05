@@ -278,7 +278,7 @@ Extra `run` arguments (an RNG, for example) are passed through
 | `evaluations()`, `iterations()`, `target()` | counters, the caller's target cost |
 | `context()`, `neighborhood_explorer()`, `input()`, `solution_manager()` | the search context |
 | `evaluation()`, `emit(event)`, `tracer()`, `control()` | escape hatches (bypass counters and events) |
-| `with_context(ctx)` | a run over a decorated context sharing control, tracer, budget and target |
+| `with_evaluation(wrap)` | a run that evaluates through `wrap(evaluation())`, a decorated facility (a delay, a cache), and shares the context, the cost relations, control, tracer, deadline, target and the budget left |
 
 `evaluation` / `candidate` expose `cost()`; `finish` without a reason uses the
 one recorded by `should_stop()`, or `completed`.
