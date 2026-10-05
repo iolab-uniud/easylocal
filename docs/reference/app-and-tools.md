@@ -27,7 +27,11 @@ app still runs it, and `check(app, ...)` reports it as `runner parameters`
 several names.
 
 A runner runs on the app's neighborhood, unless it brings its own, the third
-argument of `runner` (or of `with_runner`):
+argument of `runner` (or of `with_runner`). A registration is checked when it
+is added: the app's neighborhood explores the Solution of its SolutionManager,
+and each algorithm runs on its neighborhood (First Improvement needs `moves()`,
+Simulated Annealing `random_move()`), so a mismatch fails to compile at the
+registration, not where a tool first runs the runner:
 
 ```cpp
 auto application = app("tsp") | sm | two_opt

@@ -963,6 +963,12 @@ easylocal_add_compile_failure_test(
     "NonConstructibleDeltaA"
 )
 easylocal_add_compile_failure_test(
+    app-runner-without-moves
+    app_runner_without_moves.cpp
+    "a registered runner's algorithm must run on the app's neighborhood"
+    "FirstImprovement"
+)
+easylocal_add_compile_failure_test(
     recipe-make-move-by-value
     recipe_make_move_by_value.cpp
     "make_move must change the Solution it is given: take it as `Solution&`"

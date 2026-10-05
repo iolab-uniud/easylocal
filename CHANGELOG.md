@@ -31,6 +31,12 @@ reviewed by hand before tagging.
   given a delta cost component, and recipe arguments that construct no
   SolutionManager, get their own message; the hint about inherited
   constructors appears only where it applies.
+- An app checks a runner registration on its own neighborhood when it is
+  added, as it already did for a runner with a neighborhood of its own: an
+  algorithm that cannot run on it (First Improvement on an explorer without
+  `moves()`) no longer compiles there, instead of deep inside `cli::run` or
+  `Session::run`; `with_neighborhood` checks that the neighborhood explores
+  the app's Solution.
 - An explorer's `input()` is optional, as the contract says: the debug checks
   of an app and of a neighborhood union, and `check(app, ...)`, use it only
   when the explorer has it.

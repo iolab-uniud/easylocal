@@ -249,6 +249,38 @@ consteval bool validate_app_runner()
     }
 }
 
+// The checks of the app's neighborhood, when it is added: it explores the
+// Solution of the app's SolutionManager, and its deltas fit the components.
+template<class SM, class NHESpec>
+consteval bool validate_app_neighborhood()
+{
+    using neighborhood_type = service_t<NHESpec>;
+    if constexpr (!runner_neighborhood_explorer<neighborhood_type, SM>)
+    {
+        static_assert(
+            runner_neighborhood_explorer<neighborhood_type, SM>,
+            "the neighborhood of an app must explore the Solution of the app's "
+            "SolutionManager");
+        return false;
+    }
+    else
+        return validate_delta_bindings<SM, neighborhood_type>();
+}
+
+// The check of a runner registration on the app's neighborhood, when it is
+// added: the algorithm runs on it, so a mismatch is reported here rather than
+// when a tool first runs it.
+template<class Algorithm, class SM, class NHESpec>
+consteval bool validate_app_runner_on_app_neighborhood()
+{
+    static_assert(
+        app_runnable_v<Algorithm, SM, service_t<NHESpec>>,
+        "a registered runner's algorithm must run on the app's neighborhood, with "
+        "or without an RNG: run(run, solution[, rng]); check what it asks of the "
+        "neighborhood (moves(), random_move(), inverse())");
+    return true;
+}
+
 // A registered runner on the services of a bound app: its algorithm, built
 // from the registration's parameters for this run, on the app's
 // SolutionManager and its neighborhood.
@@ -702,6 +734,8 @@ public:
     auto with_neighborhood(Spec&& spec) &&
     {
         using spec_type = std::remove_cvref_t<Spec>;
+        static_assert(
+            detail::validate_app_neighborhood<detail::service_t<SMSpec>, spec_type>());
         return App<SMSpec, spec_type, Registrations...>{
             std::move(name_),
             std::move(solution_manager_spec_),
@@ -764,10 +798,19 @@ public:
     {
         using registration_type = detail::app_runner_registration<Algorithm, Spec>;
         if constexpr (detail::has_own_neighborhood_v<registration_type>)
+        {
             static_assert(detail::validate_app_runner<
                 Algorithm,
                 detail::service_t<SMSpec>,
                 Spec>());
+        }
+        else
+        {
+            static_assert(detail::validate_app_runner_on_app_neighborhood<
+                Algorithm,
+                detail::service_t<SMSpec>,
+                NHESpec>());
+        }
         auto registrations = std::tuple_cat(
             std::move(registrations_),
             std::tuple<registration_type>{std::move(registration)});

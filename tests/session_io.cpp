@@ -4,6 +4,7 @@
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/utils/generator.hpp>
 #include <easylocal/utils/limit.hpp>
 
 #include <cassert>
@@ -61,6 +62,13 @@ public:
 
     static void make_move(typename SolutionManager::solution_type&, const Move&) noexcept
     {
+    }
+
+    // No moves: the tests read and write solutions only.
+    [[nodiscard]] static easylocal::generator<Move> moves(
+        const typename SolutionManager::solution_type&)
+    {
+        co_return;
     }
 };
 

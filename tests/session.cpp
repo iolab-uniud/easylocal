@@ -89,6 +89,13 @@ public:
     }
 
     static void make_move(RandomOnlySolution&, const RandomOnlyMove&) noexcept {}
+
+    // No moves: the session's tests use only its solutions.
+    [[nodiscard]] static easylocal::generator<RandomOnlyMove> moves(
+        const RandomOnlySolution&)
+    {
+        co_return;
+    }
 };
 
 // A value lowered by steps, whose cost counts its full evaluations.
