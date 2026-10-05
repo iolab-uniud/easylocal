@@ -709,8 +709,7 @@ public:
 
     static constexpr std::size_t leaf_count = children_type::leaf_count;
     static constexpr bool configurable =
-        config::configuration_provider<Function> ||
-        children_type::configurable;
+        config::detail::configuration_provider<Function> || children_type::configurable;
 
     explicit cost_node(cost::apply_expression<Function, Children...> expression)
         : function_{std::move(expression.function)},

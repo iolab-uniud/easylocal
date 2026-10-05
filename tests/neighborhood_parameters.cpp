@@ -142,9 +142,10 @@ struct HeightDelta
     }
 };
 
-static_assert(parameterized_neighborhood<StrideExplorer>);
-static_assert(!parameterized_neighborhood<DownExplorer>);
-static_assert(!config::configuration_provider<decltype(neighborhood<DownExplorer>())>);
+static_assert(config::detail::parameterized<StrideExplorer>);
+static_assert(!config::detail::parameterized<DownExplorer>);
+static_assert(
+    !config::detail::configuration_provider<decltype(neighborhood<DownExplorer>())>);
 
 [[nodiscard]]
 auto has_parameter(

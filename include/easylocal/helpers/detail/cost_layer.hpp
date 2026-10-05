@@ -473,14 +473,14 @@ public:
 
     [[nodiscard]]
     config::parameter_set configuration() &
-        requires config::configuration_provider<SMSpec>
+        requires config::detail::configuration_provider<SMSpec>
     {
         return spec_.configuration();
     }
 
     [[nodiscard]]
     config::parameter_set configuration() const&
-        requires config::configuration_provider<const SMSpec>
+        requires config::detail::configuration_provider<const SMSpec>
     {
         return spec_.configuration();
     }

@@ -315,16 +315,19 @@ concept parameter_block =
         { parameters.validate() } -> std::same_as<validation_result>;
     };
 
-/// The parameter block of a configurable object, the type its parameters()
-/// returns.
+namespace detail
+{
+
+// The parameter block of a configurable object, the type its parameters()
+// returns.
 template<class T>
 using configurable_parameters_t = std::remove_cvref_t<decltype(
     std::declval<const std::remove_cvref_t<T>&>().parameters())>;
 
-/// An object configured with a parameter block: parameters() gives the current
-/// one, configure() takes a new one and returns a validation_result.
-///
-/// configure() must accept every block whose validate() succeeds.
+// An object configured with a parameter block: parameters() gives the current
+// one, configure() takes a new one and returns a validation_result.
+//
+// configure() must accept every block whose validate() succeeds.
 template<class T>
 concept configurable_endpoint =
     requires(
@@ -340,6 +343,8 @@ concept configurable_endpoint =
             endpoint.configure(std::move(parameters))
         } -> std::same_as<validation_result>;
     };
+
+} // namespace detail
 
 /// Calls `function(descriptor, value)` on each field of a block, without its
 /// nested groups.

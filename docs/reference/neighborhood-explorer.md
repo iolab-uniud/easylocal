@@ -61,12 +61,14 @@ neighborhood<SwapExplorer>()                              // default parameters
 neighborhood<SwapExplorer>(SwapParameters{...}, args...)  // given ones
 ```
 
-The recipe holds the parameters (`parameters()`, `configure(p)`,
-`configuration()`), keeps them when deltas are attached, and gives them to the
-explorer each time a runner or an app is bound. A runner and an app expose them
-under `neighborhood.*`; in a union, each child's under its position
-(`neighborhood.0.*`), next to `neighborhood.random_biases`. Concept:
-`parameterized_neighborhood<NHE>`.
+The recipe holds the parameters (`parameters()`, `configuration()`), keeps
+them when deltas are attached, and gives them to the explorer each time a
+runner or an app is bound. A runner and an app expose them under
+`neighborhood.*` (a runner's own neighborhood in an app under
+`runners.<name>.neighborhood.*`); in a union, each child's under its position
+(`neighborhood.0.*`), next to `neighborhood.random_biases`. This is the rule of
+every configurable class: its `parameters_type` is a parameter block, and it
+is constructed from it (see [Configuration](configuration.md#configurable-objects)).
 
 ## Convenience base
 

@@ -459,8 +459,8 @@ int main()
     auto single_component_recipe =
         solution_manager<NoAggregateSolutionManager>()
         | component<AssignmentCardinalityComponent>();
-    static_assert(!easylocal::config::configuration_provider<
-                  decltype(single_component_recipe)>);
+    static_assert(!easylocal::config::detail::configuration_provider<
+        decltype(single_component_recipe)>);
     const auto single_component_manager =
         single_component_recipe.construct(instance);
     ok &= expect(

@@ -8,6 +8,7 @@
 /// algorithm runs; its parameters (search, cost, neighborhood) are exposed as
 /// one parameter_set.
 
+#include <easylocal/config/detail/parameterized.hpp>
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/cost/semantics.hpp>
@@ -427,15 +428,21 @@ namespace detail
 // An algorithm whose parameters are a parameter block it is built from: a
 // Runner holds the parameters and builds the algorithm when it is bound.
 template<class Algorithm>
-concept parameterized_algorithm = requires { typename Algorithm::parameters_type; }
-    && config::parameter_block<typename Algorithm::parameters_type>
+concept parameterized_algorithm = config::detail::parameterized<Algorithm>
     && std::constructible_from<Algorithm, const typename Algorithm::parameters_type&>;
 
-// What a Runner holds of its algorithm: the algorithm itself, or, for a
-// parameterized algorithm, its parameters, from which it is built at bind.
+// What a Runner holds of its algorithm: the algorithm itself, without
+// parameters, or, for a parameterized algorithm, its parameters, from which it
+// is built at bind.
 template<class Algorithm>
 class algorithm_source
 {
+    static_assert(config::detail::check_declared_parameters<Algorithm>());
+    static_assert(
+        !config::detail::parameterized<Algorithm>,
+        "an algorithm whose parameters_type is a parameter block is built from it: "
+        "give it a constructor from `const parameters_type&`");
+
 public:
     explicit algorithm_source(Algorithm algorithm) : algorithm_{std::move(algorithm)} {}
 
@@ -453,9 +460,8 @@ public:
     }
 
     template<class Self>
-    void add_configuration(this Self&& self, config::parameter_set& parameters)
+    void add_configuration(this Self&&, config::parameter_set&)
     {
-        config::add_configuration(parameters, "search", self.algorithm_);
     }
 
 private:

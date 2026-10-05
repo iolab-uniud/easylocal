@@ -20,6 +20,20 @@ reviewed by hand before tagging.
   so Simulated Annealing never accepted an improving move.
   `cost::arithmetic` excludes them, weights included.
 
+### Parameters
+
+- **Breaking:** one rule makes a class configurable: its `parameters_type` is
+  a parameter block, and it is constructed from it, at the path of its role
+  (a runner's algorithm, a neighborhood explorer). A class that declares its
+  parameters another way, with `parameters()` returning a block or with
+  `configuration()`, and no such `parameters_type`, no longer compiles, with
+  a message saying what to write: an algorithm's `configuration()` was
+  silently put under `search.*`. The concept `parameterized_neighborhood` is
+  removed, and `config::configurable_endpoint`,
+  `config::configurable_parameters_t` and `config::configuration_provider`
+  move to `detail`; `parameter_set::add` still takes an object with
+  `parameters()` and `configure()`.
+
 ### Apps and tools
 
 - **Breaking:** the types of an app are public and documented: `App`, what

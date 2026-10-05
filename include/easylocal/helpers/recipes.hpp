@@ -8,6 +8,7 @@
 ///
 /// Recipes are constructed lazily from the bound Input by runners and apps.
 
+#include <easylocal/config/detail/parameterized.hpp>
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/helpers/detail/neighborhood_recipe.hpp>
@@ -126,14 +127,15 @@ auto component(Args&&... args)
 /// The recipe of a NeighborhoodExplorer constructed from the SolutionManager
 /// and args.
 ///
-/// For an explorer with parameters (parameterized_neighborhood), a first
-/// argument of its parameters_type gives its parameters, which otherwise are
-/// the defaults.
+/// For an explorer whose parameters_type is a parameter block, a first
+/// argument of that type gives its parameters, which otherwise are the
+/// defaults; they are configurable under `neighborhood.*` (or
+/// `runners.<name>.neighborhood.*` for a runner's own neighborhood).
 template<class NHE, class... Args>
 [[nodiscard]]
 auto neighborhood(Args&&... args)
 {
-    if constexpr (parameterized_neighborhood<NHE> && sizeof...(Args) > 0)
+    if constexpr (config::detail::parameterized<NHE> && sizeof...(Args) > 0)
     {
         return [](auto&& first, auto&&... rest) {
             if constexpr (std::same_as<

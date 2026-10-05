@@ -290,10 +290,10 @@ public:
     /// A configurable object: parameters() gives its block, configure() takes a
     /// valid one, for objects that rebuild something from their parameters.
     template<class Endpoint>
-        requires configurable_endpoint<Endpoint>
+        requires detail::configurable_endpoint<Endpoint>
     parameter_set& add(const std::string_view prefix, Endpoint& endpoint)
     {
-        using block_type = configurable_parameters_t<Endpoint>;
+        using block_type = detail::configurable_parameters_t<Endpoint>;
         std::function<void(block_type)> commit;
         if constexpr (!std::is_const_v<Endpoint>)
         {
@@ -687,18 +687,24 @@ inline std::vector<std::string> undeclared_domains(const parameter_set& paramete
     return result;
 }
 
-/// Something whose parameters a set can hold: configuration() gives them, with
-/// paths relative to it.
+namespace detail
+{
+
+// Something whose parameters a set can hold: configuration() gives them, with
+// paths relative to it.
 template<class T>
 concept configuration_provider = requires(T& value) {
     { value.configuration() } -> std::same_as<parameter_set>;
 };
 
-/// The parameters of value under prefix, if it has any.
+} // namespace detail
+
+/// The parameters of value under prefix, if it has any: those its
+/// configuration() gives, with paths relative to it.
 template<class T>
 void add_configuration(parameter_set& parameters, const std::string_view prefix, T& value)
 {
-    if constexpr (configuration_provider<T>)
+    if constexpr (detail::configuration_provider<T>)
         parameters.add(prefix, value.configuration());
 }
 

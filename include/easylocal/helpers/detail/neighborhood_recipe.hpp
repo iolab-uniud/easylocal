@@ -2,6 +2,7 @@
 
 // Builder behind neighborhood<NHE>() | delta<C, D>().
 
+#include <easylocal/config/detail/parameterized.hpp>
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/helpers/detail/delta_cost_layer.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
@@ -15,59 +16,8 @@
 #include <type_traits>
 #include <utility>
 
-namespace easylocal
-{
-
-/// A NeighborhoodExplorer with parameters: its parameters_type is a parameter
-/// block, and it is constructed from the SolutionManager, the parameters and
-/// its other recipe arguments.
-///
-/// Its recipe holds the parameters, gives them to the explorer when a runner is
-/// bound, and exposes them as configuration (under "neighborhood" in a runner
-/// or an app).
-template<class NHE>
-concept parameterized_neighborhood = requires {
-    typename NHE::parameters_type;
-} && config::parameter_block<typename NHE::parameters_type>;
-
-} // namespace easylocal
-
 namespace easylocal::detail
 {
-
-struct no_neighborhood_parameters
-{
-};
-
-template<class NHE>
-struct neighborhood_parameters_storage
-{
-    using type = no_neighborhood_parameters;
-};
-
-template<parameterized_neighborhood NHE>
-struct neighborhood_parameters_storage<NHE>
-{
-    using type = typename NHE::parameters_type;
-};
-
-template<class NHE>
-using neighborhood_parameters_storage_t =
-    typename neighborhood_parameters_storage<NHE>::type;
-
-// The arguments an explorer is constructed with after its SolutionManager:
-// its parameters, if it has any, then the recipe arguments.
-template<class NHE, class BaseArgsTuple>
-struct neighborhood_construction_args
-{
-    using type = BaseArgsTuple;
-};
-
-template<parameterized_neighborhood NHE, class... Args>
-struct neighborhood_construction_args<NHE, std::tuple<Args...>>
-{
-    using type = std::tuple<typename NHE::parameters_type, Args...>;
-};
 
 template<class BaseNHE, class Dependency, class Tuple>
 struct base_neighborhood_constructible;
@@ -102,15 +52,17 @@ public:
         "to each component type; the conflicting component type is shown in "
         "the template instantiation context");
 
-    using parameters_storage_type = neighborhood_parameters_storage_t<BaseNHE>;
+    using parameters_holder_type = config::detail::parameters_holder<BaseNHE>;
+    using parameters_storage_type = typename parameters_holder_type::parameters_type;
 
+    // Throws std::invalid_argument when the explorer's parameters are not
+    // valid.
     explicit neighborhood_recipe(
         BaseArgsTuple base_args,
         parameters_storage_type parameters = {})
         requires(sizeof...(DeltaSpecs) == 0)
         : base_args_{std::move(base_args)}, parameters_{std::move(parameters)}
     {
-        require_valid_parameters();
     }
 
     neighborhood_recipe(
@@ -121,52 +73,34 @@ public:
           delta_specs_{std::move(delta_specs)},
           parameters_{std::move(parameters)}
     {
-        require_valid_parameters();
     }
 
     // The explorer's parameters, to read or change.
+    template<class Self>
     [[nodiscard]]
-    parameters_storage_type& parameters() noexcept
-        requires parameterized_neighborhood<BaseNHE>
+    auto& parameters(this Self& self) noexcept
+        requires config::detail::parameterized<BaseNHE>
     {
-        return parameters_;
-    }
-
-    [[nodiscard]]
-    const parameters_storage_type& parameters() const noexcept
-        requires parameterized_neighborhood<BaseNHE>
-    {
-        return parameters_;
-    }
-
-    [[nodiscard]]
-    config::validation_result configure(parameters_storage_type parameters)
-        requires parameterized_neighborhood<BaseNHE>
-    {
-        const auto validation = parameters.validate();
-        if (!validation)
-            return validation;
-        parameters_ = std::move(parameters);
-        return config::validation_result::success();
+        return self.parameters_.parameters();
     }
 
     // The explorer's parameters, at the root: a runner puts them under
     // "neighborhood".
     [[nodiscard]]
     config::parameter_set configuration() &
-        requires parameterized_neighborhood<BaseNHE>
+        requires config::detail::parameterized<BaseNHE>
     {
         config::parameter_set parameters;
-        parameters.add(*this);
+        parameters.add(parameters_);
         return parameters;
     }
 
     [[nodiscard]]
     config::parameter_set configuration() const&
-        requires parameterized_neighborhood<BaseNHE>
+        requires config::detail::parameterized<BaseNHE>
     {
         config::parameter_set parameters;
-        parameters.add(*this);
+        parameters.add(parameters_);
         return parameters;
     }
 
@@ -199,7 +133,7 @@ public:
             std::tuple_cat(
                 delta_specs_,
                 std::tuple<spec_type>{spec_type{std::forward<Args>(args)...}}),
-            parameters_,
+            parameters_.parameters(),
         };
     }
 
@@ -228,7 +162,7 @@ public:
             std::tuple_cat(
                 std::move(delta_specs_),
                 std::tuple<spec_type>{spec_type{std::forward<Args>(args)...}}),
-            std::move(parameters_),
+            std::move(parameters_.parameters()),
         };
     }
 
@@ -252,7 +186,7 @@ public:
         return result_type{
             base_args_,
             std::tuple_cat(delta_specs_, std::tuple<spec_type>{spec_type{}}),
-            parameters_,
+            parameters_.parameters(),
         };
     }
 
@@ -276,7 +210,7 @@ public:
         return result_type{
             std::move(base_args_),
             std::tuple_cat(std::move(delta_specs_), std::tuple<spec_type>{spec_type{}}),
-            std::move(parameters_),
+            std::move(parameters_.parameters()),
         };
     }
 
@@ -284,25 +218,13 @@ public:
     static constexpr bool constructible_from = base_neighborhood_constructible_v<
         BaseNHE,
         Dependency,
-        typename neighborhood_construction_args<BaseNHE, BaseArgsTuple>::type>;
+        config::detail::construction_arguments_t<BaseNHE, BaseArgsTuple>>;
 
     template<class Dependency>
     [[nodiscard]]
     service_type construct(Dependency& dependency) const
     {
-        const auto construction_args = [this] {
-            const auto references = std::apply(
-                [](const auto&... args) {
-                    return std::tuple<const decltype(args)&...>{args...};
-                },
-                base_args_);
-            if constexpr (parameterized_neighborhood<BaseNHE>)
-                return std::tuple_cat(
-                    std::tuple<const typename BaseNHE::parameters_type&>{parameters_},
-                    references);
-            else
-                return references;
-        }();
+        const auto construction_args = parameters_.arguments(base_args_);
         auto base = std::apply(
             [&](const auto&... args) {
                 if constexpr (requires { dependency.base(); })
@@ -444,17 +366,9 @@ public:
     }
 
 private:
-    // Throws std::invalid_argument when the neighborhood's parameters are not
-    // valid.
-    void require_valid_parameters() const
-    {
-        if constexpr (parameterized_neighborhood<BaseNHE>)
-            config::require_valid(parameters_);
-    }
-
     BaseArgsTuple base_args_;
     std::tuple<DeltaSpecs...> delta_specs_;
-    EASYLOCAL_NO_UNIQUE_ADDRESS parameters_storage_type parameters_{};
+    EASYLOCAL_NO_UNIQUE_ADDRESS parameters_holder_type parameters_;
 };
 
 template<class... DeltaSpecs>
