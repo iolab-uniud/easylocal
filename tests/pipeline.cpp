@@ -709,7 +709,49 @@ bool run()
     ok &= expect(
         cancelled.termination == termination_reason::cancelled
             && cancelled.evaluations == 2,
-        "after a cancellation each stage only evaluates its solution");
+        "after a cancellation the first and the last stage only evaluate their "
+        "solution");
+
+    // After a cancellation, or once the solve's budget is spent, the stages
+    // between the first and the last are skipped, without binding their
+    // runner: the last stage evaluates the solution once.
+    auto three_stages =
+        (solvers::stage(
+             "first",
+             easylocal::make_runner<
+                 runners::SimulatedAnnealing<runners::temperature::FixedLength>>(
+                 {.temperature = long_schedule})
+                 | sm | neighborhood<EndlessHardNeighborhood>())
+            & solvers::until_feasible())
+        | solvers::stage(
+            "middle",
+            easylocal::make_runner<
+                runners::SimulatedAnnealing<runners::temperature::FixedLength>>(
+                {.temperature = long_schedule})
+                | sm | neighborhood<SoftNeighborhood>())
+        | solvers::stage(
+            "last",
+            easylocal::make_runner<
+                runners::SimulatedAnnealing<runners::temperature::FixedLength>>(
+                {.temperature = long_schedule})
+                | sm | neighborhood<SoftNeighborhood>());
+    three_stages.initialization(initialization::initial).seed(3);
+    const auto skipped = three_stages.solve(instance, with(stopped));
+    ok &= expect(
+        skipped.evaluations == 2 && skipped.stages.size() == 3
+            && skipped.stages[1].attempts == 0 && skipped.stages[1].evaluations == 0
+            && skipped.stages[1].termination == termination_reason::cancelled
+            && skipped.stages[2].evaluations == 1
+            && skipped.termination == termination_reason::cancelled,
+        "after a cancellation the middle stage is skipped");
+    const auto spent = three_stages.solve(instance, max_evaluations(3));
+    ok &= expect(
+        spent.stages[0].evaluations == 3 && spent.stages[1].attempts == 0
+            && spent.stages[1].termination
+                == termination_reason::evaluation_budget_exhausted
+            && spent.stages[2].attempts == 1
+            && spent.termination == termination_reason::evaluation_budget_exhausted,
+        "once the budget is spent the middle stage is skipped");
 
     return ok;
 }

@@ -91,7 +91,10 @@ The pipeline's `.initialization(...)` and `.seed(...)` return the pipeline;
 by default it starts from a random solution when the first stage supports it,
 with seed 0, as the other solvers.
 A caller's target applies to the last stage, unless that stage has its own.
-After a cancellation the remaining stages stop at once, so the result still
+After a cancellation, or once the solve's time or evaluations are spent, the
+stages between the first and the last are skipped without binding their
+runner (their report has 0 attempts and the reason as termination), and the
+last stage runs once, which only evaluates the solution, so the result still
 has the last stage's cost.
 
 `pipeline.run(input, solution, rng, options...)` runs the stages from a given

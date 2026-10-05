@@ -146,6 +146,9 @@ reviewed by hand before tagging.
 - A pipeline stage's termination, and the solve's, say why the stage stopped
   (cancelled, time or budget out, target reached), not why its best attempt
   ended.
+- After a cancellation, or once the solve's budget is spent, a pipeline skips
+  the stages between the first and the last (0 attempts in their report)
+  instead of binding and running each one past the budget.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

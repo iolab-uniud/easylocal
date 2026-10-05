@@ -633,9 +633,11 @@ public:
     ///
     /// The optional trailing run options (easylocal::with(control, tracer),
     /// .stop_at(target)) go to every stage, except the target, which applies to
-    /// the last stage when it has none of its own. After a cancellation the
-    /// remaining stages stop at once. Throws `std::invalid_argument` when two
-    /// stages have the same name, or one has none.
+    /// the last stage when it has none of its own. After a cancellation, or
+    /// once the solve's time or evaluations are spent, the stages between the
+    /// first and the last are skipped (0 attempts in their report) and the
+    /// last evaluates the solution once. Throws `std::invalid_argument` when
+    /// two stages have the same name, or one has none.
     template<class... Options>
         requires easylocal::detail::solve_options<Options...>
     [[nodiscard]]
@@ -777,6 +779,36 @@ private:
         easylocal::detail::search_effort& effort,
         const Options&... options) const
     {
+        if constexpr (Index > 0 && Index + 1 < stage_count)
+        {
+            // After a cancellation, or once the solve's budget is spent, a
+            // stage between the first and the last is skipped without binding
+            // its runner; the last one still evaluates the solution.
+            const auto skipped = easylocal::detail::stop_requested(options...)
+                ? std::optional{termination_reason::cancelled}
+                : budget.spent();
+            if (skipped)
+            {
+                reports.push_back(
+                    stage_report{
+                        .name = std::get<Index>(stages_).name(),
+                        .attempts = 0,
+                        .evaluations = 0,
+                        .iterations = 0,
+                        .termination = skipped,
+                        .cost = {},
+                    });
+                return run_from<Index + 1>(
+                    input,
+                    std::move(incoming),
+                    first_start,
+                    rng,
+                    budget,
+                    reports,
+                    effort,
+                    options...);
+            }
+        }
         auto bound_runner = std::get<Index>(stages_).runner().bind(input);
         auto result = run_stage<Index>(
             bound_runner,
