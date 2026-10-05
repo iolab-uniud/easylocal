@@ -34,6 +34,17 @@
 namespace easylocal
 {
 
+class app_check_report;
+
+namespace detail
+{
+
+// The checks of components in a report of check(app), as the component checks
+// of testing record them.
+inline testing::check_report& checks_of(app_check_report& report) noexcept;
+
+} // namespace detail
+
 /// The composition of an app that check(app, input, solution) ran on: how
 /// many parts of each kind it composes.
 ///
@@ -100,16 +111,16 @@ public:
 private:
     friend void print_report(std::ostream&, const app_check_report&);
 
-    // The checks of components, as the component checks of testing record
-    // them.
-    friend testing::check_report& checks_of(app_check_report& report) noexcept
-    {
-        return report.report_;
-    }
+    friend testing::check_report& detail::checks_of(app_check_report& report) noexcept;
 
     testing::check_report report_;
     app_check_composition composition_{};
 };
+
+inline testing::check_report& detail::checks_of(app_check_report& report) noexcept
+{
+    return report.report_;
+}
 
 /// Writes the checks of a report to out, then a line with the composition
 /// they ran on.
@@ -500,7 +511,7 @@ void check_bound(
 {
     using solution_manager_type = typename Bound::solution_manager_type;
     using neighborhood_type = typename Bound::neighborhood_explorer_type;
-    auto& checks = checks_of(report);
+    auto& checks = detail::checks_of(report);
 
     auto& composition = report.composition();
     composition.solution_managers = 1;
@@ -672,7 +683,7 @@ template<class App, class Input>
         std::remove_cvref_t<decltype(bound.solution_manager().initial_solution())>>
         initial;
     if (!testing::detail::guarded(
-            checks_of(report),
+            detail::checks_of(report),
             "check solution",
             "initial_solution()",
             [&] { initial.emplace(bound.solution_manager().initial_solution()); }))
