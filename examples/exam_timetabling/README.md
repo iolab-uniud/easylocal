@@ -72,6 +72,8 @@ and the weights of the cost (`--cost.weights`):
   --runners.sa.temperature.allowed_iterations=10 --seed=42
 ```
 
-`--target=0` stops the run at the first timetable with no penalty.
+`--target=8` stops the run at the first timetable with a penalty of 8, the
+lowest the runs reach on `instances/small.exam` (0 is out of reach): with
+the seed 2026 after 4 evaluations, where the whole run makes 31.
 `--config examples/exam_timetabling/configs/small.cfg` reads the parameters
 from a file; the switches on the command line win over it.

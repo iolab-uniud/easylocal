@@ -382,6 +382,8 @@ reviewed by hand before tagging.
 - The tutorial no longer takes the launcher of chapter 12 from `examples/tsp`:
   `examples/tutorial/launcher_main.cpp` opens a 2-opt and a swap app of the
   tutorial's own TSP. `AGENTS.md` says what each example directory is.
+- The exam timetabling README's target example, `--target=8`, can be reached:
+  no timetable of `small.exam` has the penalty 0 it gave.
 - The TSP readers of the tutorial and of `examples/tsp`, and the tutorial's
   REST codec, reject asymmetric distances, which the 2-opt delta does not
   handle: it reverses a segment as if it cost the same.
