@@ -145,6 +145,13 @@ the search escapes with `1 + (1 + r) * average / 2` random moves (`r` uniform
 in `[0, 1)`), applied whatever their cost, counted as iterations and
 recorded in the list like the others.
 
+The lists with one tenure for all moves (`Reactive`, `LimDynamic`, `Foo`,
+`RandomFoo`) apply the current tenure to every move they hold: a move is tabu
+while it is younger than the tenure, so a growth also makes tabu again the
+older moves it covers. Each list keeps the moves that the next growth can
+reach: those of the last `tenure + increment - 1` iterations before a `Foo`
+window ends, of the tenure that `increase` would bring for `Reactive`.
+
 A tabu list is a value with its parameters that makes, for each run, a state
 with `make_state<Run>()`. `tabu_tenure(candidate)` gives the iterations left
 before a candidate move is admissible, nothing when it is (`tabu_candidate`:

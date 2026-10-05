@@ -115,6 +115,10 @@ reviewed by hand before tagging.
   `validate()`, so `--tuning.irace` wrote no `[forbidden]` line for them and
   irace sampled configurations that the target runner rejected, which stopped
   the tuning: they are `config::require` requirements of the schemas.
+- The `Foo`, `RandomFoo` and `Reactive` tabu lists forgot the moves older than
+  the current tenure, so a growth by more than one did not reach the moves it
+  covers, as the tenure applies to every move held: each list keeps the moves
+  its next growth can reach.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

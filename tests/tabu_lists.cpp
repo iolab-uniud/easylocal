@@ -250,6 +250,17 @@ int main()
                 && state.current_tenure() == 1 && !tenure(state, -4).has_value(),
             "reactive: chaos escapes with random moves and resets the memory");
 
+        // A cycle triples the tenure from 1 to 3: the move of two iterations
+        // before is tabu again, so the list kept it.
+        auto tripled =
+            tabu::Reactive{{.increase = 3.0, .cycle_length = 10}}.make_state<IntRun>();
+        tripled.update(Step{.applied = 1, .at = 1, .hash = 11}, rng);
+        tripled.update(Step{.applied = 2, .at = 2, .hash = 22}, rng);
+        tripled.update(Step{.applied = 3, .at = 3, .hash = 11}, rng);
+        ok &= expect(
+            tripled.current_tenure() == 3 && tenure(tripled, -1) == 1,
+            "reactive: an increase applies to the moves the old tenure no longer forbade");
+
         auto calm =
             tabu::Reactive{{.increase = 2.0, .decrease = 0.5, .cycle_length = 4}}
                 .make_state<IntRun>();
@@ -382,6 +393,37 @@ int main()
         ok &= expect(
             random.current_tenure() == 6,
             "random foo: with degenerate ranges it is foo");
+        // The tenure applies to the moves the list holds: a growth by 3 at the
+        // end of a window of 5 makes the move of 4 iterations before tabu
+        // again, so the list keeps it.
+        auto grown =
+            tabu::Foo{{.window = 5, .increment = 3, .fluctuation = 1.0}}
+                .make_state<IntRun>();
+        for (std::size_t iteration = 1; iteration <= 5; ++iteration)
+            grown.update(
+                Step{.applied = static_cast<int>(iteration), .at = iteration, .value = 5},
+                rng);
+        ok &= expect(
+            grown.current_tenure() == 6 && tenure(grown, -1) == 2,
+            "foo: a growth applies to the moves the old tenure no longer forbade");
+
+        auto random_grown = tabu::RandomFoo{
+            {
+                .min_window = 5,
+                .max_window = 5,
+                .min_increment = 3,
+                .max_increment = 3,
+                .min_fluctuation = 1.0,
+                .max_fluctuation = 1.0,
+            }}.make_state<IntRun>();
+        for (std::size_t iteration = 1; iteration <= 5; ++iteration)
+            random_grown.update(
+                Step{.applied = static_cast<int>(iteration), .at = iteration, .value = 5},
+                rng);
+        ok &= expect(
+            random_grown.current_tenure() == 6 && tenure(random_grown, -1) == 2,
+            "random foo: a growth applies to the moves the old tenure no longer forbade");
+
         ok &= expect(
             !tabu::RandomFooParameters{.min_window = 5, .max_window = 4}.validate()
                 && !tabu::FooParameters{.window = 0}.validate(),

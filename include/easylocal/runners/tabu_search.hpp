@@ -300,7 +300,8 @@ private:
 
 // The last moves with the iteration they were applied at, newest first: the
 // memory of the lists whose length changes; a move is tabu while it is younger
-// than the current length.
+// than the current length, which applies to every move held, so a list trims
+// with the longest length its next update can bring.
 template<class Move>
 class aging_moves
 {
@@ -731,7 +732,9 @@ struct ReactiveParameters
 ///
 /// A solution revisited within cycle_length iterations multiplies the tenure by
 /// increase and updates the average cycle length; when no such cycle occurs for
-/// longer than the average, the tenure is multiplied by decrease. A solution
+/// longer than the average, the tenure is multiplied by decrease. The tenure
+/// applies to every move the list holds, so an increase makes tabu again the
+/// moves that the longer tenure covers. A solution
 /// visited more than repetitions times counts as chaos; after more than chaos
 /// counts the memory is reset and the search escapes with 1 + (1 + r) * average
 /// / 2 random moves, r uniform in [0, 1), which are recorded like the others.
@@ -828,7 +831,13 @@ public:
                 since_change_ = 0;
             }
 
-            moves_.trim(iteration_, current_tenure());
+            // A cycle at the next update may multiply the tenure, which applies
+            // to the moves held.
+            const auto grown = static_cast<std::size_t>(std::ceil(
+                std::min(
+                    tenure_ * parameters_.increase,
+                    static_cast<double>(parameters_.max_tenure))));
+            moves_.trim(iteration_, std::max(current_tenure(), grown - 1));
         }
 
         /// The random moves of the escape asked for, 0 if none; the count is
@@ -1241,7 +1250,8 @@ namespace detail
 // The Fluctuation Of the Objective of Blöchliger and Zufferey: at the end of
 // each window of iterations, the tenure grows by increment if the costs reached
 // in the window spread less than fluctuation, and shrinks by one (to 1 at
-// least) otherwise. The spread is cost::delta(highest, lowest).
+// least) otherwise. The spread is cost::delta(highest, lowest). After each
+// update the list calls trim() with the window and the increment to come.
 template<class Move, class Cost>
 class fluctuation_tenure
 {
@@ -1290,8 +1300,16 @@ public:
             in_window_ = 0;
             window_over = true;
         }
-        moves_.trim(iteration_, tenure_);
         return window_over;
+    }
+
+    // Forgets the moves the next update cannot make tabu: those younger than
+    // tenure + increment - 1 stay when it ends a window of this length, since
+    // the growth applies to them too.
+    void trim(const std::size_t window, const std::size_t increment)
+    {
+        const auto window_ends = in_window_ + 1 >= window;
+        moves_.trim(iteration_, window_ends ? tenure_ + increment - 1 : tenure_);
     }
 
     void set_tenure(const std::size_t tenure) noexcept
@@ -1362,7 +1380,9 @@ struct FooParameters
 /// less than fluctuation (the search is stuck), and shrinks by one otherwise.
 ///
 /// The fluctuation is in cost units, so it depends on the instance; the cost
-/// needs cost::delta.
+/// needs cost::delta. The tenure applies to every move the list holds, so a
+/// growth makes tabu again the moves of the last tenure + increment - 1
+/// iterations.
 class Foo
 {
 public:
@@ -1407,6 +1427,7 @@ public:
                 parameters_.window,
                 parameters_.increment,
                 parameters_.fluctuation);
+            tenure_.trim(parameters_.window, parameters_.increment);
         }
 
         /// The iterations a move applied now stays tabu.
@@ -1544,6 +1565,7 @@ public:
             }
             if (tenure_.update(step, window_, increment_, fluctuation_))
                 draw(rng);
+            tenure_.trim(window_, increment_);
         }
 
         /// The iterations a move applied now stays tabu.
