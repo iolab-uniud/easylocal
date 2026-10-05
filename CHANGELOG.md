@@ -56,6 +56,12 @@ reviewed by hand before tagging.
   aborting. A parameter set reports such a group once, under its own path.
 - `config::one_of` holds numbers of different types as their common type:
   `one_of(1, 1.5, 2)` holds 1.5, where it narrowed it to 1.
+- **Breaking:** the expressions of conditions and requirements compute
+  numbers in `double`, as their irace export does: `7 / 2` is 3.5 (it was 3),
+  `unlimited` is +infinity (`unlimited + 1` overflowed), and a minus applies
+  after the conversion (`-count` wrapped an unsigned count). Their R text
+  writes infinity and NaN as `Inf` and `NaN` and escapes the quotes and
+  backslashes of a text; `text_with`'s second parameter is now `r_syntax`.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

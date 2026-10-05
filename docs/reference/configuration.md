@@ -75,12 +75,16 @@ config::require(
 | `value<"name">`, `value<"group.name">` | a field of the block, or of a nested group, by its path relative to the block; a path that names no field does not compile |
 
 Expressions combine values and constants (numbers, `bool`, text) with `<`,
-`<=`, `>`, `>=`, `==`, `!=`, `&&`, `||`, `!`, `+`, `-`, `*` and `/`; integers
-compare by value whatever their signs, and a `limit` as its count.
+`<=`, `>`, `>=`, `==`, `!=`, `&&`, `||`, `!`, `+`, `-`, `*` and `/`. Numbers
+are computed in `double`, as R computes them, so that an expression means the
+same in its irace export: `7 / 2` is 3.5, a `limit` is its count and
+`unlimited` is +infinity, and `-count` is negative for an unsigned count.
 `config::evaluate(expression, block)` computes one, `config::is_active(field,
 block)` tells whether a field's condition holds, and
 `describe_expression(expression, prefix)` gives an `expression_info`, its text
-with the full paths of its references (`text_with`, `references`).
+with the full paths of its references (`text_with`, `references`): in R
+syntax, booleans are `TRUE` and `FALSE`, infinity and NaN `Inf` and `NaN`,
+and a text escapes its quotes and backslashes.
 
 ### Checking a schema
 

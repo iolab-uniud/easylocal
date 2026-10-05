@@ -9,6 +9,7 @@
 #include <array>
 #include <cassert>
 #include <cstddef>
+#include <limits>
 #include <string>
 #include <string_view>
 
@@ -88,6 +89,40 @@ static_assert(config::evaluate(
     -config::value<"end"> < 0 && config::value<"start"> / 2 == 5,
     Schedule{}));
 
+// Arithmetic is computed in double, as R computes it: integers divide exactly,
+// unlimited is +infinity, and a minus applies after the conversion.
+struct Counts
+{
+    std::size_t count{7};
+    easylocal::limit budget{easylocal::unlimited};
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return config::fields(
+            config::field<"count", &Counts::count>("Count", config::range(0, 100)),
+            config::field<"budget", &Counts::budget>(
+                "Budget",
+                config::range(0, easylocal::unlimited)));
+    }
+
+    [[nodiscard]]
+    constexpr config::validation_result validate() const noexcept
+    {
+        return config::check_schema(*this);
+    }
+};
+
+static_assert(config::evaluate(config::value<"count"> / 2, Counts{}) == 3.5);
+static_assert(config::evaluate(-config::value<"count">, Counts{}) == -7.0);
+static_assert(config::evaluate(config::value<"budget"> + 1 > 5, Counts{}));
+static_assert(config::evaluate(
+    config::value<"budget"> - 1 == std::numeric_limits<double>::infinity(),
+    Counts{}));
+static_assert(config::evaluate(
+    config::value<"budget"> > 5,
+    Counts{.budget = easylocal::limit{10}}));
+
 void a_field_that_does_not_matter_is_not_checked()
 {
     Search search;
@@ -161,6 +196,27 @@ void parameters_list_their_conditions_with_full_paths()
     assert(text == "(<runners.ts.schedule.end> < <runners.ts.schedule.start>)");
 }
 
+void constants_are_written_as_r_reads_them()
+{
+    const auto path = [](const std::string_view name) { return std::string{name}; };
+    const auto infinite = config::describe_expression(
+        config::value<"end"> < std::numeric_limits<double>::infinity(),
+        "s");
+    assert(infinite.text_with(path) == "(s.end < Inf)");
+    const auto undefined = config::describe_expression(
+        config::value<"end"> != -std::numeric_limits<double>::infinity()
+            || config::value<"end"> == std::numeric_limits<double>::quiet_NaN(),
+        "s");
+    assert(undefined.text_with(path) == "((s.end != -Inf) || (s.end == NaN))");
+
+    // Quotes and backslashes in a text are escaped.
+    const auto quoted = config::describe_expression(
+        config::value<"policy"> == std::string_view{"a\"b\\c"},
+        "s");
+    assert(quoted.text_with(path) == "(s.policy == \"a\\\"b\\\\c\")");
+    assert(quoted.to_string() == "(s.policy == \"a\\\"b\\\\c\")");
+}
+
 void built_in_schemas_declare_their_relations()
 {
     using easylocal::runners::GreatDelugeParameters;
@@ -216,6 +272,7 @@ int main()
     a_field_that_does_not_matter_is_not_checked();
     requirements_name_their_block_and_reach_into_groups();
     parameters_list_their_conditions_with_full_paths();
+    constants_are_written_as_r_reads_them();
     built_in_schemas_declare_their_relations();
     unlimited_is_above_every_count();
 }

@@ -203,33 +203,26 @@ constexpr auto make_binary(const Left& left, const Right& right)
         as_expression(right)};
 }
 
-// A count as long long: one too large for it, as unlimited is, is the
-// largest, which compares above every other count.
-[[nodiscard]]
-constexpr long long computed_count(const unsigned long long count) noexcept
-{
-    constexpr auto largest = std::numeric_limits<long long>::max();
-    return count > static_cast<unsigned long long>(largest)
-        ? largest
-        : static_cast<long long>(count);
-}
-
-// An operand as it is computed with: a limit as its count (unlimited above
-// every other), an integer of either sign as long long.
+// An operand as it is computed with, as R computes it: a number as a double
+// (a floating-point number keeps its type), a limit as its count and
+// unlimited as +infinity, a bool and a text as they are.
 template<class T>
 [[nodiscard]]
 constexpr auto computed(const T& operand)
 {
     if constexpr (std::same_as<T, bool> || std::floating_point<T>)
         return operand;
-    else if constexpr (std::unsigned_integral<T>)
-        return computed_count(operand);
     else if constexpr (std::integral<T>)
-        return static_cast<long long>(operand);
+        return static_cast<double>(operand);
     else if constexpr (std::convertible_to<const T&, std::string_view>)
         return std::string_view{operand};
+    else if constexpr (std::convertible_to<const T&, std::size_t>
+        && requires { operand.is_unlimited(); })
+        return operand.is_unlimited()
+            ? std::numeric_limits<double>::infinity()
+            : static_cast<double>(static_cast<std::size_t>(operand));
     else if constexpr (std::convertible_to<const T&, std::size_t>)
-        return computed_count(static_cast<std::size_t>(operand));
+        return static_cast<double>(static_cast<std::size_t>(operand));
     else
         return operand;
 }
@@ -374,6 +367,11 @@ constexpr auto operator-(const Operand& operand)
 
 /// The value of an expression, with read(reference) giving the value of each
 /// value_reference.
+///
+/// Operators compute as R does, so that a condition means the same in the
+/// library and in its irace export: numbers in double (`7 / 2` is 3.5), a
+/// limit as its count and unlimited as +infinity, a minus after the
+/// conversion (`-count` is negative).
 template<class Expression, class Read>
     requires expression<Expression>
 [[nodiscard]]
@@ -392,7 +390,7 @@ constexpr auto evaluate_with(const Expression& node, const Read& read)
                               decltype(node.operand)>>)
             return !static_cast<bool>(evaluate_with(node.operand, read));
         else
-            return -evaluate_with(node.operand, read);
+            return -detail::computed(evaluate_with(node.operand, read));
     }
     else
     {
@@ -462,28 +460,47 @@ struct expression_info
     std::vector<expression_info> operands{};
 
     /// The expression as text, with each reference written by reference(path)
-    /// and the constants as R and C++ read them (text in double quotes, TRUE
-    /// and FALSE for booleans when r_booleans is set).
+    /// and the constants as R and C++ read them: text in double quotes, with
+    /// `"` and `\` escaped; with r_syntax, TRUE and FALSE for booleans and
+    /// Inf, -Inf and NaN for the numbers that are not finite.
     [[nodiscard]]
     std::string text_with(
         const std::function<std::string(std::string_view path)>& reference,
-        const bool r_booleans = true) const
+        const bool r_syntax = true) const
     {
         switch (kind)
         {
         case node::reference:
             return reference(text);
         case node::number:
+            if (r_syntax)
+            {
+                if (text == "inf")
+                    return "Inf";
+                if (text == "-inf")
+                    return "-Inf";
+                if (text == "nan" || text == "-nan")
+                    return "NaN";
+            }
             return text;
         case node::text:
-            return '"' + text + '"';
+        {
+            std::string quoted{'"'};
+            for (const char character : text)
+            {
+                if (character == '"' || character == '\\')
+                    quoted += '\\';
+                quoted += character;
+            }
+            return quoted + '"';
+        }
         case node::boolean:
-            return r_booleans ? (text == "true" ? "TRUE" : "FALSE") : text;
+            return r_syntax ? (text == "true" ? "TRUE" : "FALSE") : text;
         case node::unary:
-            return text + "(" + operands.front().text_with(reference, r_booleans) + ")";
+            return text + "(" + operands.front().text_with(reference, r_syntax) + ")";
         case node::binary:
-            return "(" + operands[0].text_with(reference, r_booleans) + " " + text + " "
-                + operands[1].text_with(reference, r_booleans) + ")";
+            return "(" + operands[0].text_with(reference, r_syntax) + " " + text + " "
+                + operands[1].text_with(reference, r_syntax) + ")";
         }
         return {};
     }
