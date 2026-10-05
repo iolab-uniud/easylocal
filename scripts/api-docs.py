@@ -24,6 +24,13 @@ headers under --only (a path relative to include/easylocal, such as trace/):
 
     uv run scripts/api-docs.py build/api --undocumented --only trace/
 
+With --lint it runs no MrDocs and needs no build: it lists the comments that
+break the rules of AGENTS.md a script can check (a brief of one sentence,
+angle brackets only in backticks, 80 columns), optionally under --only, and
+fails when there is one:
+
+    uv run scripts/api-docs.py --lint --only runners/
+
 The pages have the look of the documentation site (docs/mrdocs/: the page
 layout and the stylesheet) and link to it as their parent directory, as the
 site serves them under api/.
@@ -152,9 +159,76 @@ def broken_links(pages):
     return sorted(found)
 
 
+# An abbreviation does not end a sentence.
+ABBREVIATION = re.compile(r"\b(?:e\.g|i\.e|etc|vs|cf)\.$")
+
+
+def comment_blocks(lines):
+    """The /// blocks of a header, as (first line number, text lines)."""
+    i = 0
+    while i < len(lines):
+        if re.match(r"\s*///", lines[i]):
+            start, block = i, []
+            while i < len(lines) and re.match(r"\s*///", lines[i]):
+                block.append(re.sub(r"^\s*/// ?", "", lines[i]))
+                i += 1
+            yield start + 1, block
+        else:
+            i += 1
+
+
+def lint(only):
+    """The comments of the public headers that break the rules of AGENTS.md
+    that a script can check: a brief of one sentence, angle brackets only in
+    backticks, lines of 80 columns at most. A \\file comment, which the
+    reference does not show, and \\code blocks are not checked."""
+    found = []
+    for path in sorted((INCLUDE / "easylocal").rglob("*.hpp")):
+        relative = path.relative_to(INCLUDE / "easylocal").as_posix()
+        if "/detail/" in relative or not relative.startswith(only):
+            continue
+        lines = path.read_text().splitlines()
+        for start, block in comment_blocks(lines):
+            if block[0].startswith("\\file"):
+                continue
+            text, inside = [], False
+            for offset, line in enumerate(block):
+                if line.strip() == "\\code":
+                    inside = True
+                elif line.strip() == "\\endcode":
+                    inside = False
+                elif not inside:
+                    text.append((start + offset, line))
+            paragraphs = [[]]
+            for number, line in text:
+                if line.strip():
+                    paragraphs[-1].append((number, line))
+                elif paragraphs[-1]:
+                    paragraphs.append([])
+            for index, paragraph in enumerate(paragraphs):
+                if not paragraph:
+                    continue
+                # code spans may cross lines: a paragraph is read whole
+                prose = re.sub(r"`[^`]*`", "``", " ".join(line for _, line in paragraph))
+                if index == 0 and sum(
+                        1 for word in prose.split()
+                        if re.search(r"[.!?]$", word) and not ABBREVIATION.search(word)) > 1:
+                    found.append((relative, paragraph[0][0],
+                                  "the brief (first paragraph) is more than one sentence"))
+                if re.search(r"<[A-Za-z_/][^<>]*>", prose):
+                    found.append((relative, paragraph[0][0],
+                                  "angle brackets outside backticks, which MrDocs reads as HTML"))
+            for number, _ in text:
+                if len(lines[number - 1]) > 80:
+                    found.append((relative, number, "longer than 80 columns"))
+    return found
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("build", type=pathlib.Path, help="a configured build directory")
+    parser.add_argument(
+        "build", type=pathlib.Path, nargs="?",
+        help="a configured build directory (not needed with --lint)")
     parser.add_argument(
         "--output", type=pathlib.Path, default=ROOT / "build" / "site-api",
         help="the directory of the generated pages (default: build/site-api)")
@@ -163,8 +237,20 @@ def main():
         help="list the public declarations without a comment instead")
     parser.add_argument(
         "--only", default="",
-        help="with --undocumented, the headers under this path of include/easylocal")
+        help="with --undocumented or --lint, the headers under this path of include/easylocal")
+    parser.add_argument(
+        "--lint", action="store_true",
+        help="check the comments against the rules of AGENTS.md instead")
     args = parser.parse_args()
+
+    if args.lint:
+        found = lint(args.only)
+        for path, line, problem in found:
+            print(f"{path}:{line}\t{problem}")
+        print(f"{len(found)} comments break the rules", file=sys.stderr)
+        return 1 if found else 0
+    if args.build is None:
+        parser.error("the build directory is required")
 
     build = args.build.resolve()
     database = build / "compile_commands.json"

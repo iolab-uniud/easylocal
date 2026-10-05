@@ -453,8 +453,9 @@ struct binary_buffer_options
     std::vector<std::pair<std::string, std::string>> metadata{};
     /// Whether each core event ends with an `elapsed_ns` field (`u64`), the
     /// nanoseconds of the steady clock since the recorder was constructed
-    /// (false by default: the clock is not read). Application events carry
-    /// none.
+    /// (false by default: the clock is not read).
+    ///
+    /// Application events carry none.
     bool timestamps{false};
 };
 

@@ -303,8 +303,8 @@ inline decltype(auto) moves(const Explorer& explorer, const Solution& solution)
 
 /// Unified random-neighborhood customization point.
 ///
-/// A neighborhood may return std::optional<T> for any T from which its declared
-/// move_type can be built.
+/// A neighborhood may return `std::optional<T>` for any T from which its
+/// declared move_type can be built.
 template<class Explorer, class Solution, std::uniform_random_bit_generator RNG>
     requires random_neighborhood_for<Explorer, Solution, RNG>
 [[nodiscard]]

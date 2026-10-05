@@ -133,7 +133,7 @@ auto read_file(const std::filesystem::path& path, const std::string_view what, R
 } // namespace detail::io
 
 /// An Input that can be read from a stream: by a static Input::read(in), by a
-/// free read_input(std::type_identity<Input>, in) found by ADL, or by
+/// free `read_input(std::type_identity<Input>, in)` found by ADL, or by
 /// operator>> on a default-constructed Input, in this order.
 template<class Input>
 concept readable_input =

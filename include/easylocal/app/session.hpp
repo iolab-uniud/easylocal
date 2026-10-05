@@ -552,6 +552,7 @@ public:
     }
 
     /// Deleted: the set of a temporary would refer to it after it is gone.
+    ///
     /// Configure the object that will run, after its last copy.
     config::parameter_set configuration() const&& = delete;
 

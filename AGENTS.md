@@ -155,8 +155,11 @@ The generated API reference (`scripts/api-docs.py`, MrDocs) is made of the
   class template specialization, special members (constructors, assignments,
   destructors) and the overloads of a function each. One without a comment
   fails the API build, in CI as with `uv run scripts/api-docs.py
-  build/<preset>`; `--undocumented [--only <dir>/]` lists them. Parameters and
-  return values are explained in the text, not with their own commands.
+  build/<preset>`; `--undocumented [--only <dir>/]` lists them, and `uv run
+  scripts/api-docs.py --lint [--only <dir>/]` (no build, no MrDocs) lists
+  the briefs of more than one sentence, the angle brackets outside backticks
+  and the lines over 80 columns. Parameters and return values are explained
+  in the text, not with their own commands.
 - A deleted member says why, each one of a group: "Not copyable or movable:
   its services refer to each other."; "Deleted: the BoundRunner borrows the
   Input, which a temporary would leave dangling."

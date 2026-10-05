@@ -67,8 +67,9 @@ struct parameters
     std::string start{};
     /// A file to read the starting solution from, instead of start.
     std::filesystem::path solution{};
-    /// The file to write the solution to; empty: the standard output. The
-    /// points of a front go to numbered files next to it: best.txt gives
+    /// The file to write the solution to; empty: the standard output.
+    ///
+    /// The points of a front go to numbered files next to it: best.txt gives
     /// best.1.txt, best.2.txt...
     std::filesystem::path output{};
     /// The cost at which the run stops, such as 0 or [0, 120]; empty: no
@@ -426,12 +427,14 @@ inline int write_irace(
 
 } // namespace detail
 
-/// Runs application as a program: parses argc and argv (and a --config file),
-/// loads the Input, starts from a random, initial or loaded solution, runs the
-/// chosen runner and prints "cost", "time" (seconds), the effort of the run
-/// ("iterations", "evaluations", "termination") when the algorithm reports it,
-/// with --report the value of each cost component, and the solution, or saves
-/// it to --output. After a run with a cost::pareto cost it prints "front" and
+/// Runs application as a program, from the command line to the solution.
+///
+/// It parses argc and argv (and a --config file), loads the Input, starts
+/// from a random, initial or loaded solution, runs the chosen runner and
+/// prints "cost", "time" (seconds), the effort of the run ("iterations",
+/// "evaluations", "termination") when the algorithm reports it, with --report
+/// the value of each cost component, and the solution, or saves it to
+/// --output. After a run with a cost::pareto cost it prints "front" and
 /// its size, then each point, "point", its number and "cost", followed by its
 /// solution, or saves the solutions to numbered files next to --output.
 ///

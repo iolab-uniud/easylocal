@@ -170,7 +170,9 @@ struct run_options
     /// The time after which the run stops, if any, counted from its start.
     std::optional<std::chrono::steady_clock::duration> time_limit{};
     /// The evaluations the run may make, the initial one included; unlimited
-    /// by default. The runner's own budget, if smaller, still applies.
+    /// by default.
+    ///
+    /// The runner's own budget, if smaller, still applies.
     limit evaluation_limit{unlimited};
     /// What the archive of a run with a cost::pareto cost keeps (default one
     /// point per non-dominated cost, unbounded).
@@ -233,7 +235,8 @@ struct run_options
     }
 
     /// The same options with the parameters of the Pareto archive:
-    /// with(control).keep_front({.keep_equivalent = true, .max_front_size = 100}).
+    /// with(control).keep_front({.keep_equivalent = true,
+    /// .max_front_size = 100}).
     ///
     /// They matter only to a run with a cost::pareto cost.
     [[nodiscard]]
@@ -330,10 +333,12 @@ inline run_options<trace::null_tracer> timeout(const double seconds)
     return run_options<trace::null_tracer>{}.timeout(seconds);
 }
 
-/// One execution of a search algorithm. search_run exposes the search context
-/// (neighborhood, evaluation, cost semantics) and owns everything that is
-/// common to every search: evaluation/iteration counters, the evaluation
-/// budget, cancellation, progress reporting and the core trace events.
+/// One execution of a search algorithm.
+///
+/// search_run exposes the search context (neighborhood, evaluation, cost
+/// semantics) and owns everything that is common to every search:
+/// evaluation/iteration counters, the evaluation budget, cancellation,
+/// progress reporting and the core trace events.
 ///
 /// Algorithms describe only their search logic in terms of these primitives.
 /// With a cost::pareto cost it also keeps the archive of the non-dominated
@@ -574,8 +579,9 @@ public:
         return control_;
     }
 
-    /// The runner's own budget; the initial evaluation counts towards it. The
-    /// caller's budget, if smaller, stays.
+    /// The runner's own budget; the initial evaluation counts towards it.
+    ///
+    /// The caller's budget, if smaller, stays.
     void limit_evaluations(const limit max_evaluations) noexcept
     {
         evaluation_limit_ =

@@ -1333,7 +1333,8 @@ struct ReheatingParameters
 /// the first descent spends first_descent_share of it and the reheats divide
 /// the rest evenly; otherwise each descent runs the whole schedule. It
 /// calibrates when the schedule does, and the reheat temperature stays above
-/// the final one. `Reheating<Hybrid>` is EasyLocal 3's annealing with reheating.
+/// the final one. `Reheating<Hybrid>` is EasyLocal 3's annealing with
+/// reheating.
 template<detail::reheatable_policy Descent>
 class Reheating
 {
@@ -1662,12 +1663,13 @@ consteval bool validate_simulated_annealing_acceptance()
 /// accepted by the acceptance policy at the temperature of the schedule (by
 /// default, the Metropolis criterion on the classic geometric schedule).
 ///
-/// The annealing ends when the schedule finishes, and returns the best solution
-/// found. A calibrating schedule estimates its initial temperature first, from
-/// random moves evaluated at the initial solution. Its parameters_type, for a
-/// schedule with parameters P, is `SimulatedAnnealingParameters<P>`. Requires a
-/// neighborhood explorer with random_move(), a cost with better(), and a cost the
-/// acceptance policy can compare (MetropolisAcceptance: cost::delta).
+/// The annealing ends when the schedule finishes, and returns the best
+/// solution found. A calibrating schedule estimates its initial temperature
+/// first, from random moves evaluated at the initial solution. Its
+/// parameters_type, for a schedule with parameters P, is
+/// `SimulatedAnnealingParameters<P>`. Requires a neighborhood explorer with
+/// random_move(), a cost with better(), and a cost the acceptance policy can
+/// compare (MetropolisAcceptance: cost::delta).
 template<
     temperature_policy TemperaturePolicy = temperature::Classic,
     class Acceptance = MetropolisAcceptance>
