@@ -403,6 +403,10 @@ public:
     {
     }
 
+    /// Not from a temporary SolutionManager, which would dangle: the
+    /// SolutionManager must outlive the explorer.
+    explicit neighborhood_explorer_base(const solution_manager_type&&) = delete;
+
     /// The Input of the SolutionManager.
     [[nodiscard]]
     const input_type& input() const noexcept

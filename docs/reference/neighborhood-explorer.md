@@ -73,6 +73,9 @@ template<class SolutionManager, class Move>
 class neighborhood_explorer_base;  // aliases, input(), protected solution_manager_
 ```
 
+It keeps the SolutionManager by reference, so the constructor from a temporary
+SolutionManager is deleted: the SolutionManager outlives the explorer.
+
 ## Recipes
 
 ```cpp

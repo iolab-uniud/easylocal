@@ -59,7 +59,9 @@ class solution_manager_base;   // input_type, solution_type, input(), protected 
 ```
 
 Inherit its constructor with `using solution_manager_base::solution_manager_base;`.
-It is non-virtual and optional.
+It is non-virtual and optional. It keeps the Input by reference, so the
+constructor from a temporary Input is deleted: the Input outlives the
+SolutionManager.
 
 ## Recipes
 

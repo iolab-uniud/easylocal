@@ -742,6 +742,18 @@ easylocal_add_compile_failure_test(
     "BrokenNeighborhood"
 )
 easylocal_add_compile_failure_test(
+    solution-manager-temporary-input
+    solution_manager_temporary_input.cpp
+    "deleted"
+    "solution_manager_base"
+)
+easylocal_add_compile_failure_test(
+    neighborhood-temporary-solution-manager
+    neighborhood_temporary_solution_manager.cpp
+    "deleted"
+    "neighborhood_explorer_base"
+)
+easylocal_add_compile_failure_test(
     componentless-solution-manager
     componentless_solution_manager.cpp
     "a SolutionManager recipe needs a cost"

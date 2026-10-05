@@ -45,6 +45,9 @@ reviewed by hand before tagging.
 - `neighborhood_union(...) | random_biases(...)` compiles for explorers that
   derive from no EasyLocal base, in a namespace that does not use `easylocal`:
   the operator is a hidden friend of the union's recipe, found by ADL.
+- `solution_manager_base` and `neighborhood_explorer_base` no longer bind a
+  temporary Input or SolutionManager, which dangled: their constructors from
+  an rvalue are deleted.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

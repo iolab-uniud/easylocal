@@ -148,6 +148,10 @@ public:
     {
     }
 
+    /// Not from a temporary Input, which would dangle: the Input must outlive
+    /// the SolutionManager.
+    explicit solution_manager_base(const input_type&&) = delete;
+
     /// The Input.
     [[nodiscard]]
     const input_type& input() const noexcept
