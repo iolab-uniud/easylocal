@@ -86,6 +86,9 @@ command -v cmake >/dev/null 2>&1 || die "'cmake' not found in PATH"
 command -v ctest >/dev/null 2>&1 || die "'ctest' not found in PATH"
 [[ -f CMakePresets.json ]] || die "CMakePresets.json not found"
 
+# An explicit level for ctest -j: without a value it needs CMake 3.29.
+JOBS="$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 2)"
+
 PRESET="dev"
 TEST_TOML=off
 TEST_TUI=off
@@ -247,7 +250,7 @@ resolve_dependency() {
         -DEASYLOCAL_ENABLE_REST=OFF \
         "-D${enable_variable}=ON" \
         -DEASYLOCAL_FETCH_DEPENDENCIES=OFF \
-        "${system_prefix_args[@]}" \
+        ${system_prefix_args[@]+"${system_prefix_args[@]}"} \
         >"$probe_log" 2>&1
     local probe_status=$?
     set -e
@@ -390,8 +393,8 @@ run_profile() {
         "-DEASYLOCAL_ENABLE_TUI=${enable_tui}" \
         "-DEASYLOCAL_ENABLE_REST=${enable_rest}" \
         "-DEASYLOCAL_FETCH_DEPENDENCIES=${fetch_dependencies}" \
-        "${system_prefix_args[@]}" \
-        "${dependency_args[@]}"
+        ${system_prefix_args[@]+"${system_prefix_args[@]}"} \
+        ${dependency_args[@]+"${dependency_args[@]}"}
 
     echo
     echo "==> Build: ${build_dir}"
@@ -400,14 +403,14 @@ run_profile() {
     echo
     echo "==> Test: ${build_dir}"
     if [[ "$RUN_INTEGRATION" == on ]]; then
-        ctest --test-dir "$build_dir" --output-on-failure -j
+        ctest --test-dir "$build_dir" --output-on-failure -j "$JOBS"
     else
-        ctest --test-dir "$build_dir" --output-on-failure -j -LE integration
+        ctest --test-dir "$build_dir" --output-on-failure -j "$JOBS" -LE integration
         if [[ "$rest" == on ]]; then
             echo
             echo "==> REST HTTP integration: ${build_dir}"
             ctest --test-dir "$build_dir" \
-                --output-on-failure -j \
+                --output-on-failure -j "$JOBS" \
                 --no-tests=ignore \
                 -L rest-http
         fi

@@ -31,6 +31,11 @@ while IFS= read -r file; do
     fi
 done < <(git ls-files 'examples/*.cpp')
 
+# ${files[@]+...}: an empty array is unbound for the bash 3.2 of macOS.
+if [ -z "${files[*]+set}" ]; then
+    echo "no example is compiled in $build_dir" >&2
+    exit 0
+fi
 printf '%s\n' "${files[@]}" \
     | xargs -P "$(getconf _NPROCESSORS_ONLN)" -n 1 \
         uv run clang-tidy --quiet -p "$build_dir" ${extra[@]+"${extra[@]}"}
