@@ -5,8 +5,10 @@
 /// combined into one, whose move is a std::variant of theirs.
 ///
 /// Enumeration visits every child in turn; random moves pick a child by its
-/// configurable bias. The deltas, inverses and attributes of the children are
-/// forwarded per child.
+/// configurable bias. The inverses and attributes of the children are
+/// forwarded per child, and so are their deltas for each component that every
+/// child has a delta for; a component that some child has no delta for is
+/// evaluated in full for the moves of every child.
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/helpers/detail/evaluation.hpp>
@@ -417,10 +419,6 @@ class neighborhood_union_explorer
     static_assert(
         sizeof...(Explorers) >= 2,
         "a neighborhood union requires at least two NeighborhoodExplorers");
-    static_assert(
-        unique_types_v<logical_neighborhood_type_t<Explorers>...>,
-        "a neighborhood union cannot contain the same NeighborhoodExplorer "
-        "type more than once");
 
 private:
     static constexpr std::size_t child_count = sizeof...(Explorers);
@@ -455,28 +453,10 @@ private:
         const std::array<bool, child_count>& active,
         RNG& rng) const
     {
-        double max_bias = 0.0;
-
-        for (std::size_t index = 0; index < active.size(); ++index)
-        {
-            if (active[index])
-            {
-                max_bias = (std::max)(max_bias, random_biases_[index]);
-            }
-        }
-
-        if (max_bias == 0.0)
+        const double total = active_bias_total(active);
+        if (!(total > 0.0))
         {
             return std::nullopt;
-        }
-
-        double total = 0.0;
-        for (std::size_t index = 0; index < active.size(); ++index)
-        {
-            if (active[index])
-            {
-                total += random_biases_[index] / max_bias;
-            }
         }
 
         std::uniform_real_distribution<double> draw{0.0, total};
@@ -492,7 +472,7 @@ private:
             }
 
             fallback = index;
-            cumulative += random_biases_[index] / max_bias;
+            cumulative += random_biases_[index];
             if (target < cumulative)
             {
                 return index;
@@ -632,30 +612,24 @@ public:
         return std::get<Index>(explorers_);
     }
 
-    template<class Neighborhood>
+    // The child of type Neighborhood, which must occur once in the union.
+    template<class Neighborhood, class Self>
         requires tuple_contains_type_v<
             Neighborhood,
             std::tuple<logical_neighborhood_type_t<Explorers>...>>
     [[nodiscard]]
-    decltype(auto) child() noexcept
+    auto& child(this Self& self) noexcept
     {
+        static_assert(
+            (std::size_t{0} + ...
+                + std::same_as<Neighborhood, logical_neighborhood_type_t<Explorers>>)
+                == 1,
+            "this NeighborhoodExplorer type occurs more than once in the union: "
+            "name the child by its position, child<I>()");
         constexpr auto index = tuple_type_index_v<
             Neighborhood,
             std::tuple<logical_neighborhood_type_t<Explorers>...>>;
-        return std::get<index>(explorers_);
-    }
-
-    template<class Neighborhood>
-        requires tuple_contains_type_v<
-            Neighborhood,
-            std::tuple<logical_neighborhood_type_t<Explorers>...>>
-    [[nodiscard]]
-    decltype(auto) child() const noexcept
-    {
-        constexpr auto index = tuple_type_index_v<
-            Neighborhood,
-            std::tuple<logical_neighborhood_type_t<Explorers>...>>;
-        return std::get<index>(explorers_);
+        return std::get<index>(self.explorers_);
     }
 
     [[nodiscard]]

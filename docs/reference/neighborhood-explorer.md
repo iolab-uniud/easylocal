@@ -106,15 +106,20 @@ neighborhood_union(child_recipe_1, child_recipe_2, ...)
   | random_biases(b1, b2, ...)
 ```
 
-- The move type is a variant of the children's moves; each child keeps its
-  delta bindings.
+- The move type is a variant of the children's moves. A component is
+  evaluated by deltas only when every child has a delta for it, each child
+  then using its own; when one child has none, the moves of every child are
+  evaluated in full for that component (a delta for every child is the
+  remedy).
 - Enumeration visits the children in order.
 - Sampling draws a child with probability proportional to its bias, excluding
   zero-bias children and children that produced no move, until a move is found
   or no child is left. Biases are configurable (`NeighborhoodUnionParameters`).
 - Unions nest; traces record each move's route through the nesting and the
   selection statistics.
-- A neighborhood type may appear once per union.
+- A neighborhood type may appear more than once in a union, with different
+  parameters: `child<I>()` names a child by its position, `child<NHE>()` by
+  its type when it occurs once.
 - `inverse`: moves of different children never forbid each other; between
   moves of the same child, the child decides. The union has it when every
   child has it.

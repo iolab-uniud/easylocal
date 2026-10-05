@@ -916,9 +916,9 @@ easylocal_add_compile_failure_test(
     "Maximize"
 )
 easylocal_add_compile_failure_test(
-    duplicate-neighborhood-union-child
-    duplicate_neighborhood_union_child.cpp
-    "a neighborhood union cannot contain the same NeighborhoodExplorer type more than once"
+    ambiguous-neighborhood-union-child
+    ambiguous_neighborhood_union_child.cpp
+    "occurs more than once in the union: name the child by its position"
     "NHE"
 )
 easylocal_add_compile_failure_test(

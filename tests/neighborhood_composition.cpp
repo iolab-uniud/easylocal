@@ -711,6 +711,55 @@ int main()
             std::numeric_limits<std::size_t>::max(),
         "all-zero random biases disable random proposals without changing deterministic traversal");
 
+    // Random moves follow the biases: 3 to 1, with a fixed seed.
+    auto weighted_sampler = Runner{SampleNeighborhoodIndex{}}
+        | default_solution_manager_recipe()
+        | (neighborhood_union(
+               neighborhood<ReassignJobNeighborhoodExplorer>(),
+               neighborhood<SwapNeighborhoodExplorer>())
+            | random_biases(3.0, 1.0));
+    auto bound_weighted_sampler = weighted_sampler.bind(instance);
+    std::mt19937 weighted_rng{2026};
+    std::array<std::size_t, 2> drawn{};
+    for (std::size_t sample = 0; sample < 4000; ++sample)
+        ++drawn.at(bound_weighted_sampler.run(initial, weighted_rng));
+    const auto ratio = static_cast<double>(drawn[0]) / static_cast<double>(drawn[1]);
+    ok &= expect(
+        ratio > 2.7 && ratio < 3.3,
+        "random moves draw the children in the proportion of their biases");
+
+    // A child with no move falls back to the others, whatever its bias.
+    const AssignmentSolution all_on_zero{.assignment = {0, 0, 0}};
+    auto fallback_sampler = Runner{SampleNeighborhoodIndex{}}
+        | default_solution_manager_recipe()
+        | (neighborhood_union(
+               neighborhood<SwapNeighborhoodExplorer>(),
+               neighborhood<DestinationZeroNeighborhoodExplorer>())
+            | random_biases(1.0, 1000.0));
+    auto bound_fallback_sampler = fallback_sampler.bind(instance);
+    std::mt19937 fallback_rng{7};
+    for (std::size_t sample = 0; sample < 32; ++sample)
+    {
+        ok &= expect(
+            bound_fallback_sampler.run(all_on_zero, fallback_rng) == 0,
+            "a child that has no move falls back to the other children");
+    }
+
+    // The same explorer type twice, by position.
+    auto twice = neighborhood_union(
+        neighborhood<SwapNeighborhoodExplorer>(),
+        neighborhood<SwapNeighborhoodExplorer>());
+    auto twice_sampler = Runner{SampleNeighborhoodIndex{}}
+        | default_solution_manager_recipe() | std::move(twice);
+    auto bound_twice_sampler = twice_sampler.bind(instance);
+    std::mt19937 twice_rng{3};
+    std::array<std::size_t, 2> twice_drawn{};
+    for (std::size_t sample = 0; sample < 64; ++sample)
+        ++twice_drawn.at(bound_twice_sampler.run(initial, twice_rng));
+    ok &= expect(
+        twice_drawn[0] > 0 && twice_drawn[1] > 0,
+        "a union may hold the same explorer type twice");
+
     auto default_sampler =
         Runner{SampleNeighborhoodIndex{}}
         | default_solution_manager_recipe()

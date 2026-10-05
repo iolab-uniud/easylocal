@@ -11,6 +11,7 @@
 #include <easylocal/utils/detail/describe.hpp>
 
 #include <concepts>
+#include <cstddef>
 #include <exception>
 #include <filesystem>
 #include <fstream>
@@ -20,6 +21,8 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <utility>
+#include <variant>
 
 namespace easylocal
 {
@@ -148,6 +151,39 @@ concept readable_solution = detail::io::has_static_solution_read<Input, Solution
     || detail::io::adl::has_read_solution<Input, Solution>
     || detail::io::has_solution_stream_extraction<Input, Solution>;
 
+namespace detail::io
+{
+
+// A value tagged with the position of its source, as a neighborhood union
+// tags the move of a child: its text is the text of the value.
+template<class T>
+concept tagged_value = requires(const T& tagged) {
+    { T::index } -> std::convertible_to<std::size_t>;
+    tagged.value;
+};
+
+// Whether a value has a text: its own hook, operator<<, or, for a
+// std::variant or a tagged value, the text of what it holds.
+template<class T>
+struct describable_trait : std::bool_constant<describable_value<T>>
+{
+};
+
+template<class... Ts>
+struct describable_trait<std::variant<Ts...>>
+    : std::bool_constant<(describable_trait<Ts>::value && ...)>
+{
+};
+
+template<class T>
+    requires tagged_value<T> && (!describable_value<T>)
+struct describable_trait<T>
+    : describable_trait<std::remove_cvref_t<decltype(std::declval<const T&>().value)>>
+{
+};
+
+} // namespace detail::io
+
 /// A Solution that can be written to a stream, given its Input: by a member
 /// solution.write(input, out), by a free write_solution(input, solution, out)
 /// found by ADL, or by operator<<, in this order.
@@ -163,9 +199,11 @@ concept has_describe =
     detail::io::member_describable<T> || detail::io::adl::has_describe<T>;
 
 /// A value with a text for people: a member value.describe(), a free
-/// describe(value) found by ADL, or operator<<, in this order.
+/// describe(value) found by ADL, or operator<<, in this order; a std::variant
+/// of such values, and the move of a neighborhood union, are described by
+/// what they hold.
 template<class T>
-concept describable = has_describe<T> || detail::io::ostream_insertable<T>;
+concept describable = detail::io::describable_trait<T>::value;
 
 /// Reads an Input from a stream with the first hook of readable_input.
 ///
@@ -282,7 +320,12 @@ struct describe_fn
     [[nodiscard]]
     std::string operator()(const T& value) const
     {
-        return describe_text(value);
+        if constexpr (describable_value<T>)
+            return describe_text(value);
+        else if constexpr (tagged_value<T>)
+            return (*this)(value.value);
+        else
+            return std::visit([this](const auto& held) { return (*this)(held); }, value);
     }
 };
 

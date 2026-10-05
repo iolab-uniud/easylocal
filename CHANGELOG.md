@@ -37,6 +37,15 @@ reviewed by hand before tagging.
   `moves()`) no longer compiles there, instead of deep inside `cli::run` or
   `Session::run`; `with_neighborhood` checks that the neighborhood explores
   the app's Solution.
+- A neighborhood union may hold the same explorer type twice (two
+  parameterizations of one move): `child<I>()` names a child by its position,
+  and `child<NHE>()` asks for a type that occurs once. Its random moves draw a
+  child from the raw biases, without normalizing them on every call.
+- `describe` (and so the Session, the TextUI and `cli::run`) describes a
+  `std::variant` by the alternative it holds, and the move of a neighborhood
+  union by the move of its child.
+- The tutorial (chapter 6) and the reference state the rule of a union's
+  deltas: a component is evaluated by deltas only when every child has one.
 - An explorer's `input()` is optional, as the contract says: the debug checks
   of an app and of a neighborhood union, and `check(app, ...)`, use it only
   when the explorer has it.

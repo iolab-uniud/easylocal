@@ -2,6 +2,7 @@
 #include <easylocal/app/io.hpp>
 #include <easylocal/app/session.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
+#include <easylocal/helpers/neighborhood_union.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/utils/generator.hpp>
@@ -13,6 +14,8 @@
 #include <sstream>
 #include <string>
 #include <type_traits>
+#include <utility>
+#include <variant>
 
 namespace
 {
@@ -356,6 +359,8 @@ static_assert(easylocal::readable_solution<adl_io::Input, adl_io::Solution>);
 static_assert(easylocal::writable_solution<static_io::Input, static_io::Solution>);
 static_assert(easylocal::describable<int>);
 static_assert(!easylocal::describable<describe_io::Silent>);
+static_assert(
+    !easylocal::describable<std::variant<describe_io::Free, describe_io::Silent>>);
 static_assert(!easylocal::readable_input<describe_io::Silent>);
 
 template<class Input, class Solution>
@@ -647,6 +652,18 @@ void describe_prefers_the_value_hooks()
 
 } // namespace
 
+void variants_and_union_moves_are_described_by_what_they_hold()
+{
+    using move_type = std::variant<
+        easylocal::detail::tagged_neighborhood_move<0, describe_io::Free>,
+        easylocal::detail::tagged_neighborhood_move<1, describe_io::Streamed>>;
+    static_assert(easylocal::describable<move_type>);
+    assert(easylocal::describe(move_type{std::in_place_index<0>}) == "free");
+    assert(easylocal::describe(move_type{std::in_place_index<1>}) == "stream");
+    const std::variant<int, describe_io::Member> plain{describe_io::Member{}};
+    assert(easylocal::describe(plain) == "member");
+}
+
 int main()
 {
     static_member_io_has_priority();
@@ -660,4 +677,5 @@ int main()
     free_file_write_errors_name_the_file();
     describe_prefers_the_value_hooks();
     hooks_of_types_associated_with_easylocal();
+    variants_and_union_moves_are_described_by_what_they_hold();
 }
