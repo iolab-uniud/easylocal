@@ -7,6 +7,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <string_view>
 
 namespace tsp
 {
@@ -14,6 +15,12 @@ namespace tsp
 class TourLengthComponent
 {
 public:
+    // The name of the component in reports (--report).
+    static std::string_view name()
+    {
+        return "TourLength";
+    }
+
     explicit TourLengthComponent(const TspInstance& instance) : instance_{instance} {}
 
     double evaluate(const Tour& solution) const

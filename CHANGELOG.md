@@ -382,6 +382,11 @@ reviewed by hand before tagging.
 - The tutorial no longer takes the launcher of chapter 12 from `examples/tsp`:
   `examples/tutorial/launcher_main.cpp` opens a 2-opt and a swap app of the
   tutorial's own TSP. `AGENTS.md` says what each example directory is.
+- The cost components of the assignment, exam timetabling, TSP and PFSP
+  examples have a `name()`, so `--report` and the TextUI's solution window
+  name them (`component Capacity ...`) instead of numbering them, and the
+  assignment's `CapacityValue` describes itself ("0 units over capacity on 0
+  machines") instead of "(not printable)".
 - The `configs/small.cfg` of the assignment, exam timetabling and TSP
   examples are commented sample configurations of a real run, where they were
   test fixtures that cut the run to one iteration; the fixtures, and the

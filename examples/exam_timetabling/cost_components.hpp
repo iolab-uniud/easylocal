@@ -8,6 +8,7 @@
 #include "solution.hpp"
 
 #include <cassert>
+#include <string_view>
 #include <vector>
 
 namespace exam_timetabling
@@ -16,6 +17,12 @@ namespace exam_timetabling
 class StudentConflictComponent
 {
 public:
+    // The name of the component in reports (--report).
+    static std::string_view name()
+    {
+        return "StudentConflicts";
+    }
+
     explicit StudentConflictComponent(const ExamTimetablingInstance& instance)
         : instance_{instance}, conflicts_by_exam_{conflicts_by_exam(instance)}
     {
@@ -66,6 +73,12 @@ private:
 class ConsecutiveExamComponent
 {
 public:
+    // The name of the component in reports (--report).
+    static std::string_view name()
+    {
+        return "ConsecutiveExams";
+    }
+
     explicit ConsecutiveExamComponent(const ExamTimetablingInstance& instance)
         : instance_{instance}
     {
@@ -96,6 +109,12 @@ private:
 class TimeslotLoadComponent
 {
 public:
+    // The name of the component in reports (--report).
+    static std::string_view name()
+    {
+        return "TimeslotLoad";
+    }
+
     explicit TimeslotLoadComponent(const ExamTimetablingInstance& instance)
         : instance_{instance}
     {

@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <string_view>
 #include <vector>
 
 namespace pfsp
@@ -21,6 +22,12 @@ namespace pfsp
 class MakespanComponent
 {
 public:
+    // The name of the component in reports (--report).
+    static std::string_view name()
+    {
+        return "Makespan";
+    }
+
     explicit MakespanComponent(const PfspInstance& instance) : instance_{instance} {}
 
     time_type evaluate(const Schedule& solution) const

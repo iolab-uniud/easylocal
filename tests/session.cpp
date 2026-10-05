@@ -691,8 +691,9 @@ void session_evaluates_the_current_solution()
     assert(cost.soft() == 1);
 }
 
-// The assignment's components have neither name() nor describe(solution):
-// the report gives their position and their value only.
+// The assignment's components have a name() and no describe(solution): the
+// report gives their names and their values, a struct value by its own
+// describe().
 void session_reports_each_cost_component()
 {
     easylocal::Session session{make_application()};
@@ -702,11 +703,17 @@ void session_reports_each_cost_component()
     const auto report = session.cost_report();
 
     assert(report.size() == 2);
-    assert(report[0].name == "#1");
-    assert(report[1].name == "#2");
+    assert(report[0].name == "Capacity");
+    assert(report[0].value.ends_with(" units over capacity on 0 machines"));
+    assert(report[1].name == "LoadImbalance");
     assert(report[1].value == "1"); // the load imbalance, the soft cost
     assert(report[0].description.empty());
     assert(report[1].description.empty());
+
+    // A component without a name is reported by its position.
+    easylocal::Session counted{make_counted_application(), CountedInput{}, 0};
+    counted.use_initial_solution();
+    assert(counted.cost_report().front().name == "#1");
 }
 
 void session_runs_app_check_on_the_current_solution()

@@ -10,6 +10,8 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <string>
+#include <string_view>
 #include <vector>
 
 namespace assignment
@@ -22,6 +24,13 @@ struct CapacityValue
     std::int64_t total_overload{};
 
     bool operator==(const CapacityValue&) const = default;
+
+    // The value as --report and the TextUI show it.
+    std::string describe() const
+    {
+        return std::to_string(total_overload) + " units over capacity on "
+            + std::to_string(overloaded_machines) + " machines";
+    }
 };
 
 // The part of a machine's load beyond its capacity.
@@ -38,6 +47,12 @@ inline quantity_type overload(quantity_type load, quantity_type capacity)
 class CapacityCostComponent
 {
 public:
+    // The name of the component in reports (--report).
+    static std::string_view name()
+    {
+        return "Capacity";
+    }
+
     explicit CapacityCostComponent(const AssignmentInstance& instance)
         : instance_{instance}
     {
@@ -76,6 +91,12 @@ private:
 class LoadImbalanceCostComponent
 {
 public:
+    // The name of the component in reports (--report).
+    static std::string_view name()
+    {
+        return "LoadImbalance";
+    }
+
     explicit LoadImbalanceCostComponent(const AssignmentInstance& instance)
         : instance_{instance}
     {
