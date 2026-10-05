@@ -627,7 +627,8 @@ public:
 
     bool is_valid(const Tour& tour, const TwoOpt& move) const
     {
-        return move.i + 2 <= move.j && move.j < tour.order.size();
+        const auto n = tour.order.size();
+        return move.i + 2 <= move.j && move.j < n && !(move.i == 0 && move.j + 1 == n);
     }
 
     void make_move(Tour& tour, const TwoOpt& move) const

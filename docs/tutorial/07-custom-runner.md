@@ -42,11 +42,16 @@ public:
         run.limit_evaluations(parameters_.max_evaluations);
         auto current = run.start(solution); // evaluates, emits run_started
 
-        while (!run.should_stop()) // cancellation or exhausted budget
+        // should_stop: cancelled, the budget spent, the target reached or the
+        // time up.
+        while (!run.should_stop())
         {
             auto move = run.random_move(solution, rng);
-            if (!move)
-                break;
+            if (!move) // no move at all: a local optimum
+                return run.finish(
+                    std::move(solution),
+                    current.cost(),
+                    easylocal::termination_reason::local_optimum);
 
             run.next_iteration();
             auto candidate = run.evaluate_move(solution, current, *move);

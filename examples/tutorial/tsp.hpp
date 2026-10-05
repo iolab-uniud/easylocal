@@ -8,6 +8,7 @@
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/utils/limit.hpp>
+#include <easylocal/utils/termination.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -360,9 +361,11 @@ public:
         }
     }
 
+    // The moves that moves() lists: (0, n - 1) removes the same edge twice.
     bool is_valid(const Tour& tour, const TwoOpt& move) const
     {
-        return move.i + 2 <= move.j && move.j < tour.order.size();
+        const auto n = tour.order.size();
+        return move.i + 2 <= move.j && move.j < n && !(move.i == 0 && move.j + 1 == n);
     }
 
     // The segment is the j - i cities from position i + 1: a span views it in
@@ -544,11 +547,16 @@ public:
         run.limit_evaluations(parameters_.max_evaluations);
         auto current = run.start(solution); // evaluates, emits run_started
 
-        while (!run.should_stop()) // cancellation or exhausted budget
+        // should_stop: cancelled, the budget spent, the target reached or the
+        // time up.
+        while (!run.should_stop())
         {
             auto move = run.random_move(solution, rng);
-            if (!move)
-                break;
+            if (!move) // no move at all: a local optimum
+                return run.finish(
+                    std::move(solution),
+                    current.cost(),
+                    easylocal::termination_reason::local_optimum);
 
             run.next_iteration();
             auto candidate = run.evaluate_move(solution, current, *move);

@@ -202,9 +202,11 @@ public:
         }
     }
 
+    // The moves that moves() lists: (0, n - 1) removes the same edge twice.
     bool is_valid(const Tour& tour, const TwoOpt& move) const
     {
-        return move.i + 2 <= move.j && move.j < tour.order.size();
+        const auto n = tour.order.size();
+        return move.i + 2 <= move.j && move.j < n && !(move.i == 0 && move.j + 1 == n);
     }
 
     // The segment is the j - i cities from position i + 1: a span views it in
