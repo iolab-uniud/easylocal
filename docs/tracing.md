@@ -187,6 +187,22 @@ when a run may emit millions of events and trace volume matters.  Core does not
 choose a trace path and does not depend on a JSON, binary-serialization or
 logging library.
 
+### From the command line
+
+`cli::run` records the run with `--trace <file>`: JSON Lines for a `.jsonl`
+name, ELTR otherwise, with timestamps, and with the program and every
+parameter (the runner that runs, the seed, the instance, the app's parameters)
+as metadata. The recorder has the app's cost type: a pipeline stage on
+another cost, such as an `until_feasible()` stage on the hard cost, sends only
+its `run_context`. A file that cannot be written is an error, after the run
+when the writes fail. The TextUI and the REST service do not record traces; a
+program records one from a Session with `session.run(name, with(recorder))`.
+
+```sh
+easylocal_tutorial_cli --instance five.tsp --runner sa --trace sa.eltrace
+scripts/eltr.py sa.eltrace --format summary
+```
+
 ### ELTR layout
 
 All integers are little-endian; a string is a `u32` size and UTF-8 bytes. A

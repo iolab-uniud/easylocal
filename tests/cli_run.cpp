@@ -11,6 +11,7 @@
 #include <filesystem>
 #include <fstream>
 #include <initializer_list>
+#include <iterator>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -252,6 +253,61 @@ int main()
             "2"});
     assert(cascaded.status == 0);
     assert(cascaded.out.starts_with("cost 26\ntime "));
+
+    // --trace records the run: JSON Lines for a .jsonl name, with the
+    // metadata in the header line, a run_context per stage and timestamps;
+    // ELTR otherwise.
+    {
+        const auto jsonl_file = directory / "easylocal_cli_run_trace.jsonl";
+        const auto traced = run(
+            {"--instance",
+                instance,
+                "--seed",
+                "1",
+                "--runner",
+                "cascade",
+                "--trace",
+                jsonl_file.string()});
+        assert(traced.status == 0);
+        assert(traced.out.starts_with("cost 26\ntime "));
+        std::ifstream jsonl{jsonl_file};
+        std::string header;
+        std::getline(jsonl, header);
+        assert(header.starts_with("{\"event\":\"trace\",\"version\":1,\"metadata\":{"));
+        assert(header.find("\"runner\":\"cascade\"") != std::string::npos);
+        assert(header.find("\"seed\":\"1\"") != std::string::npos);
+        const std::string events{
+            std::istreambuf_iterator<char>{jsonl},
+            std::istreambuf_iterator<char>{}};
+        assert(
+            events.find(
+                "{\"event\":\"run_context\",\"stage\":\"first\",\"stage_index\":0,"
+                "\"attempt\":0,\"elapsed_ns\":")
+            != std::string::npos);
+        assert(events.find("\"stage\":\"second\"") != std::string::npos);
+        assert(events.find("\"event\":\"run_finished\"") != std::string::npos);
+        jsonl.close();
+        std::filesystem::remove(jsonl_file);
+
+        const auto eltr_file = directory / "easylocal_cli_run_trace.eltrace";
+        const auto binary = run(
+            {"--instance", instance, "--runner", "fi", "--trace", eltr_file.string()});
+        assert(binary.status == 0);
+        std::ifstream eltr{eltr_file, std::ios::binary};
+        std::string magic(4, '\0');
+        eltr.read(magic.data(), 4);
+        assert(magic == "ELTR");
+        eltr.close();
+        std::filesystem::remove(eltr_file);
+
+        const auto unwritable = run(
+            {"--instance",
+                instance,
+                "--trace",
+                (directory / "no-such-directory" / "trace.jsonl").string()});
+        assert(unwritable.status == 1);
+        assert(unwritable.err.starts_with("error: trace: cannot write "));
+    }
 
     const auto bad_start = run({"--instance", instance, "--start", "greedy"});
     assert(bad_start.status == 2);

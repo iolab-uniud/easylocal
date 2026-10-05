@@ -151,7 +151,7 @@ focused control (Tab, arrows).
 `cli::run` parses the command line and a `--config` file with
 `config::load_and_apply`: its own block `cli::parameters` at the root
 (`instance`, `seed`, `runner`, `start`, `solution`, `output`, `target`,
-`timeout`, `max_evaluations`, `report`), the
+`timeout`, `max_evaluations`, `report`, `trace`), the
 app's `configuration()`, and `options.parameters`, the program's own set;
 `options.defaults`, a `cli::parameters`, gives the values of its switches
 before the command line. It
@@ -164,7 +164,12 @@ has `random_solution`, `initial` otherwise), runs the runner by name, with
 `termination`), with `--report`
 the session's `cost_report()` (a line `component <name> <value>` for each
 component, followed by its description, indented), and the solution
-(or saves it to `--output`) to `options.out`; errors go to `options.err`. It
+(or saves it to `--output`) to `options.out`; errors go to `options.err`.
+With `--trace <file>` the run is recorded, with timestamps and with the
+program and its parameters as metadata, by a `jsonl_recorder` for a `.jsonl`
+name and a `binary_recorder` otherwise ([Tracing](../tracing.md#from-the-command-line));
+a file that cannot be written is an error (1), a cost the format cannot encode
+an invalid command line (2). It
 returns 0, 2 for an invalid command line, an unknown runner or a `--solution`
 that is not valid for the Input (`error: solution: ...`), 1 when the run
 throws (`error: unknown exception` for what is not a `std::exception`). It requires the `read_input` hook, and the solution hooks only when the

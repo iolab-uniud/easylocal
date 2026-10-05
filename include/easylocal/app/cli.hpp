@@ -18,6 +18,9 @@
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/config/setup.hpp>
 #include <easylocal/cost/text.hpp>
+#include <easylocal/trace/binary.hpp>
+#include <easylocal/trace/jsonl.hpp>
+#include <easylocal/trace/tracer.hpp>
 #include <easylocal/utils/detail/number_text.hpp>
 #include <easylocal/utils/detail/text.hpp>
 
@@ -25,15 +28,18 @@
 #include <charconv>
 #include <chrono>
 #include <cmath>
+#include <concepts>
 #include <cstdint>
 #include <exception>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -41,7 +47,8 @@ namespace easylocal::cli
 {
 
 /// The command line of cli::run: --instance, --seed, --runner, --start,
-/// --solution, --output, --target, --timeout, --max_evaluations and --report.
+/// --solution, --output, --target, --timeout, --max_evaluations, --report and
+/// --trace.
 ///
 /// The app's parameters come next to them: `--runners.<name>.*`, `--cost.*` and
 /// `--neighborhood.*`. Every field has an initializer, so that designated
@@ -71,6 +78,9 @@ struct parameters
     limit max_evaluations{unlimited};
     /// Whether to print the value of each cost component, and its description.
     bool report{false};
+    /// The file to record the trace of the run to, with timestamps: JSON Lines
+    /// when its extension is .jsonl, ELTR otherwise; empty: no trace.
+    std::filesystem::path trace{};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -109,7 +119,11 @@ struct parameters
                 "beyond the runner's own)",
                 config::range(0, easylocal::unlimited)),
             config::field<"report", &parameters::report>(
-                "Print the value of each cost component, and its description"));
+                "Print the value of each cost component, and its description"),
+            config::field<"trace", &parameters::trace>(
+                "Record the trace of the run to this file, JSON Lines for a .jsonl "
+                "name, ELTR otherwise (empty: no trace)",
+                easylocal::unlimited));
     }
 
     /// Whether the parameters are valid, and why not.
@@ -156,6 +170,113 @@ struct options
 
 namespace detail
 {
+
+// Whether Event carries no cost, or a cost of type Cost.
+template<class Event, class Cost>
+inline constexpr bool event_of_cost = true;
+
+template<template<class> class Event, class EventCost, class Cost>
+inline constexpr bool event_of_cost<Event<EventCost>, Cost> =
+    std::same_as<EventCost, Cost>;
+
+// The events of a run that a recorder of the app's cost receives: those
+// without a cost and those of that cost. A pipeline stage on another cost,
+// such as an until_feasible() stage on the hard cost, sends only its
+// run_context.
+template<class Recorder, class Cost>
+class cost_filter
+{
+public:
+    explicit cost_filter(Recorder& recorder) noexcept : recorder_{recorder} {}
+
+    template<class Event>
+    static constexpr bool observes =
+        trace::observes<Recorder, Event> && event_of_cost<Event, Cost>
+        && requires(Recorder& recorder, const Event& value) { recorder.emit(value); };
+
+    template<class Event>
+        requires observes<Event>
+    void emit(const Event& value)
+    {
+        recorder_.emit(value);
+    }
+
+private:
+    Recorder& recorder_;
+};
+
+// Whether a cost has the default JSON writer of the JSONL recorder.
+template<class Cost>
+inline constexpr bool json_cost_writer_available =
+    trace::json_cost_writer_for<trace::ostream_json_cost_writer, Cost>;
+
+// --trace: runs run_with(&tracer) with a recorder of the app's cost writing to
+// path, JSON Lines for a .jsonl name and ELTR otherwise, with timestamps and
+// metadata; ran is what run_with returns. The exit status: 0 once the trace is
+// written, 1 when the file cannot be written, 2 when the cost has no default
+// encoding in that format.
+template<class Cost, class Run>
+int run_traced(
+    const std::filesystem::path& path,
+    std::vector<std::pair<std::string, std::string>> metadata,
+    std::ostream& err,
+    const Run& run_with,
+    bool& ran)
+{
+    const bool jsonl = path.extension() == ".jsonl";
+    if constexpr (!json_cost_writer_available<Cost>)
+    {
+        if (jsonl)
+        {
+            err << "trace: this cost cannot be written as JSON: give it an operator<<, "
+                   "or trace to an ELTR file\n";
+            return 2;
+        }
+    }
+    if constexpr (!trace::detail::default_binary_cost<Cost>::value)
+    {
+        if (!jsonl)
+        {
+            err << "trace: this cost has no ELTR encoding: trace to a .jsonl file\n";
+            return 2;
+        }
+    }
+    std::ofstream file{path, std::ios::binary};
+    if (!file)
+    {
+        err << "error: trace: cannot write " << path.string() << '\n';
+        return 1;
+    }
+    const auto record = [&](auto& recorder) {
+        cost_filter<std::remove_cvref_t<decltype(recorder)>, Cost> filter{recorder};
+        ran = run_with(&filter);
+        recorder.flush();
+        if (!recorder.good())
+        {
+            err << "error: trace: cannot write " << path.string() << '\n';
+            return 1;
+        }
+        return 0;
+    };
+    if (jsonl)
+    {
+        if constexpr (json_cost_writer_available<Cost>)
+        {
+            trace::jsonl_recorder<Cost> recorder{
+                file,
+                {.metadata = std::move(metadata), .timestamps = true}};
+            return record(recorder);
+        }
+    }
+    else if constexpr (trace::detail::default_binary_cost<Cost>::value)
+    {
+        trace::binary_recorder<Cost> recorder{
+            file,
+            {.metadata = std::move(metadata), .timestamps = true}};
+        return record(recorder);
+    }
+    return 2; // the cost was checked above
+}
 
 // One line per cost component, "component <name> <value>", followed by its
 // description, indented, when it has one.
@@ -443,7 +564,43 @@ int run(App application, const int argc, char* argv[], options settings = {})
         }
 
         const auto begin = std::chrono::steady_clock::now();
-        const bool ran = session.run(runner, limits);
+        // The run, with the limits, the target and a tracer.
+        const auto run_with = [&]<class Tracer>(Tracer* tracer) {
+            const run_options<Tracer, typename session_type::cost_type> options{
+                .control = limits.control,
+                .tracer = tracer,
+                .target = limits.target,
+                .time_limit = limits.time_limit,
+                .evaluation_budget = limits.evaluation_budget,
+                .front = limits.front,
+            };
+            return session.run(runner, options);
+        };
+        bool ran = false;
+        if (command_line.trace.empty())
+            ran = run_with(static_cast<trace::null_tracer*>(nullptr));
+        else
+        {
+            // What tells the run apart: the program and its parameters, with
+            // the runner that runs.
+            std::vector<std::pair<std::string, std::string>> metadata{
+                {"program", argc > 0 ? argv[0] : "program"}};
+            for (const auto& info : values)
+                if (!info.path.starts_with("tuning."))
+                    metadata.emplace_back(
+                        info.path,
+                        info.path == "runner" ? runner : info.value);
+            if (const auto status = detail::run_traced<typename session_type::cost_type>(
+                    command_line.trace,
+                    std::move(metadata),
+                    err,
+                    run_with,
+                    ran);
+                status != 0)
+            {
+                return status;
+            }
+        }
         const std::chrono::duration<double> elapsed =
             std::chrono::steady_clock::now() - begin;
         if (!ran)

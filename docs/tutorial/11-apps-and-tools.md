@@ -199,6 +199,7 @@ termination completed
 | `--max_evaluations <n>` | stop the run after `n` evaluations (`unlimited` by default); a runner's own budget, if smaller, still applies |
 | `--runners.<name>.*`, `--cost.*`, `--neighborhood.*` | the app's parameters, as `configuration()` lists them |
 | `--report true` | also print the value of each cost component, see below |
+| `--trace <file>` | record the [trace](../tracing.md) of the run, with timestamps: JSON Lines for a `.jsonl` name, ELTR otherwise |
 | `--config <file>` | the same settings from a file (chapter 9); `--help` lists them all |
 
 - It prints `cost`, `time` (the seconds of the run), the effort of the run

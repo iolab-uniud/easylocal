@@ -122,6 +122,10 @@ reviewed by hand before tagging.
   apart in a trace, the stages on the hard cost included. The memory and JSONL
   recorders keep it, and `eltr.py --format summary` gives each run its stage
   and attempt.
+- `cli::run` records the trace of the run with `--trace <file>`: JSON Lines
+  for a `.jsonl` name, ELTR otherwise, with timestamps and with the program and
+  its parameters as metadata. A pipeline stage on another cost than the app's
+  (`until_feasible()`) records only its `run_context`.
 - Timestamps in traces, as a recorder option: with `timestamps` in
   `binary_buffer_options` or `jsonl_options`, each core event ends with
   `elapsed_ns`, the nanoseconds since the recorder was constructed (a `u64`
