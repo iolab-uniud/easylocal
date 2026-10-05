@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <limits>
@@ -22,6 +23,7 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <variant>
 #include <vector>
 
 namespace
@@ -384,6 +386,44 @@ int main()
             && last_start.termination
                 == el::termination_reason::evaluation_budget_exhausted,
         "a MultiStart whose last start spends the budget says so");
+
+    // A library recorder sees each start of a MultiStart as its run_context,
+    // then its run, from run_started to run_finished.
+    {
+        using recorder_type = el::trace::memory_recorder<int>;
+        auto three_starts =
+            el::make_solver<solvers::MultiStart>(
+                frugal,
+                solvers::MultiStartParameters{.starts = 3})
+                .initialization(el::initialization::initial)
+                .seed(3);
+        recorder_type recorder;
+        static_cast<void>(three_starts.solve(instance, el::with(recorder)));
+        std::vector<std::size_t> attempts;
+        std::vector<std::size_t> evaluations;
+        bool in_order = true;
+        const auto& records = recorder.records();
+        for (std::size_t index = 0; index < records.size(); ++index)
+        {
+            if (const auto* context =
+                    std::get_if<recorder_type::run_context_record>(&records[index]))
+            {
+                attempts.push_back(context->attempt);
+                in_order = in_order && index + 1 < records.size()
+                    && std::holds_alternative<recorder_type::run_started_record>(
+                        records[index + 1]);
+            }
+            else if (const auto* end =
+                         std::get_if<recorder_type::run_finished_record>(&records[index]))
+            {
+                evaluations.push_back(end->evaluations);
+            }
+        }
+        ok &= expect(
+            attempts == std::vector<std::size_t>{0, 1, 2} && in_order
+                && evaluations == std::vector<std::size_t>{5, 5, 5},
+            "a memory recorder records each start of a MultiStart after its run_context");
+    }
     auto budgeted_pipeline = solvers::pipeline(
         solvers::stage("first", runner) & solvers::max_evaluations(10),
         solvers::stage("second", runner));

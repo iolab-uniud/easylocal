@@ -6,6 +6,7 @@
 #include <easylocal/runners/simulated_annealing.hpp>
 #include <easylocal/solvers.hpp>
 #include <easylocal/trace/events.hpp>
+#include <easylocal/trace/memory_recorder.hpp>
 
 #include <algorithm>
 #include <concepts>
@@ -18,7 +19,9 @@
 #include <stop_token>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace
@@ -747,6 +750,42 @@ bool run()
     ok &= expect(
         counter.contexts == std::vector<std::string>{"first 0 0", "second 1 0"},
         "each stage's run is preceded by its run_context, the hard stage included");
+
+    // A recorder of the full cost: the run_context of both stages, and only
+    // the events of the second, which runs on its cost.
+    {
+        using full_cost = std::remove_cvref_t<decltype(stopped_at_feasible.cost)>;
+        using recorder_type = trace::memory_recorder<full_cost>;
+        recorder_type recorder;
+        static_cast<void>(stopping_solver.solve(instance, with(no_stop, recorder)));
+        std::vector<std::string> contexts;
+        std::size_t started = 0;
+        std::size_t finished = 0;
+        bool second_stage = false;
+        bool events_in_order = true;
+        for (const auto& record : recorder.records())
+        {
+            if (const auto* context =
+                    std::get_if<recorder_type::run_context_record>(&record))
+            {
+                contexts.push_back(context->stage);
+                second_stage = context->stage == "second";
+            }
+            else
+            {
+                events_in_order = events_in_order && second_stage;
+                started +=
+                    std::holds_alternative<recorder_type::run_started_record>(record);
+                finished +=
+                    std::holds_alternative<recorder_type::run_finished_record>(record);
+            }
+        }
+        ok &= expect(
+            contexts == std::vector<std::string>{"first", "second"} && started == 1
+                && finished == 1 && events_in_order,
+            "a recorder of the full cost sees the run_context of every stage and the "
+            "events of the stage on its cost");
+    }
 
     std::stop_source stop;
     stop.request_stop();
