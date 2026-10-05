@@ -202,6 +202,9 @@ reviewed by hand before tagging.
 - REST: cancelling a queued run makes it `cancelled` at once: it leaves its
   place in the queue and can be deleted, instead of staying `queued` until a
   worker took it.
+- REST: `GET /parameters` no longer reports every parameter as `read_only`
+  (a run may change any of them), and lists the `kind`, `domain`, `active` and
+  `condition` of each parameter.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

@@ -11,6 +11,7 @@
 
 #include <easylocal/adapters/rest/execution.hpp>
 #include <easylocal/app/session.hpp>
+#include <easylocal/config/domain.hpp>
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/cost/concepts.hpp>
 #include <easylocal/runners/run_control.hpp>
@@ -203,6 +204,30 @@ inline constexpr std::size_t max_json_depth = 64;
             --depth;
     }
     return false;
+}
+
+// The kind of a parameter's value, as GET /parameters lists it.
+[[nodiscard]] inline std::string_view kind_name(
+    const config::parameter_kind kind) noexcept
+{
+    switch (kind)
+    {
+    case config::parameter_kind::boolean:
+        return "boolean";
+    case config::parameter_kind::integer:
+        return "integer";
+    case config::parameter_kind::real:
+        return "real";
+    case config::parameter_kind::limit:
+        return "limit";
+    case config::parameter_kind::text:
+        return "text";
+    case config::parameter_kind::path:
+        return "path";
+    case config::parameter_kind::list:
+        return "list";
+    }
+    return "text";
 }
 
 // The answer about a run that does not exist, or no longer does.
@@ -677,7 +702,7 @@ private:
     }
 
     // The app's parameters, with the values a run uses unless its request
-    // changes them.
+    // changes them, the kind of each value, its domain and its condition.
     [[nodiscard]] crow::response parameters_response() const
     {
         crow::json::wvalue body;
@@ -690,7 +715,12 @@ private:
             entry["path"] = parameter.path;
             entry["description"] = std::string{parameter.description};
             entry["value"] = parameter.value;
-            entry["read_only"] = parameter.read_only;
+            entry["kind"] = std::string{detail::kind_name(parameter.kind)};
+            if (parameter.domain)
+                entry["domain"] = parameter.domain.text();
+            entry["active"] = parameter.active;
+            if (parameter.condition)
+                entry["condition"] = parameter.condition->to_string();
         }
         return detail::json_response(200, std::move(body));
     }

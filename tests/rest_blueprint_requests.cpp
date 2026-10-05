@@ -469,8 +469,19 @@ void a_run_has_its_own_parameters(crow::SimpleApp& server)
     assert(listed.code == 200);
     bool found = false;
     for (const auto& parameter : listed.body["parameters"])
+    {
+        // Every parameter can be changed by a run: none is read-only.
+        assert(!parameter.has("read_only"));
+        assert(parameter.has("kind") && parameter.has("active"));
         if (text(parameter["path"]) == "runners.fi.max_evaluations")
+        {
             found = text(parameter["value"]) == "100";
+            assert(text(parameter["kind"]) == "limit");
+            assert(!text(parameter["domain"]).empty());
+            assert(parameter["active"].b());
+            assert(!parameter.has("condition"));
+        }
+    }
     assert(found);
 
     // Nested objects and dotted paths alike: a budget of one evaluation.
