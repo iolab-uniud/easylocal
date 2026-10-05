@@ -29,7 +29,9 @@ solution reached (`solution_hash`, see
 Search Trajectory Networks and Local Optima Networks. It is emitted only when
 the problem has a solution hash, and the hash is computed only when the tracer
 observes the event, so the hash costs nothing to a run that does not record
-it. Every recorder observes every core event; a run that builds no trajectory
+it. The 64-bit hash is a `u64` in ELTR and, in JSONL and in the output of
+`eltr.py`, a string of 16 hexadecimal digits (`"00000000feedface"`): as a JSON
+number, JavaScript and jq would round it to a double. Every recorder observes every core event; a run that builds no trajectory
 or local optima network leaves the visited solutions out at compile time with
 `trace::without`, which wraps any tracer and hides the given event templates
 from the search:

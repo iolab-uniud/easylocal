@@ -17,8 +17,10 @@ named 0, 1, ... become a list).
 The JSON Lines output starts with a "trace" line (format version, metadata,
 cost layout) and goes on with one line per record, with the field names of
 trace::jsonl_recorder (and null for NaN and the infinities, as it writes them),
-so the tools that read a JSONL trace read a decoded ELTR trace too. A record without a schema becomes {"event": "user" (or "unknown"
-for a core tag), "tag": ..., "payload": hex}.
+so the tools that read a JSONL trace read a decoded ELTR trace too; solution
+hashes are strings of 16 hexadecimal digits, as there, which JavaScript and jq
+read without rounding. A record without a schema becomes {"event": "user" (or
+"unknown" for a core tag), "tag": ..., "payload": hex}.
 
 The summary lists the runs in order, each with its stage, stage index and
 attempt when a solver emitted a run_context before it.
@@ -168,6 +170,11 @@ def listify(node: Any) -> Any:
     return items
 
 
+def is_hash(field: str) -> bool:
+    """Whether a core event's field is a solution hash, written in hexadecimal."""
+    return field == "hash" or field.endswith("_hash")
+
+
 def type_name(kind: int) -> str:
     return TYPES[kind][0]
 
@@ -262,6 +269,8 @@ class Trace:
             record = {"event": name}
             for field, kind in fields:
                 record[field] = reader.value(kind, self.cost_fields)
+                if tag < FIRST_USER_TAG and kind == 7 and is_hash(field):
+                    record[field] = f"{record[field]:016x}"
             if not reader.finished():
                 raise FormatError(f"{what} ({name}) is longer than its fields")
             yield record

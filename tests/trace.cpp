@@ -817,8 +817,8 @@ int main()
             });
         ok &= expect(
             jsonl.str().find("\"event\":\"solution_visited\"") != std::string::npos
-                && jsonl.str().find("\"hash\":42") != std::string::npos,
-            "JSONL recorder writes solution_visited with its hash");
+                && jsonl.str().find("\"hash\":\"000000000000002a\"") != std::string::npos,
+            "JSONL recorder writes solution_visited with its hash in hexadecimal");
     }
 
     // The run_context of a run, kept by the memory recorder with its stage

@@ -182,7 +182,8 @@ class FixtureTraces(unittest.TestCase):
     def test_search_trajectory_network(self):
         with open(self.path / "integral.eltr", "rb") as stream:
             network = eltr.search_trajectory_network(eltr.Trace(stream))
-        start, local = 0xFEEDFACECAFEBEEF, 7
+        # Hashes are 16 hexadecimal digits, as jsonl_recorder writes them.
+        start, local = "feedfacecafebeef", "0000000000000007"
         self.assertEqual(
             network["nodes"],
             [

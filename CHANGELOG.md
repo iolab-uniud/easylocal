@@ -125,6 +125,10 @@ reviewed by hand before tagging.
 
 ### Changed
 
+- **Breaking:** the solution hashes of `solution_visited` are strings of 16
+  hexadecimal digits in JSONL (`jsonl_recorder`) and in the output of
+  `eltr.py`, the STN's nodes and edges included: as JSON numbers, JavaScript
+  and jq rounded them to doubles. ELTR keeps them as `u64`.
 - **Breaking:** `search_run::with_context(ctx)` is replaced by
   `run.with_evaluation(wrap)`, which keeps the run's context and swaps only its
   evaluation facility for `wrap(run.evaluation())`. A decorated context

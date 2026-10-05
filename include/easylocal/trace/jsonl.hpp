@@ -12,6 +12,7 @@
 #include <cmath>
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <ios>
 #include <limits>
 #include <ostream>
@@ -69,6 +70,19 @@ inline void write_json_string(std::ostream& out, const std::string_view text)
             out << character;
     }
     out << '"';
+}
+
+// A 64-bit solution hash as JSON: a string of 16 hexadecimal digits, which
+// JavaScript and jq read without rounding it to a double.
+inline void write_json_hash(std::ostream& out, const std::uint64_t hash)
+{
+    static constexpr char hex[] = "0123456789abcdef";
+    char text[18];
+    text[0] = '"';
+    for (int digit = 0; digit < 16; ++digit)
+        text[16 - digit] = hex[(hash >> (4 * digit)) & 0xfU];
+    text[17] = '"';
+    out.write(text, sizeof text);
 }
 
 } // namespace detail
@@ -270,8 +284,9 @@ public:
     {
         write_line([&](std::ostream& out) {
             out << "{\"event\":\"solution_visited\",\"evaluations\":" << value.evaluations
-                << ",\"iterations\":" << value.iterations << ",\"hash\":" << value.hash
-                << ",\"cost\":";
+                << ",\"iterations\":" << value.iterations << ",\"hash\":";
+            detail::write_json_hash(out, value.hash);
+            out << ",\"cost\":";
             cost_writer_(out, value.cost);
             out << "}\n";
         });
