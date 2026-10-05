@@ -33,6 +33,7 @@ errors of a floating-point cost updated by deltas:
 | incremental evaluation | a delta disagreeing with the full re-evaluation |
 | delta sign | with a `compare` at the root of the cost expression, a `cost::delta` whose sign disagrees with it (chapter 2) |
 | random proposal, random proposal application | a sampled move that is not valid, or that breaks the solution |
+| runner parameters | a registered runner whose `parameters_type` is not a parameter block (chapter 7), so no frontend can change it; an empty one has nothing to configure |
 | runner configuration, runner construction | invalid registered parameters, or a runner that cannot be built |
 | app configuration | invalid parameters of the app, or pipeline stages without distinct names |
 | parameter domain | a parameter of the app that declares no domain (chapter 9): give it a range, `one_of`, or `easylocal::unlimited` for any value |

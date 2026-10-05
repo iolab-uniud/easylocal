@@ -63,19 +63,17 @@ struct named_run_result
 namespace detail
 {
 
-// A runner algorithm registered in an app is identified by its own class and
-// is constructed from its default-initializable parameters_type.
+// A runner algorithm an app can register: constructed from its
+// default-initializable parameters_type, which is configurable under
+// runners.<name> when it is a parameter block.
 template<class Algorithm>
-concept configurable_app_algorithm =
-    requires {
-        typename Algorithm::parameters_type;
-    } &&
-    std::default_initializable<typename Algorithm::parameters_type> &&
-    std::constructible_from<Algorithm, typename Algorithm::parameters_type>;
+concept app_algorithm = requires { typename Algorithm::parameters_type; }
+    && std::default_initializable<typename Algorithm::parameters_type>
+    && std::constructible_from<Algorithm, typename Algorithm::parameters_type>;
 
 // A runner registered in an app: its name, its parameters and, unless it runs
 // on the app's neighborhood (unconfigured_t), the recipe of its own.
-template<configurable_app_algorithm Algorithm, class NeighborhoodSpec = unconfigured_t>
+template<app_algorithm Algorithm, class NeighborhoodSpec = unconfigured_t>
 struct app_runner_registration
 {
     using algorithm_type = Algorithm;
@@ -709,7 +707,7 @@ public:
     /// The app with a runner of Algorithm registered as name, on the app's
     /// neighborhood: the method spelling of `app | runner<Algorithm>(name,
     /// parameters)`.
-    template<detail::configurable_app_algorithm Algorithm>
+    template<detail::app_algorithm Algorithm>
         requires(!std::same_as<SMSpec, detail::unconfigured_t>)
         && (!std::same_as<NHESpec, detail::unconfigured_t>)
     [[nodiscard]]
@@ -729,7 +727,7 @@ public:
     /// neighborhood, built from the recipe neighborhood over the app's
     /// SolutionManager: the method spelling of `app | runner<Algorithm>(name,
     /// parameters, neighborhood)`.
-    template<detail::configurable_app_algorithm Algorithm, class Spec>
+    template<detail::app_algorithm Algorithm, class Spec>
         requires(!std::same_as<SMSpec, detail::unconfigured_t>)
         && (!std::same_as<NHESpec, detail::unconfigured_t>)
         && detail::is_neighborhood_spec_v<std::remove_cvref_t<Spec>>
@@ -1235,9 +1233,10 @@ inline App<detail::unconfigured_t, detail::unconfigured_t> app(std::string name)
 /// sm | nhe | runner<runners::FirstImprovement>("fi", {...})`.
 ///
 /// The name is its key, and the segment of its parameter paths
-/// (`runners.<name>.*`). Requires an algorithm with a default-constructible
-/// parameters_type, constructible from it.
-template<detail::configurable_app_algorithm Algorithm>
+/// (`runners.<name>.*`): the parameters are configurable when the
+/// parameters_type is a parameter block. Requires an algorithm with a
+/// default-constructible parameters_type, constructible from it.
+template<detail::app_algorithm Algorithm>
 [[nodiscard]]
 detail::app_runner_registration<Algorithm> runner(
     std::string name,
@@ -1254,7 +1253,7 @@ detail::app_runner_registration<Algorithm> runner(
 /// `runners.<name>.neighborhood.*`. Requires an algorithm with a
 /// default-constructible parameters_type, constructible from it, and a
 /// neighborhood recipe.
-template<detail::configurable_app_algorithm Algorithm, class Spec>
+template<detail::app_algorithm Algorithm, class Spec>
     requires detail::is_neighborhood_spec_v<std::remove_cvref_t<Spec>>
 [[nodiscard]]
 detail::app_runner_registration<Algorithm, std::remove_cvref_t<Spec>> runner(

@@ -20,7 +20,10 @@ auto application = app("name") | sm | nhe | runner<Algorithm>("runner-name", par
 ```
 
 A registered algorithm must expose a default-constructible `parameters_type`
-and be constructible from it. The same algorithm may be registered under
+and be constructible from it. Its parameters are configurable under
+`runners.<name>.*` when `parameters_type` is a parameter block; otherwise the
+app still runs it, and `check(app, ...)` reports it as `runner parameters`
+(unless the type is empty). The same algorithm may be registered under
 several names.
 
 A runner runs on the app's neighborhood, unless it brings its own, the third

@@ -15,6 +15,8 @@
 #include <compare>
 #include <cstddef>
 #include <cstdint>
+#include <random>
+#include <utility>
 
 namespace
 {
@@ -201,6 +203,28 @@ public:
     }
 };
 
+// An algorithm whose parameters are not a parameter block: an app runs it, but
+// no frontend can change them.
+struct OpaqueParameters
+{
+    int budget{1};
+};
+
+class OpaqueStart
+{
+public:
+    using parameters_type = OpaqueParameters;
+
+    explicit OpaqueStart(OpaqueParameters) {}
+
+    template<class Run, std::uniform_random_bit_generator RNG>
+    auto run(Run& run, typename Run::solution_type solution, RNG&) const
+    {
+        auto current = run.start(solution);
+        return run.finish(std::move(solution), current.cost());
+    }
+};
+
 void real_app_graph_is_checked_with_full_coverage()
 {
     const AssignmentInstance instance{
@@ -316,6 +340,32 @@ void check_names_the_runner_with_invalid_parameters()
     assert(reported);
 }
 
+void check_reports_parameters_that_are_not_a_block()
+{
+    auto application =
+        easylocal::app("opaque-assignment")
+            .with_solution_manager(
+                easylocal::solution_manager<AssignmentSolutionManager>()
+                | assignment::assignment_cost())
+            .with_neighborhood(easylocal::neighborhood<ReassignJobNeighborhoodExplorer>())
+            .with_runner<OpaqueStart>("opaque");
+
+    const AssignmentInstance instance{
+        .demand = {4, 4, 2},
+        .capacity = {5, 5},
+    };
+    const auto report = easylocal::check(application, instance);
+    assert(!report.passed());
+    bool reported = false;
+    for (const auto& failure : report.failures())
+    {
+        reported = reported
+            || (failure.check == "runner parameters"
+                && failure.message.starts_with("runner opaque: "));
+    }
+    assert(reported);
+}
+
 void check_reports_an_invalid_nested_group()
 {
     using Annealing = easylocal::runners::SimulatedAnnealing<
@@ -399,6 +449,7 @@ int main()
     check_fails_on_a_broken_realized_graph();
     check_fails_on_a_parameter_without_a_domain();
     check_names_the_runner_with_invalid_parameters();
+    check_reports_parameters_that_are_not_a_block();
     check_reports_an_invalid_nested_group();
     check_reports_a_compare_against_the_delta_sign();
     return 0;

@@ -33,6 +33,12 @@ reviewed by hand before tagging.
   `config::configurable_parameters_t` and `config::configuration_provider`
   move to `detail`; `parameter_set::add` still takes an object with
   `parameters()` and `configure()`.
+- `check(app, ...)` reports, as `runner parameters`, a registered runner whose
+  `parameters_type` is not a parameter block (and not empty): the app runs it,
+  but no frontend can change its parameters. The tutorial's `RandomDescent`
+  declares a schema for its `max_evaluations`, configurable as
+  `search.max_evaluations` in a runner and `runners.<name>.max_evaluations`
+  in an app.
 
 ### Apps and tools
 

@@ -306,9 +306,10 @@ bool check_registration_names(const App& application, app_check_report& report)
     return true;
 }
 
-// The checks of the registered runners: their parameters are valid, and
-// construct the runner. False when some parameters are invalid: a runner
-// asserts that they are valid, and binding the app constructs its runners.
+// The checks of the registered runners: their parameters are configurable (a
+// parameter block, unless there are none), valid, and construct the runner.
+// False when some parameters are invalid: a runner asserts that they are
+// valid, and binding the app constructs its runners.
 template<class App>
 bool check_runners(const App& application, app_check_report& report)
 {
@@ -317,6 +318,18 @@ bool check_runners(const App& application, app_check_report& report)
         application,
         [&]<class Algorithm>(std::string_view name, const auto& config) {
             const auto runner = "runner " + std::string{name} + ": ";
+            using parameters_type = std::remove_cvref_t<decltype(config)>;
+            if constexpr (!config::parameter_block<parameters_type>
+                && !std::is_empty_v<parameters_type>)
+            {
+                report.check(
+                    false,
+                    "runner parameters",
+                    runner
+                        + "its parameters_type is not a parameter block, so no "
+                          "frontend can change its parameters: give it a "
+                          "parameter_schema() and a validate()");
+            }
             if constexpr (requires { config.validate(); })
             {
                 const auto validation = config.validate();
@@ -376,7 +389,8 @@ bool check_configuration(const App& application, app_check_report& report)
 /// evaluation matching the full one, by the cost's equivalence or within the
 /// tolerance of the options, when the cost defines equivalence, and
 /// the sign of cost::delta agreeing with a root compare of the cost), and
-/// that each registered runner's parameters are valid and construct it. The
+/// that each registered runner's parameters are a parameter block (unless it
+/// has none), are valid and construct it. The
 /// runners and the app's parameters are checked first: with invalid ones the
 /// app is not bound, since binding it rejects them.
 template<class App, class Instance, class Solution>

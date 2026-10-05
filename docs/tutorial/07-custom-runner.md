@@ -8,12 +8,28 @@ random moves and keeps the improving ones:
 struct RandomDescentParameters
 {
     easylocal::limit max_evaluations{1000}; // a count, or easylocal::unlimited
+
+    // The schema makes the parameters configurable (chapter 9).
+    static consteval auto parameter_schema()
+    {
+        return easylocal::config::fields(
+            easylocal::config::field<
+                "max_evaluations",
+                &RandomDescentParameters::max_evaluations>(
+                "Evaluation budget",
+                easylocal::config::range(1, easylocal::unlimited)));
+    }
+
+    easylocal::config::validation_result validate() const
+    {
+        return easylocal::config::check_schema(*this);
+    }
 };
 
 class RandomDescent
 {
 public:
-    using parameters_type = RandomDescentParameters; // for app registration
+    using parameters_type = RandomDescentParameters; // configurable, built from it
 
     explicit RandomDescent(RandomDescentParameters parameters) : parameters_{parameters}
     {
@@ -75,12 +91,15 @@ auto descent =
     | sm | nhe;
 ```
 
-`parameters_type` is only needed to register the runner in an app (chapter 11).
-When the parameters also describe themselves, with a `parameter_schema()` and
-a `validate()` as in chapter 9, nothing else is needed to make them
-configurable: the runner holds them, builds the algorithm from them when it is
-bound, and gives them as `search.*` to the command line, configuration files
-and the interactive tester.
+`parameters_type` names the parameters the algorithm is constructed from. Its
+`parameter_schema()` and `validate()` (chapter 9) make it a parameter block,
+and that is the whole rule of configuration, for a runner as for the other
+configurable classes: the runner holds the parameters, builds the algorithm
+from them when it is bound, and gives them as `search.*` to the command line,
+configuration files and the interactive tester; an app (chapter 11) gives them
+as `runners.<name>.*`. An algorithm whose `parameters_type` is not a block
+still runs in an app, but no frontend can change its parameters, and
+`check(app, ...)` (chapter 13) reports it.
 
 ## See also
 
