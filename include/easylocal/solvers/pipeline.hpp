@@ -1274,26 +1274,45 @@ private:
         const auto& stage = std::get<Index>(stages_);
         easylocal::detail::emit_run_context(stage.name(), Index, attempt, options...);
         const auto timed = budget.options_for_run(options...);
-        // A stage on another cost than the caller's recorder (until_feasible())
-        // gives it only its events without a cost.
-        const auto run = [&](const auto& stage_options) {
-            return easylocal::detail::with_tracer_of_cost<
-                typename BoundRunner::cost_type>(
-                stage_options,
-                [&](const auto& run_options) {
-                    return easylocal::detail::run_with_solver_rng(
-                        bound_runner,
-                        std::move(solution),
-                        rng,
-                        run_options);
-                });
+        // One run path: the options typed with the stage's cost, whose target
+        // is the stage's own, else the caller's for the last stage, else none.
+        using stage_cost = typename BoundRunner::cost_type;
+        using tracer_type = typename std::remove_cvref_t<decltype(timed)>::tracer_type;
+        run_options<tracer_type, stage_cost> typed{
+            .control = timed.control,
+            .tracer = timed.tracer,
+            .target = std::nullopt,
+            .time_limit = timed.time_limit,
+            .evaluation_limit = timed.evaluation_limit,
+            .front = timed.front,
         };
         if (stage.target().has_value())
-            return run(timed.stop_at(*stage.target()));
-        if constexpr (Index + 1 == stage_count)
-            return run(timed);
-        else
-            return run(timed.without_target());
+            typed.target = *stage.target();
+        else if constexpr (Index + 1 == stage_count)
+        {
+            using target_type =
+                typename std::remove_cvref_t<decltype(timed)>::target_type;
+            if constexpr (!std::same_as<target_type, no_target>)
+            {
+                static_assert(
+                    std::constructible_from<stage_cost, const target_type&>,
+                    "the target cost of the run options must convert to the last "
+                    "stage's cost type");
+                if (timed.target)
+                    typed.target.emplace(*timed.target);
+            }
+        }
+        // A stage on another cost than the caller's recorder (until_feasible())
+        // gives it only its events without a cost.
+        return easylocal::detail::with_tracer_of_cost<stage_cost>(
+            typed,
+            [&](const auto& run_options) {
+                return easylocal::detail::run_with_solver_rng(
+                    bound_runner,
+                    std::move(solution),
+                    rng,
+                    run_options);
+            });
     }
 
     std::tuple<Stages...> stages_;
