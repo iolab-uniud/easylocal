@@ -154,9 +154,34 @@ are the copies committed. Errors: `unknown_parameter`, `duplicate_path`,
 
 ## Configurable objects
 
-An object provides parameters when `configuration()` returns a
-`parameter_set`, with paths relative to it; whoever composes it chooses the
-prefix.
+One rule makes a class configurable: its `parameters_type` is a parameter
+block, and it is constructed from it. The framework holds the parameters in
+the class's recipe or registration, builds the class from them when a runner
+or an app is bound (again after they change), and exposes them at the path of
+the class's role:
+
+| Class | Constructed as | Its parameters given by | Path in a runner | Path in an app |
+| --- | --- | --- | --- | --- |
+| an algorithm | `A(parameters)` | `make_runner<A>(parameters)`, `runner<A>("name", parameters)`, `stage<A>("name", parameters)` | `search.*` | `runners.<name>.*`; `runners.<pipeline>.<stage>.search.*` for a stage |
+| a neighborhood explorer | `NHE(sm, parameters, args...)` | `neighborhood<NHE>(parameters, args...)` | `neighborhood.*` | `neighborhood.*`; `runners.<name>.neighborhood.*` for a runner's own |
+| a SolutionManager | `SM(input, parameters, args...)` | `solution_manager<SM>(parameters, args...)` | `solution_manager.*` | `solution_manager.*` |
+| a cost component | `C(input, parameters, args...)` or `C(parameters, args...)` | `component<C>(parameters, args...)` | `cost.<name>.*` | `cost.<name>.*` |
+| a `cost::apply` function | `F(parameters)` | `cost::apply<F>(parameters, children...)` | `cost.<name>.*` | `cost.<name>.*` |
+
+Without a first argument of the `parameters_type`, the parameters are the
+defaults. A component or a function is configured under its `name()`, which
+must be static, wherever it is in the cost expression. Only `parameters_type`
+is read: a class with a `parameters()` that returns a parameter block, or a
+`configuration()`, and no such `parameters_type` does not compile, and the
+message says what to write. An algorithm registered in an app whose
+`parameters_type` is not a block still runs, unconfigured, and
+`check(app, ...)` reports it as `runner parameters`.
+
+The structure of the framework's own objects is configurable too: the weights
+and tolerance of a cost expression, the biases of a neighborhood union, the
+budgets of pipeline stages. An object gives its parameters when
+`configuration()` returns a `parameter_set`, with paths relative to it;
+whoever composes it chooses the prefix.
 
 The set refers to the object, so configure the object that will run, after
 its last copy: `configuration()` does not compile on a temporary
@@ -172,7 +197,7 @@ an object already gone.
 | `solution_manager<SM>(parameters, args...)` for a SolutionManager with `parameters_type` | the SolutionManager's parameters, as `solution_manager.*` in a runner or an app |
 | `runner.configuration()` | `search.*`, `cost.*`, `solution_manager.*`, `neighborhood.*` |
 | an app, `app.configuration()` (also a `Session`'s) | `cost.*`, `solution_manager.*`, `neighborhood.*`, `runners.<name>.*` |
-| `MultiStart`, `LocalSearch`, `Pipeline` solvers | `starts` and the runner's (MultiStart), the runner's (LocalSearch), each stage's runner and its own `attempts`, `timeout` and `max_evaluations` under its name (Pipeline; `first.*` and `second.*` for `two_stage()`) |
+| `MultiStart`, `LocalSearch`, `Pipeline` solvers | `starts` and the runner's (MultiStart), the runner's (LocalSearch), each stage's runner and its own `attempts`, `timeout` and `max_evaluations` under its name (Pipeline; `first.*` and `second.*` for `two_stage()`); an algorithm stage of an app's pipeline has its algorithm's `search.*` and its own neighborhood's, the cost and the SolutionManager being the app's |
 
 ## Frontends
 

@@ -2552,14 +2552,17 @@ private:
                 "; random solutions, moves and runs restart from it");
     }
 
-    // The problem's parameters: the cost's and the neighborhood's, shared by
-    // every runner and by the Move page.
+    // The problem's parameters: the cost's, the SolutionManager's and the
+    // neighborhood's, shared by every runner and by the Move page.
     void open_problem_parameters()
     {
         if constexpr (supports_parameters)
         {
             const auto parameters = tester_.configuration();
             auto fields = detail::parameter_fields(parameters, "cost.", false);
+            auto solution_manager =
+                detail::parameter_fields(parameters, "solution_manager.", false);
+            fields.insert(fields.end(), solution_manager.begin(), solution_manager.end());
             auto neighborhood =
                 detail::parameter_fields(parameters, "neighborhood.", false);
             fields.insert(fields.end(), neighborhood.begin(), neighborhood.end());

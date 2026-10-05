@@ -1,10 +1,11 @@
 # 9. Configuration
 
-Runners, temperature policies, cost expressions and neighborhood unions expose
-their parameters as a **parameter set**: each parameter has a path, such as
-`search.temperature.cooling_rate`, a description and a value. A runner's
-`configuration()` gives the parameters of its algorithm (`search`), of its cost
-(`cost`) and of its neighborhood (`neighborhood`), with paths relative to the
+Runners, temperature policies, cost expressions, neighborhoods and your own
+classes expose their parameters as a **parameter set**: each parameter has a
+path, such as `search.temperature.cooling_rate`, a description and a value. A
+runner's `configuration()` gives the parameters of its algorithm (`search`), of
+its cost (`cost`), of its SolutionManager (`solution_manager`, when it has
+any) and of its neighborhood (`neighborhood`), with paths relative to the
 runner. The program puts them in its own set, under a prefix of its choice, and
 applies the command line and configuration files to it:
 
@@ -135,9 +136,11 @@ $ ./easylocal_tutorial --limited.cost.excess.bound=5
 limited 3, 26
 ```
 
-The same rule makes a runner configurable, as in chapter 7, and a
+The same rule makes a runner configurable, as in chapter 7 (`search`), a
 neighborhood explorer (`neighborhood<NHE>(parameters, args...)`, under
-`neighborhood`). A class that declares its parameters another way, with a
+`neighborhood`) and a SolutionManager (`solution_manager<SM>(parameters,
+args...)`, constructed as `SM(input, parameters, args...)`, under
+`solution_manager`). A class that declares its parameters another way, with a
 `parameters()` or a `configuration()` and no such `parameters_type`, does not
 compile, with a message saying what to write.
 
@@ -148,7 +151,7 @@ combines several things gives each its own prefix, so that their parameters do
 not collide.
 
 An app (chapter 11) gathers the parameters of all its runners, under
-`runners.<name>`, with those of its cost and neighborhood; the same paths serve
+`runners.<name>`, with those of its cost, SolutionManager and neighborhood; the same paths serve
 the command line, the TextUI and the REST service, together with a target cost
 that stops a run.
 

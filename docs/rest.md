@@ -231,7 +231,7 @@ without one gets `max_timeout` (`GET /` reports it).
 
 A run may change the app's `parameters`, for itself only: the same paths as
 the command line and the TextUI (`runners.<name>.*`, `cost.*`,
-`neighborhood.*`), listed by `GET /parameters`. Nested objects and dotted keys
+`solution_manager.*`, `neighborhood.*`), listed by `GET /parameters`. Nested objects and dotted keys
 are equivalent, and may be mixed:
 
 ```json

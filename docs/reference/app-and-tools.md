@@ -98,7 +98,7 @@ registered twice (`"sa-fast"`, `"sa-slow"`).
 | `name()` | the app name |
 | `runner_names()` | the names of the runners and pipelines, in the order of registration |
 | `runner_parameters<A>("name")` | the stored parameters of the runner of algorithm `A` registered as `name`; `std::invalid_argument` for an unknown name |
-| `configuration()` | the app's parameters as a `config::parameter_set`: `cost.*`, `neighborhood.*` and `runners.<name>.*` |
+| `configuration()` | the app's parameters as a `config::parameter_set`: `cost.*`, `solution_manager.*`, `neighborhood.*` and `runners.<name>.*` |
 | `bind(input)` | the `BoundApp`: services built once for `input`, which it borrows (a temporary Input is rejected) |
 | `run("name", input, solution, rng, options...)` | run the runner or pipeline registered under a name; `std::optional<named_run_result>`, empty for an unknown name |
 | `make_runner<A>("name")` | a standalone `Runner` with that runner's parameters and the app's recipes, for a solver: `make_solver<Solver>(application.make_runner<A>("name"))` |
@@ -155,7 +155,7 @@ deterministic runners ignore it.
 
 The TextUI edits the app's parameters in modal windows: `G` on the Run page
 opens the selected runner's (`runners.<name>.*`) before running it, `P` the
-problem's (`cost.*`, `neighborhood.*`). Values are checked before anything
+problem's (`cost.*`, `solution_manager.*`, `neighborhood.*`). Values are checked before anything
 changes and stay for the rest of the session. Its *Target cost* field, when
 filled, stops each run at the first solution that reaches it; below it, the
 current cost is shown in the same syntax. Its *Stop after* row has two

@@ -44,7 +44,8 @@ reviewed by hand before tagging.
 - A SolutionManager follows the rule too: one whose `parameters_type` is a
   parameter block is constructed from the Input and it,
   `solution_manager<SM>(parameters, args...)`, and its parameters are at the
-  root of a runner and of an app, `solution_manager.*`, beside `cost.*`.
+  root of a runner and of an app, `solution_manager.*`, beside `cost.*`;
+  the TextUI's problem parameters (`P`) show them.
 - **Breaking:** `easylocal::unlimited` is a tag of its own type,
   `unlimited_t`, which converts to the unlimited `limit`, rather than a
   `limit`. `config::field` and `config::range` take the tag: a count where a

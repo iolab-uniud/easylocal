@@ -127,8 +127,9 @@ flowchart TB
 
 The parameters of an app are those of its parts, by path:
 `runners.<name>.*` for each runner's algorithm, `cost.*` for the weights of
-its cost expression and `neighborhood.*` for the biases of a neighborhood
-union. The session changes them, and stops a run at a target cost:
+its cost expression and the parameters of its components and functions,
+`solution_manager.*` for its SolutionManager's, and `neighborhood.*` for its
+explorer's or the biases of a neighborhood union. The session changes them, and stops a run at a target cost:
 
 <!-- snippet: tutorial/main.cpp:session-parameters -->
 ```cpp
@@ -197,7 +198,7 @@ termination completed
 | `--target <cost>` | stop at the first solution that reaches this cost, as `session.read_cost` reads it |
 | `--timeout <seconds>` | stop the run after this many seconds, such as `10` or `2.5`; the termination is then `time limit reached` |
 | `--max_evaluations <n>` | stop the run after `n` evaluations (`unlimited` by default); a runner's own budget, if smaller, still applies |
-| `--runners.<name>.*`, `--cost.*`, `--neighborhood.*` | the app's parameters, as `configuration()` lists them |
+| `--runners.<name>.*`, `--cost.*`, `--solution_manager.*`, `--neighborhood.*` | the app's parameters, as `configuration()` lists them |
 | `--report true` | also print the value of each cost component, see below |
 | `--trace <file>` | record the [trace](../tracing.md) of the run, with timestamps: JSON Lines for a `.jsonl` name, ELTR otherwise |
 | `--config <file>` | the same settings from a file (chapter 9); `--help` lists them all |
