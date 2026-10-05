@@ -30,6 +30,27 @@ concept move_optional_for_impl =
     requires { typename optional_value_t<Result>; } &&
     std::constructible_from<Move, const optional_value_t<Result>&>;
 
+// Whether make_move would take a temporary Solution: by value or by const
+// reference, it changes a copy, and the search never moves.
+template<class NHE>
+consteval bool make_move_takes_a_copy()
+{
+    if constexpr (requires {
+                      typename NHE::solution_type;
+                      typename NHE::move_type;
+                  })
+    {
+        return requires(
+            const NHE& neighborhood,
+            typename NHE::solution_type&& solution,
+            const typename NHE::move_type& move) {
+            neighborhood.make_move(std::move(solution), move);
+        };
+    }
+    else
+        return false;
+}
+
 } // namespace detail
 
 /// An input range whose elements construct a `Move`.

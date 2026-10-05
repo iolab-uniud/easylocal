@@ -27,6 +27,11 @@ Customization points: `easylocal::moves(nhe, solution)`,
 `easylocal::random_move(nhe, solution, rng)`, `easylocal::inverse(nhe,
 solution, move, tabu_move)` and `easylocal::tabu_attribute(nhe, move)`.
 
+- `make_move` takes the Solution by non-const reference: a runner on an
+  explorer whose `make_move` takes it by value or by const reference, which
+  would change a copy and leave the search where it is, is rejected with a
+  message when the neighborhood is added (`runner | neighborhood<NHE>()`), and
+  `check_neighborhood` reports its null moves.
 - `moves` may return any input range whose elements convert to `move_type`.
 - When both `moves` and the cursor exist, the cursor is used.
 - `random_move` may return `std::optional<T>` for any `T` convertible to

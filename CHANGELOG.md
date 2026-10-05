@@ -277,6 +277,9 @@ reviewed by hand before tagging.
   before it, and the evaluation limit is the solve's, so progress bars no
   longer jump back at every start, attempt or stage. `run_control` gives its
   `stop_token()`.
+- A runner rejects, with a message, a neighborhood whose `make_move` takes the
+  Solution by value or by const reference (`runner | neighborhood<NHE>()`): it
+  changed a copy, and Hill Climbing ran forever.
 
 ### Added
 

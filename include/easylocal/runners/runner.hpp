@@ -604,6 +604,11 @@ public:
     auto with_neighborhood(NHESpec&& spec) const&
     {
         using spec_type = std::remove_cvref_t<NHESpec>;
+        static_assert(
+            !detail::make_move_takes_a_copy<detail::service_t<spec_type>>(),
+            "make_move must change the Solution it is given: declare it "
+            "void make_move(solution_type& solution, const move_type& move) const, "
+            "not with a Solution by value or by const reference, which changes a copy");
 
         return Runner<Algorithm, SMSpec, spec_type>{
             algorithm_,
@@ -625,6 +630,11 @@ public:
     auto with_neighborhood(NHESpec&& spec) &&
     {
         using spec_type = std::remove_cvref_t<NHESpec>;
+        static_assert(
+            !detail::make_move_takes_a_copy<detail::service_t<spec_type>>(),
+            "make_move must change the Solution it is given: declare it "
+            "void make_move(solution_type& solution, const move_type& move) const, "
+            "not with a Solution by value or by const reference, which changes a copy");
 
         return Runner<Algorithm, SMSpec, spec_type>{
             std::move(algorithm_),
