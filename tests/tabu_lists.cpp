@@ -36,6 +36,12 @@ struct Candidate
     {
         return std::abs(move);
     }
+
+    // Costs that differ by a multiple of 10 are equivalent.
+    [[nodiscard]] auto equivalent_cost(const int other) const -> bool
+    {
+        return (value - other) % 10 == 0;
+    }
 };
 
 struct Step
@@ -331,6 +337,9 @@ int main()
                 && state.tabu_tenure(Candidate{.move = 5, .value = 9}) == 2
                 && !state.tabu_tenure(Candidate{.move = 5, .value = 8}).has_value(),
             "objective based: a reached cost is tabu for tenure iterations");
+        ok &= expect(
+            state.tabu_tenure(Candidate{.move = 5, .value = 17}) == 1,
+            "objective based: a cost equivalent to a reached one is tabu");
         state.update(Step{.applied = 3, .at = 3, .value = 4}, rng);
         ok &= expect(
             !state.tabu_tenure(Candidate{.move = 5, .value = 7}).has_value(),

@@ -122,7 +122,7 @@ Tabu lists in `runners::tabu`; their parameters are the group `tabu_list`:
 | `Cyclic` (TS3) | `period`, `tenures` | for the current tenure, which takes the `tenures` in turn every `period` iterations |
 | `Reactive` (TS4) | `increase`, `decrease`, `repetitions`, `chaos`, `cycle_length`, `max_tenure`, `verify_equality` | for a tenure that reacts to revisited solutions; needs the solution hash and `random_move` |
 | `Frequency` (TS5) | `threshold` | while its attribute was applied in more than `threshold` of the iterations; needs `tabu_attribute`, not `inverse` |
-| `ObjectiveBased` | `tenure` | while its cost equals one reached in the last `tenure` iterations; needs neither, but `==` on costs |
+| `ObjectiveBased` | `tenure` | while its cost is equivalent to one reached in the last `tenure` iterations, by the cost semantics (`equivalent`); needs neither inverse nor attribute |
 | `LimDynamic` | `min_tenure`, `max_tenure`, `idle_threshold` | for a tenure that grows by one after `idle_threshold` idle iterations and falls back to `min_tenure` on an improvement or at `max_tenure` |
 | `Foo` | `window`, `increment`, `fluctuation` | for a tenure that grows by `increment` when the costs of the last `window` iterations spread less than `fluctuation`, and shrinks by one otherwise; needs `cost::delta` |
 | `RandomFoo` | ranges of the three | as `Foo`, drawing them again at each window |
@@ -156,7 +156,8 @@ A tabu list is a value with its parameters that makes, for each run, a state
 with `make_state<Run>()`. `tabu_tenure(candidate)` gives the iterations left
 before a candidate move is admissible, nothing when it is (`tabu_candidate`:
 `move()`, `forbidden_by(tabu_move)` through the inverse, `attribute()`, and
-`cost()` when the state declares `static constexpr bool needs_cost = true`);
+`cost()` and `equivalent_cost(other)` when the state declares
+`static constexpr bool needs_cost = true`);
 `update(step, rng)` records an applied move (`tabu_step`: `move()`,
 `solution()`, `cost()`, `iteration()`, `improved_best()`, `attribute()`,
 `solution_hash()`, the last two when the problem has them). A state with

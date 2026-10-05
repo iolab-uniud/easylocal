@@ -119,6 +119,10 @@ reviewed by hand before tagging.
   the current tenure, so a growth by more than one did not reach the moves it
   covers, as the tenure applies to every move held: each list keeps the moves
   its next growth can reach.
+- The `ObjectiveBased` tabu list compared costs with `==`, ignoring a custom
+  `equivalent()` of the cost: it uses the cost semantics, through
+  `tabu_candidate::equivalent_cost(other)`, and no longer requires `==` on
+  the cost.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

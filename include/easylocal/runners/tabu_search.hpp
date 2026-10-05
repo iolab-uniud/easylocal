@@ -40,8 +40,8 @@ namespace easylocal::runners
 
 /// A candidate move, as a tabu list sees it: forbidden_by(tabu_move), whether a
 /// move the list holds forbids it (the neighborhood's inverse), its attribute()
-/// when the neighborhood has one, and its cost() for the lists that need it
-/// (their state declares needs_cost = true).
+/// when the neighborhood has one, and its cost() and equivalent_cost(other) for
+/// the lists that need it (their state declares needs_cost = true).
 template<class Run>
 class tabu_candidate
 {
@@ -74,6 +74,18 @@ public:
     {
         assert(cost_ != nullptr && "the list's state must declare needs_cost = true");
         return *cost_;
+    }
+
+    /// Whether the cost after the move is equivalent to other, by the semantics
+    /// of the cost; only for lists with needs_cost.
+    template<class R = Run>
+        requires requires(const R& run, const cost_type& value) {
+            { run.equivalent(value, value) } -> std::convertible_to<bool>;
+        }
+    [[nodiscard]]
+    bool equivalent_cost(const cost_type& other) const
+    {
+        return run_.equivalent(cost(), other);
     }
 
     /// The candidate move.
@@ -1057,7 +1069,8 @@ struct ObjectiveBasedParameters
 };
 
 /// Tabu on cost values (Gendreau and Potvin): a move is tabu when it would
-/// reach a cost equal to one reached in the last tenure iterations.
+/// reach a cost equivalent to one reached in the last tenure iterations, by
+/// the semantics of the cost (equivalent()).
 ///
 /// It needs neither inverse nor attribute, but the candidate's cost: moves are
 /// evaluated before the tabu check.
@@ -1085,15 +1098,17 @@ public:
 
         explicit state(const std::size_t tenure) : tenure_{tenure} {}
 
-        /// The iterations the candidate's cost stays tabu when it equals one of
-        /// the last tenure costs reached, or nothing.
+        /// The iterations the candidate's cost stays tabu when it is
+        /// equivalent to one of the last tenure costs reached, or nothing.
         template<class Candidate>
-            requires requires(const Candidate& candidate) { candidate.cost(); }
+            requires requires(const Candidate& candidate, const Cost& cost) {
+                { candidate.equivalent_cost(cost) } -> std::convertible_to<bool>;
+            }
         [[nodiscard]]
         std::optional<std::size_t> tabu_tenure(const Candidate& candidate) const
         {
             for (std::size_t age = 0; age < costs_.size(); ++age)
-                if (costs_[age] == candidate.cost())
+                if (candidate.equivalent_cost(costs_[age]))
                     return tenure_ - age;
             return std::nullopt;
         }
@@ -1115,7 +1130,6 @@ public:
 
     /// The list's state for a run, empty.
     template<class Run>
-        requires std::equality_comparable<typename Run::cost_type>
     [[nodiscard]]
     state<typename Run::cost_type> make_state() const
     {
