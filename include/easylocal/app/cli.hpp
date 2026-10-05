@@ -570,8 +570,8 @@ int run(App application, const int argc, char* argv[], options settings = {})
                 .control = limits.control,
                 .tracer = tracer,
                 .target = limits.target,
-                .time_limit = limits.time_limit,
-                .evaluation_budget = limits.evaluation_budget,
+                .timeout = limits.timeout,
+                .max_evaluations = limits.max_evaluations,
                 .front = limits.front,
             };
             return session.run(runner, options);
