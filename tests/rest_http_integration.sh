@@ -204,6 +204,18 @@ request POST "${base_url}/runners/fi/runs" 422 "$invalid_domain_body" \
     '{"input":{"demand":[1],"capacity":[]}}'
 assert_error_code "$invalid_domain_body" invalid_run_request
 
+# Quantities are JSON integers: not fractional, not quoted.
+for quantities in '[1.5]' '["1"]'; do
+    request POST "${base_url}/runners/fi/runs" 422 "$invalid_domain_body" \
+        "{\"input\":{\"demand\":${quantities},\"capacity\":[5]}}"
+    assert_error_code "$invalid_domain_body" invalid_run_request
+done
+
+# A textual instance with a negative count is the client's error.
+request POST "${base_url}/runners/fi/runs" 422 "$invalid_domain_body" \
+    '{"input":"-1 2\n5 5\n"}'
+assert_error_code "$invalid_domain_body" invalid_run_request
+
 initial_solution_body="${tmp_dir}/initial-solution.json"
 request POST "${base_url}/runners/fi/runs" 422 "$initial_solution_body" \
     '{"input":{"demand":[4,4,2],"capacity":[5,5]},"initial_solution":[0,1,0]}'

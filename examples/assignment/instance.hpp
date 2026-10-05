@@ -24,23 +24,30 @@ struct AssignmentInstance
     // then the capacities. EasyLocal reads an AssignmentInstance with it.
     static AssignmentInstance read(std::istream& input)
     {
-        std::size_t job_count{};
-        std::size_t machine_count{};
-        if (!(input >> job_count >> machine_count))
+        // Signed counts: an unsigned read takes "-1" as a huge count.
+        long long job_count{};
+        long long machine_count{};
+        if (!(input >> job_count >> machine_count) || job_count < 0 || machine_count < 0)
             throw std::runtime_error{"invalid assignment instance header"};
 
-        AssignmentInstance instance{
-            .demand = std::vector<quantity_type>(job_count),
-            .capacity = std::vector<quantity_type>(machine_count),
-        };
-
-        for (auto& demand : instance.demand)
+        // One value at a time: a header cannot make it allocate more than the
+        // values the text holds.
+        AssignmentInstance instance;
+        for (long long job = 0; job < job_count; ++job)
+        {
+            quantity_type demand{};
             if (!(input >> demand) || demand < 0)
                 throw std::runtime_error{"invalid assignment demand data"};
+            instance.demand.push_back(demand);
+        }
 
-        for (auto& capacity : instance.capacity)
+        for (long long machine = 0; machine < machine_count; ++machine)
+        {
+            quantity_type capacity{};
             if (!(input >> capacity) || capacity < 0)
                 throw std::runtime_error{"invalid assignment capacity data"};
+            instance.capacity.push_back(capacity);
+        }
 
         if (job_count != 0 && machine_count == 0)
             throw std::runtime_error{"assignment instance has jobs but no machines"};

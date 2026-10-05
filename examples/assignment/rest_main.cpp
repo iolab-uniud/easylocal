@@ -13,6 +13,7 @@
 #include <exception>
 #include <future>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -40,27 +41,27 @@ std::vector<quantity_type> read_quantities(
 
     std::vector<quantity_type> values;
     values.reserve(array.size());
-    try
+    for (const auto& value : array)
     {
-        for (const auto& value : array)
+        // A JSON integer: not 2.5, not "2".
+        if (value.t() != crow::json::type::Number
+            || value.nt() == crow::json::num_type::Floating_point)
         {
-            const auto decoded = value.i();
-            if (decoded < 0)
-            {
-                throw std::invalid_argument{
-                    std::string{"JSON field '"} + key + "' contains a negative value"};
-            }
-            values.push_back(static_cast<quantity_type>(decoded));
+            throw std::invalid_argument{
+                std::string{"JSON field '"} + key + "' must contain integer values"};
         }
-    }
-    catch (const std::invalid_argument&)
-    {
-        throw;
-    }
-    catch (const std::exception&)
-    {
-        throw std::invalid_argument{
-            std::string{"JSON field '"} + key + "' must contain integer values"};
+        if (value.nt() == crow::json::num_type::Signed_integer && value.i() < 0)
+        {
+            throw std::invalid_argument{
+                std::string{"JSON field '"} + key + "' contains a negative value"};
+        }
+        if (value.u()
+            > static_cast<std::uint64_t>(std::numeric_limits<quantity_type>::max()))
+        {
+            throw std::invalid_argument{
+                std::string{"JSON field '"} + key + "' contains a value too large"};
+        }
+        values.push_back(static_cast<quantity_type>(value.u()));
     }
     return values;
 }
@@ -76,7 +77,8 @@ struct AssignmentCodec
             {
                 return easylocal::read_input<AssignmentInstance>(input);
             }
-            catch (const std::runtime_error& error)
+            // Any error of the text is the client's.
+            catch (const std::exception& error)
             {
                 throw std::invalid_argument{
                     "invalid textual assignment input: " + std::string{error.what()}};

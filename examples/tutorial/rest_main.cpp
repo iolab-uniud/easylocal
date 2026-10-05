@@ -6,12 +6,15 @@
 
 #include <crow.h>
 
+#include <charconv>
 #include <chrono>
 #include <cstdint>
 #include <future>
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <string_view>
+#include <system_error>
 
 namespace
 {
@@ -74,8 +77,20 @@ int main(int argc, char* argv[])
     namespace runners = easylocal::runners;
     using Classic = runners::temperature::Classic;
 
-    const auto port =
-        argc > 1 ? static_cast<std::uint16_t>(std::stoul(argv[1])) : std::uint16_t{18080};
+    // The port, 1 to 65535, from the first argument.
+    std::uint16_t port = 18080;
+    if (argc > 1)
+    {
+        const std::string_view text{argv[1]};
+        const auto [end, error] =
+            std::from_chars(text.data(), text.data() + text.size(), port);
+        if (error != std::errc{} || end != text.data() + text.size() || port == 0)
+        {
+            std::cerr
+                << "usage: easylocal_tutorial_rest [port], a port from 1 to 65535\n";
+            return 2;
+        }
+    }
 
     // [rest] ---------------------------------------------------------------
     auto application = el::app("tsp")

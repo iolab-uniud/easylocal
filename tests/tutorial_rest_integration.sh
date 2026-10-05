@@ -83,7 +83,7 @@ done
 
 solution="$("$curl_bin" --silent "${base_url}/runs/${run_id}/solution")"
 grep -Eq '"order"' <<<"$solution" || fail "no tour in: $solution"
-grep -Eq '"length"[[:space:]]*:[[:space:]]*26' <<<"$solution" || fail "not the optimal tour: $solution"
+grep -Eq '"length"[[:space:]]*:[[:space:]]*26(\.0+)?([^0-9.]|$)' <<<"$solution" || fail "not the optimal tour: $solution"
 
 # The same app through its text hooks: the Input and the tour as text.
 text_url="http://127.0.0.1:${port}/tsp-text"
@@ -99,6 +99,6 @@ for ((attempt = 0; attempt < 200; ++attempt)); do
     sleep 0.05
 done
 solution="$("$curl_bin" --silent "${text_url}/runs/${run_id}/solution")"
-grep -Eq '"cost"[[:space:]]*:[[:space:]]*26' <<<"$solution" || fail "text run: $solution"
+grep -Eq '"cost"[[:space:]]*:[[:space:]]*26(\.0+)?([^0-9.]|$)' <<<"$solution" || fail "text run: $solution"
 grep -Eq '"solution"[[:space:]]*:[[:space:]]*"[0-9 ]+\\n"' <<<"$solution" \
     || fail "no tour as text in: $solution"

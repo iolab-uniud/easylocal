@@ -65,10 +65,11 @@ cmake --preset dev && cmake --build build/dev
 
 The program runs `fi` from the initial solution of `instances/small.assignment`
 and prints the cost, the running time, the effort of the run and the solution.
-`--help` lists the switches; for example, a run with at most 25 evaluations:
+`--help` lists the switches; for example, a run with at most 3 evaluations,
+which stops before the local optimum (7 evaluations):
 
 ```sh
-./build/dev/examples/assignment/easylocal_assignment --runners.fi.max_evaluations=25
+./build/dev/examples/assignment/easylocal_assignment --runners.fi.max_evaluations=3
 ```
 
 `--target` stops the run at the first solution that reaches a cost, written as
@@ -81,9 +82,11 @@ file; the switches on the command line win over it.
 
 With the TextUI component (`-DEASYLOCAL_ENABLE_TUI=ON`),
 `easylocal_assignment_tui` opens the interactive tester on
-`instances/large.assignment` (250 jobs, 16 machines). Select `slow-fi`, start
-a run and stop it with `X Stop`: the progress of the run shows while it
-runs, and the stopped run keeps its best solution.
+`instances/large.assignment` (250 jobs, 16 machines). Press `I` for the
+initial solution, which opens the Move page, then `F5` for the Run page;
+select `slow-fi`, start the run with `G` (Enter in the parameters window) and
+stop it with `X Stop`: the progress of the run shows while it runs, and the
+stopped run keeps its best solution.
 
 ### REST service
 

@@ -93,7 +93,7 @@ struct TspCodec
 | `decode_input(const crow::json::rvalue&) -> Input` | without `read_input` | the `input` of a run request; throw `std::invalid_argument` to reject it |
 | `encode_solution(const Input&, const Solution&) -> crow::json::wvalue` | without `write_solution` | the solution of a finished run |
 | `encode_cost(const Cost&) -> crow::json::wvalue` | for a cost that is not text | its cost |
-| `decode_initial_solution(const Input&, const crow::json::rvalue&) -> Solution` | no | accepts an `initial_solution` in the request, as `read_solution` does from a string; without either such requests are rejected, and runs start from the SolutionManager's `initial_solution()` |
+| `decode_initial_solution(const Input&, const crow::json::rvalue&) -> Solution` | no | accepts an `initial_solution` in the request, as `read_solution` does from a string; without either such requests are rejected, and runs start as their `start` says |
 | `decode_cost(const crow::json::rvalue&) -> Cost` | no | accepts a `target` in the request; without it a target is a JSON number, for arithmetic costs only |
 
 ## The service
@@ -168,7 +168,7 @@ without one, a run uses `blueprint_options::seed` plus its id. A run starts
 from a random tour unless it gives an `initial_solution` or
 `"start": "initial"`. A `target`, such as a known lower bound,
 stops the run as soon as its cost is at least as good: for the tutorial's
-`double` tour length, `"target": 23.0`.
+`double` tour length, `"target": 26`, the optimal length of the five cities.
 
 ## See also
 

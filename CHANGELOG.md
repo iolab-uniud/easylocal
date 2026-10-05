@@ -282,6 +282,16 @@ reviewed by hand before tagging.
 - The tutorial no longer takes the launcher of chapter 12 from `examples/tsp`:
   `examples/tutorial/launcher_main.cpp` opens a 2-opt and a swap app of the
   tutorial's own TSP. `AGENTS.md` says what each example directory is.
+- The REST examples check what clients send: the assignment codec rejects a
+  fractional or quoted quantity (`2.5` was read as 2, `"2"` as 2), any error
+  of a textual instance is a `422` (a negative count in its header was a
+  `500`), and the instance reader allocates only the values it reads. The
+  tutorial's service rejects a port outside 1 to 65535 with status 2, where
+  `70000` wrapped around and a word ended it with an uncaught exception.
+- The assignment README starts its TextUI walkthrough from the initial
+  solution and limits its example run to 3 evaluations (25 limited nothing);
+  the REST chapter's target, 26, is reachable, and its test checks the cost
+  26 exactly.
 - The assignment example writes its hooks in one style, as members: its
   instance is read by `AssignmentInstance::read`, and `instance_io.hpp`, with
   the free `read_input`, is gone.
