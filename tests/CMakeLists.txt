@@ -481,6 +481,14 @@ easylocal_add_test(
 )
 
 easylocal_add_test(
+    floating-target
+    SOURCES
+        floating_target.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
+
+easylocal_add_test(
     cost-approximately
     SOURCES
         cost_approximately.cpp

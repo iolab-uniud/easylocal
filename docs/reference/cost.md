@@ -172,7 +172,9 @@ value-initializable types (0 for arithmetic costs) and the zero of every level
 for `lexicographic`, `hierarchical` and `pareto` costs. Other cost types provide it by
 specializing `cost::zero_cost<Cost>` with a static `value()`;
 `cost::has_zero<Cost>` tells whether it exists. A pipeline stage
-`until_feasible()` stops at the zero of the hard cost.
+`until_feasible()` stops at the zero of the hard cost, also when deltas leave a
+floating-point hard cost a rounding error above it: the run then evaluates the
+solution in full (see [Runners](runners.md)).
 
 ### Comparisons within a tolerance
 

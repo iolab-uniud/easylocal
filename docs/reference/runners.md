@@ -351,8 +351,13 @@ semantics (`better_or_equivalent`). `search_run` checks the costs reached in
 `target_reached` returns a solution that meets the target: with a partial
 order, such as a `cost::pareto` cost, the reaching cost need not dominate the
 best one, so `best_so_far` keeps the first cost that meets the target, and a
-run with a front returns a point of the front that meets it. The same options
-are accepted by every solver's `solve(input, options)`.
+run with a front returns a point of the front that meets it. A floating-point
+cost updated by deltas drifts from its full evaluation by rounding errors: when
+a committed cost misses the target only within `cost::tolerance{}`, the run
+evaluates the solution in full (not counted in the budget) before deciding, so
+a zero target, such as the one of `until_feasible()`, is reached by a cost that
+the deltas left at 1e-17. The same options are accepted by every solver's
+`solve(input, options)`.
 
 ## Design choices
 

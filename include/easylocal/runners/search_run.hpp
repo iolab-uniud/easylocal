@@ -10,6 +10,7 @@
 /// result types.
 
 #include <easylocal/cost/pareto.hpp>
+#include <easylocal/cost/tolerance.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
@@ -760,6 +761,7 @@ public:
     {
         const auto previous_cost = current.cost();
         evaluation_.commit(solution, current, std::move(candidate));
+        evaluate_near_target(solution, current);
         observe_cost(current.cost());
 
         trace::with_move_route(move, [&](const auto* route) {
@@ -999,6 +1001,29 @@ private:
             return target_ != nullptr && context_.better_or_equivalent(cost, *target_);
         else
             return false;
+    }
+
+    // A cost updated by deltas drifts from its full evaluation by rounding
+    // errors: one that misses the target only within the tolerance of the
+    // checks (cost::tolerance{}) is evaluated in full, so that a target such
+    // as the zero hard cost of until_feasible() is reached. The re-evaluation
+    // corrects the bookkeeping of a move already counted, so the budget does
+    // not count it.
+    void evaluate_near_target(const solution_type& solution, evaluation_type& current)
+    {
+        if constexpr (cost::approximately_comparable<cost_type>
+            && requires(const Context& context, const cost_type& value) {
+                   {
+                       context.better_or_equivalent(value, value)
+                   } -> std::convertible_to<bool>;
+               })
+        {
+            if (target_ != nullptr && !target_reached_ && !meets_target(current.cost())
+                && cost::approximate_compare(current.cost(), *target_) <= 0)
+            {
+                current = evaluation_.evaluate(solution);
+            }
+        }
     }
 
     // The best cost of a run is at least as good as every cost it reaches, so

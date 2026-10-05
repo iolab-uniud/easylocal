@@ -128,6 +128,11 @@ reviewed by hand before tagging.
 
 ### Fixed
 
+- A floating-point cost updated by deltas reaches its target: deltas that
+  leave it a rounding error away (`0.1 + 0.2 - 0.1 - 0.2` is 2.8e-17) kept a
+  run, and `until_feasible()` with its zero hard cost, from ever stopping. A
+  committed cost that misses the target only within `cost::tolerance{}` is
+  evaluated in full before the run decides, without counting in the budget.
 - The randomized contract checks (`easylocal::testing` and `check(app, ...)`)
   draw from a `std::mt19937_64` seeded with the new `check_options::seed`,
   instead of `deterministic_rng`'s four fixed values: a `random_move()` that
