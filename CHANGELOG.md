@@ -196,6 +196,10 @@ reviewed by hand before tagging.
   stays the path: a runner such as `slow-fi` gave a parameters.txt that irace
   rejected.
 
+- REST: a request body whose arrays and objects nest deeper than 64 levels is
+  rejected with `400 invalid_json` before it is parsed, instead of exhausting
+  the stack of the parser's thread.
+
 ## [4.0.0-alpha.1] — 2026-10-04
 
 A pre-release: the API, header paths included, may still change before 4.0.0

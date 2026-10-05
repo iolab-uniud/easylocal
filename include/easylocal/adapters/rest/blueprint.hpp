@@ -168,6 +168,43 @@ template<cost::arithmetic Cost>
     return json_response(status, std::move(body));
 }
 
+// The deepest nesting of arrays and objects a request body may have: Crow's
+// recursive parser could otherwise exhaust the stack of its thread.
+inline constexpr std::size_t max_json_depth = 64;
+
+// Whether the arrays and objects of a JSON text nest deeper than limit, by a
+// linear scan that skips strings; it does not check the rest of the syntax.
+[[nodiscard]] inline bool json_nests_deeper_than(
+    const std::string_view text,
+    const std::size_t limit) noexcept
+{
+    std::size_t depth = 0;
+    bool in_string = false;
+    bool escaped = false;
+    for (const char c : text)
+    {
+        if (in_string)
+        {
+            if (escaped)
+                escaped = false;
+            else if (c == '\\')
+                escaped = true;
+            else if (c == '"')
+                in_string = false;
+        }
+        else if (c == '"')
+            in_string = true;
+        else if (c == '[' || c == '{')
+        {
+            if (++depth > limit)
+                return true;
+        }
+        else if ((c == ']' || c == '}') && depth > 0)
+            --depth;
+    }
+    return false;
+}
+
 // The answer about a run that does not exist, or no longer does.
 [[nodiscard]] inline crow::response run_not_found(const std::string& id)
 {
@@ -222,7 +259,8 @@ template<cost::arithmetic Cost>
 
 // The "parameters" of a run request as path = value overrides. Nested objects
 // and dotted keys compose, so {"runners": {"sa": {"temperature.cooling_rate":
-// 0.9}}} and {"runners.sa.temperature.cooling_rate": 0.9} are the same.
+// 0.9}}} and {"runners.sa.temperature.cooling_rate": 0.9} are the same. Its
+// recursion is bounded by max_json_depth, which submit_run checks first.
 inline void collect_parameters(
     const crow::json::rvalue& value,
     const std::string& path,
@@ -676,6 +714,14 @@ private:
                 "runner '" + runner + "' is not registered");
         }
 
+        if (detail::json_nests_deeper_than(request.body, detail::max_json_depth))
+        {
+            return detail::error_response(
+                400,
+                "invalid_json",
+                "request body nests arrays and objects deeper than "
+                    + std::to_string(detail::max_json_depth) + " levels");
+        }
         auto payload = crow::json::load(request.body);
         if (!payload)
         {

@@ -1,7 +1,7 @@
 // The REST blueprint answering requests in-process (no network): unknown runs,
 // runs that fail, a codec that fails, a run from a given initial solution, a
-// run with a target cost, runs with their own parameters, a full queue and a
-// run cancelled while still queued.
+// run with a target cost, runs with their own parameters, a deeply nested body,
+// a full queue and a run cancelled while still queued.
 #include "../examples/assignment/cost.hpp"
 #include "../examples/assignment/cost_components.hpp"
 #include "../examples/assignment/instance.hpp"
@@ -359,6 +359,28 @@ void a_pipeline_runs_by_name(crow::SimpleApp& server)
     assert(text(done["parameters"]["runners.cascade.second.attempts"]) == "2");
 }
 
+void a_deeply_nested_body_is_rejected_before_parsing(crow::SimpleApp& server)
+{
+    // Deep enough to exhaust the stack of a Crow thread while being parsed.
+    const std::string deep(10000, '[');
+    const auto rejected = submit(server, "fi", deep + std::string(10000, ']'));
+    assert(rejected.code == 400);
+    assert(text(rejected.body["error"]["code"]) == "invalid_json");
+
+    // Brackets inside strings do not nest.
+    const auto quoted = submit(
+        server,
+        "fi",
+        R"({"input": {"name": ")" + deep + R"(\"["}, "timeout": 0})");
+    assert(quoted.code == 202);
+    wait_for(server, text(quoted.body["id"]), "succeeded");
+
+    using easylocal::rest::detail::json_nests_deeper_than;
+    assert(!json_nests_deeper_than("[[]]", 2));
+    assert(json_nests_deeper_than("[[[]]]", 2));
+    assert(!json_nests_deeper_than(R"(["\"[[[", {}])", 2));
+}
+
 void a_run_has_a_time_limit(crow::SimpleApp& server)
 {
     // No time left: the run ends at once, and its status keeps the limit.
@@ -652,6 +674,7 @@ int main()
     a_codec_failure_is_an_internal_error(server);
     a_run_starts_from_the_given_initial_solution(server);
     a_run_has_a_time_limit(server);
+    a_deeply_nested_body_is_rejected_before_parsing(server);
     a_pipeline_runs_by_name(server);
     a_run_stops_at_its_target(server);
     a_run_has_its_own_parameters(server);

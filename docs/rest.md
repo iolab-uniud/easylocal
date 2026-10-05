@@ -330,7 +330,7 @@ The generic mapping is:
 
 | HTTP | Meaning |
 | --- | --- |
-| `400` | syntactically invalid JSON (`invalid_json`) |
+| `400` | syntactically invalid JSON, or arrays and objects nested deeper than 64 levels (`invalid_json`) |
 | `404` | unknown runner or run (`unknown_runner`, `run_not_found`) |
 | `409` | valid operation in the wrong run state/capability (`result_not_ready`, `run_not_terminal`, `run_not_active`), or the solution of a run that failed (`run_failed`) |
 | `422` | valid JSON but invalid run envelope/domain data (`invalid_run_request`), or parameters that do not apply (`invalid_parameters`) |
