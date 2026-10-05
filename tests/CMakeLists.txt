@@ -753,6 +753,7 @@ if(EASYLOCAL_INSTALL)
             "-DEASYLOCAL_VERSION=${PROJECT_VERSION}"
             "-DEASYLOCAL_VERSION_PRERELEASE=${EASYLOCAL_VERSION_PRERELEASE}"
             "-DEASYLOCAL_WORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/package-consumer"
+            "-DEASYLOCAL_QUICKSTART_DIR=${PROJECT_SOURCE_DIR}/examples/quickstart"
             -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_installed_package.cmake"
     )
     set_tests_properties(
@@ -761,6 +762,31 @@ if(EASYLOCAL_INSTALL)
             LABELS integration
     )
 endif()
+
+# The quick start built with EasyLocal through add_subdirectory, the other way
+# docs/quick-start.md gives (the installed-package test builds it with
+# find_package).
+add_test(
+    NAME easylocal.quickstart-add-subdirectory
+    COMMAND
+        "${CMAKE_COMMAND}"
+        "-DEASYLOCAL_SOURCE_DIR=${PROJECT_SOURCE_DIR}"
+        "-DEASYLOCAL_QUICKSTART_DIR=${PROJECT_SOURCE_DIR}/examples/quickstart"
+        "-DEASYLOCAL_WORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/quickstart-add-subdirectory"
+        "-DEASYLOCAL_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+        "-DEASYLOCAL_GENERATOR=${CMAKE_GENERATOR}"
+        "-DEASYLOCAL_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}"
+        "-DEASYLOCAL_GENERATOR_TOOLSET=${CMAKE_GENERATOR_TOOLSET}"
+        "-DEASYLOCAL_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
+        "-DEASYLOCAL_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+        "-DEASYLOCAL_CONFIG=$<CONFIG>"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_quickstart.cmake"
+)
+set_tests_properties(
+    easylocal.quickstart-add-subdirectory
+    PROPERTIES
+        LABELS integration
+)
 
 function(easylocal_add_compile_failure_test name source expected_diagnostic)
     set(expected_context "")

@@ -253,6 +253,24 @@ endif()
 easylocal_configure_build_test_consumer(no-components OFF OFF OFF OFF)
 easylocal_configure_build_test_consumer(core-component ON OFF OFF OFF)
 
+# The quick start as a student downloads it, finding this installation.
+if(DEFINED EASYLOCAL_QUICKSTART_DIR AND NOT "${EASYLOCAL_QUICKSTART_DIR}" STREQUAL "")
+    set(_quickstart_command
+        "${CMAKE_COMMAND}"
+        "-DEASYLOCAL_PREFIX=${_install_prefix}"
+        "-DEASYLOCAL_QUICKSTART_DIR=${EASYLOCAL_QUICKSTART_DIR}"
+        "-DEASYLOCAL_WORK_DIR=${EASYLOCAL_WORK_DIR}/quickstart"
+        "-DEASYLOCAL_CXX_COMPILER=${EASYLOCAL_CXX_COMPILER}"
+        "-DEASYLOCAL_GENERATOR=${EASYLOCAL_GENERATOR}"
+        "-DEASYLOCAL_GENERATOR_PLATFORM=${EASYLOCAL_GENERATOR_PLATFORM}"
+        "-DEASYLOCAL_GENERATOR_TOOLSET=${EASYLOCAL_GENERATOR_TOOLSET}"
+        "-DEASYLOCAL_MAKE_PROGRAM=${EASYLOCAL_MAKE_PROGRAM}"
+        "-DEASYLOCAL_BUILD_TYPE=${EASYLOCAL_BUILD_TYPE}"
+        "-DEASYLOCAL_CONFIG=${EASYLOCAL_CONFIG}"
+        -P "${CMAKE_CURRENT_LIST_DIR}/verify_quickstart.cmake")
+    easylocal_run_checked("the quick start on the installed package" _quickstart_command)
+endif()
+
 if(EASYLOCAL_CONFIG_TOML_ENABLED)
     easylocal_configure_build_test_consumer(config-toml ON ON OFF OFF)
 endif()
