@@ -1058,6 +1058,9 @@ public:
 
     /// Applies the selected move, which must be valid, to the current solution,
     /// and drops it.
+    ///
+    /// A faulty make_move may leave a solution that is not valid: check
+    /// is_valid() before evaluating it or running from it.
     void apply_move()
     {
         assert(bound_);
@@ -1066,7 +1069,6 @@ public:
         assert(move_is_valid());
 
         bound_->neighborhood().make_move(*solution_, *move_);
-        assert(bound_->solution_manager().is_valid(*solution_));
         clear_move_state();
     }
 

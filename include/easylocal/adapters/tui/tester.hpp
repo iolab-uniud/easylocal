@@ -2242,6 +2242,17 @@ private:
         perform("Apply move", [this] {
             const auto before = tester_.evaluate();
             tester_.apply_move();
+            // A faulty make_move may break the solution.
+            if (!tester_.is_valid())
+            {
+                refresh_page_labels();
+                last_move_result_ =
+                    "Applied: " + value_text(before) + " -> INVALID solution";
+                set_status(
+                    status_kind::error,
+                    "Move applied: the solution is INVALID; Move and Run disabled");
+                return;
+            }
             const auto after = tester_.evaluate();
             last_move_result_ =
                 "Applied: " + value_text(before) + " -> " + value_text(after);

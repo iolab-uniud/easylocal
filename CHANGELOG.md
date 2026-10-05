@@ -228,6 +228,10 @@ reviewed by hand before tagging.
 - TextUI: the neighbor list counts the invalid moves apart, and its "... N
   more" counts only the valid moves not listed;
   `Session::neighborhood_preview` reports the invalid moves (`invalid`).
+- TextUI: a move whose `make_move` leaves an invalid solution is reported
+  ("INVALID solution"; Move and Run disabled), and `Session::apply_move` no
+  longer asserts that the solution stays valid: it documents that a faulty
+  `make_move` may break it.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

@@ -251,6 +251,20 @@ static_assert(std::same_as<
     decltype(std::declval<easylocal::Session<app_type>&>().input()),
     const AssignmentInstance&>);
 
+// Reassigns the job, and also adds a job that does not exist: every move
+// leaves a solution that is not valid.
+class BrokenReassignJobNeighborhoodExplorer : public ReassignJobNeighborhoodExplorer
+{
+public:
+    using ReassignJobNeighborhoodExplorer::ReassignJobNeighborhoodExplorer;
+
+    void make_move(AssignmentSolution& solution, const ReassignJobMove& move) const
+    {
+        ReassignJobNeighborhoodExplorer::make_move(solution, move);
+        solution.assignment.push_back(0);
+    }
+};
+
 [[nodiscard]]
 auto make_input(const quantity_type demand) -> AssignmentInstance
 {
@@ -510,6 +524,30 @@ void replacing_the_solution_clears_move_state()
     session.set_solution(AssignmentSolution{.assignment = {0, 0}});
 
     assert(!session.has_move());
+}
+
+// A move that breaks the solution is applied, and the session reports the
+// solution not valid instead of asserting.
+void applying_a_faulty_move_leaves_an_invalid_solution()
+{
+    auto application =
+        easylocal::app("broken")
+            .with_solution_manager(
+                easylocal::solution_manager<AssignmentSolutionManager>()
+                | assignment::assignment_cost())
+            .with_neighborhood(
+                easylocal::neighborhood<BrokenReassignJobNeighborhoodExplorer>())
+            .with_runner<easylocal::runners::FirstImprovement>("fi");
+    easylocal::Session session{std::move(application)};
+    session.set_input(make_input(3));
+    session.use_initial_solution();
+    assert(session.is_valid());
+
+    session.set_move(ReassignJobMove{.job = 0, .destination = 1});
+    assert(session.move_is_valid());
+    session.apply_move();
+    assert(!session.has_move());
+    assert(!session.is_valid());
 }
 
 void session_can_inspect_an_explicit_invalid_move()
@@ -855,6 +893,7 @@ int main()
     applying_a_move_updates_the_solution_and_clears_move_state();
     replacing_the_solution_clears_move_state();
     session_can_inspect_an_explicit_invalid_move();
+    applying_a_faulty_move_leaves_an_invalid_solution();
     session_reports_when_the_current_solution_has_no_moves();
     session_accepts_and_validates_an_explicit_solution();
     session_evaluates_the_current_solution();
