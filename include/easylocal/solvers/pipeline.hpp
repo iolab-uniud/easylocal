@@ -855,7 +855,8 @@ private:
         easylocal::detail::search_effort stage_effort;
         auto best = run_once<Index>(bound_runner, start(), rng, stage_budget, options...);
         stage_effort.add(best);
-        easylocal::detail::merged_front<decltype(best)> front;
+        easylocal::detail::merged_front<decltype(best)> front{
+            easylocal::detail::front_parameters_of(options...)};
         front.add(bound_runner, best);
         stage_budget.consume(best);
         budget.consume(best);

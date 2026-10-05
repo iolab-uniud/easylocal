@@ -173,7 +173,8 @@ public:
         auto termination = easylocal::detail::ends_runs(best);
         easylocal::detail::search_effort effort;
         effort.add(best);
-        easylocal::detail::merged_front<decltype(best)> front;
+        easylocal::detail::merged_front<decltype(best)> front{
+            easylocal::detail::front_parameters_of(options...)};
         front.add(bound_runner, best);
         for (std::size_t start = 1;
              start < parameters_.starts && !termination.has_value();

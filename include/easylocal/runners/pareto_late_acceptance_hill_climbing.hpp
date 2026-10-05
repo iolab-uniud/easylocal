@@ -210,9 +210,8 @@ private:
     [[nodiscard]]
     static auto finish(Run& run, Reason... reason)
     {
-        auto front = run.front().sorted();
-        auto& first = front.front();
-        return run.finish(std::move(first.solution), std::move(first.cost), reason...);
+        const auto& first = run.front().first();
+        return run.finish(first.solution, first.cost, reason...);
     }
 
     ParetoLateAcceptanceHillClimbingParameters parameters_;

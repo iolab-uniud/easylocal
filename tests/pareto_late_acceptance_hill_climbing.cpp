@@ -11,6 +11,7 @@
 #include <easylocal/solvers/pipeline.hpp>
 
 #include <algorithm>
+#include <compare>
 #include <cstddef>
 #include <iostream>
 #include <optional>
@@ -135,6 +136,41 @@ struct Right
     [[nodiscard]] static auto evaluate(const Point& point) noexcept -> int
     {
         return (Grid::side - 1 - point.x) + point.y;
+    }
+};
+
+// The column x of a point, and its mirror: every point of a column has the
+// same cost, a plateau of 10 points, and every column is on the front.
+struct Column
+{
+    [[nodiscard]] static auto evaluate(const Point& point) noexcept -> int
+    {
+        return point.x;
+    }
+};
+
+struct MirroredColumn
+{
+    [[nodiscard]] static auto evaluate(const Point& point) noexcept -> int
+    {
+        return Grid::side - 1 - point.x;
+    }
+};
+
+// Both objectives maximized: the front is the row y = 9.
+struct Maximized
+{
+    [[nodiscard]] auto operator()(const cost::pareto<int, int>& cost) const
+        -> cost::pareto<int, int>
+    {
+        return cost;
+    }
+
+    [[nodiscard]] auto compare(
+        const cost::pareto<int, int>& lhs,
+        const cost::pareto<int, int>& rhs) const -> std::partial_ordering
+    {
+        return rhs <=> lhs;
     }
 };
 
@@ -355,6 +391,54 @@ int main()
         ok &= expect(
             valid_front(staged.front) && staged.front.size() >= 3,
             "the attempts of a stage merge their fronts");
+    }
+
+    {
+        // The archive compares with the run's relations: with a compare that
+        // maximizes both objectives, the front is the row y = 9.
+        std::mt19937 rng{11U};
+        const auto result =
+            (easylocal::make_runner<ParetoLateAcceptanceHillClimbing>(
+                 {.history_length = 10, .max_iterations = 2000})
+                | (solution_manager<PointManager>()
+                    | cost::apply(
+                        Maximized{},
+                        cost::objectives(component<Left>(), component<Right>())))
+                | neighborhood<StepNeighborhood>())
+                .bind(grid)
+                .run(Point{4, 0}, rng);
+        ok &= expect(
+            !result.front.empty()
+                && std::ranges::all_of(
+                    result.front,
+                    [](const auto& point) { return point.solution.y == 9; })
+                && result.solution.y == 9,
+            "a maximizing compare gives the front of the largest costs");
+    }
+
+    {
+        // On a plateau the archive keeps one point per cost by default; every
+        // distinct solution only on request, up to max_front_size.
+        auto climber = easylocal::make_runner<HillClimbing>({.max_idle_iterations = 500})
+            | (solution_manager<PointManager>()
+                | cost::objectives(component<Column>(), component<MirroredColumn>()))
+            | neighborhood<StepNeighborhood>();
+        auto bound = climber.bind(grid);
+        std::mt19937 rng{5U};
+        const auto one = bound.run(Point{4, 4}, rng);
+        ok &= expect(one.front.size() == 1, "one point per cost on a plateau");
+
+        const auto kept = bound.run(
+            Point{4, 4},
+            rng,
+            run_options<trace::null_tracer>{}.keep_front(
+                {.keep_equivalent = true, .max_front_size = 6}));
+        ok &= expect(
+            kept.front.size() == 6
+                && std::ranges::all_of(
+                    kept.front,
+                    [](const auto& point) { return point.solution.x == 4; }),
+            "keep_equivalent keeps distinct solutions of a cost, up to the bound");
     }
 
     return ok ? 0 : 1;

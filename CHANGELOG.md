@@ -73,6 +73,22 @@ reviewed by hand before tagging.
   algorithms that read it (Simulated Annealing, Great Deluge, the aspiration
   levels of Tabu Search): Simulated Annealing and Great Deluge reject a
   `compare` that provably finds a larger cost better.
+### Runners and solvers
+
+- **Breaking:** the Pareto archive keeps one point per non-dominated cost by
+  default, the first reached: it kept every distinct solution of equal cost,
+  an unbounded front that made each offer scan a whole plateau (Hill Climbing
+  on a plateau ran thousands of times slower). `run_options::keep_front(
+  {.keep_equivalent = true, .max_front_size = n})`, the new
+  `pareto_archive_parameters`, keeps them all, up to `n` points; the solvers
+  merge the fronts of their runs with the same parameters.
+  `pareto_archive::offer` takes the relations to compare with, and `first()`
+  returns the first point of `sorted()` without sorting.
+- The Pareto archive compares costs with the run's `better()` and
+  `equivalent()` instead of the cost's `<` and `==`: with a root `compare`
+  that maximizes, Pareto Late Acceptance returned the worst point of its
+  front.
+
 ### Changed
 
 - **Breaking:** `search_run::with_context(ctx)` is replaced by

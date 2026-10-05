@@ -245,6 +245,8 @@ template<class Result>
 class merged_front
 {
 public:
+    explicit merged_front(pareto_archive_parameters) noexcept {}
+
     template<class BoundRunner>
     void add(const BoundRunner&, const Result&) noexcept
     {
@@ -263,11 +265,22 @@ class merged_front<Result>
     using point_type = typename decltype(Result::front)::value_type;
 
 public:
+    explicit merged_front(const pareto_archive_parameters parameters)
+        : archive_{parameters}
+    {
+    }
+
     template<class BoundRunner>
     void add(const BoundRunner& bound_runner, const Result& result)
     {
         for (const auto& point : result.front)
-            archive_.offer(point.solution, point.cost, same_solution_of(bound_runner));
+        {
+            archive_.offer(
+                point.solution,
+                point.cost,
+                bound_runner,
+                same_solution_of(bound_runner));
+        }
     }
 
     void assign_to(Result& result) const
@@ -281,6 +294,18 @@ private:
         decltype(std::declval<point_type&>().cost)>
         archive_;
 };
+
+// What the archive keeps, from the run options of a solve (the defaults
+// without them).
+template<class... Options>
+[[nodiscard]]
+pareto_archive_parameters front_parameters_of(const Options&... options) noexcept
+{
+    if constexpr (sizeof...(Options) == 0)
+        return {};
+    else
+        return (options.front, ...);
+}
 
 template<class Result>
 void set_termination(Result& result, const termination_reason reason) noexcept

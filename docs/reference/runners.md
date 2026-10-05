@@ -245,9 +245,20 @@ Built-in algorithms return `search_result<Solution, Cost>`: `solution`, `cost`,
 solutions the run reached, as `pareto_point{solution, cost}`, ordered by their
 objectives. The `search_run` keeps them in a `pareto_archive` as the run starts,
 evaluates solutions and commits moves, so every algorithm has a front without
-doing anything; a solution enters unless an archived one dominates it or is the
-same (equal cost and, with solution equality, an equal solution), and removes
-those it dominates.
+doing anything. The archive compares costs with the run's relations
+(`better`, `equivalent`, so a root `compare` of the cost expression applies):
+a solution enters unless an archived one is better or has an equivalent cost,
+and removes those it is better than. So the front holds one point per
+non-dominated cost, the first reached.
+
+The run options choose otherwise, for a run or a solve:
+`options.keep_front({.keep_equivalent = true, .max_front_size = 100})` (a
+`pareto_archive_parameters`, the field `front` of `run_options`) keeps every
+distinct solution of an equivalent cost (by the problem's solution equality),
+and bounds the front: once it holds `max_front_size` points (at least 1,
+`unlimited` by default), a solution enters only by removing points it
+dominates. On a plateau, keeping every solution makes the front grow with the
+plateau and each offer scan it, so bound it.
 A reached target is the termination reason also when it coincides with a local
 optimum or the end of the algorithm; a cancellation takes precedence. Solvers and tools
 require only `search_result_for<Result, Solution, Cost>`: `solution` and `cost`.

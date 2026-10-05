@@ -254,13 +254,16 @@ auto run_algorithm(
             deadline = detail::deadline_after(*options.time_limit);
     }
 
-    // The caller's evaluation budget, which the runner's own may tighten.
+    // The caller's evaluation budget, which the runner's own may tighten, and
+    // what the archive keeps.
     std::size_t evaluation_limit = search_run<Context, tracer_type>::no_evaluation_limit;
+    pareto_archive_parameters front;
     if constexpr (arguments::has_options)
     {
         const auto& options = std::get<sizeof...(Args) - 1>(forwarded);
         if (options.evaluation_budget)
             evaluation_limit = *options.evaluation_budget;
+        front = options.front;
     }
 
     // The run refers to the target, which outlives it.
@@ -270,7 +273,8 @@ auto run_algorithm(
         *tracer,
         evaluation_limit,
         target ? &*target : nullptr,
-        deadline};
+        deadline,
+        front};
     return [&]<std::size_t... Index>(std::index_sequence<Index...>) {
         return algorithm.run(
             run,

@@ -178,6 +178,9 @@ struct run_options
     /// The evaluations the run may make, if bounded, the initial one included;
     /// the runner's own budget, if smaller, still applies.
     std::optional<std::size_t> evaluation_budget{};
+    /// What the archive of a run with a cost::pareto cost keeps (default one
+    /// point per non-dominated cost, unbounded).
+    pareto_archive_parameters front{};
 
     /// The same options with a target cost: with(control).stop_at(0).
     template<class Cost>
@@ -190,6 +193,7 @@ struct run_options
             .target = std::move(cost),
             .time_limit = time_limit,
             .evaluation_budget = evaluation_budget,
+            .front = front,
         };
     }
 
@@ -204,6 +208,7 @@ struct run_options
             .target = std::nullopt,
             .time_limit = time_limit,
             .evaluation_budget = evaluation_budget,
+            .front = front,
         };
     }
 
@@ -230,6 +235,18 @@ struct run_options
     {
         auto options = *this;
         options.evaluation_budget = count;
+        return options;
+    }
+
+    /// The same options with the parameters of the Pareto archive:
+    /// with(control).keep_front({.keep_equivalent = true, .max_front_size = 100}).
+    ///
+    /// They matter only to a run with a cost::pareto cost.
+    [[nodiscard]]
+    run_options keep_front(const pareto_archive_parameters parameters) const
+    {
+        auto options = *this;
+        options.front = parameters;
         return options;
     }
 
@@ -380,8 +397,9 @@ public:
         std::numeric_limits<std::size_t>::max();
 
     /// A run of context, controlled by control and traced by tracer, with an
-    /// evaluation limit, a target cost (nullptr: none) and a deadline (none: no
-    /// time limit).
+    /// evaluation limit, a target cost (nullptr: none), a deadline (none: no
+    /// time limit) and the parameters of its archive (with a cost::pareto
+    /// cost).
     ///
     /// The bound runner makes it.
     search_run(
@@ -391,7 +409,8 @@ public:
         const std::size_t evaluation_limit = no_evaluation_limit,
         const cost_type* target = nullptr,
         const std::optional<std::chrono::steady_clock::time_point> deadline =
-            std::nullopt)
+            std::nullopt,
+        const pareto_archive_parameters front = {})
         requires std::same_as<
             Evaluation,
             runners::detail::context_evaluation_type<Context>>
@@ -402,7 +421,8 @@ public:
               tracer,
               evaluation_limit,
               target,
-              deadline}
+              deadline,
+              front}
     {
     }
 
@@ -413,7 +433,8 @@ public:
         Tracer&,
         std::size_t = no_evaluation_limit,
         const cost_type* = nullptr,
-        std::optional<std::chrono::steady_clock::time_point> = std::nullopt) = delete;
+        std::optional<std::chrono::steady_clock::time_point> = std::nullopt,
+        pareto_archive_parameters = {}) = delete;
 
     search_run(const search_run&) = delete;
     search_run& operator=(const search_run&) = delete;
@@ -426,7 +447,8 @@ private:
         Tracer& tracer,
         const std::size_t evaluation_limit,
         const cost_type* target,
-        const std::optional<std::chrono::steady_clock::time_point> deadline)
+        const std::optional<std::chrono::steady_clock::time_point> deadline,
+        const pareto_archive_parameters front)
         : context_{context},
           evaluation_{std::move(evaluation)},
           control_{control},
@@ -434,8 +456,23 @@ private:
           caller_evaluation_limit_{evaluation_limit},
           evaluation_limit_{evaluation_limit},
           target_{target},
-          deadline_{deadline}
+          deadline_{deadline},
+          archive_{make_archive(front)}
     {
+    }
+
+    // The archive of the run: with a cost::pareto cost, one with the
+    // parameters; otherwise nothing.
+    [[nodiscard]]
+    static auto make_archive(const pareto_archive_parameters front)
+    {
+        if constexpr (archives_front)
+            return pareto_archive<solution_type, cost_type>{front};
+        else
+        {
+            static_cast<void>(front);
+            return detail::no_archive{};
+        }
     }
 
 public:
@@ -869,6 +906,7 @@ public:
             left,
             target_,
             deadline_,
+            front_parameters(),
         };
     }
 
@@ -904,12 +942,22 @@ private:
         return time_up_;
     }
 
-    // Offers a solution to the archive; solutions of equal cost are the same
-    // when the problem has solution equality and they are equal, or always
-    // without it.
+    // Offers a solution to the archive, compared with the cost relations of
+    // the context; solutions of equivalent cost are the same when the problem
+    // has solution equality and they are equal, or always without it.
     void archive(const solution_type& solution, const cost_type& cost)
     {
-        archive_.offer(solution, cost, detail::same_solution_of(context_));
+        archive_.offer(solution, cost, context_, detail::same_solution_of(context_));
+    }
+
+    // The parameters of the archive, for a run that shares this one's limits.
+    [[nodiscard]]
+    pareto_archive_parameters front_parameters() const noexcept
+    {
+        if constexpr (archives_front)
+            return archive_.parameters();
+        else
+            return {};
     }
 
     // The solution_visited event, when the tracer observes it and the problem
@@ -1012,7 +1060,7 @@ private:
         archives_front,
         pareto_archive<solution_type, cost_type>,
         detail::no_archive>
-        archive_{};
+        archive_;
 };
 
 namespace detail
