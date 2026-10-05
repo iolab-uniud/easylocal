@@ -368,6 +368,11 @@ reviewed by hand before tagging.
   `std::from_chars` for them: they are read through `double` where the two
   types are the same (Apple's arm64), with a stream in the classic locale
   elsewhere.
+- The debug assert that the solution of every evaluated move is valid, a
+  whole-solution check that made Simulated Annealing 43 times slower in the
+  dev preset, is opt-in: `EASYLOCAL_EXPENSIVE_CHECKS` (a macro, and the CMake
+  option of the same name for EasyLocal's own targets; the `asan` preset sets
+  it). The check after each move made stays.
 - `EASYLOCAL_SANITIZERS` (such as `address;undefined`) builds EasyLocal's own
   tests and examples with those sanitizers, a report stopping the program;
   the `asan` preset uses it, and the full CI runs it with GCC 16.

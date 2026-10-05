@@ -130,6 +130,12 @@ option(
     OFF
 )
 
+option(
+    EASYLOCAL_EXPENSIVE_CHECKS
+    "Check EasyLocal's own tests and examples with the expensive asserts (the validity of each evaluated move's solution)"
+    OFF
+)
+
 set(
     EASYLOCAL_SANITIZERS
     ""
@@ -146,6 +152,9 @@ function(easylocal_configure_own_targets)
     if(EASYLOCAL_ENABLE_COVERAGE AND NOT MSVC)
         add_compile_options(--coverage -O0)
         add_link_options(--coverage)
+    endif()
+    if(EASYLOCAL_EXPENSIVE_CHECKS)
+        add_compile_definitions(EASYLOCAL_EXPENSIVE_CHECKS)
     endif()
     if(EASYLOCAL_SANITIZERS AND NOT MSVC)
         list(JOIN EASYLOCAL_SANITIZERS "," sanitizers)

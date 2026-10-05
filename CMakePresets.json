@@ -59,7 +59,8 @@
       "inherits": "_base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "EASYLOCAL_SANITIZERS": "address;undefined"
+        "EASYLOCAL_SANITIZERS": "address;undefined",
+        "EASYLOCAL_EXPENSIVE_CHECKS": true
       }
     }
   ],

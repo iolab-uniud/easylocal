@@ -7,6 +7,7 @@
 
 #include <easylocal/helpers/detail/neighborhood_recipe.hpp>
 #include <easylocal/helpers/detail/solution_manager_recipe.hpp>
+#include <easylocal/utils/detail/expensive_assert.hpp>
 
 #include <cassert>
 #include <concepts>
@@ -524,7 +525,8 @@ public:
             auto& candidate_solution = scratch_.assign(current_solution);
             scratch_number_ = ++scratches_;
             neighborhood_.make_move(candidate_solution, move);
-            assert(solution_manager_.is_valid(candidate_solution));
+            // A whole-solution check per evaluated move: opt-in.
+            EASYLOCAL_EXPENSIVE_ASSERT(solution_manager_.is_valid(candidate_solution));
 
             if constexpr (component_aware)
             {

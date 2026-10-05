@@ -86,6 +86,11 @@ components. A recipe has exactly one cost expression.
 
 - **Validity is structural.** `is_valid` checks that the representation is
   well formed. A solution violating problem constraints is valid and costly.
+  A debug build asserts it of the start of a run and after each move made;
+  after each move evaluated, which costs as much as the search, only with
+  `EASYLOCAL_EXPENSIVE_CHECKS` defined (the CMake option of the same name
+  defines it for EasyLocal's own tests and examples, the `asan` preset sets
+  it).
 - **Construction is optional and explicit.** A runner starts from a solution
   you provide; only solvers and tools need `initial_solution` or
   `random_solution`. There is no automatic fallback between the two.
