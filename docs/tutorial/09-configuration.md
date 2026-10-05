@@ -230,6 +230,9 @@ if (!applied)
 
 - `load_toml_file` fails on a malformed file, and on values that have no
   parameter counterpart, such as dates; its diagnostics give the path.
+- Each value is read by its TOML type: `true` and `false` set a `bool`, an
+  integer sets a number, a float sets only a floating-point number (`3.0`
+  does not set an integer).
 - `apply_overrides` checks every path and validates every value before
   changing anything: an unknown key (a typo such as `coolin_rate`) or an
   invalid value (`cooling_rate = 2.0`) leaves the parameters as they were.

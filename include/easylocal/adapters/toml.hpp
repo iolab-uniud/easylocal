@@ -75,27 +75,32 @@ inline void append_toml_path_segment(
     path.append(segment);
 }
 
+// The text of a scalar, by the type of its node: node.value<T>() converts
+// between types (true reads as the integer 1), so each type is read as its own.
+// A float keeps a decimal point, so that 3.0 does not set an integer.
 [[nodiscard]]
 inline bool toml_scalar_text(const toml::node& node, std::string& output)
 {
-    if (const auto value = node.value<std::string>())
+    if (const auto* const text = node.as_string())
     {
-        output = *value;
+        output = text->get();
         return true;
     }
-    if (const auto value = node.value<std::int64_t>())
+    if (const auto* const boolean = node.as_boolean())
     {
-        output = std::to_string(*value);
+        output = boolean->get() ? "true" : "false";
         return true;
     }
-    if (const auto value = node.value<double>())
+    if (const auto* const integer = node.as_integer())
     {
-        output = format_value(*value);
+        output = std::to_string(integer->get());
         return true;
     }
-    if (const auto value = node.value<bool>())
+    if (const auto* const real = node.as_floating_point())
     {
-        output = *value ? "true" : "false";
+        output = format_value(real->get());
+        if (output.find_first_not_of("+-0123456789") == std::string::npos)
+            output += ".0";
         return true;
     }
 

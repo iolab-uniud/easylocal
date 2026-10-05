@@ -166,7 +166,7 @@ prefix.
 | `config::print_diagnostics(out, result)` | report errors |
 | `config::apply_overrides(parameters, text_overrides)` | the same as `parameters.apply(...)` |
 | `config::format_value(value)` | a value as text, in the syntax overrides use |
-| `config::load_toml_file(path)` (TOML adapter) | the overrides of a TOML file |
+| `config::load_toml_file(path)` (TOML adapter) | the overrides of a TOML file, each value by its TOML type (a boolean, an integer, a float that sets only a floating-point field, a string, or an array of them) |
 
 ## Design choices
 

@@ -72,6 +72,9 @@ reviewed by hand before tagging.
   parameter failed with a narrowing error inside the library (also in
   `solution_manager`, `component`, `delta` and the `random_move` of a move
   built from another type).
+- The TOML adapter reads each value by its TOML type: `true` read as the
+  integer 1, so no boolean parameter could be set from TOML (nor an array of
+  booleans), and a float such as `3.0` set an integer parameter.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

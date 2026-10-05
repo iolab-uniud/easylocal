@@ -66,6 +66,60 @@ struct SearchParameters
     }
 };
 
+struct FlagParameters
+{
+    bool verbose{false};
+    std::array<bool, 2> enabled{false, false};
+    std::size_t count{0};
+    double rate{0.5};
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return easylocal::config::fields(
+            easylocal::config::field<"verbose", &FlagParameters::verbose>(),
+            easylocal::config::field<"enabled", &FlagParameters::enabled>(),
+            easylocal::config::field<"count", &FlagParameters::count>(),
+            easylocal::config::field<"rate", &FlagParameters::rate>());
+    }
+
+    [[nodiscard]]
+    easylocal::config::validation_result validate() const noexcept
+    {
+        return easylocal::config::validation_result::success();
+    }
+};
+
+// Each TOML value is read by its type: a boolean as true or false, a float
+// as a real number (not an integer, even 3.0), an integer as one.
+void values_are_read_by_their_toml_type()
+{
+    const auto parsed = easylocal::config::parse_toml_text(R"toml(
+[flags]
+verbose = true
+enabled = [false, true]
+count = 3
+rate = 2
+)toml");
+    assert(parsed);
+
+    FlagParameters flags{};
+    easylocal::config::parameter_set tree;
+    tree.add("flags", flags);
+    const auto views = easylocal::config::override_views(parsed.overrides);
+    assert(easylocal::config::apply_overrides(tree, views));
+    assert(flags.verbose);
+    assert((flags.enabled == std::array<bool, 2>{false, true}));
+    assert(flags.count == 3);
+    assert(flags.rate == 2.0);
+
+    const auto real_count = easylocal::config::parse_toml_text("flags.count = 3.0\n");
+    assert(real_count);
+    const auto real_views = easylocal::config::override_views(real_count.overrides);
+    assert(!easylocal::config::apply_overrides(tree, real_views));
+    assert(flags.count == 3);
+}
+
 } // namespace
 
 int main()
@@ -123,4 +177,6 @@ max_iterations = 500
     assert(string_array.diagnostics.front().error ==
            easylocal::config::toml_config_error::unsupported_value);
     assert(string_array.diagnostics.front().path == "names");
+
+    values_are_read_by_their_toml_type();
 }
