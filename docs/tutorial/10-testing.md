@@ -65,8 +65,9 @@ from the full one in the last bits, and the others exactly;
 template argument replaces the comparison. A
 component that cannot be built from the Input alone is passed as an object:
 `check_cost_component(f, TourLength{...})`; the same holds for
-neighborhoods and delta cost components. `testing.hpp` is not part of the Core
-umbrella: include it from your test executables.
+neighborhoods and delta cost components. The component checks are not in the
+Core umbrella, which brings only what `check(app)` uses (the options and the
+reports): include `testing.hpp` from your test executables.
 
 For a whole composed problem, `easylocal::check(app, input)` runs the same
 checks against an app ([chapter 13](13-checking.md)).

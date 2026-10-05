@@ -1,7 +1,8 @@
 #pragma once
 
-// Contract checks for user components (easylocal::testing). Not part of the
-// Core umbrella: include it from test executables.
+// Contract checks for user components (easylocal::testing). The Core umbrella
+// brings only what check(app) uses (check_options, the reports, run_checks),
+// not the component checks: include this header from test executables.
 // IWYU pragma: begin_exports
 #include <easylocal/testing/check.hpp>
 #include <easylocal/testing/cost_component.hpp>

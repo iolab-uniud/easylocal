@@ -1,6 +1,8 @@
 # Testing
 
-`<easylocal/testing.hpp>` (`easylocal::testing`), not part of the Core umbrella
+`<easylocal/testing.hpp>` (`easylocal::testing`). The Core umbrella brings
+only what `check(app)` uses (`check_options`, the reports, `run_checks`), not
+the component checks.
 
 Contract checks for user components. Each check takes a fixture and returns a
 `check_report`; `run_checks(reports...)` prints them, the report of

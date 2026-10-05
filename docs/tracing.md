@@ -314,8 +314,8 @@ network of a whole solve, or of several runs in one file, keeps them apart.
 
 The binary encoder is intentionally small enough to customize in application
 code.  The default cost writer, `default_binary_cost_writer<Cost>`, encodes an
-arithmetic cost, a `cost::lexicographic` and a `cost::hierarchical`, nested as
-they are. Another cost needs a writer, which receives a `binary_record_writer`,
+arithmetic cost, a `cost::lexicographic`, a `cost::pareto` and a
+`cost::hierarchical`, nested as they are. Another cost needs a writer, which receives a `binary_record_writer`,
 whose primitive operations (`u8`, `i8`, `u16`, `i16`, `u32`, `i32`, `u64`,
 `i64`, `f32`, `f64`, `boolean`, `bytes`, `string` and `route`) always use the
 ELTR representation, and describes what it writes with `fields()`, for the
