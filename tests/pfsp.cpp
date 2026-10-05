@@ -146,18 +146,18 @@ int main()
             runs.template operator()<easylocal::runners::AspirationPlusTabuSearch<>>(
                 {.max_idle_iterations = 1000,
                     .max_iterations = 60,
-                    .min_moves = 10,
-                    .max_moves = 40,
-                    .plus = 5,
-                    .aspiration_level = 1.02,
-                    .tabu_list = {.tenure = 7}});
+                    .tabu_list = {.tenure = 7},
+                    .candidates = {
+                        .min_moves = 10,
+                        .max_moves = 40,
+                        .plus = 5,
+                        .aspiration_level = 1.02}});
         const auto elite =
             runs.template operator()<easylocal::runners::EliteCandidateTabuSearch<>>(
                 {.max_idle_iterations = 1000,
                     .max_iterations = 60,
-                    .elite_size = 10,
-                    .quality = 1.2,
-                    .tabu_list = {.tenure = 7}});
+                    .tabu_list = {.tenure = 7},
+                    .candidates = {.elite_size = 10, .quality = 1.2}});
         ok &= expect(
             aspiration_plus < full && elite < full,
             "aspiration plus and the elite candidate list evaluate fewer moves");

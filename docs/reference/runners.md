@@ -51,9 +51,9 @@ asserts.
 | `runners::ParetoLateAcceptanceHillClimbing` | `random_move`, `better`, a `cost::pareto` cost, `random_solution` | `history_length`, `max_iterations`, `idle_ratio`, `second_chance`, `max_evaluations` | proposed moves |
 | `runners::GreatDeluge` | `random_move`, `better`, an arithmetic cost | `initial_level`, `min_level`, `level_rate`, `neighbors_sampled`, `max_evaluations` | proposed moves |
 | `runners::TabuSearch<List, Aspiration>` | `moves` or cursor, `better`, `inverse` | `max_idle_iterations`, `max_iterations`, `max_evaluations`, `tabu_list`: the list's | committed moves |
-| `runners::FirstImprovementTabuSearch<List, Aspiration>` | as TabuSearch | as TabuSearch, plus `improve_on_best` | committed moves |
-| `runners::AspirationPlusTabuSearch<List, Aspiration>` | as TabuSearch, an arithmetic cost | as TabuSearch, plus `min_moves`, `max_moves`, `plus`, `aspiration_level` | committed moves |
-| `runners::EliteCandidateTabuSearch<List, Aspiration>` | as TabuSearch, an arithmetic cost | as TabuSearch, plus `elite_size`, `quality` | committed moves |
+| `runners::FirstImprovementTabuSearch<List, Aspiration>` | as TabuSearch | as TabuSearch, plus `candidates`: `improve_on_best` | committed moves |
+| `runners::AspirationPlusTabuSearch<List, Aspiration>` | as TabuSearch, an arithmetic cost | as TabuSearch, plus `candidates`: `min_moves`, `max_moves`, `plus`, `aspiration_level` | committed moves |
+| `runners::EliteCandidateTabuSearch<List, Aspiration>` | as TabuSearch, an arithmetic cost | as TabuSearch, plus `candidates`: `elite_size`, `quality` | committed moves |
 | `runners::SimulatedAnnealing<Temperature, Acceptance>` | `random_move`, `better`, an acceptance-compatible cost | a temperature policy (`temperature`), an acceptance policy, `max_evaluations` | proposed moves |
 
 The limits on a count, `max_evaluations` and `max_iterations`, are of type
@@ -108,6 +108,22 @@ the best solution found. `FirstImprovementTabuSearch` stops the scan at the
 first admissible move that improves the current cost (with `improve_on_best`,
 the best cost); without one it applies the best admissible move. Both take the
 RNG as a `run` argument, for the ties.
+
+The four tabu searches share one parameter block,
+`TabuSearchParameters<ListParameters, CandidateParameters>`: the limits of the
+run, the list's parameters as the group `tabu_list`, and those of the
+candidate strategy, the scan of each iteration, as the group `candidates`
+(`search.candidates.*` in a configuration):
+`candidates::FirstImprovementParameters`, `AspirationPlusParameters` and
+`EliteListParameters`. The full scan of `TabuSearch`,
+`candidates::FullParameters`, has none, and no group:
+
+```cpp
+make_runner<AspirationPlusTabuSearch<tabu::RandomTenure>>(
+    {.max_idle_iterations = 500,
+     .tabu_list = {.min_tenure = 5, .max_tenure = 15},
+     .candidates = {.min_moves = 10, .max_moves = 40}})
+```
 
 Two runners implement Glover's candidate list strategies, whose levels are
 values of the cost (an arithmetic cost):

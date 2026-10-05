@@ -189,6 +189,15 @@ reviewed by hand before tagging.
   hexadecimal digits in JSONL (`jsonl_recorder`) and in the output of
   `eltr.py`, the STN's nodes and edges included: as JSON numbers, JavaScript
   and jq rounded them to doubles. ELTR keeps them as `u64`.
+- **Breaking:** the four tabu searches share one parameter block,
+  `TabuSearchParameters<ListParameters, CandidateParameters>`: the parameters
+  of the candidate strategy are the group `candidates`
+  (`runners::candidates::FirstImprovementParameters`,
+  `AspirationPlusParameters`, `EliteListParameters`; none for `TabuSearch`),
+  `{.tabu_list = {...}, .candidates = {.min_moves = 10}}` in the code and
+  `search.candidates.min_moves` in a configuration.
+  `FirstImprovementTabuSearchParameters`, `AspirationPlusTabuSearchParameters`
+  and `EliteCandidateTabuSearchParameters` are gone.
 - **Breaking:** invalid parameters throw `std::invalid_argument` in every
   build, instead of an assert that Release builds skipped (a Simulated
   Annealing schedule then reached undefined behaviour, or never ended): the

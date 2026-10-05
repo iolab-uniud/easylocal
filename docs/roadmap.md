@@ -143,6 +143,21 @@ uniformly among all the moves when the children do.
 
 **When.** Not scheduled.
 
+## Candidate strategies of Tabu Search
+
+**Why.** The four tabu searches (`TabuSearch`, `FirstImprovementTabuSearch`,
+`AspirationPlusTabuSearch`, `EliteCandidateTabuSearch`) are one algorithm with
+four ways of scanning the neighborhood; they already share one parameter
+block, `TabuSearchParameters<List, Candidates>`, but each strategy is still a
+runner of its own.
+
+**What.** One `TabuSearch<List, Aspiration, Candidates>` with a candidate
+strategy policy, `candidates::{Full, FirstImprovement, AspirationPlus,
+EliteList}`, whose parameters are the group `candidates` they already have,
+and aliases for the names of EasyLocal 3.
+
+**When.** Not scheduled.
+
 ## Cooperative runners
 
 **Why.** A pipeline runs its stages one after the other, each from the solution

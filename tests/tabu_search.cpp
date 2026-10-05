@@ -292,6 +292,32 @@ int main()
             static_cast<bool>(configuration.apply(valid))
                 && parameters.tabu_list.tenure == 3,
             "the tabu list's parameters can be changed");
+        ok &= expect(
+            std::ranges::none_of(
+                configuration.parameters(),
+                [](const easylocal::config::parameter_info& parameter) {
+                    return parameter.path.starts_with("candidates");
+                }),
+            "the full scan of Tabu Search has no candidate parameters");
+    }
+
+    {
+        // The candidate strategies share the block, under the group candidates.
+        AspirationPlusTabuSearch<>::parameters_type parameters;
+        easylocal::config::parameter_set configuration;
+        configuration.add(parameters);
+        const std::array changes{
+            easylocal::config::text_override{"candidates.min_moves", "3"},
+            easylocal::config::text_override{"max_iterations", "7"}};
+        ok &= expect(
+            static_cast<bool>(configuration.apply(changes))
+                && parameters.candidates.min_moves == 3 && parameters.max_iterations == 7,
+            "the parameters of a candidate strategy are the group candidates");
+        static_assert(std::same_as<
+            FirstImprovementTabuSearch<>::parameters_type,
+            TabuSearchParameters<
+                tabu::FixedLengthParameters,
+                candidates::FirstImprovementParameters>>);
     }
 
     {
@@ -445,10 +471,13 @@ int main()
                 {.max_iterations = 1, .tabu_list = {.tenure = 2}})
                 .bind(instance)
                 .run(Position{5}, rng);
-        const auto on_best = line_runner<FirstImprovementTabuSearch<>, Uneven>(
-            {.max_iterations = 1, .improve_on_best = true, .tabu_list = {.tenure = 2}})
-                                 .bind(instance)
-                                 .run(Position{5}, rng);
+        const auto on_best =
+            line_runner<FirstImprovementTabuSearch<>, Uneven>(
+                {.max_iterations = 1,
+                    .tabu_list = {.tenure = 2},
+                    .candidates = {.improve_on_best = true}})
+                .bind(instance)
+                .run(Position{5}, rng);
         ok &= expect(
             best.solution.value == 6 && first.solution.value == 4
                 && first.evaluations == 2 && on_best.solution.value == 4,
@@ -460,28 +489,22 @@ int main()
         const auto stop_at_first =
             line_runner<AspirationPlusTabuSearch<>, Uneven>(
                 {.max_iterations = 1,
-                    .min_moves = 1,
-                    .max_moves = 10,
-                    .plus = 0,
-                    .tabu_list = {.tenure = 2}})
+                    .tabu_list = {.tenure = 2},
+                    .candidates = {.min_moves = 1, .max_moves = 10, .plus = 0}})
                 .bind(instance)
                 .run(Position{5}, rng);
         const auto one_more =
             line_runner<AspirationPlusTabuSearch<>, Uneven>(
                 {.max_iterations = 1,
-                    .min_moves = 1,
-                    .max_moves = 10,
-                    .plus = 1,
-                    .tabu_list = {.tenure = 2}})
+                    .tabu_list = {.tenure = 2},
+                    .candidates = {.min_moves = 1, .max_moves = 10, .plus = 1}})
                 .bind(instance)
                 .run(Position{5}, rng);
         const auto capped =
             line_runner<AspirationPlusTabuSearch<>, Uneven>(
                 {.max_iterations = 1,
-                    .min_moves = 1,
-                    .max_moves = 1,
-                    .plus = 5,
-                    .tabu_list = {.tenure = 2}})
+                    .tabu_list = {.tenure = 2},
+                    .candidates = {.min_moves = 1, .max_moves = 1, .plus = 5}})
                 .bind(instance)
                 .run(Position{5}, rng);
         ok &= expect(

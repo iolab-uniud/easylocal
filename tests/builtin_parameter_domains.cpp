@@ -66,13 +66,18 @@ template<class... Lists>
 void expect_tabu_searches()
 {
     (expect_domains<runners::TabuSearchParameters<Lists>>("tabu_search"), ...);
-    (expect_domains<runners::FirstImprovementTabuSearchParameters<Lists>>(
+    (expect_domains<runners::TabuSearchParameters<
+            Lists,
+            runners::candidates::FirstImprovementParameters>>(
          "first_improvement_tabu_search"),
         ...);
-    (expect_domains<runners::AspirationPlusTabuSearchParameters<Lists>>(
+    (expect_domains<runners::TabuSearchParameters<
+            Lists,
+            runners::candidates::AspirationPlusParameters>>(
          "aspiration_plus_tabu_search"),
         ...);
-    (expect_domains<runners::EliteCandidateTabuSearchParameters<Lists>>(
+    (expect_domains<
+         runners::TabuSearchParameters<Lists, runners::candidates::EliteListParameters>>(
          "elite_candidate_tabu_search"),
         ...);
 }
@@ -138,9 +143,10 @@ int main()
         tabu::RandomFooParameters{.min_fluctuation = 2.0, .max_fluctuation = 1.0});
     expect_requirement(
         "aspiration_plus",
-        runners::AspirationPlusTabuSearchParameters<tabu::FixedLengthParameters>{
-            .min_moves = 5,
-            .max_moves = 4});
+        runners::TabuSearchParameters<
+            tabu::FixedLengthParameters,
+            runners::candidates::AspirationPlusParameters>{
+            .candidates = {.min_moves = 5, .max_moves = 4}});
     expect_requirement(
         "reheating.temperature",
         sa::ReheatingParameters<sa::ClassicParameters>{

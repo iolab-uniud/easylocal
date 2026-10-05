@@ -1686,9 +1686,149 @@ struct None
 
 } // namespace aspiration
 
-/// The parameters of TabuSearch, with those of its tabu list as the group
-/// tabu_list.
-template<class ListParameters>
+namespace candidates
+{
+
+/// The parameters of the full scan of TabuSearch: none.
+struct FullParameters
+{
+    /// The names, members and descriptions of the parameters: none.
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return config::fields();
+    }
+
+    /// Whether the parameters are valid, and why not.
+    [[nodiscard]]
+    constexpr config::validation_result validate() const noexcept
+    {
+        return config::validation_result::success();
+    }
+};
+
+/// The parameters of the scan of FirstImprovementTabuSearch.
+struct FirstImprovementParameters
+{
+    /// The scan stops at the first admissible move that improves the best cost
+    /// rather than the current one.
+    bool improve_on_best{false};
+
+    /// The names, members and descriptions of the parameters.
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        using self = FirstImprovementParameters;
+        return config::fields(
+            config::field<"improve_on_best", &self::improve_on_best>(
+                "Stop the scan at a move improving the best cost, not the current one"));
+    }
+
+    /// Whether the parameters are valid, and why not.
+    [[nodiscard]]
+    constexpr config::validation_result validate() const noexcept
+    {
+        return config::check_schema(*this);
+    }
+};
+
+/// The parameters of Glover's aspiration plus candidate strategy, the scan of
+/// AspirationPlusTabuSearch.
+struct AspirationPlusParameters
+{
+    /// Admissible moves examined at least in each scan.
+    std::size_t min_moves{10};
+    /// Admissible moves examined at most in each scan.
+    std::size_t max_moves{100};
+    /// Admissible moves examined after the first one under the aspiration
+    /// level.
+    std::size_t plus{5};
+    /// The aspiration level, as a factor of the best cost (see
+    /// AspirationPlusTabuSearch).
+    double aspiration_level{1.0};
+
+    /// The names, members and descriptions of the parameters.
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        using self = AspirationPlusParameters;
+        return config::fields(
+            config::field<"min_moves", &self::min_moves>(
+                "Admissible moves examined at least in each scan",
+                config::range(1, easylocal::unlimited)),
+            config::field<"max_moves", &self::max_moves>(
+                "Admissible moves examined at most in each scan",
+                config::range(1, easylocal::unlimited)),
+            config::field<"plus", &self::plus>(
+                "Admissible moves examined after the first under the aspiration level",
+                config::range(0, easylocal::unlimited)),
+            config::field<"aspiration_level", &self::aspiration_level>(
+                "The aspiration level, as a factor of the best cost",
+                config::range(1.0, easylocal::unlimited)),
+            config::require(
+                config::value<"min_moves"> <= config::value<"max_moves">,
+                "min_moves must not be above max_moves"));
+    }
+
+    /// Whether the parameters are valid, and why not.
+    [[nodiscard]]
+    config::validation_result validate() const noexcept
+    {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
+        // Its domain has no upper bound: it lets infinity through.
+        if (!std::isfinite(aspiration_level))
+            return config::validation_result::failure("aspiration_level must be finite");
+        return config::validation_result::success();
+    }
+};
+
+/// The parameters of Glover's elite candidate list, the scan of
+/// EliteCandidateTabuSearch.
+struct EliteListParameters
+{
+    /// The moves kept from a full scan.
+    std::size_t elite_size{10};
+    /// A kept move is applied while its cost is within this factor of the best
+    /// cost (see EliteCandidateTabuSearch).
+    double quality{1.05};
+
+    /// The names, members and descriptions of the parameters.
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        using self = EliteListParameters;
+        return config::fields(
+            config::field<"elite_size", &self::elite_size>(
+                "The moves kept from a full scan",
+                config::range(1, easylocal::unlimited)),
+            config::field<"quality", &self::quality>(
+                "Cost, as a factor of the best, up to which a kept move is applied",
+                config::range(1.0, easylocal::unlimited)));
+    }
+
+    /// Whether the parameters are valid, and why not.
+    [[nodiscard]]
+    config::validation_result validate() const noexcept
+    {
+        if (const auto schema = config::check_schema(*this); !schema)
+            return schema;
+        // Its domain has no upper bound: it lets infinity through.
+        if (!std::isfinite(quality))
+            return config::validation_result::failure("quality must be finite");
+        return config::validation_result::success();
+    }
+};
+
+} // namespace candidates
+
+/// The parameters of the tabu searches: the limits of the run, those of the
+/// tabu list as the group tabu_list and those of the candidate strategy as the
+/// group candidates.
+///
+/// The full scan of TabuSearch, candidates::FullParameters, has no parameters
+/// and no group.
+template<class ListParameters, class CandidateParameters = candidates::FullParameters>
 struct TabuSearchParameters
 {
     /// Iterations without improving the best cost after which the search stops.
@@ -1700,13 +1840,15 @@ struct TabuSearchParameters
     limit max_evaluations{unlimited};
     /// The parameters of the tabu list.
     ListParameters tabu_list{};
+    /// The parameters of the candidate strategy, the scan of each iteration.
+    CandidateParameters candidates{};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         using self = TabuSearchParameters;
-        return config::fields(
+        const auto common = config::fields(
             config::field<"max_idle_iterations", &self::max_idle_iterations>(
                 "Maximum number of iterations without improving the best cost",
                 config::range(1, easylocal::unlimited)),
@@ -1717,55 +1859,20 @@ struct TabuSearchParameters
                 "Maximum number of solution evaluations, or unlimited",
                 config::range(0, easylocal::unlimited)),
             config::group<"tabu_list", &self::tabu_list>("The tabu list"));
+        if constexpr (std::tuple_size_v<decltype(CandidateParameters::parameter_schema())>
+            == 0)
+        {
+            return common;
+        }
+        else
+        {
+            const auto group =
+                config::group<"candidates", &self::candidates>("The candidate strategy");
+            return std::tuple_cat(common, std::tuple<decltype(group)>{group});
+        }
     }
 
-    /// The tabu list is validated as a group.
-    [[nodiscard]]
-    constexpr config::validation_result validate() const noexcept
-    {
-        return config::check_schema(*this);
-    }
-};
-
-/// The parameters of FirstImprovementTabuSearch, with those of its tabu list as
-/// the group tabu_list.
-template<class ListParameters>
-struct FirstImprovementTabuSearchParameters
-{
-    /// Iterations without improving the best cost after which the search stops.
-    std::size_t max_idle_iterations{1000};
-    /// Iterations in all; unlimited by default.
-    limit max_iterations{unlimited};
-    /// Evaluation budget, including the initial evaluation; unlimited by
-    /// default.
-    limit max_evaluations{unlimited};
-    /// The scan stops at the first admissible move that improves the best cost
-    /// rather than the current one.
-    bool improve_on_best{false};
-    /// The parameters of the tabu list.
-    ListParameters tabu_list{};
-
-    /// The names, members and descriptions of the parameters.
-    [[nodiscard]]
-    static consteval auto parameter_schema()
-    {
-        using self = FirstImprovementTabuSearchParameters;
-        return config::fields(
-            config::field<"max_idle_iterations", &self::max_idle_iterations>(
-                "Maximum number of iterations without improving the best cost",
-                config::range(1, easylocal::unlimited)),
-            config::field<"max_iterations", &self::max_iterations>(
-                "Maximum number of iterations, or unlimited",
-                config::range(0, easylocal::unlimited)),
-            config::field<"max_evaluations", &self::max_evaluations>(
-                "Maximum number of solution evaluations, or unlimited",
-                config::range(0, easylocal::unlimited)),
-            config::field<"improve_on_best", &self::improve_on_best>(
-                "Stop the scan at a move improving the best cost, not the current one"),
-            config::group<"tabu_list", &self::tabu_list>("The tabu list"));
-    }
-
-    /// Whether the parameters are valid, and why not.
+    /// The tabu list and the candidate strategy are validated as groups.
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
@@ -2236,8 +2343,9 @@ class FirstImprovementTabuSearch
 {
 public:
     /// The parameter block of the algorithm.
-    using parameters_type =
-        FirstImprovementTabuSearchParameters<typename TabuList::parameters_type>;
+    using parameters_type = TabuSearchParameters<
+        typename TabuList::parameters_type,
+        candidates::FirstImprovementParameters>;
 
     /// From its parameters and an aspiration criterion.
     ///
@@ -2246,7 +2354,7 @@ public:
         const parameters_type& parameters,
         Aspiration aspiration = {})
         : engine_{config::require_valid(parameters), std::move(aspiration)},
-          improve_on_best_{parameters.improve_on_best}
+          improve_on_best_{parameters.candidates.improve_on_best}
     {
     }
 
@@ -2283,76 +2391,6 @@ private:
     bool improve_on_best_;
 };
 
-/// The parameters of AspirationPlusTabuSearch, with those of its tabu list as
-/// the group tabu_list.
-template<class ListParameters>
-struct AspirationPlusTabuSearchParameters
-{
-    /// Iterations without improving the best cost after which the search stops.
-    std::size_t max_idle_iterations{1000};
-    /// Iterations in all; unlimited by default.
-    limit max_iterations{unlimited};
-    /// Evaluation budget, including the initial evaluation; unlimited by
-    /// default.
-    limit max_evaluations{unlimited};
-    /// Admissible moves examined at least in each scan.
-    std::size_t min_moves{10};
-    /// Admissible moves examined at most in each scan.
-    std::size_t max_moves{100};
-    /// Admissible moves examined after the first one under the aspiration
-    /// level.
-    std::size_t plus{5};
-    /// The aspiration level, as a factor of the best cost.
-    double aspiration_level{1.0};
-    /// The parameters of the tabu list.
-    ListParameters tabu_list{};
-
-    /// The names, members and descriptions of the parameters.
-    [[nodiscard]]
-    static consteval auto parameter_schema()
-    {
-        using self = AspirationPlusTabuSearchParameters;
-        return config::fields(
-            config::field<"max_idle_iterations", &self::max_idle_iterations>(
-                "Maximum number of iterations without improving the best cost",
-                config::range(1, easylocal::unlimited)),
-            config::field<"max_iterations", &self::max_iterations>(
-                "Maximum number of iterations, or unlimited",
-                config::range(0, easylocal::unlimited)),
-            config::field<"max_evaluations", &self::max_evaluations>(
-                "Maximum number of solution evaluations, or unlimited",
-                config::range(0, easylocal::unlimited)),
-            config::field<"min_moves", &self::min_moves>(
-                "Admissible moves examined at least in each scan",
-                config::range(1, easylocal::unlimited)),
-            config::field<"max_moves", &self::max_moves>(
-                "Admissible moves examined at most in each scan",
-                config::range(1, easylocal::unlimited)),
-            config::field<"plus", &self::plus>(
-                "Admissible moves examined after the first under the aspiration level",
-                config::range(0, easylocal::unlimited)),
-            config::field<"aspiration_level", &self::aspiration_level>(
-                "The aspiration level, as a factor of the best cost",
-                config::range(1.0, easylocal::unlimited)),
-            config::group<"tabu_list", &self::tabu_list>("The tabu list"),
-            config::require(
-                config::value<"min_moves"> <= config::value<"max_moves">,
-                "min_moves must not be above max_moves"));
-    }
-
-    /// Whether the parameters are valid, and why not.
-    [[nodiscard]]
-    config::validation_result validate() const noexcept
-    {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        // Its domain has no upper bound: it lets infinity through.
-        if (!std::isfinite(aspiration_level))
-            return config::validation_result::failure("aspiration_level must be finite");
-        return config::validation_result::success();
-    }
-};
-
 /// Tabu Search with Glover's aspiration plus candidate strategy: each scan
 /// examines admissible moves until plus more after the first one whose cost is
 /// under the aspiration level (aspiration_level times the best cost), but at
@@ -2366,8 +2404,9 @@ class AspirationPlusTabuSearch
 {
 public:
     /// The parameter block of the algorithm.
-    using parameters_type =
-        AspirationPlusTabuSearchParameters<typename TabuList::parameters_type>;
+    using parameters_type = TabuSearchParameters<
+        typename TabuList::parameters_type,
+        candidates::AspirationPlusParameters>;
 
     /// From its parameters and an aspiration criterion.
     ///
@@ -2376,10 +2415,10 @@ public:
         const parameters_type& parameters,
         Aspiration aspiration = {})
         : engine_{config::require_valid(parameters), std::move(aspiration)},
-          min_moves_{parameters.min_moves},
-          max_moves_{parameters.max_moves},
-          plus_{parameters.plus},
-          aspiration_level_{parameters.aspiration_level}
+          min_moves_{parameters.candidates.min_moves},
+          max_moves_{parameters.candidates.max_moves},
+          plus_{parameters.candidates.plus},
+          aspiration_level_{parameters.candidates.aspiration_level}
     {
     }
 
@@ -2425,63 +2464,6 @@ private:
     double aspiration_level_;
 };
 
-/// The parameters of EliteCandidateTabuSearch, with those of its tabu list as
-/// the group tabu_list.
-template<class ListParameters>
-struct EliteCandidateTabuSearchParameters
-{
-    /// Iterations without improving the best cost after which the search stops.
-    std::size_t max_idle_iterations{1000};
-    /// Iterations in all; unlimited by default.
-    limit max_iterations{unlimited};
-    /// Evaluation budget, including the initial evaluation; unlimited by
-    /// default.
-    limit max_evaluations{unlimited};
-    /// The moves kept from a full scan.
-    std::size_t elite_size{10};
-    /// A candidate of the list is applied while its cost is not above this
-    /// factor of the best cost.
-    double quality{1.05};
-    /// The parameters of the tabu list.
-    ListParameters tabu_list{};
-
-    /// The names, members and descriptions of the parameters.
-    [[nodiscard]]
-    static consteval auto parameter_schema()
-    {
-        using self = EliteCandidateTabuSearchParameters;
-        return config::fields(
-            config::field<"max_idle_iterations", &self::max_idle_iterations>(
-                "Maximum number of iterations without improving the best cost",
-                config::range(1, easylocal::unlimited)),
-            config::field<"max_iterations", &self::max_iterations>(
-                "Maximum number of iterations, or unlimited",
-                config::range(0, easylocal::unlimited)),
-            config::field<"max_evaluations", &self::max_evaluations>(
-                "Maximum number of solution evaluations, or unlimited",
-                config::range(0, easylocal::unlimited)),
-            config::field<"elite_size", &self::elite_size>(
-                "The moves kept from a full scan",
-                config::range(1, easylocal::unlimited)),
-            config::field<"quality", &self::quality>(
-                "Cost, as a factor of the best, up to which a kept move is applied",
-                config::range(1.0, easylocal::unlimited)),
-            config::group<"tabu_list", &self::tabu_list>("The tabu list"));
-    }
-
-    /// Whether the parameters are valid, and why not.
-    [[nodiscard]]
-    config::validation_result validate() const noexcept
-    {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        // Its domain has no upper bound: it lets infinity through.
-        if (!std::isfinite(quality))
-            return config::validation_result::failure("quality must be finite");
-        return config::validation_result::success();
-    }
-};
-
 /// Tabu Search with Glover's elite candidate list: a full scan applies the best
 /// admissible move and keeps the elite_size best other admissible moves; the
 /// following iterations evaluate only the kept moves still valid, and apply the
@@ -2495,8 +2477,9 @@ class EliteCandidateTabuSearch
 {
 public:
     /// The parameter block of the algorithm.
-    using parameters_type =
-        EliteCandidateTabuSearchParameters<typename TabuList::parameters_type>;
+    using parameters_type = TabuSearchParameters<
+        typename TabuList::parameters_type,
+        candidates::EliteListParameters>;
 
     /// From its parameters and an aspiration criterion.
     ///
@@ -2505,8 +2488,8 @@ public:
         const parameters_type& parameters,
         Aspiration aspiration = {})
         : engine_{config::require_valid(parameters), std::move(aspiration)},
-          elite_size_{parameters.elite_size},
-          quality_{parameters.quality}
+          elite_size_{parameters.candidates.elite_size},
+          quality_{parameters.candidates.quality}
     {
     }
 
