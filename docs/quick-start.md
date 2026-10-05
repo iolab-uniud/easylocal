@@ -217,6 +217,11 @@ The component receives the Input in its constructor and keeps a reference to
 it, `input_`. The modulo `(k + 1) % n` makes the last city connect back to the
 first one. With a single component, its value is the cost of the solution.
 
+EasyLocal minimizes costs: a lower cost is a better solution. To maximize a
+quantity, return what is lost instead, such as the profit left out, or its
+opposite, the profit with a minus sign (Great Deluge, whose water level is
+a multiple of the cost, needs costs that stay positive).
+
 ### The neighborhood
 
 The **NeighborhoodExplorer** knows the moves: which ones exist, whether one is

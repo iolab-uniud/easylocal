@@ -385,6 +385,7 @@ reviewed by hand before tagging.
 - The tutorial no longer takes the launcher of chapter 12 from `examples/tsp`:
   `examples/tutorial/launcher_main.cpp` opens a 2-opt and a swap app of the
   tutorial's own TSP. `AGENTS.md` says what each example directory is.
+- The quick start says that costs are minimized and how to maximize.
 - The migration page says that `hard_soft` changes what Simulated Annealing
   accepts, compared with EasyLocal 3's `HARD_WEIGHT` (a weighted sum still
   crosses infeasible regions), and that Best Improvement keeps the first of
