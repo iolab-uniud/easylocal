@@ -243,6 +243,9 @@ reviewed by hand before tagging.
   README, the quick start and the stability page say so, and CMake (the
   project and `find_package(EasyLocal)`) stops with a message that says how to
   fix it, instead of failing on every number parsed.
+- `EASYLOCAL_SANITIZERS` (such as `address;undefined`) builds EasyLocal's own
+  tests and examples with those sanitizers, a report stopping the program;
+  the `asan` preset uses it, and the full CI runs it with GCC 16.
 
 ### Documentation and examples
 

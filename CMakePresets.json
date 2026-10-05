@@ -52,6 +52,15 @@
         "CMAKE_BUILD_TYPE": "Debug",
         "EASYLOCAL_ENABLE_COVERAGE": true
       }
+    },
+    {
+      "name": "asan",
+      "displayName": "Local or CI / C++23 / Debug with AddressSanitizer and UndefinedBehaviorSanitizer",
+      "inherits": "_base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EASYLOCAL_SANITIZERS": "address;undefined"
+      }
     }
   ],
   "buildPresets": [
@@ -70,6 +79,10 @@
     {
       "name": "coverage",
       "configurePreset": "coverage"
+    },
+    {
+      "name": "asan",
+      "configurePreset": "asan"
     }
   ],
   "testPresets": [
@@ -109,6 +122,17 @@
     {
       "name": "coverage",
       "configurePreset": "coverage",
+      "output": {
+        "outputOnFailure": true,
+        "outputJUnitFile": "${sourceDir}/build/${presetName}/junit.xml"
+      },
+      "execution": {
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "asan",
+      "configurePreset": "asan",
       "output": {
         "outputOnFailure": true,
         "outputJUnitFile": "${sourceDir}/build/${presetName}/junit.xml"

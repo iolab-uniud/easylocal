@@ -16,9 +16,10 @@ on:
         options: [quick, full]
         default: quick
 
-# A release tag, or a dispatch with level full, runs every job; a pull request
-# or a quick dispatch runs the local check (format and lint, AppleClang, a GCC
-# 15 Release build) and Windows.
+# A release tag, or a dispatch with level full, runs every job (the sanitizer
+# build and coverage included); a pull request or a quick dispatch runs the
+# local check (format and lint, AppleClang, a GCC 15 Release build) and
+# Windows.
 permissions:
   contents: read
 
@@ -392,6 +393,52 @@ jobs:
             build/ci23-release/CMakeFiles/CMakeConfigureLog.yaml
             build/ci23-release/Testing/Temporary/LastTest.log
 
+  sanitizers:
+    name: Linux / GCC 16 / Debug with AddressSanitizer and UBSan
+    if: github.ref_type == 'tag' || inputs.level == 'full'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 45
+    env:
+      PRESET: asan
+      CXX: /usr/bin/g++-16
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install build tools
+        run: |
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo env DEBIAN_FRONTEND=noninteractive \
+            apt-get install -y --no-install-recommends cmake ninja-build g++-16
+
+      # The asan preset: the tests and examples with -fsanitize=address,undefined
+      # and no recovery, so that a report fails its test.
+      - name: Configure
+        run: |
+          mkdir -p "build/$PRESET"
+          cmake --preset "$PRESET" 2>&1 | tee "build/$PRESET/configure.log"
+
+      - name: Build
+        run: cmake --build --preset "$PRESET" --parallel 2 2>&1 | tee "build/$PRESET/build.log"
+
+      - name: Test
+        run: ctest --preset "$PRESET" --output-on-failure -j 4 2>&1 | tee "build/$PRESET/ctest.log"
+
+      - name: Upload diagnostics
+        if: ${{ always() && !env.ACT }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux-gcc16-asan
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            build/asan/*.log
+            build/asan/junit.xml
+            build/asan/CMakeCache.txt
+            build/asan/Testing/Temporary/LastTest.log
+
   coverage:
     name: Linux / GCC 16 / Debug coverage, all optional components
     if: github.ref_type == 'tag' || inputs.level == 'full'
@@ -438,8 +485,9 @@ jobs:
 
       - name: Publish the coverage badge
         # The README badge reads badges/coverage.json (a shields.io endpoint)
-        # from the badges branch; only runs on main update it.
-        if: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && !env.ACT }}
+        # from the badges branch; runs on main (a full dispatch) and release
+        # tags update it.
+        if: ${{ (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.event_name != 'pull_request' && !env.ACT }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

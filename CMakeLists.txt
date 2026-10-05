@@ -124,14 +124,28 @@ option(
     OFF
 )
 
-# Strict warnings and coverage instrumentation apply only to EasyLocal's own
-# targets in the calling directory; consumers of the header-only library are
-# never affected. Coverage of the headers comes from the translation units
-# that instantiate them.
+set(
+    EASYLOCAL_SANITIZERS
+    ""
+    CACHE STRING
+    "Sanitizers for EasyLocal's own tests and examples (GCC/Clang), such as address;undefined"
+)
+
+# Strict warnings, coverage instrumentation and sanitizers apply only to
+# EasyLocal's own targets in the calling directory; consumers of the
+# header-only library are never affected. Coverage of the headers comes from
+# the translation units that instantiate them. A sanitizer's report stops the
+# program, so that the test fails.
 function(easylocal_configure_own_targets)
     if(EASYLOCAL_ENABLE_COVERAGE AND NOT MSVC)
         add_compile_options(--coverage -O0)
         add_link_options(--coverage)
+    endif()
+    if(EASYLOCAL_SANITIZERS AND NOT MSVC)
+        list(JOIN EASYLOCAL_SANITIZERS "," sanitizers)
+        add_compile_options(
+            -fsanitize=${sanitizers} -fno-sanitize-recover=all -fno-omit-frame-pointer)
+        add_link_options(-fsanitize=${sanitizers})
     endif()
     if(NOT EASYLOCAL_STRICT_WARNINGS)
         return()

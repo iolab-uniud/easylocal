@@ -35,7 +35,10 @@ comprehensive one. Run, the fastest first:
   on macOS);
 - when `include/` or `tests/` change, `ctest -j8` on a GCC 15 Release build:
   the oldest GCC, with libstdc++ and the `-O3` warnings; other GCC and Clang
-  versions are left to CI;
+  versions are left to CI. CI's Linux job builds it with the `ci23-release`
+  preset and `CXX=g++-15`; locally, `cmake --preset release -B build/gcc15
+  -DCMAKE_CXX_COMPILER=g++-15 && cmake --build build/gcc15 && ctest
+  --test-dir build/gcc15 -j8` (on macOS the Homebrew `g++-15`);
 - `scripts/tidy.sh build/dev` when `examples/` change, or the library they use;
 - `uv run mkdocs build --strict` when `docs/` changes.
 
@@ -58,11 +61,12 @@ A dispatch, like a pull request, is a quick run: the local check (format and
 lint, AppleClang, GCC 15 Release, the optional components on Linux) and
 Windows clang-cl. `-f level=full` runs everything, as a release tag does:
 Linux GCC 15 and 16, Clang 22 and 23 with libstdc++ and with libc++, macOS
-AppleClang and GCC 16, the optional components on the three systems, and
-coverage. Every job builds with warnings as errors. Code that builds with one
-compiler may not build with another: when CI fails, reproduce it with that
-compiler locally (for example a GCC 15 Release build), or run a Linux job in
-Docker with `scripts/act-ci.sh <toolchain>`.
+AppleClang and GCC 16, the optional components on the three systems, a GCC
+16 Debug build with AddressSanitizer and UBSan (the `asan` preset, also usable
+locally) and coverage. Every job builds with warnings as errors. Code that
+builds with one compiler may not build with another: when CI fails, reproduce
+it with that compiler locally (for example a GCC 15 Release build), or run a
+Linux job in Docker with `scripts/act-ci.sh <toolchain>`.
 
 Python tools (`scripts/`, the documentation, the TUI end-to-end tests) run in
 the uv environment: `uv sync`, then `uv run ...`; `uv run mkdocs serve`
