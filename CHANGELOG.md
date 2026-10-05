@@ -282,6 +282,9 @@ reviewed by hand before tagging.
 - The tutorial no longer takes the launcher of chapter 12 from `examples/tsp`:
   `examples/tutorial/launcher_main.cpp` opens a 2-opt and a swap app of the
   tutorial's own TSP. `AGENTS.md` says what each example directory is.
+- The TSP example's TextUI saves its solution (`W`) to a copy of
+  `instances/small.sol` in the build directory, no longer over the
+  checked-in file.
 - The API reference lists `Session` and `rest::app_blueprint` once each:
   constrained by requires-clauses, they appeared twice.
 - The REST examples check what clients send: the assignment codec rejects a

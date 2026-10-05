@@ -62,10 +62,16 @@ if(EASYLOCAL_BUILD_EXAMPLES AND TARGET EasyLocal::TUI)
             EasyLocal::TUI
     )
 
+    # The tester saves its solution (W) over a copy in the build directory,
+    # not over the checked-in one.
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/instances/small.sol"
+        "${CMAKE_CURRENT_BINARY_DIR}/small.sol"
+        COPYONLY)
     target_compile_definitions(
         easylocal_tsp_tui
         PRIVATE
             EASYLOCAL_TSP_INSTANCE_FILE="${CMAKE_CURRENT_SOURCE_DIR}/instances/small.tsp"
-            EASYLOCAL_TSP_SOLUTION_FILE="${CMAKE_CURRENT_SOURCE_DIR}/instances/small.sol"
+            EASYLOCAL_TSP_SOLUTION_FILE="${CMAKE_CURRENT_BINARY_DIR}/small.sol"
     )
 endif()

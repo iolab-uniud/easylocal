@@ -9,7 +9,7 @@
 #endif
 
 #ifndef EASYLOCAL_TSP_SOLUTION_FILE
-#error "EASYLOCAL_TSP_SOLUTION_FILE must name the example solution"
+#error "EASYLOCAL_TSP_SOLUTION_FILE must name a copy of the example solution"
 #endif
 
 int main()
