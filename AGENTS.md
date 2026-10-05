@@ -193,7 +193,8 @@ are staged, so it is formatted whole, in the same commit.
 ## Releases
 
 `VERSION` holds the version in preparation (such as `4.0.0-alpha.2`), whose section in
-`CHANGELOG.md` reads "not yet released". `scripts/release.sh` releases it: it
+`CHANGELOG.md` reads "not yet released". `scripts/release.sh` releases it,
+from `main` up to date with `origin/main`: it
 dates the section and `CITATION.cff`, runs the Release build and its tests,
 commits, creates the annotated tag `vVERSION`, pushes both and creates the
 GitHub release from the section (`--page-only` creates it alone, for an

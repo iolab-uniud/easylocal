@@ -21,9 +21,11 @@ MAJOR.MINOR.PATCH-PRERELEASE (such as 4.0.0-alpha.1). CHANGELOG.md must have
 its section, "## [VERSION] — not yet released", which becomes
 "## [VERSION] — YYYY-MM-DD"; the links at the end of the file then compare
 [Unreleased] with the new tag; CITATION.cff gets the version and the date.
-The Release build is configured, built and tested, then the change is
-committed, tagged vVERSION and pushed, and a GitHub release is created from the
-CHANGELOG.md section (a pre-release for a PRERELEASE version).
+It runs on main, up to date with origin/main. The Release build is
+configured, built and tested, then the change is committed, tagged vVERSION
+and pushed, and a GitHub release is created from the CHANGELOG.md section (a
+pre-release for a PRERELEASE version). A failure or a cancel before the commit
+restores CHANGELOG.md and CITATION.cff.
 
 Afterwards, set VERSION to the next version in preparation and add its
 section to CHANGELOG.md.
@@ -63,7 +65,10 @@ done
 
 cd "$(dirname "$0")/.."
 
-[[ -d .git ]] || die "this script must be run inside the Git repository"
+command -v git >/dev/null 2>&1 || die "'git' not found in PATH"
+# A worktree has a .git file, not a directory: ask Git.
+[[ "$(git rev-parse --show-toplevel 2>/dev/null)" == "$(pwd -P)" ]] \
+    || die "this script must be run inside the Git repository"
 [[ -f VERSION ]] || die "VERSION not found"
 [[ -f CHANGELOG.md ]] || die "CHANGELOG.md not found"
 [[ -f CMakePresets.json ]] || die "CMakePresets.json not found"
@@ -102,7 +107,6 @@ echo "Version : $VERSION"
 echo "Tag     : $TAG"
 echo
 
-command -v git >/dev/null 2>&1 || die "'git' not found in PATH"
 command -v gh >/dev/null 2>&1 || die "'gh' not found in PATH"
 command -v perl >/dev/null 2>&1 || die "'perl' not found in PATH"
 gh auth status >/dev/null 2>&1 || die "'gh' is not logged in: run 'gh auth login'"
@@ -123,7 +127,16 @@ if [[ -n "$(git status --porcelain)" ]]; then
     die "working tree is not clean"
 fi
 
+# The release is made from main, up to date with origin/main: checked before
+# anything is changed.
+CURRENT_BRANCH="$(git branch --show-current)"
+[[ "$CURRENT_BRANCH" == main ]] \
+    || die "the release is made from main, not '${CURRENT_BRANCH:-a detached HEAD}'"
+
 git fetch --tags --prune origin
+
+[[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/main)" ]] \
+    || die "main is not origin/main: pull or push first"
 
 if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
     die "local tag '$TAG' already exists: set VERSION to the next version"
@@ -138,10 +151,27 @@ SECTION="$(grep -F -x -m 1 "$HEADING — not yet released" CHANGELOG.md || true)
 
 TODAY="$(date +%Y-%m-%d)"
 
+# Until the release commit, an exit (an error, a failed test, a cancel)
+# restores CHANGELOG.md and CITATION.cff; the CHANGELOG.md reviewed in the
+# editor is kept in a temporary file.
+RESTORE=0
+TMP_CHANGELOG="$(mktemp)"
+TMP_CITATION="$(mktemp)"
+restore() {
+    rm -f "$TMP_CHANGELOG" "$TMP_CITATION"
+    [[ "$RESTORE" -eq 1 ]] || return 0
+    local kept
+    kept="$(mktemp "${TMPDIR:-/tmp}/CHANGELOG.XXXXXX")"
+    cp CHANGELOG.md "$kept"
+    git checkout -- CHANGELOG.md
+    [[ -f CITATION.cff ]] && git checkout -- CITATION.cff
+    echo "CHANGELOG.md and CITATION.cff are restored; the reviewed CHANGELOG.md is $kept." >&2
+}
+trap restore EXIT
+
 # The section is dated; [Unreleased] compares with the new tag, and the
 # version gets its link when it has none.
-TMP_CHANGELOG="$(mktemp)"
-trap 'rm -f "$TMP_CHANGELOG"' EXIT
+RESTORE=1
 awk -v heading="$HEADING" -v today="$TODAY" -v tag="$TAG" \
     -v version="$VERSION" -v repository="$REPOSITORY" '
     $0 == heading " — not yet released" { print heading " — " today; next }
@@ -163,7 +193,6 @@ mv "$TMP_CHANGELOG" CHANGELOG.md
 
 # CITATION.cff cites the released version.
 if [[ -f CITATION.cff ]]; then
-    TMP_CITATION="$(mktemp)"
     awk -v version="$VERSION" -v today="$TODAY" '
         /^date-released:/ { next }
         /^version:/ { print "version: " version; print "date-released: " today; next }
@@ -196,7 +225,7 @@ if [[ "$ASSUME_YES" -eq 0 ]]; then
         y|Y|yes|YES)
             ;;
         *)
-            echo "Release cancelled. The CHANGELOG.md changes remain in the working tree."
+            echo "Release cancelled."
             exit 0
             ;;
     esac
@@ -204,12 +233,10 @@ fi
 
 git add CHANGELOG.md CITATION.cff
 git commit -m "chore(release): $TAG"
+RESTORE=0
 git tag -a "$TAG" -m "EasyLocal $VERSION"
 
-CURRENT_BRANCH="$(git branch --show-current)"
-[[ -n "$CURRENT_BRANCH" ]] || die "cannot determine current branch"
-
-git push origin "$CURRENT_BRANCH"
+git push origin main
 git push origin "$TAG"
 create_release_page
 
