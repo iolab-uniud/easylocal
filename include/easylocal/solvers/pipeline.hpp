@@ -253,28 +253,13 @@ public:
         return pipeline_stage{*this}.with_restart(initialization);
     }
 
-    /// The limits of the stage started now: its deadline and its evaluations,
-    /// none when it has no limit of its own.
-    [[nodiscard]]
-    easylocal::detail::solve_budget limits() const
-    {
-        easylocal::detail::solve_budget budget;
-        if (std::isfinite(parameters_.timeout))
-        {
-            budget.deadline = easylocal::detail::deadline_after(
-                easylocal::detail::steady_time_limit(parameters_.timeout));
-        }
-        if (!parameters_.max_evaluations.is_unlimited())
-            budget.evaluations = parameters_.max_evaluations;
-        return budget;
-    }
-
     /// The same stage on the hard cost only, until it is zero: a feasible
     /// solution.
     ///
     /// The runner becomes `runner.with_hard_cost()` and the target the zero of
-    /// the hard cost; the name and the attempts stay. Requires a runner with a
-    /// hierarchical cost (`cost::hierarchical`).
+    /// the hard cost; the name, the attempts, the time limit, the evaluation
+    /// budget and the restart stay. Requires a runner with a hierarchical cost
+    /// (`cost::hierarchical`).
     [[nodiscard]]
     auto until_feasible() &&
     {
@@ -298,8 +283,9 @@ public:
     /// solution.
     ///
     /// The runner becomes `runner.with_hard_cost()` and the target the zero of
-    /// the hard cost; the name and the attempts stay. Requires a runner with a
-    /// hierarchical cost (`cost::hierarchical`).
+    /// the hard cost; the name, the attempts, the time limit, the evaluation
+    /// budget and the restart stay. Requires a runner with a hierarchical cost
+    /// (`cost::hierarchical`).
     [[nodiscard]]
     auto until_feasible() const&
     {
@@ -341,6 +327,22 @@ private:
     friend class pipeline_stage;
     template<std::uniform_random_bit_generator, class...>
     friend class Pipeline;
+
+    // The limits of the stage started now: its deadline and its evaluations,
+    // none when it has no limit of its own.
+    [[nodiscard]]
+    easylocal::detail::solve_budget limits() const
+    {
+        easylocal::detail::solve_budget budget;
+        if (std::isfinite(parameters_.timeout))
+        {
+            budget.deadline = easylocal::detail::deadline_after(
+                easylocal::detail::steady_time_limit(parameters_.timeout));
+        }
+        if (!parameters_.max_evaluations.is_unlimited())
+            budget.evaluations = parameters_.max_evaluations;
+        return budget;
+    }
 
     std::string name_;
     Runner runner_;
@@ -452,11 +454,19 @@ constexpr stage_restart<Initialization> restart(
 }
 
 /// The stage with a target: `stage.with_target(target.cost)`.
+///
+/// Requires a target that converts to the stage's cost without losing its
+/// fractional part: a floating-point target for an integer cost is rejected.
 template<class Runner, class Cost>
+    requires std::convertible_to<Cost, typename pipeline_stage<Runner>::cost_type>
 [[nodiscard]]
 pipeline_stage<Runner> operator&(pipeline_stage<Runner> stage, stage_target<Cost> target)
 {
     using cost_type = typename pipeline_stage<Runner>::cost_type;
+    static_assert(
+        !(std::floating_point<Cost> && std::integral<cost_type>),
+        "the target of a stage is written in the stage's cost: a floating-point "
+        "target would be truncated to its integer cost");
     return std::move(stage).with_target(cost_type(std::move(target.cost)));
 }
 
@@ -499,15 +509,36 @@ pipeline_stage<Runner> operator&(
     return std::move(stage).with_restart(restart.initialization);
 }
 
+namespace detail
+{
+
+// Throws std::invalid_argument unless the run options given to a stage carry
+// only limits: a control belongs to the solve, which gives it to every stage.
+inline void require_stage_limits(const run_options<trace::null_tracer>& options)
+{
+    if (options.control != nullptr)
+    {
+        throw std::invalid_argument{
+            "a pipeline stage takes a time limit and an evaluation budget, not a "
+            "run control: give the control to solve()"};
+    }
+}
+
+} // namespace detail
+
 /// The stage with a time limit or an evaluation budget: `stage & timeout(10s)`,
 /// as `stage.with_timeout(10s)`, and `stage & max_evaluations(5000)`, as
-/// `stage.with_max_evaluations(5000)`. The options given carry only limits.
+/// `stage.with_max_evaluations(5000)`.
+///
+/// Throws `std::invalid_argument` when the options carry a run control, which
+/// the solve gives to every stage: `stage & with(control)` would drop it.
 template<class Runner>
 [[nodiscard]]
 pipeline_stage<Runner> operator&(
     pipeline_stage<Runner> stage,
     const run_options<trace::null_tracer>& options)
 {
+    detail::require_stage_limits(options);
     if (options.time_limit)
         stage = std::move(stage).with_timeout(*options.time_limit);
     if (!options.evaluation_limit.is_unlimited())
@@ -706,12 +737,15 @@ algorithm_stage<Algorithm, Spec, Modifiers...> operator&(
 
 /// The algorithm stage with a time limit or an evaluation budget, as a stage
 /// of a runner: `stage<A>("a") & timeout(10s)`.
+///
+/// Throws `std::invalid_argument` when the options carry a run control.
 template<class Algorithm, class Spec, class... Modifiers>
 [[nodiscard]]
 algorithm_stage<Algorithm, Spec, Modifiers...> operator&(
     algorithm_stage<Algorithm, Spec, Modifiers...> stage,
     const run_options<trace::null_tracer>& options)
 {
+    detail::require_stage_limits(options);
     if (options.time_limit)
     {
         stage.parameters().timeout =
@@ -870,9 +904,12 @@ std::optional<termination_reason> ends_stage(
 /// A stage runs up to its attempts while it does not reach its target, keeping
 /// its best run (with a cost::pareto cost, the front of all its runs); the
 /// first stage starts every attempt from a new initial solution, the others
-/// from the solution they received. The result is the last stage's, with the
-/// effort of every stage. Requires stages with the same Input and Solution, and
-/// a first stage whose SolutionManager builds an initial or a random solution.
+/// from the solution they received, unless a stage restarts them. The result
+/// is the last stage's, with the effort of every stage. A caller's target
+/// applies to the last stage only, and not even to it when it has its own:
+/// the solve then ends target_reached at the stage's own target. Requires
+/// stages with the same Input and Solution, and a first stage whose
+/// SolutionManager builds an initial or a random solution.
 template<std::uniform_random_bit_generator RNG, class... Stages>
 class Pipeline
     : public easylocal::detail::solver_start<
@@ -930,6 +967,9 @@ public:
     using start_type::rng;
 
     /// The stages, with `rng` and initialization::automatic.
+    ///
+    /// Throws `std::invalid_argument` when two stages have the same name, or
+    /// one has none.
     Pipeline(std::tuple<Stages...> stages, RNG rng)
         : Pipeline(
               std::move(stages),
@@ -978,8 +1018,7 @@ public:
     /// the last stage when it has none of its own. After a cancellation, or
     /// once the solve's time or evaluations are spent, the stages between the
     /// first and the last are skipped (0 attempts in their report) and the
-    /// last evaluates the solution once. Throws `std::invalid_argument` when
-    /// two stages have the same name, or one has none.
+    /// last evaluates the solution once.
     template<class... Options>
         requires easylocal::detail::solve_options<Options...>
     [[nodiscard]]
@@ -1023,14 +1062,10 @@ public:
     /// read-only when the pipeline is const. The set refers to this pipeline,
     /// which must stay in place while it is used: a temporary pipeline has no
     /// configuration().
-    ///
-    /// Throws `std::invalid_argument` when two stages have the same name, or
-    /// one has none.
     template<class Self>
     [[nodiscard]]
     config::parameter_set configuration(this Self& self)
     {
-        self.check_names();
         config::parameter_set parameters;
         std::apply(
             [&parameters](auto&... stage) {
@@ -1050,10 +1085,7 @@ private:
         const easylocal::detail::initialization_kind kind)
         : start_type{std::move(rng), kind}, stages_{std::move(stages)}
     {
-    }
-
-    void check_names() const
-    {
+        // The names cannot change afterwards: checked once.
         std::apply(
             [](const auto&... stage) { detail::check_stage_names(stage...); },
             stages_);
@@ -1070,7 +1102,6 @@ private:
         Rng& rng,
         const Options&... options) const
     {
-        check_names();
         std::vector<stage_report> reports;
         reports.reserve(stage_count);
         easylocal::detail::search_effort effort;

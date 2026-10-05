@@ -1029,14 +1029,14 @@ int main()
         polished.has_value() && polished->solution.soft == 5,
         "an app of plain services is composed with | and runs its pipeline");
 
-    // Stage names are distinct and not empty; a stage has at least one attempt.
-    auto twins = solvers::pipeline(
-        solvers::stage("same", el::Runner{SoftDown{}} | sm | nhe),
-        solvers::stage("same", el::Runner{SoftDown{}} | sm | nhe));
+    // Stage names are distinct and not empty, checked when the pipeline is
+    // built; a stage has at least one attempt.
     bool rejected = false;
     try
     {
-        static_cast<void>(twins.configuration());
+        static_cast<void>(solvers::pipeline(
+            solvers::stage("same", el::Runner{SoftDown{}} | sm | nhe),
+            solvers::stage("same", el::Runner{SoftDown{}} | sm | nhe)));
     }
     catch (const std::invalid_argument&)
     {
@@ -1055,6 +1055,20 @@ int main()
         rejected = true;
     }
     ok &= expect(rejected, "a stage without attempts is rejected");
+    rejected = false;
+    try
+    {
+        // A control belongs to the solve: a stage would drop it.
+        const el::run_control control;
+        static_cast<void>(
+            solvers::stage("controlled", el::Runner{SoftDown{}} | sm | nhe)
+            & el::with(control));
+    }
+    catch (const std::invalid_argument&)
+    {
+        rejected = true;
+    }
+    ok &= expect(rejected, "a stage rejects run options with a control");
 
     ok &= two_stage_cases::run();
 

@@ -808,6 +808,11 @@ easylocal_add_compile_failure_test(
     "the stages of a pipeline must have the same Solution"
 )
 easylocal_add_compile_failure_test(
+    stage-target-truncated
+    stage_target_truncated.cpp
+    "a floating-point target would be truncated to its integer cost"
+)
+easylocal_add_compile_failure_test(
     duplicate-component
     duplicate_component.cpp
     "a SolutionManager recipe may contain each component type at most once"

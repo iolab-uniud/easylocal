@@ -107,7 +107,12 @@ them all and keeps the hard part.
 
 The pipeline's `.initialization(...)` and `.seed(...)` are those of every
 solver, and refer to its first stage.
-A caller's target applies to the last stage, unless that stage has its own.
+A caller's target applies to the last stage, unless that stage has its own:
+the solve then ends `target_reached` at the stage's own target, whatever the
+caller's. Stage names are checked when the pipeline is built, and a stage
+rejects run options that carry a control (`stage & with(control)`, which it
+would drop: the control goes to `solve()`), and a floating-point target for an
+integer cost, which would be truncated.
 After a cancellation, or once the solve's time or evaluations are spent, the
 stages between the first and the last are skipped without binding their
 runner (their report has 0 attempts and the reason as termination), and the
@@ -134,7 +139,8 @@ The parameters (`configuration()`) are each stage's under its name: its
 runner's (`<name>.search.*`, `<name>.cost.*`, ...), `<name>.attempts` and
 `<name>.timeout` (seconds; `inf`, the default, for no limit of its own) and
 `<name>.max_evaluations` (`unlimited` by default).
-Stage names must be distinct and non-empty.
+Stage names must be distinct and non-empty: the pipeline's construction throws
+`std::invalid_argument` otherwise.
 
 ### Algorithm stages
 

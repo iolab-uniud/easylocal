@@ -265,6 +265,13 @@ reviewed by hand before tagging.
   declaring it dereferenced a null pointer in a Release build. When every
   move is tabu, Tabu Search applies the least tabu move with the evaluation
   its scan made, instead of evaluating (and tracing) it again.
+- **Breaking:** a pipeline checks the names of its stages when it is built,
+  once, instead of at every `solve()` and `configuration()`, which no longer
+  throw. A stage rejects run options with a control (`stage & with(control)`
+  dropped it: the control goes to `solve()`), with `std::invalid_argument`,
+  and a floating-point target for an integer cost (`target(0.5)` was
+  truncated), at compile time. `pipeline_stage::limits()`, which returned a
+  detail type, is private.
 
 ### Added
 
