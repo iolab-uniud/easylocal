@@ -14,6 +14,8 @@
 #include <optional>
 #include <random>
 #include <stdexcept>
+#include <stop_token>
+#include <string>
 #include <string_view>
 #include <variant>
 #include <vector>
@@ -252,6 +254,67 @@ auto expect(const bool condition, const std::string_view description) -> bool
         return false;
     }
     return true;
+}
+
+// Requests a stop once the run has made `after` evaluations.
+struct StopAfter
+{
+    std::stop_source& source;
+    std::size_t after;
+
+    void operator()(const easylocal::run_progress& progress) const
+    {
+        if (progress.evaluations >= after)
+            source.request_stop();
+    }
+};
+
+// The limits every tabu search keeps, whatever its scan: the evaluation
+// budget, a cancellation in the middle of a scan, and a neighborhood without
+// moves (a local optimum).
+template<class Algorithm>
+[[nodiscard]]
+auto keeps_its_limits(const std::string_view name) -> bool
+{
+    const LineInstance instance;
+    bool ok = true;
+    std::mt19937 rng{3U};
+
+    typename Algorithm::parameters_type budgeted{};
+    budgeted.max_evaluations = 4;
+    const auto spent =
+        line_runner<Algorithm, Valley>(budgeted).bind(instance).run(Position{1}, rng);
+    ok &= expect(
+        spent.evaluations == 4
+            && spent.termination == termination_reason::evaluation_budget_exhausted,
+        std::string{name} + " stops at its evaluation budget");
+
+    // The run reports its progress at each evaluation: the stop is requested
+    // at the second, in the middle of the first scan of two moves.
+    std::stop_source source;
+    StopAfter observer{.source = source, .after = 2};
+    const easylocal::run_control control{source.get_token(), observer};
+    const auto cancelled = line_runner<Algorithm, Valley>({}).bind(instance).run(
+        Position{1},
+        rng,
+        easylocal::with(control));
+    ok &= expect(
+        cancelled.termination == termination_reason::cancelled
+            && cancelled.evaluations == 2 && cancelled.iterations <= 1,
+        std::string{name} + " stops in the middle of a scan when cancelled");
+
+    // From 1 the fork has no move.
+    const auto stuck =
+        (easylocal::make_runner<Algorithm>({})
+            | (solution_manager<ForkManager>() | component<ForkObjective<0>>())
+            | neighborhood<ForkExplorer>())
+            .bind(instance)
+            .run(Position{1}, rng);
+    ok &= expect(
+        stuck.termination == termination_reason::local_optimum
+            && stuck.solution.value == 1 && stuck.evaluations == 1,
+        std::string{name} + " ends at a solution without moves");
+    return ok;
 }
 
 } // namespace
@@ -784,6 +847,11 @@ int main()
             rejected && trace.records().empty(),
             "a list that cannot run throws before the run starts");
     }
+
+    ok &= keeps_its_limits<TabuSearch<>>("tabu search");
+    ok &= keeps_its_limits<FirstImprovementTabuSearch<>>("first improvement tabu search");
+    ok &= keeps_its_limits<AspirationPlusTabuSearch<>>("aspiration plus tabu search");
+    ok &= keeps_its_limits<EliteCandidateTabuSearch<>>("elite candidate tabu search");
 
     return ok ? 0 : 1;
 }

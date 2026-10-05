@@ -74,6 +74,19 @@ auto grid_runner(const typename Algorithm::parameters_type parameters)
         | neighborhood<StepNeighborhood>();
 }
 
+// The grid's steps, none proposed: every point is a local optimum.
+class StuckNeighborhood : public StepNeighborhood
+{
+public:
+    using StepNeighborhood::StepNeighborhood;
+
+    template<std::uniform_random_bit_generator RNG>
+    static std::optional<Step> random_move(const Point&, RNG&)
+    {
+        return std::nullopt;
+    }
+};
+
 // Every point of the front is on the row y = 0, none dominates another, and
 // they are ordered by the first objective.
 template<class Front>
@@ -152,6 +165,23 @@ int main()
             result.termination == termination_reason::idle_limit_reached
                 && result.iterations >= 2000,
             "past min_iterations the search stops when mostly idle");
+    }
+
+    {
+        // Without a move to try the search ends at once, a local optimum.
+        std::mt19937 rng{11U};
+        const auto result =
+            (easylocal::make_runner<ParetoLateAcceptanceHillClimbing>(
+                 {.history_length = 3})
+                | (solution_manager<PointManager>()
+                    | cost::objectives(component<Left>(), component<Right>()))
+                | neighborhood<StuckNeighborhood>())
+                .bind(grid)
+                .run(Point{4, 9}, rng);
+        ok &= expect(
+            result.termination == termination_reason::local_optimum
+                && result.iterations == 0 && result.evaluations == 3,
+            "pareto late acceptance ends at a solution without moves");
     }
 
     {

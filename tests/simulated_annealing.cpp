@@ -22,6 +22,7 @@
 #include <optional>
 #include <random>
 #include <span>
+#include <stdexcept>
 #include <stop_token>
 #include <string>
 #include <string_view>
@@ -249,6 +250,24 @@ static_assert(easylocal::cost::arithmetic<double>);
 static_assert(!easylocal::cost::arithmetic<bool>);
 struct StructuredCost { int hard; int soft; };
 static_assert(!easylocal::cost::arithmetic<StructuredCost>);
+
+// A cost ordered by its value, without a numeric difference (cost::delta).
+struct OrderedCost
+{
+    int value{};
+
+    auto operator<=>(const OrderedCost&) const = default;
+};
+static_assert(!easylocal::cost::has_delta<OrderedCost>);
+
+struct OrderedChainValue
+{
+    [[nodiscard]] static auto evaluate(const ChainSolution& solution) noexcept
+        -> OrderedCost
+    {
+        return {solution.value};
+    }
+};
 
 auto expect(const bool condition, const std::string_view description) -> bool
 {
@@ -822,6 +841,31 @@ int main()
             "SA returns best-so-far rather than the final accepted chain state");
         ok &= expect(result.iterations == 2 && result.evaluations == 3,
             "SA reports proposal iterations separately from evaluations including the initial state");
+        ok &= expect(
+            result.termination == easylocal::termination_reason::completed,
+            "SA ends completed when its schedule is over");
+
+        // An acceptance that needs no delta runs on any ordered cost, but a
+        // calibration estimates the temperature from deltas: it is rejected.
+        auto calibrating =
+            easylocal::make_runner<
+                SimulatedAnnealing<temperature::Classic, AlwaysAccept>>(
+                {.temperature = temperature::ClassicParameters{.calibration_samples = 4}})
+            | (solution_manager<ChainSolutionManager>() | component<OrderedChainValue>())
+            | neighborhood<RandomOnlyChainNeighborhood>();
+        std::mt19937 calibration_rng{7U};
+        bool rejected_calibration = false;
+        try
+        {
+            (void)calibrating.bind(instance).run(ChainSolution{}, calibration_rng);
+        }
+        catch (const std::invalid_argument&)
+        {
+            rejected_calibration = true;
+        }
+        ok &= expect(
+            rejected_calibration,
+            "a calibration on a cost without cost::delta is rejected");
 
         // Its own evaluation budget, as every runner has.
         auto budgeted =

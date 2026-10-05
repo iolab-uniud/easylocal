@@ -374,6 +374,22 @@ int main()
     ok &= expect(cancelled.termination == termination_reason::cancelled && cancelled.evaluations == 1,
                  "LocalSearch is cancellable");
 
+    // A pipeline gives the caller's target to its last stage only: the first
+    // stage, stopped by its own budget, passes the target 8 and reaches 7; the
+    // second one starts at the target, and stops there.
+    auto staged = solvers::pipeline(
+        solvers::stage("first", fi) & solvers::max_evaluations(4),
+        solvers::stage("second", fi))
+                      .initialization(initialization::initial);
+    const auto staged_result = staged.solve(ten, stop_at(8));
+    ok &= expect(
+        staged_result.stages.size() == 2
+            && staged_result.stages[0].termination
+                == termination_reason::evaluation_budget_exhausted
+            && staged_result.stages[0].cost == "7" && staged_result.cost == 7
+            && staged_result.termination == termination_reason::target_reached,
+        "a pipeline stops its last stage, only, at the caller's target");
+
     auto multi_start =
         make_solver<solvers::MultiStart>(fi, solvers::MultiStartParameters{.starts = 5})
             .initialization(initialization::initial);
