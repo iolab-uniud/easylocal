@@ -70,14 +70,18 @@ concept configurable_app_algorithm =
     std::default_initializable<typename Algorithm::parameters_type> &&
     std::constructible_from<Algorithm, typename Algorithm::parameters_type>;
 
-template<configurable_app_algorithm Algorithm>
+// A runner registered in an app: its name, its parameters and, unless it runs
+// on the app's neighborhood (unconfigured_t), the recipe of its own.
+template<configurable_app_algorithm Algorithm, class NeighborhoodSpec = unconfigured_t>
 struct app_runner_registration
 {
     using algorithm_type = Algorithm;
     using config_type = typename Algorithm::parameters_type;
+    using neighborhood_spec_type = NeighborhoodSpec;
 
     std::string name;
     config_type config{};
+    EASYLOCAL_NO_UNIQUE_ADDRESS NeighborhoodSpec neighborhood;
 };
 
 // A pipeline registered in an app: run by name from the current solution, its
@@ -97,6 +101,15 @@ inline constexpr bool is_pipeline_registration_v = false;
 template<class Pipeline>
 inline constexpr bool is_pipeline_registration_v<app_pipeline_registration<Pipeline>> =
     true;
+
+// Whether a registration brings its own neighborhood recipe.
+template<class Registration>
+inline constexpr bool has_own_neighborhood_v = false;
+
+template<class Algorithm, class NeighborhoodSpec>
+inline constexpr bool
+    has_own_neighborhood_v<app_runner_registration<Algorithm, NeighborhoodSpec>> =
+        !std::same_as<NeighborhoodSpec, unconfigured_t>;
 
 // The algorithm a registration runs on the app's services: a runner's, none for
 // a pipeline, whose stages have their own.
@@ -191,6 +204,38 @@ Result visit_runner_registration_named(
     }
 }
 
+// Whether Algorithm runs on the services of SM and NHE as a tool runs it: with
+// the tool's RNG, or without one.
+template<class Algorithm, class SM, class NHE>
+inline constexpr bool app_runnable_v =
+    algorithm_runnable<Algorithm, runner_context<SM, NHE>>
+    || algorithm_runnable<Algorithm, runner_context<SM, NHE>, std::mt19937_64&>;
+
+// The checks of a runner registration with its own neighborhood, when it is
+// added to an app: the neighborhood explores the app's solutions and the
+// algorithm runs on it.
+template<class Algorithm, class SM, class NHESpec>
+consteval bool validate_app_runner()
+{
+    using neighborhood_type = service_t<NHESpec>;
+    if constexpr (!runner_neighborhood_explorer<neighborhood_type, SM>)
+    {
+        static_assert(
+            runner_neighborhood_explorer<neighborhood_type, SM>,
+            "the neighborhood of a runner registration must explore the "
+            "Solution of the app's SolutionManager");
+        return false;
+    }
+    else
+    {
+        static_assert(
+            app_runnable_v<Algorithm, SM, neighborhood_type>,
+            "a registered runner's algorithm must run on its neighborhood, with "
+            "or without an RNG: run(run, solution[, rng])");
+        return validate_delta_bindings<SM, neighborhood_type>();
+    }
+}
+
 template<class Algorithm, class SM, class NHE>
 class app_runner_ref
 {
@@ -269,6 +314,37 @@ private:
     NHE& neighborhood_;
 };
 
+// What a bound app holds for a registration's own neighborhood: nothing when it
+// runs on the app's, else the explorer built over the app's SolutionManager.
+template<class Registration, class SM>
+struct own_neighborhood_source
+{
+    const Registration& registration;
+    SM& solution_manager;
+};
+
+template<class Registration, class SM>
+struct own_neighborhood_slot
+{
+    explicit own_neighborhood_slot(
+        const own_neighborhood_source<Registration, SM>&) noexcept
+    {
+    }
+};
+
+template<class Registration, class SM>
+    requires has_own_neighborhood_v<Registration>
+struct own_neighborhood_slot<Registration, SM>
+{
+    explicit own_neighborhood_slot(
+        const own_neighborhood_source<Registration, SM>& source)
+        : value{source.registration.neighborhood.construct(source.solution_manager)}
+    {
+    }
+
+    service_t<typename Registration::neighborhood_spec_type> value;
+};
+
 // The members of App and BoundApp keyed by algorithm type rather than by name,
 // for the library and its tests: a type registered twice has no single runner.
 struct app_access;
@@ -288,8 +364,8 @@ struct app_input_type<Spec>
 } // namespace detail
 
 /// An app bound to an Input: the services built for it once (the
-/// SolutionManager and the neighborhood explorer) and the runners, run by name
-/// on them.
+/// SolutionManager, the app's neighborhood explorer, those of the runners that
+/// have their own) and the runners, run by name on them.
 ///
 /// App::bind returns it; it borrows the Input, which must outlive it, and
 /// cannot be copied or moved, since its services refer to each other. The
@@ -308,7 +384,7 @@ class BoundApp
 public:
     /// The SolutionManager built from the recipe.
     using solution_manager_type = detail::service_t<SMSpec>;
-    /// The neighborhood explorer built from the recipe.
+    /// The app's neighborhood explorer built from the recipe.
     using neighborhood_explorer_type = detail::service_t<NHESpec>;
     /// The Input of the problem.
     using input_type = typename solution_manager_type::input_type;
@@ -353,7 +429,7 @@ public:
         return self.solution_manager_;
     }
 
-    /// The neighborhood explorer, const when the bound app is.
+    /// The app's neighborhood explorer, const when the bound app is.
     template<class Self>
     [[nodiscard]]
     auto& neighborhood(this Self&& self) noexcept
@@ -364,9 +440,10 @@ public:
     /// Runs the runner or the pipeline registered under name from solution and
     /// returns its result; empty when nothing has that name.
     ///
-    /// A runner runs on these services and gets rng when its algorithm takes
-    /// one; a pipeline runs with its stages' own recipes and rng. The options are run
-    /// options, such as with(control, tracer). The solution must be valid for the Input.
+    /// A runner runs on these services, with its own neighborhood when it has
+    /// one, and gets rng when its algorithm takes one; a pipeline runs with its
+    /// stages' own recipes and rng. The options are run options, such as
+    /// with(control, tracer). The solution must be valid for the Input.
     template<std::uniform_random_bit_generator RNG, class... Options>
     [[nodiscard]]
     std::optional<named_run_result<solution_type, cost_type>> run(
@@ -436,6 +513,10 @@ private:
         : input_{input},
           solution_manager_{solution_manager_spec.construct(input_)},
           neighborhood_{neighborhood_spec.construct(solution_manager_)},
+          own_neighborhoods_{
+              detail::own_neighborhood_source<Registrations, solution_manager_type>{
+                  std::get<Index>(registrations),
+                  solution_manager_}...},
           algorithms_{make_algorithm(std::get<Index>(registrations))...},
           registrations_{registrations}
     {
@@ -450,14 +531,28 @@ private:
         using registration_type =
             std::tuple_element_t<Index, std::tuple<Registrations...>>;
         using algorithm_type = typename registration_type::algorithm_type;
+        auto& neighborhood = neighborhood_at<Index>();
         return detail::app_runner_ref<
             algorithm_type,
             solution_manager_type,
-            neighborhood_explorer_type>{
+            std::remove_reference_t<decltype(neighborhood)>>{
             std::get<Index>(algorithms_),
             solution_manager_,
-            neighborhood_,
+            neighborhood,
         };
+    }
+
+    // The neighborhood registration Index runs on: its own, or the app's.
+    template<std::size_t Index, class Self>
+    [[nodiscard]]
+    auto& neighborhood_at(this Self& self) noexcept
+    {
+        using registration_type =
+            std::tuple_element_t<Index, std::tuple<Registrations...>>;
+        if constexpr (detail::has_own_neighborhood_v<registration_type>)
+            return std::get<Index>(self.own_neighborhoods_).value;
+        else
+            return self.neighborhood_;
     }
 
     template<class Registration>
@@ -473,6 +568,8 @@ private:
     const input_type& input_;
     solution_manager_type solution_manager_;
     neighborhood_explorer_type neighborhood_;
+    std::tuple<detail::own_neighborhood_slot<Registrations, solution_manager_type>...>
+        own_neighborhoods_;
     std::tuple<detail::registration_algorithm_t<Registrations>...> algorithms_;
     std::tuple<Registrations...> registrations_;
 };
@@ -565,8 +662,8 @@ public:
         };
     }
 
-    /// The app with spec as its neighborhood recipe: the method spelling of
-    /// `app | spec`.
+    /// The app with spec as its neighborhood recipe, the default of its
+    /// runners: the method spelling of `app | spec`.
     template<class Spec>
         requires(!std::same_as<SMSpec, detail::unconfigured_t>)
         && std::same_as<NHESpec, detail::unconfigured_t>
@@ -583,8 +680,9 @@ public:
         };
     }
 
-    /// The app with a runner of Algorithm registered as name: the method
-    /// spelling of `app | runner<Algorithm>(name, parameters)`.
+    /// The app with a runner of Algorithm registered as name, on the app's
+    /// neighborhood: the method spelling of `app | runner<Algorithm>(name,
+    /// parameters)`.
     template<detail::configurable_app_algorithm Algorithm>
         requires(!std::same_as<SMSpec, detail::unconfigured_t>)
         && (!std::same_as<NHESpec, detail::unconfigured_t>)
@@ -597,17 +695,49 @@ public:
             detail::app_runner_registration<Algorithm>{
                 .name = std::move(name),
                 .config = std::move(parameters),
+                .neighborhood = {},
+            });
+    }
+
+    /// The app with a runner of Algorithm registered as name, on its own
+    /// neighborhood, built from the recipe neighborhood over the app's
+    /// SolutionManager: the method spelling of `app | runner<Algorithm>(name,
+    /// parameters, neighborhood)`.
+    template<detail::configurable_app_algorithm Algorithm, class Spec>
+        requires(!std::same_as<SMSpec, detail::unconfigured_t>)
+        && (!std::same_as<NHESpec, detail::unconfigured_t>)
+        && detail::is_neighborhood_spec_v<std::remove_cvref_t<Spec>>
+    [[nodiscard]]
+    auto with_runner(
+        std::string name,
+        typename Algorithm::parameters_type parameters,
+        Spec&& neighborhood) &&
+    {
+        return std::move(*this).with_runner(
+            detail::app_runner_registration<Algorithm, std::remove_cvref_t<Spec>>{
+                .name = std::move(name),
+                .config = std::move(parameters),
+                .neighborhood = std::forward<Spec>(neighborhood),
             });
     }
 
     /// The app with a runner registration, made by easylocal::runner.
-    template<class Algorithm>
+    ///
+    /// A registration with its own neighborhood is checked at compile time:
+    /// the neighborhood explores the app's solutions, and the algorithm runs
+    /// on it.
+    template<class Algorithm, class Spec>
         requires(!std::same_as<SMSpec, detail::unconfigured_t>)
         && (!std::same_as<NHESpec, detail::unconfigured_t>)
     [[nodiscard]]
-    auto with_runner(detail::app_runner_registration<Algorithm> registration) &&
+    auto with_runner(detail::app_runner_registration<Algorithm, Spec> registration) &&
     {
-        using registration_type = detail::app_runner_registration<Algorithm>;
+        using registration_type = detail::app_runner_registration<Algorithm, Spec>;
+        if constexpr (detail::has_own_neighborhood_v<registration_type>)
+            static_assert(detail::validate_app_runner<
+                Algorithm,
+                detail::service_t<SMSpec>,
+                Spec>());
         auto registrations = std::tuple_cat(
             std::move(registrations_),
             std::tuple<registration_type>{std::move(registration)});
@@ -681,7 +811,8 @@ public:
 
     /// The parameters of the app: its cost expression ("cost"), its
     /// neighborhood ("neighborhood") and each registered runner's
-    /// (`runners.<name>`, for parameters that are a parameter block).
+    /// (`runners.<name>`, for parameters that are a parameter block, and
+    /// `runners.<name>.neighborhood` for its own neighborhood).
     ///
     /// Every run reads them, so a change applies from the next run; read-only
     /// when the app is const. The set refers to this app, which must stay in
@@ -742,20 +873,29 @@ public:
     }
 
     /// A standalone Runner of the runner of Algorithm registered as name: its
-    /// parameters and the app's recipes, for a solver.
+    /// parameters, the app's SolutionManager recipe and the neighborhood
+    /// recipe it runs on, for a solver.
     ///
     /// Throws std::invalid_argument when no runner of Algorithm has that name.
+    /// Requires the runners of Algorithm to run on the same neighborhood
+    /// recipe type.
     template<class Algorithm>
         requires(detail::app_runner_count_v<Algorithm, Registrations...> > 0)
     [[nodiscard]]
     auto make_runner(const std::string_view name) const
     {
         using runner_type = decltype(make_runner_of(
-            std::declval<const detail::app_runner_registration<Algorithm>&>()));
+            std::declval<const std::tuple_element_t<
+                detail::app_runner_index_impl<Algorithm, 0, Registrations...>(),
+                std::tuple<Registrations...>>&>()));
         return detail::visit_runner_registration_named<runner_type, Algorithm>(
             registrations_,
             name,
             [&](const auto& registration) -> runner_type {
+                static_assert(
+                    std::same_as<decltype(make_runner_of(registration)), runner_type>,
+                    "make_runner<Algorithm>(name) requires the runners of Algorithm "
+                    "to run on the same neighborhood recipe type");
                 return make_runner_of(registration);
             });
     }
@@ -838,16 +978,16 @@ public:
     }
 
     /// Registers a runner in the app: `app | runner<Algorithm>(name, ...)`.
-    template<class Algorithm>
+    template<class Algorithm, class Spec>
         requires requires(
             App builder,
-            detail::app_runner_registration<Algorithm> registration) {
+            detail::app_runner_registration<Algorithm, Spec> registration) {
             std::move(builder).with_runner(std::move(registration));
         }
     [[nodiscard]]
     friend auto operator|(
         App builder,
-        detail::app_runner_registration<Algorithm> registration)
+        detail::app_runner_registration<Algorithm, Spec> registration)
     {
         return std::move(builder).with_runner(std::move(registration));
     }
@@ -882,6 +1022,13 @@ private:
             using parameters_type = typename registration_type::config_type;
             if constexpr (config::parameter_block<parameters_type>)
                 parameters.add("runners." + registration.name, registration.config);
+            if constexpr (detail::has_own_neighborhood_v<registration_type>)
+            {
+                config::add_configuration(
+                    parameters,
+                    "runners." + registration.name + ".neighborhood",
+                    registration.neighborhood);
+            }
         }
     }
 
@@ -890,9 +1037,14 @@ private:
     [[nodiscard]]
     auto make_runner_of(const Registration& registration) const
     {
-        return easylocal::make_runner<typename Registration::algorithm_type>(
-                   registration.config)
-            | solution_manager_spec_ | neighborhood_spec_;
+        auto runner =
+            easylocal::make_runner<typename Registration::algorithm_type>(
+                registration.config)
+            | solution_manager_spec_;
+        if constexpr (detail::has_own_neighborhood_v<Registration>)
+            return std::move(runner) | registration.neighborhood;
+        else
+            return std::move(runner) | neighborhood_spec_;
     }
 
     std::string name_;
@@ -932,7 +1084,30 @@ struct app_access
             application.registrations_);
     }
 
-    // The only runner of Algorithm on a bound app.
+    // Visits the runners that have their own neighborhood, on a bound app:
+    // visitor(name, neighborhood).
+    template<class SM, class NH, class... Rs, class Visitor>
+    static void for_each_own_neighborhood(
+        const BoundApp<SM, NH, Rs...>& bound,
+        Visitor&& visitor)
+    {
+        [&]<std::size_t... Index>(std::index_sequence<Index...>) {
+            (
+                [&] {
+                    using registration_type =
+                        std::tuple_element_t<Index, std::tuple<Rs...>>;
+                    if constexpr (has_own_neighborhood_v<registration_type>)
+                    {
+                        visitor(
+                            std::string_view{std::get<Index>(bound.registrations_).name},
+                            std::get<Index>(bound.own_neighborhoods_).value);
+                    }
+                }(),
+                ...);
+        }(std::index_sequence_for<Rs...>{});
+    }
+
+    // The only runner of Algorithm on a bound app, on its neighborhood.
     template<class Algorithm, class SM, class NH, class... Rs>
     [[nodiscard]]
     static auto runner(BoundApp<SM, NH, Rs...>& bound)
@@ -990,8 +1165,8 @@ inline App<detail::unconfigured_t, detail::unconfigured_t> app(std::string name)
     return App<detail::unconfigured_t, detail::unconfigured_t>{std::move(name)};
 }
 
-/// A runner registration for an app: `app("tsp") | sm | nhe |
-/// runner<runners::FirstImprovement>("fi", {...})`.
+/// A runner registration for an app, on the app's neighborhood: `app("tsp") |
+/// sm | nhe | runner<runners::FirstImprovement>("fi", {...})`.
 ///
 /// The name is its key, and the segment of its parameter paths
 /// (`runners.<name>.*`). Requires an algorithm with a default-constructible
@@ -1002,7 +1177,30 @@ detail::app_runner_registration<Algorithm> runner(
     std::string name,
     typename Algorithm::parameters_type parameters = {})
 {
-    return {.name = std::move(name), .config = std::move(parameters)};
+    return {.name = std::move(name), .config = std::move(parameters), .neighborhood = {}};
+}
+
+/// A runner registration for an app, on its own neighborhood: `runner<SA>("sa",
+/// {...}, neighborhood<Swap>() | delta<...>())`.
+///
+/// The neighborhood is built from its recipe over the app's SolutionManager,
+/// next to the app's own; its parameters are under
+/// `runners.<name>.neighborhood.*`. Requires an algorithm with a
+/// default-constructible parameters_type, constructible from it, and a
+/// neighborhood recipe.
+template<detail::configurable_app_algorithm Algorithm, class Spec>
+    requires detail::is_neighborhood_spec_v<std::remove_cvref_t<Spec>>
+[[nodiscard]]
+detail::app_runner_registration<Algorithm, std::remove_cvref_t<Spec>> runner(
+    std::string name,
+    typename Algorithm::parameters_type parameters,
+    Spec&& neighborhood)
+{
+    return {
+        .name = std::move(name),
+        .config = std::move(parameters),
+        .neighborhood = std::forward<Spec>(neighborhood),
+    };
 }
 
 /// A pipeline registration for an app, of a pipeline already built:

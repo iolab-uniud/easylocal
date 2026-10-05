@@ -23,12 +23,15 @@ with Simulated Annealing and with First Improvement.
 The programs put the components together:
 
 - `apps.hpp`: two apps over the same solution manager and cost, one for each
-  neighborhood, with a First Improvement runner `fi`;
+  neighborhood, with a First Improvement runner `fi`, and `tsp_app()`, one
+  app whose runner `fi` uses 2-opt, the app's neighborhood, and `fi-swap`
+  swaps, a neighborhood of its own;
 - `sa_main.cpp` (`easylocal_tsp_sa`): Simulated Annealing on the union of the
   two neighborhoods, which draws a 2-opt move three times as often as a swap
   (`random_biases(3.0, 1.0)`), run from the command line by `cli::run`;
-- `two_apps.cpp` (`easylocal_tsp_two_apps`): First Improvement with 2-opt
-  moves from the initial tour, then with swaps from the tour it found;
+- `two_neighborhoods.cpp` (`easylocal_tsp_two_neighborhoods`): the runners of
+  `tsp_app()` in a row, First Improvement with 2-opt moves from the initial
+  tour, then with swaps from the tour it found;
 - `tui_main.cpp` (`easylocal_tsp_tui`): the two apps in the interactive
   terminal tester, built only with the TUI component
   (`-DEASYLOCAL_ENABLE_TUI=ON`).

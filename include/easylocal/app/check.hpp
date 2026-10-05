@@ -185,6 +185,54 @@ void check_app_moves(
     }
 }
 
+// The checks of a neighborhood from solution: its first enumerated moves and
+// some random ones are valid and lead to valid solutions.
+template<class Report, class SM, class NHE, class Solution>
+void check_app_neighborhood(
+    Report& report,
+    const SM& solution_manager,
+    const NHE& neighborhood,
+    const Solution& solution)
+{
+    constexpr std::size_t max_moves = 128;
+    if constexpr (deterministic_neighborhood_for<NHE, Solution>)
+    {
+        check_app_moves(
+            report,
+            solution_manager,
+            neighborhood,
+            solution,
+            easylocal::moves(neighborhood, solution),
+            max_moves);
+    }
+
+    if constexpr (random_neighborhood_for<NHE, Solution, std::mt19937_64>)
+    {
+        std::mt19937_64 rng{testing::check_options{}.seed};
+        for (std::size_t sample = 0; sample < 16; ++sample)
+        {
+            auto move = easylocal::random_move(neighborhood, solution, rng);
+            if (!move)
+                continue;
+
+            const auto valid = static_cast<bool>(neighborhood.is_valid(solution, *move));
+            report.check(
+                valid,
+                "random proposal",
+                "random_move produced a move that does not satisfy is_valid");
+            if (!valid)
+                continue;
+
+            auto candidate = solution;
+            neighborhood.make_move(candidate, *move);
+            report.check(
+                static_cast<bool>(solution_manager.is_valid(candidate)),
+                "random proposal application",
+                "random_move followed by make_move produced an invalid Solution");
+        }
+    }
+}
+
 // The check of the registration names, which binding the app requires: false
 // when they are not valid.
 template<class App>
@@ -248,7 +296,8 @@ bool check_runners(const App& application, app_check_report& report)
 ///
 /// It checks that the services refer to instance, that solution is valid and
 /// evaluates twice to the same cost, that the first 128 enumerated moves and 16
-/// random moves are valid and lead to valid solutions (with the incremental
+/// random moves of each neighborhood (the app's, and those of the runners that
+/// have their own) are valid and lead to valid solutions (with the incremental
 /// evaluation matching the full one, when the cost defines equivalence), and
 /// that each registered runner's parameters are valid and construct it. The
 /// runners are checked first: with invalid parameters the app is not bound,
@@ -319,43 +368,20 @@ template<class App, class Instance, class Solution>
         }
     }
 
-    constexpr std::size_t max_moves = 128;
-    if constexpr (deterministic_neighborhood_for<neighborhood_type, Solution>)
-    {
-        detail::check_app_moves(
-            report,
-            solution_manager,
-            neighborhood,
-            solution,
-            easylocal::moves(neighborhood, solution),
-            max_moves);
-    }
-
-    if constexpr (random_neighborhood_for<neighborhood_type, Solution, std::mt19937_64>)
-    {
-        std::mt19937_64 rng{testing::check_options{}.seed};
-        for (std::size_t sample = 0; sample < 16; ++sample)
-        {
-            auto move = easylocal::random_move(neighborhood, solution, rng);
-            if (!move)
-                continue;
-
-            const auto valid = static_cast<bool>(neighborhood.is_valid(solution, *move));
-            report.check(
-                valid,
-                "random proposal",
-                "random_move produced a move that does not satisfy is_valid");
-            if (!valid)
-                continue;
-
-            auto candidate = solution;
-            neighborhood.make_move(candidate, *move);
-            report.check(
-                static_cast<bool>(solution_manager.is_valid(candidate)),
-                "random proposal application",
-                "random_move followed by make_move produced an invalid Solution");
-        }
-    }
+    // The app's neighborhood, then those the runners have of their own.
+    detail::check_app_neighborhood(report, solution_manager, neighborhood, solution);
+    detail::app_access::for_each_own_neighborhood(
+        bound,
+        [&](std::string_view, const auto& own_neighborhood) {
+            ++report.coverage().neighborhood_graphs;
+            report.coverage().delta_bindings += detail::app_delta_binding_count_v<
+                std::remove_cvref_t<decltype(own_neighborhood)>>;
+            detail::check_app_neighborhood(
+                report,
+                solution_manager,
+                own_neighborhood,
+                solution);
+        });
 
     // The parameters of the whole app, among them those of its pipelines'
     // stages: their values, and stage names that are distinct and non-empty.

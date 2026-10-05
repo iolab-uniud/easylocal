@@ -31,18 +31,18 @@ if(EASYLOCAL_BUILD_EXAMPLES)
     )
 
     add_executable(
-        easylocal_tsp_two_apps
-        two_apps.cpp
+        easylocal_tsp_two_neighborhoods
+        two_neighborhoods.cpp
     )
 
     target_link_libraries(
-        easylocal_tsp_two_apps
+        easylocal_tsp_two_neighborhoods
         PRIVATE
             easylocal_tsp_model
     )
 
     target_compile_definitions(
-        easylocal_tsp_two_apps
+        easylocal_tsp_two_neighborhoods
         PRIVATE
             EASYLOCAL_TSP_INSTANCE_FILE="${CMAKE_CURRENT_SOURCE_DIR}/instances/small.tsp"
     )

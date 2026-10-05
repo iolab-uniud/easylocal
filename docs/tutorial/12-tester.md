@@ -119,8 +119,9 @@ static std::string_view name()
 
 ## Several apps on the same problem
 
-An app has one neighborhood. To explore several, one per app, open them from
-a **launcher**: a list of apps that share the Input and the current solution.
+The moves the tester shows are those of the app's neighborhood. To explore
+several neighborhoods, one per app, open them from a **launcher**: a list of
+apps that share the Input and the current solution.
 The TSP example (`examples/tsp`) has one app for the 2-opt moves and one for
 the swaps, over the same SolutionManager recipe:
 
@@ -189,6 +190,31 @@ easylocal::tui::run_launcher(
 - To search with both neighborhoods at once, compose them in one app with
   `neighborhood_union` (chapter 6); the launcher is for examining them one at
   a time.
+- To run searches with different neighborhoods from one app, give a runner a
+  neighborhood of its own, the third argument of `runner`: it is built over
+  the app's SolutionManager, next to the app's neighborhood, and its
+  parameters are under `runners.<name>.neighborhood.*`:
+
+<!-- snippet: tsp/apps.hpp:runner-neighborhood -->
+```cpp
+// One app with both neighborhoods: its own is 2-opt, the runner "fi" uses it,
+// and the runner "fi-swap" brings its own, built over the same
+// SolutionManager.
+inline auto tsp_app()
+{
+    return easylocal::app("tsp") | tsp_solution_manager()
+        | (easylocal::neighborhood<TwoOptNeighborhoodExplorer>()
+            | easylocal::delta<TourLengthComponent, TwoOptTourLengthDelta>())
+        | easylocal::runner<easylocal::runners::FirstImprovement>(
+            "fi",
+            {.max_evaluations = 100})
+        | easylocal::runner<easylocal::runners::FirstImprovement>(
+            "fi-swap",
+            {.max_evaluations = 100},
+            easylocal::neighborhood<SwapCitiesNeighborhoodExplorer>()
+                | easylocal::delta<TourLengthComponent, SwapTourLengthDelta>());
+}
+```
 
 ## Options
 

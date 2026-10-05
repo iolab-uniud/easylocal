@@ -37,6 +37,15 @@ reviewed by hand before tagging.
   `for_each_runner_registration`) are no longer public: an algorithm
   registered twice (`"sa-fast"`, `"sa-slow"`) had no single runner. A solver
   is `make_solver<Solver>(application.make_runner<A>("name"), config)`.
+- A runner registered in an app may bring its own neighborhood, the third
+  argument of `runner` (`runner<SA>("sa", {...}, neighborhood<Swap>() |
+  delta<...>())`, or of `with_runner`): it is built over the app's
+  SolutionManager next to the app's neighborhood, its parameters are under
+  `runners.<name>.neighborhood.*`, the registration is checked at compile
+  time (the neighborhood explores the app's Solution, the algorithm runs on
+  it), and `check(app, ...)` checks it. Runners on different neighborhoods
+  no longer need two apps: the TSP example's `two_apps.cpp` becomes
+  `two_neighborhoods.cpp`, the runners of one app.
 - **Breaking:** `Session::run` gives each run a generator of its own, seeded
   with one draw of the session's RNG, as the TextUI already did: the same seed
   and the same commands now give the same runs in `Session`, `cli::run`, the

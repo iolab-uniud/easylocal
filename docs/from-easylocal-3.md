@@ -866,7 +866,8 @@ result:
 ![The Run page of the TextUI after a Simulated Annealing run](tutorial/images/tui-run.svg)
 
 An EasyLocal 3 tester could hold several move testers, one per explorer, on
-the same state. Each EasyLocal 4 app has one neighborhood, so the counterpart
+the same state. The moves an EasyLocal 4 tester shows are those of its app's
+neighborhood (a runner may bring its own, for searching), so the counterpart
 is a launcher of apps, one per neighborhood, which share the Input and the
 current solution ([chapter 12](tutorial/12-tester.md#several-apps-on-the-same-problem)):
 

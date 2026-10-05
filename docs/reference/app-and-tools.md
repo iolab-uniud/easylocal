@@ -23,6 +23,24 @@ A registered algorithm must expose a default-constructible `parameters_type`
 and be constructible from it. The same algorithm may be registered under
 several names.
 
+A runner runs on the app's neighborhood, unless it brings its own, the third
+argument of `runner` (or of `with_runner`):
+
+```cpp
+auto application = app("tsp") | sm | two_opt
+    | runner<FirstImprovement>("fi")
+    | runner<FirstImprovement>("fi-swap", {}, neighborhood<Swap>() | delta<Length, SwapDelta>());
+```
+
+Its neighborhood is built over the app's SolutionManager when the app is bound,
+next to the app's own, and its parameters are under
+`runners.<name>.neighborhood.*`. The registration is checked at compile time:
+the neighborhood explores the app's Solution and the algorithm runs on it.
+`check(app, ...)` checks every neighborhood, the runners' own included; the
+Session, the TextUI and REST show and apply the moves of the app's
+neighborhood. `make_runner<A>("name")` requires the runners of `A` to run on
+neighborhoods of the same recipe type.
+
 The names of the runners and pipelines of an app must be non-empty, distinct,
 and made of letters, digits, `_` and `-`: each is the key of a registration
 and a segment of its parameter paths (`runners.<name>.*`). `configuration()`

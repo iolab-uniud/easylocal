@@ -1,7 +1,8 @@
 #pragma once
 
-// The two apps of the TSP example, one per neighborhood (2-opt and swap), over
-// the same SolutionManager and cost.
+// The apps of the TSP example over the same SolutionManager and cost: one per
+// neighborhood (2-opt and swap), for the launcher of tui_main.cpp, and one
+// whose runners use both.
 
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
@@ -49,5 +50,25 @@ inline auto swap_app()
             {.max_evaluations = 100});
 }
 // [apps] -------------------------------------------------------------------
+
+// [runner-neighborhood] ----------------------------------------------------
+// One app with both neighborhoods: its own is 2-opt, the runner "fi" uses it,
+// and the runner "fi-swap" brings its own, built over the same
+// SolutionManager.
+inline auto tsp_app()
+{
+    return easylocal::app("tsp") | tsp_solution_manager()
+        | (easylocal::neighborhood<TwoOptNeighborhoodExplorer>()
+            | easylocal::delta<TourLengthComponent, TwoOptTourLengthDelta>())
+        | easylocal::runner<easylocal::runners::FirstImprovement>(
+            "fi",
+            {.max_evaluations = 100})
+        | easylocal::runner<easylocal::runners::FirstImprovement>(
+            "fi-swap",
+            {.max_evaluations = 100},
+            easylocal::neighborhood<SwapCitiesNeighborhoodExplorer>()
+                | easylocal::delta<TourLengthComponent, SwapTourLengthDelta>());
+}
+// [runner-neighborhood] ----------------------------------------------------
 
 } // namespace tsp

@@ -864,6 +864,11 @@ easylocal_add_compile_failure_test(
     "no field or group of the block has this name"
     "sample"
 )
+easylocal_add_compile_failure_test(
+    runner-neighborhood-not-runnable
+    runner_neighborhood_not_runnable.cpp
+    "a registered runner's algorithm must run on its neighborhood"
+)
 
 # The code of docs/quick-start.md and docs/tutorial is built and run here, so
 # the documentation cannot drift from the library.
@@ -1089,6 +1094,16 @@ easylocal_add_test(
 )
 
 easylocal_add_test(
+    app-neighborhoods
+    SOURCES
+        app_neighborhoods.cpp
+    LIBRARIES
+        EasyLocal::Core
+    DEFINITIONS
+        EASYLOCAL_TUTORIAL_INSTANCE="${PROJECT_SOURCE_DIR}/examples/tutorial/five.tsp"
+)
+
+easylocal_add_test(
     reproducibility
     SOURCES
         reproducibility.cpp
@@ -1174,10 +1189,10 @@ easylocal_add_test(
         EasyLocal::Core
 )
 
-if(TARGET easylocal_tsp_two_apps)
+if(TARGET easylocal_tsp_two_neighborhoods)
     add_test(
-        NAME easylocal.example.tsp-two-apps
-        COMMAND easylocal_tsp_two_apps
+        NAME easylocal.example.tsp-two-neighborhoods
+        COMMAND easylocal_tsp_two_neighborhoods
     )
 endif()
 
