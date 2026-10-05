@@ -232,6 +232,9 @@ reviewed by hand before tagging.
   ("INVALID solution"; Move and Run disabled), and `Session::apply_move` no
   longer asserts that the solution stays valid: it documents that a faulty
   `make_move` may break it.
+- TextUI: the header and the Input viewer name the Input file loaded, not the
+  file selected on the Input/Output page, and the launcher's testers name the
+  file of the shared Input, which one of them may have loaded.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

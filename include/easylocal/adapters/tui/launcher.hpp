@@ -15,6 +15,7 @@
 
 #include <concepts>
 #include <cstddef>
+#include <filesystem>
 #include <ftxui/ftxui.hpp>
 #include <memory>
 #include <optional>
@@ -116,9 +117,11 @@ public:
         if constexpr (first_session_type::supports_input_loading)
         {
             if (!options_.tester.input_path.empty())
-                input_ =
-                    std::make_shared<const input_type>(easylocal::load_input<input_type>(
-                        detail::initial_input_file(options_.tester)));
+            {
+                input_file_ = detail::initial_input_file(options_.tester);
+                input_ = std::make_shared<const input_type>(
+                    easylocal::load_input<input_type>(input_file_));
+            }
         }
 
         while (const auto selected = choose_application())
@@ -159,6 +162,8 @@ private:
         auto settings = options_.tester;
         settings.title = options_.title + " - " + name;
         settings.exit_label = "back to applications";
+        // The file of the shared Input, which a tester may have loaded.
+        settings.input_path = input_ ? input_file_.string() : std::string{};
 
         easylocal::Session<Selected> session{application, settings.seed};
         if (input_)
@@ -166,9 +171,11 @@ private:
         if (input_ && solution_)
             session.set_solution(*solution_);
 
-        detail::tester_frontend<Selected>{session, std::move(settings), role}.run();
+        detail::tester_frontend<Selected> frontend{session, std::move(settings), role};
+        frontend.run();
 
         input_ = session.has_input() ? session.input_handle() : nullptr;
+        input_file_ = frontend.loaded_input_path();
         if (input_ && session.has_solution())
             solution_ = session.solution();
         else
@@ -252,6 +259,8 @@ private:
     std::vector<std::string> names_;
     int selected_{0};
     std::shared_ptr<const input_type> input_;
+    // The file input_ was read from; empty when it was not read from a file.
+    std::filesystem::path input_file_;
     std::optional<solution_type> solution_;
 };
 

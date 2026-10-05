@@ -176,6 +176,23 @@ def test_an_input_is_browsed_and_loaded(tui):
     tui.expect("Move [disabled]")
 
 
+def test_the_loaded_input_is_named_until_another_is_loaded(tui):
+    # Another file selected, not loaded: the header and the Input viewer still
+    # name five.tsp, the Input loaded.
+    tui.focus("L Load selected")
+    tui.focus("Browse...", RIGHT)
+    tui.press(ENTER)
+    browsing(tui, "examples/tutorial")
+    tui.select("      annealing.toml")
+    tui.press(ENTER)
+    tui.expect(re.compile(r"Selected file: .*annealing\.toml"))
+    tui.expect(re.compile(r"\|  five\.tsp  \[seed="))
+    tui.expect_absent("annealing.toml  [seed=")
+    tui.press(F1)
+    tui.expect(re.compile(r"File: .*five\.tsp"))
+    tui.press(ESCAPE)
+
+
 def test_a_broken_solution_file_is_reported(started, tmp_path):
     tui = started
     (tmp_path / "solutions").mkdir()

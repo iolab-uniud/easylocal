@@ -783,6 +783,9 @@ public:
                 options_.path_display,
                 options_.path_base);
             add_known_path(file_target::input, input_path_);
+            // The session was given the Input of options.input_path.
+            if (tester_.has_input())
+                loaded_input_path_ = initial_input_file(options_);
         }
         if (!options_.solution_path.empty())
         {
@@ -798,6 +801,13 @@ public:
         }
         remember_original_parameters();
         page_selected_ = page_index(page_after_solution_change());
+    }
+
+    // The file of the Input loaded, absolute; empty when the Input was not
+    // read from a file.
+    [[nodiscard]] const std::filesystem::path& loaded_input_path() const noexcept
+    {
+        return loaded_input_path_;
     }
 
     void run()
@@ -1831,6 +1841,7 @@ private:
         perform("Load input", [this] {
             const auto path = resolve_path(input_path_);
             tester_.load_input(path);
+            loaded_input_path_ = path;
             last_move_result_.clear();
             last_run_result_.clear();
             refresh_page_labels();
@@ -2847,10 +2858,10 @@ private:
         lines.push_back(text(
             std::string{"Instance: "} +
             (tester_.has_input() ? "loaded" : "not loaded")));
-        if (tester_.has_input() && !input_path_.empty())
+        if (tester_.has_input() && !loaded_input_path_.empty())
         {
-            lines.push_back(paragraph(
-                "Instance file: " + format_path(resolve_path(input_path_))));
+            lines.push_back(
+                paragraph("Instance file: " + format_path(loaded_input_path_)));
         }
         lines.push_back(text(
             std::string{"Solution: "} +
@@ -3109,7 +3120,8 @@ private:
 
     [[nodiscard]] std::string current_instance_name() const
     {
-        const auto basename = path_basename(input_path_);
+        const auto basename =
+            tester_.has_input() ? loaded_input_path_.filename().string() : std::string{};
         if (!basename.empty())
         {
             return basename;
@@ -3170,10 +3182,9 @@ private:
     {
         using namespace ftxui;
         Elements body;
-        if (tester_.has_input() && !input_path_.empty())
+        if (tester_.has_input() && !loaded_input_path_.empty())
         {
-            body.push_back(paragraph(
-                "File: " + format_path(resolve_path(input_path_))) | dim);
+            body.push_back(paragraph("File: " + format_path(loaded_input_path_)) | dim);
             body.push_back(separator());
         }
         body.push_back(paragraph("Up/Down/PgUp/PgDn scroll  |  Esc/F1 close") | dim);
@@ -3430,6 +3441,8 @@ private:
     std::chrono::steady_clock::time_point run_started_{};
 
     std::string input_path_;
+    // The file of the Input loaded, which input_path_ may no longer name.
+    std::filesystem::path loaded_input_path_;
     std::string solution_path_;
     std::vector<std::string> known_input_paths_;
     std::vector<std::string> known_input_labels_;
