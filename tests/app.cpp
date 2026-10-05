@@ -258,8 +258,10 @@ void direct_app_runs_use_fresh_bound_app_state()
         easylocal::detail::app_access::run<StatefulRunner>(shared_bound_app, initial);
     const auto shared_second =
         easylocal::detail::app_access::run<StatefulRunner>(shared_bound_app, initial);
+    // A bound app builds the algorithm of each run from its parameters: runs
+    // on the same services do not share its state either.
     assert(shared_first.invocation == 1);
-    assert(shared_second.invocation == 2);
+    assert(shared_second.invocation == 1);
 }
 
 void registered_runners_can_be_run_by_name()

@@ -114,12 +114,8 @@ inline constexpr bool
     has_own_neighborhood_v<app_runner_registration<Algorithm, NeighborhoodSpec>> =
         !std::same_as<NeighborhoodSpec, unconfigured_t>;
 
-// The algorithm a registration runs on the app's services: a runner's, none for
-// a pipeline, whose stages have their own.
-struct no_algorithm
-{
-};
-
+// The algorithm a registration runs on the app's services: a runner's, void
+// for a pipeline, whose stages have their own.
 template<class Registration>
 struct registration_algorithm
 {
@@ -129,7 +125,7 @@ struct registration_algorithm
 template<class Pipeline>
 struct registration_algorithm<app_pipeline_registration<Pipeline>>
 {
-    using type = no_algorithm;
+    using type = void;
 };
 
 template<class Registration>
@@ -239,8 +235,11 @@ consteval bool validate_app_runner()
     }
 }
 
+// A registered runner on the services of a bound app: its algorithm, built
+// from the registration's parameters for this run, on the app's
+// SolutionManager and its neighborhood.
 template<class Algorithm, class SM, class NHE>
-class app_runner_ref
+class app_runner
 {
 public:
     using solution_manager_type = SM;
@@ -248,8 +247,8 @@ public:
     using solution_type = typename SM::solution_type;
     using cost_type = typename SM::cost_type;
 
-    app_runner_ref(Algorithm& algorithm, SM& solution_manager, NHE& neighborhood) noexcept
-        : algorithm_{algorithm},
+    app_runner(Algorithm algorithm, SM& solution_manager, NHE& neighborhood)
+        : algorithm_{std::move(algorithm)},
           solution_manager_{solution_manager},
           neighborhood_{neighborhood}
     {
@@ -312,7 +311,7 @@ public:
     }
 
 private:
-    Algorithm& algorithm_;
+    Algorithm algorithm_;
     SM& solution_manager_;
     NHE& neighborhood_;
 };
@@ -368,13 +367,13 @@ struct app_input_type<Spec>
 
 /// An app bound to an Input: the services built for it once (the
 /// SolutionManager, the app's neighborhood explorer, those of the runners that
-/// have their own) and the runners, run by name on them.
+/// have their own) and the registrations, run by name on them.
 ///
 /// App::bind returns it; it borrows the Input, which must outlive it, and
-/// cannot be copied or moved, since its services refer to each other. The
-/// runners keep their state from one run to the next, and their parameters as
-/// they were at bind. Requires a SolutionManager recipe with a cost and a
-/// neighborhood recipe for it.
+/// cannot be copied or moved, since its services refer to each other. Each
+/// run builds its algorithm from the registration's parameters as they were
+/// at bind, so runs do not share an algorithm's state. Requires a
+/// SolutionManager recipe with a cost and a neighborhood recipe for it.
 template<class SMSpec, class NHESpec, class... Registrations>
     requires detail::is_solution_manager_spec_v<SMSpec>
     && detail::is_neighborhood_spec_v<NHESpec>
@@ -396,8 +395,8 @@ public:
     /// The cost of a solution.
     using cost_type = typename solution_manager_type::cost_type;
 
-    /// The services of the app's recipes built for input, and its runners
-    /// constructed from their parameters.
+    /// The services of the app's recipes built for input, with a copy of the
+    /// registrations.
     BoundApp(
         const input_type& input,
         const SMSpec& solution_manager_spec,
@@ -530,7 +529,6 @@ private:
               detail::own_neighborhood_source<Registrations, solution_manager_type>{
                   std::get<Index>(registrations),
                   solution_manager_}...},
-          algorithms_{make_algorithm(std::get<Index>(registrations))...},
           registrations_{registrations}
     {
         assert(std::addressof(solution_manager_.input()) == std::addressof(input_));
@@ -545,11 +543,11 @@ private:
             std::tuple_element_t<Index, std::tuple<Registrations...>>;
         using algorithm_type = typename registration_type::algorithm_type;
         auto& neighborhood = neighborhood_at<Index>();
-        return detail::app_runner_ref<
+        return detail::app_runner<
             algorithm_type,
             solution_manager_type,
             std::remove_reference_t<decltype(neighborhood)>>{
-            std::get<Index>(algorithms_),
+            algorithm_type{std::get<Index>(registrations_).config},
             solution_manager_,
             neighborhood,
         };
@@ -568,22 +566,11 @@ private:
             return self.neighborhood_;
     }
 
-    template<class Registration>
-    static detail::registration_algorithm_t<Registration> make_algorithm(
-        const Registration& registration)
-    {
-        if constexpr (detail::is_pipeline_registration_v<Registration>)
-            return {};
-        else
-            return detail::registration_algorithm_t<Registration>{registration.config};
-    }
-
     const input_type& input_;
     solution_manager_type solution_manager_;
     neighborhood_explorer_type neighborhood_;
     std::tuple<detail::own_neighborhood_slot<Registrations, solution_manager_type>...>
         own_neighborhoods_;
-    std::tuple<detail::registration_algorithm_t<Registrations>...> algorithms_;
     std::tuple<Registrations...> registrations_;
 };
 

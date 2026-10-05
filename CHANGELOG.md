@@ -46,6 +46,11 @@ reviewed by hand before tagging.
   it), and `check(app, ...)` checks it. Runners on different neighborhoods
   no longer need two apps: the TSP example's `two_apps.cpp` becomes
   `two_neighborhoods.cpp`, the runners of one app.
+- **Breaking:** a `BoundApp` holds the Input, its services and a copy of the
+  registrations, and builds the algorithm of each run from the registration's
+  parameters: it no longer builds an instance of every registered algorithm
+  at bind (which the Session built and never ran), and runs on the same
+  bound app no longer share an algorithm's state.
 - **Breaking:** `RunParameters` is the block of a run's limits: `target`,
   `timeout` (seconds, as text) and `max_evaluations`, with
   `options<Cost>(input[, base])`, which gives their run options. `cli::run`

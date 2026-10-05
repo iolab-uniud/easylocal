@@ -96,8 +96,9 @@ registered twice (`"sa-fast"`, `"sa-slow"`).
 `run` binds the app to the Input for that run only, with the current runner
 parameters: the app and the Input may be shared by concurrent runs. A
 `BoundApp` offers `input()`, `solution_manager()`, `neighborhood()` and
-`run("name", solution, rng, options...)` on services built once, whose runners
-keep their state from one run to the next. `Runner::bind` returns a
+`run("name", solution, rng, options...)` on services built once; each run
+builds its algorithm from the parameters the registration had at bind, so runs
+do not share an algorithm's state. `Runner::bind` returns a
 `BoundRunner`, with `input()`, `solution_manager()`, `initial_solution()`,
 `random_solution(rng)`, `better(a, b)` and `run(solution, args...)`.
 
