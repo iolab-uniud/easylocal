@@ -110,13 +110,19 @@ public:
             run.next_iteration();
             auto candidate = run.evaluate_move(solution, current, *move);
 
+            // A strict improvement is a new best cost: the current solution is
+            // the best one.
             if (run.better(candidate.cost(), current.cost()))
+            {
                 idle_iterations = 0;
+                run.commit_improvement(solution, current, std::move(candidate), *move);
+            }
             else
+            {
                 ++idle_iterations;
-
-            if (run.better_or_equivalent(candidate.cost(), current.cost()))
-                run.commit(solution, current, std::move(candidate), *move);
+                if (run.better_or_equivalent(candidate.cost(), current.cost()))
+                    run.commit(solution, current, std::move(candidate), *move);
+            }
         }
 
         return run.finish(std::move(solution), current.cost());

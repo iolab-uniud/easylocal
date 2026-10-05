@@ -1,5 +1,7 @@
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
+#include <easylocal/runners/best_improvement.hpp>
+#include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/runners/great_deluge.hpp>
 #include <easylocal/runners/hill_climbing.hpp>
 #include <easylocal/runners/late_acceptance_hill_climbing.hpp>
@@ -7,6 +9,7 @@
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
 #include <easylocal/trace.hpp>
+#include <easylocal/utils/generator.hpp>
 
 #include <algorithm>
 #include <array>
@@ -15,9 +18,12 @@
 #include <optional>
 #include <random>
 #include <stop_token>
+#include <string>
 #include <string_view>
 #include <type_traits>
+#include <utility>
 #include <variant>
+#include <vector>
 
 namespace
 {
@@ -95,6 +101,14 @@ public:
         return ChainMove{};
     }
 
+    // The same move, for the runners that enumerate the neighborhood.
+    [[nodiscard]] static auto moves(const ChainSolution& solution)
+        -> easylocal::generator<ChainMove>
+    {
+        if (solution.value < end)
+            co_yield ChainMove{};
+    }
+
     [[nodiscard]] static auto is_valid(const ChainSolution&, const ChainMove&) noexcept
         -> bool
     {
@@ -128,6 +142,15 @@ struct UphillCost
     }
 };
 
+// Every step improves: 10 at the start, 0 at the end of the chain.
+struct DownhillCost
+{
+    [[nodiscard]] static auto evaluate(const ChainSolution& solution) noexcept -> int
+    {
+        return ChainNeighborhood::end - solution.value;
+    }
+};
+
 // Two improving steps, then a plateau.
 struct SlopeThenPlateauCost
 {
@@ -144,6 +167,20 @@ auto chain_runner(const HillClimbingParameters parameters)
     return easylocal::make_runner<HillClimbing>(parameters)
         | (solution_manager<ChainSolutionManager>() | component<Cost>())
         | neighborhood<ChainNeighborhood>();
+}
+
+// The incumbent_updated records of a trace.
+[[nodiscard]]
+auto incumbents(const easylocal::trace::memory_recorder<int>& trace)
+    -> std::vector<easylocal::trace::memory_recorder<int>::incumbent_updated_record>
+{
+    std::vector<easylocal::trace::memory_recorder<int>::incumbent_updated_record> found;
+    for (const auto& record : trace.records())
+        if (const auto* incumbent = std::get_if<
+                easylocal::trace::memory_recorder<int>::incumbent_updated_record>(
+                &record))
+            found.push_back(*incumbent);
+    return found;
 }
 
 auto expect(const bool condition, const std::string_view description) -> bool
@@ -317,6 +354,70 @@ int main()
         ok &= expect(
             result.termination == termination_reason::cancelled && result.iterations == 0,
             "hill climbing is cancellable");
+    }
+
+    // First and Best Improvement on the chain: each step improves, so they go
+    // to its end, a local optimum, or stop at their budget.
+    {
+        const auto descent = [](auto runner) {
+            return std::move(runner)
+                | (solution_manager<ChainSolutionManager>() | component<DownhillCost>())
+                | neighborhood<ChainNeighborhood>();
+        };
+        auto first = descent(easylocal::make_runner<FirstImprovement>({}));
+        auto best = descent(easylocal::make_runner<BestImprovement>({}));
+        const auto first_result = first.bind(instance).run(ChainSolution{});
+        const auto best_result = best.bind(instance).run(ChainSolution{});
+        ok &= expect(
+            first_result.termination == termination_reason::local_optimum
+                && first_result.solution.value == ChainNeighborhood::end
+                && first_result.iterations == 10 && first_result.evaluations == 11,
+            "first improvement descends to a local optimum");
+        ok &= expect(
+            best_result.termination == termination_reason::local_optimum
+                && best_result.solution.value == ChainNeighborhood::end
+                && best_result.iterations == 10 && best_result.evaluations == 11,
+            "best improvement descends to a local optimum");
+
+        auto first_budget =
+            descent(easylocal::make_runner<FirstImprovement>({.max_evaluations = 4}));
+        auto best_budget =
+            descent(easylocal::make_runner<BestImprovement>({.max_evaluations = 4}));
+        const auto first_spent = first_budget.bind(instance).run(ChainSolution{});
+        const auto best_spent = best_budget.bind(instance).run(ChainSolution{});
+        ok &= expect(
+            first_spent.termination == termination_reason::evaluation_budget_exhausted
+                && first_spent.evaluations == 4 && first_spent.solution.value == 3,
+            "first improvement stops at its evaluation budget");
+        ok &= expect(
+            best_spent.termination == termination_reason::evaluation_budget_exhausted
+                && best_spent.evaluations == 4 && best_spent.solution.value == 3,
+            "best improvement stops at its evaluation budget");
+
+        // Their current solution is their best one: each improving move is a
+        // new incumbent, as for Hill Climbing.
+        easylocal::trace::memory_recorder<int> first_trace;
+        easylocal::trace::memory_recorder<int> best_trace;
+        easylocal::trace::memory_recorder<int> climbing_trace;
+        static_cast<void>(
+            first.bind(instance).run(ChainSolution{}, easylocal::with(first_trace)));
+        static_cast<void>(
+            best.bind(instance).run(ChainSolution{}, easylocal::with(best_trace)));
+        auto climbing = chain_runner<DownhillCost>({.max_idle_iterations = 5});
+        std::mt19937 rng{7U};
+        static_cast<void>(climbing.bind(instance)
+                .run(ChainSolution{}, rng, easylocal::with(climbing_trace)));
+        for (const auto& [trace, name] :
+            {std::pair{&first_trace, "first improvement"},
+                std::pair{&best_trace, "best improvement"},
+                std::pair{&climbing_trace, "hill climbing"}})
+        {
+            const auto updates = incumbents(*trace);
+            ok &= expect(
+                updates.size() == 10 && updates.front().previous_cost == 10
+                    && updates.back().cost == 0,
+                std::string{name} + " reports each improvement as a new incumbent");
+        }
     }
 
     return ok ? 0 : 1;

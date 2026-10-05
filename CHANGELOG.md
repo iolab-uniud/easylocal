@@ -380,6 +380,10 @@ reviewed by hand before tagging.
   fields it repeated, and adds the `front`: code that takes a
   `search_result&` takes a Pareto result, and one built with designated
   initializers builds its `search_result` base first.
+- Hill Climbing, First Improvement and Best Improvement emit
+  `incumbent_updated` at each improving move, as the other runners do, through
+  the new `search_run::commit_improvement()`: every built-in runner reports
+  its new best costs.
 
 ### Added
 

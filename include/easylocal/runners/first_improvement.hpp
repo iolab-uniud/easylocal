@@ -92,7 +92,7 @@ public:
                 if (run.better(candidate.cost(), current.cost()))
                 {
                     run.next_iteration();
-                    run.commit(solution, current, std::move(candidate), move);
+                    run.commit_improvement(solution, current, std::move(candidate), move);
                     improved = true;
                     break;
                 }

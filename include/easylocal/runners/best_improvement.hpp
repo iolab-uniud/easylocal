@@ -109,7 +109,7 @@ public:
             }
 
             run.next_iteration();
-            run.commit(
+            run.commit_improvement(
                 solution,
                 current,
                 std::move(*best_candidate),

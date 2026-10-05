@@ -354,6 +354,7 @@ Extra `run` arguments (an RNG, for example) are passed through
 | `commit(solution, current, candidate, move)` | applies, `move_accepted` |
 | `next_iteration()` | advances the iteration counter |
 | `incumbent_updated(previous, cost)` | `incumbent_updated` event; the cost checked against the target |
+| `commit_improvement(solution, current, candidate, move)` | `commit`, then `incumbent_updated`, for an algorithm whose current solution is its best (Hill Climbing, First and Best Improvement) |
 | `finish(solution, cost[, reason]) -> search_result` | `local_optimum` (if that is the reason), `run_finished` |
 | `better`, `equivalent`, `better_or_equivalent` | cost semantics |
 | `evaluations()`, `iterations()`, `target()` | counters, the caller's target cost |
@@ -378,7 +379,10 @@ keeps it in a `best_so_far{solution, cost}`: `best.update(run, solution,
 current)` copies the solution when its evaluation is better than the best,
 emits `incumbent_updated`, and returns whether it did; at the end
 `run.finish(std::move(best.solution), std::move(best.cost))`. Late Acceptance,
-Great Deluge, Simulated Annealing and the tabu searches use it.
+Great Deluge, Simulated Annealing and the tabu searches use it. An algorithm
+whose current solution is its best one applies an improving move with
+`run.commit_improvement(...)`, which emits `incumbent_updated` too: so every
+built-in runner reports each new best cost.
 
 ## Run options
 

@@ -20,9 +20,12 @@ Core events are emitted by the framework-owned `easylocal::search_run`, not by
 the individual algorithms: `start()` emits `run_started`, `evaluate_move()`
 emits `move_evaluated`, `commit()` emits `move_accepted`, `finish()` emits
 `run_finished`, with the termination reason (preceded by `local_optimum` when
-that is the reason), and `random_move()` forwards `neighborhood_selection` events. Algorithms that
-track a best-so-far solution, such as Simulated Annealing, call
-`incumbent_updated()`; custom events can be sent with `run.emit(event)`.
+that is the reason), and `random_move()` forwards `neighborhood_selection` events. Every
+built-in runner emits `incumbent_updated` at each new best cost: those that
+track a best-so-far solution, such as Simulated Annealing, through
+`incumbent_updated()`, and those whose current solution is the best (Hill
+Climbing, First and Best Improvement) through `commit_improvement()`; custom
+events can be sent with `run.emit(event)`.
 
 `start()`, `commit()` and `evaluate_solution()` also emit `solution_visited`,
 with the hash of the solution reached (`solution_hash`, see

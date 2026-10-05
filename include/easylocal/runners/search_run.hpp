@@ -792,6 +792,25 @@ public:
             archive(solution, current.cost());
     }
 
+    /// Applies move, evaluated as candidate, as commit() does, for an algorithm
+    /// whose current solution is its best one and that knows the move improves
+    /// it: the new best cost is reported as incumbent_updated() does.
+    void commit_improvement(
+        solution_type& solution,
+        evaluation_type& current,
+        candidate_type&& candidate,
+        const move_type& move)
+    {
+        if constexpr (trace::observes<Tracer, trace::event::incumbent_updated<cost_type>>)
+        {
+            const auto previous_cost = current.cost();
+            commit(solution, current, std::move(candidate), move);
+            incumbent_updated(previous_cost, current.cost());
+        }
+        else
+            commit(solution, current, std::move(candidate), move);
+    }
+
     /// Reports a new best cost, for the trace and the target cost; best_so_far
     /// calls it.
     void incumbent_updated(
