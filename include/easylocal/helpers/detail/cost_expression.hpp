@@ -368,7 +368,7 @@ struct sum_parameters
         {
             for (const auto weight : weights)
                 if (!(weight >= std::numeric_limits<Weight>::lowest()
-                        && weight <= std::numeric_limits<Weight>::max()))
+                        && weight <= (std::numeric_limits<Weight>::max)()))
                     return config::validation_result::failure("weights must be finite");
         }
         return config::validation_result::success();

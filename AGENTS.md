@@ -87,6 +87,10 @@ previews the site, `scripts/coverage.sh` measures the coverage of
 - Write `EASYLOCAL_NO_UNIQUE_ADDRESS` (`easylocal/utils/detail/attributes.hpp`),
   never the raw `[[no_unique_address]]`, which MSVC and clang-cl ignore; the
   test `easylocal.portable-attributes` rejects it.
+- The library calls `(std::min)(a, b)`, `(std::max)(a, b)` and
+  `(std::numeric_limits<T>::max)()`, in parentheses, which the `min` and `max`
+  macros of `windows.h` do not expand; the test `easylocal.windows-macros`
+  compiles the core headers with them defined.
 - The library spells the types of a `std::tuple`, `std::tuple<T>{x}`, never
   `std::tuple{x}`: with one argument, or a pack that may hold one, some
   compilers find the deduction ambiguous. The test `easylocal.tuple-types`

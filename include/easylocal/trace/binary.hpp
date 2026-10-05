@@ -997,7 +997,7 @@ public:
         : out_{out}
     {
         // The blocks are allocated here: an unlimited queue has no meaning.
-        if (queue_blocks == std::numeric_limits<std::size_t>::max())
+        if (queue_blocks == (std::numeric_limits<std::size_t>::max)())
         {
             throw std::invalid_argument{
                 "EasyLocal async trace recorder: async_queue_blocks must be finite"};

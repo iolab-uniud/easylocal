@@ -73,7 +73,7 @@ constexpr std::size_t positive_quotient(
     const std::size_t denominator) noexcept
 {
     assert(denominator != 0);
-    return std::max(std::size_t{1}, numerator / denominator);
+    return (std::max)(std::size_t{1}, numerator / denominator);
 }
 
 [[nodiscard]]
@@ -85,10 +85,8 @@ inline std::size_t accepted_limit(
     assert(accepted_ratio > 0.0);
     assert(accepted_ratio <= 1.0);
 
-    return std::max(
-        std::size_t{1},
-        static_cast<std::size_t>(
-            static_cast<double>(sample_limit) * accepted_ratio));
+    return (std::max)(std::size_t{1},
+        static_cast<std::size_t>(static_cast<double>(sample_limit) * accepted_ratio));
 }
 
 [[nodiscard]]
@@ -136,10 +134,9 @@ inline std::size_t temperature_level_count(
         std::log(final_temperature / initial_temperature) / std::log(cooling_rate);
 
     constexpr double rounding = 1e-9;
-    return std::max(
-        std::size_t{1},
+    return (std::max)(std::size_t{1},
         static_cast<std::size_t>(
-            std::ceil(raw_levels - rounding * std::max(1.0, raw_levels))));
+            std::ceil(raw_levels - rounding * (std::max)(1.0, raw_levels))));
 }
 
 // What the schemas cannot say: their domains have no upper bound, and let an
@@ -193,7 +190,7 @@ void calibrate_initial_temperature(
     if (!estimate.has_value())
         return;
     parameters.initial_temperature =
-        std::max(*estimate, parameters.final_temperature / parameters.cooling_rate);
+        (std::max)(*estimate, parameters.final_temperature / parameters.cooling_rate);
     policy = Policy{parameters};
 }
 
@@ -1221,8 +1218,8 @@ private:
     static duration clock_duration(const double seconds) noexcept
     {
         const std::chrono::duration<double> time{seconds};
-        if (time >= std::chrono::duration<double>{duration::max()})
-            return duration::max();
+        if (time >= std::chrono::duration<double>{(duration::max)()})
+            return (duration::max)();
         return std::chrono::duration_cast<duration>(time);
     }
 
@@ -1435,9 +1432,9 @@ public:
     {
         Descent probe{first_descent(parameters_)};
         probe.calibrate(deltas);
-        parameters_.descent.initial_temperature = std::max(
-            probe.parameters().initial_temperature,
-            lowest_initial_temperature());
+        parameters_.descent.initial_temperature =
+            (std::max)(probe.parameters().initial_temperature,
+                lowest_initial_temperature());
         reset();
     }
 
@@ -1500,7 +1497,7 @@ private:
             const auto& descent = parameters_.descent;
             const auto reheat_factor = parameters_.allowed_reheats == 0
                 ? 1.0
-                : std::min(1.0, parameters_.reheat_ratio);
+                : (std::min)(1.0, parameters_.reheat_ratio);
             double cooling = 1.0;
             if constexpr (requires { descent.cooling_rate; })
                 cooling = descent.cooling_rate;
@@ -1520,8 +1517,7 @@ private:
             return descent;
         if constexpr (detail::iteration_budget<descent_parameters_type>)
         {
-            descent.allowed_iterations = std::max(
-                std::size_t{1},
+            descent.allowed_iterations = (std::max)(std::size_t{1},
                 static_cast<std::size_t>(std::ceil(
                     static_cast<double>(parameters.descent.allowed_iterations)
                     * parameters.first_descent_share)));

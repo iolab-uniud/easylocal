@@ -89,6 +89,33 @@ easylocal_add_header_self_containment_test(
     ${EASYLOCAL_CORE_DETAIL_HEADERS}
 )
 
+# windows.h defines the macros min(a, b) and max(a, b), unless NOMINMAX: the
+# headers write (std::max)(a, b) and (std::numeric_limits<T>::max)(). The
+# probe, written at build time from the headers, compiles every core header
+# with the two macros defined after the standard headers.
+set(_easylocal_windows_macros_probe
+    "${CMAKE_CURRENT_BINARY_DIR}/windows-macros/windows_macros_probe.cpp")
+string(REPLACE ";" "$<SEMICOLON>" _easylocal_core_header_list "${EASYLOCAL_CORE_HEADERS}")
+list(TRANSFORM EASYLOCAL_CORE_HEADERS
+    PREPEND "${PROJECT_SOURCE_DIR}/include/"
+    OUTPUT_VARIABLE _easylocal_core_header_paths)
+add_custom_command(
+    OUTPUT "${_easylocal_windows_macros_probe}"
+    COMMAND "${CMAKE_COMMAND}"
+        "-DHEADERS=${_easylocal_core_header_list}"
+        "-DINCLUDE_DIR=${PROJECT_SOURCE_DIR}/include"
+        "-DOUTPUT=${_easylocal_windows_macros_probe}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/write_windows_macros_probe.cmake"
+    DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/write_windows_macros_probe.cmake"
+        ${_easylocal_core_header_paths}
+    COMMENT "Writing the windows.h min/max macros probe"
+    VERBATIM
+)
+add_executable(easylocal_windows_macros_test "${_easylocal_windows_macros_probe}")
+target_link_libraries(easylocal_windows_macros_test PRIVATE EasyLocal::Core)
+add_test(NAME easylocal.windows-macros COMMAND easylocal_windows_macros_test)
+
 if(TARGET EasyLocal::ConfigTOML)
     easylocal_add_header_self_containment_test(
         config-toml

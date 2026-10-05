@@ -1085,8 +1085,8 @@ public:
         {
             if (frequency == 0)
                 ++result.unseen;
-            result.min_frequency = std::min(result.min_frequency, frequency);
-            result.max_frequency = std::max(result.max_frequency, frequency);
+            result.min_frequency = (std::min)(result.min_frequency, frequency);
+            result.max_frequency = (std::max)(result.max_frequency, frequency);
         }
         return result;
     }

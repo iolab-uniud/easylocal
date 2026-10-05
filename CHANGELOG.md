@@ -243,6 +243,9 @@ reviewed by hand before tagging.
   README, the quick start and the stability page say so, and CMake (the
   project and `find_package(EasyLocal)`) stops with a message that says how to
   fix it, instead of failing on every number parsed.
+- The headers compile after `windows.h` without `NOMINMAX`: they call
+  `(std::max)(a, b)` and `(std::numeric_limits<T>::max)()`, which its `min`
+  and `max` macros do not expand.
 - `EASYLOCAL_SANITIZERS` (such as `address;undefined`) builds EasyLocal's own
   tests and examples with those sanitizers, a report stopping the program;
   the `asan` preset uses it, and the full CI runs it with GCC 16.

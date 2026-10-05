@@ -150,17 +150,15 @@ public:
     }
 
     /// The smallest value it can return.
-    [[nodiscard]]
-    static constexpr result_type min() noexcept
+    [[nodiscard]] static constexpr result_type(min)() noexcept
     {
-        return std::numeric_limits<result_type>::min();
+        return (std::numeric_limits<result_type>::min)();
     }
 
     /// The largest value it can return.
-    [[nodiscard]]
-    static constexpr result_type max() noexcept
+    [[nodiscard]] static constexpr result_type(max)() noexcept
     {
-        return std::numeric_limits<result_type>::max();
+        return (std::numeric_limits<result_type>::max)();
     }
 
     /// The next value of the list, back to the first after the last.

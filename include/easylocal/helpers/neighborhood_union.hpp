@@ -462,7 +462,7 @@ private:
         {
             if (active[index])
             {
-                max_bias = std::max(max_bias, random_biases_[index]);
+                max_bias = (std::max)(max_bias, random_biases_[index]);
             }
         }
 

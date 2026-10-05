@@ -124,9 +124,9 @@ std::chrono::steady_clock::duration steady_time_limit(
     if (limit < std::chrono::duration<Rep, Period>::zero())
         throw std::invalid_argument{"a time limit cannot be negative"};
     if (std::chrono::duration<double>{limit}
-        >= std::chrono::duration<double>{steady_duration::max()})
+        >= std::chrono::duration<double>{(steady_duration::max)()})
     {
-        return steady_duration::max();
+        return (steady_duration::max)();
     }
     return std::chrono::duration_cast<steady_duration>(limit);
 }
@@ -148,7 +148,7 @@ inline std::optional<std::chrono::steady_clock::time_point> deadline_after(
     const std::chrono::steady_clock::duration limit)
 {
     const auto now = std::chrono::steady_clock::now();
-    if (limit > std::chrono::steady_clock::time_point::max() - now)
+    if (limit > (std::chrono::steady_clock::time_point::max)() - now)
         return std::nullopt;
     return now + limit;
 }

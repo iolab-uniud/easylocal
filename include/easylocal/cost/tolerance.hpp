@@ -107,9 +107,8 @@ constexpr bool numbers_approximately_equal(
         if (!std::isfinite(left) || !std::isfinite(right))
             return false;
         const auto difference = std::abs(left - right);
-        const auto scale = std::max(std::abs(left), std::abs(right));
-        return difference <= std::max(
-                   static_cast<long double>(within.absolute),
+        const auto scale = (std::max)(std::abs(left), std::abs(right));
+        return difference <= (std::max)(static_cast<long double>(within.absolute),
                    static_cast<long double>(within.relative) * scale);
     }
     else

@@ -290,7 +290,7 @@ public:
             if (expiry > iteration && candidate.forbidden_by(move))
             {
                 const auto left = expiry - iteration;
-                tenure = tenure.has_value() ? std::max(*tenure, left) : left;
+                tenure = tenure.has_value() ? (std::max)(*tenure, left) : left;
             }
         }
         return tenure;
@@ -842,8 +842,7 @@ public:
                 }
                 if (cycle < parameters_.cycle_length)
                 {
-                    tenure_ = std::min(
-                        tenure_ * parameters_.increase,
+                    tenure_ = (std::min)(tenure_ * parameters_.increase,
                         static_cast<double>(parameters_.max_tenure));
                     average_cycle_ =
                         0.9 * average_cycle_ + 0.1 * static_cast<double>(cycle);
@@ -852,17 +851,16 @@ public:
             }
             if (static_cast<double>(since_change_) > average_cycle_)
             {
-                tenure_ = std::max(1.0, tenure_ * parameters_.decrease);
+                tenure_ = (std::max)(1.0, tenure_ * parameters_.decrease);
                 since_change_ = 0;
             }
 
             // A cycle at the next update may multiply the tenure, which applies
             // to the moves held.
-            const auto grown = static_cast<std::size_t>(std::ceil(
-                std::min(
-                    tenure_ * parameters_.increase,
+            const auto grown = static_cast<std::size_t>(
+                std::ceil((std::min)(tenure_ * parameters_.increase,
                     static_cast<double>(parameters_.max_tenure))));
-            moves_.trim(iteration_, std::max(current_tenure(), grown - 1));
+            moves_.trim(iteration_, (std::max)(current_tenure(), grown - 1));
         }
 
         /// The random moves of the escape asked for, 0 if none; the count is

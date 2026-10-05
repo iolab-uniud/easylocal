@@ -53,11 +53,11 @@ public:
     [[nodiscard]]
     constexpr bool is_unlimited() const noexcept
     {
-        return count_ == std::numeric_limits<std::size_t>::max();
+        return count_ == (std::numeric_limits<std::size_t>::max)();
     }
 
 private:
-    std::size_t count_{std::numeric_limits<std::size_t>::max()};
+    std::size_t count_{(std::numeric_limits<std::size_t>::max)()};
 };
 
 /// No limit, what a default-constructed limit is, for a count; any value, as

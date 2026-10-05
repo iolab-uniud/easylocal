@@ -438,7 +438,7 @@ inline void suggest_irace_domain(
     suggested.high = value * 10.0;
     suggested.logarithmic = true;
     if (info.kind != config::parameter_kind::real)
-        suggested.low = std::max(1.0, suggested.low);
+        suggested.low = (std::max)(1.0, suggested.low);
     if (bounded_below && suggested.low <= bound->low)
     {
         suggested.low = bound->low;
@@ -573,9 +573,9 @@ inline int irace_digits(const irace_stub& stub)
         const auto& domain = range != stub.ranges.end() ? range->domain : info.domain;
         if (domain.kind != config::domain_info::shape::range || domain.high_unlimited)
             continue;
-        digits = std::max({digits, decimals_of(domain.low), decimals_of(domain.high)});
+        digits = (std::max)({digits, decimals_of(domain.low), decimals_of(domain.high)});
     }
-    return std::min(digits, irace_max_digits);
+    return (std::min)(digits, irace_max_digits);
 }
 
 [[nodiscard]]
