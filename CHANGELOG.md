@@ -258,6 +258,10 @@ reviewed by hand before tagging.
   (`neighborhood_selection`, `tabu_escape`, `tabu_tenure_changed`,
   `run_context`) and application events, which the template form
   (`without<event::solution_visited>`) could not name.
+- `eltr.py --format stn` attributes the network to the runs of the trace:
+  each node and edge lists the runs that visit it (their indices, as the
+  summary lists them), and `starts` and `ends` give the first and the last
+  solution each run visits.
 
 ### Platforms
 

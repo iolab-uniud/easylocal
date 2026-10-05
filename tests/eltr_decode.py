@@ -239,18 +239,20 @@ class FixtureTraces(unittest.TestCase):
         self.assertEqual(
             network["nodes"],
             [
-                {"hash": start, "cost": 40, "visits": 4},
-                {"hash": local, "cost": -7, "visits": 2},
+                {"hash": start, "cost": 40, "visits": 4, "runs": [0, 1]},
+                {"hash": local, "cost": -7, "visits": 2, "runs": [0, 1]},
             ],
         )
         # No edge joins the end of the first run to the start of the second.
         self.assertEqual(
             network["edges"],
             [
-                {"source": start, "target": local, "count": 2},
-                {"source": local, "target": start, "count": 2},
+                {"source": start, "target": local, "count": 2, "runs": [0, 1]},
+                {"source": local, "target": start, "count": 2, "runs": [0, 1]},
             ],
         )
+        self.assertEqual(network["starts"], [{"run": 0, "hash": start}, {"run": 1, "hash": start}])
+        self.assertEqual(network["ends"], [{"run": 0, "hash": start}, {"run": 1, "hash": start}])
 
     def test_a_visit_without_a_move_has_no_edge(self):
         class Records(list):
@@ -271,7 +273,9 @@ class FixtureTraces(unittest.TestCase):
                 ]
             )
         )
-        self.assertEqual(network["edges"], [{"source": a, "target": c, "count": 1}])
+        self.assertEqual(network["edges"], [{"source": a, "target": c, "count": 1, "runs": [0]}])
+        self.assertEqual(network["starts"], [{"run": 0, "hash": a}])
+        self.assertEqual(network["ends"], [{"run": 0, "hash": c}])
 
     def run_cli(self, *arguments):
         return subprocess.run(

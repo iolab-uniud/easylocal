@@ -29,9 +29,12 @@ of a truncated trace.
 
 The STN output is the search trajectory network of the solution_visited
 events (recorded when the problem has a solution hash): one node per distinct
-hash, with its cost and number of visits, and one edge per move, from its
-previous_hash to its hash, with its count; a visit that no move reached (the
-start of a run, a sample of a population) has no edge.
+hash, with its cost, its number of visits and the runs that visit it (their
+indices in the trace, from 0, as the summary lists them), and one edge per
+move, from its previous_hash to its hash, with its count and runs; a visit
+that no move reached (the start of a run, a sample of a population) has no
+edge. "starts" and "ends" give the first and the last solution visited by each
+run.
 
 Standard library only: `uv run scripts/eltr.py` or `python3`. As a module,
 `Trace(stream)` reads the header (`metadata`, `cost_fields`, `schemas`) and
@@ -328,30 +331,52 @@ NO_HASH = "0" * 16
 
 def search_trajectory_network(trace: Trace) -> dict[str, Any]:
     nodes: dict[str, dict[str, Any]] = {}
-    edges: Counter[tuple[str, str]] = Counter()
+    edges: dict[tuple[str, str], dict[str, Any]] = {}
+    starts: list[dict[str, Any]] = []
+    ends: list[dict[str, Any]] = []
     previous = None
+    run = -1
+
+    def seen_in(entry: dict[str, Any]) -> None:
+        if not entry["runs"] or entry["runs"][-1] != run:
+            entry["runs"].append(run)
+
     for record in trace:
         if record["event"] == "run_started":
+            run += 1
             previous = None
         elif record["event"] == "solution_visited":
+            run = max(run, 0)
+            target = record["hash"]
             node = nodes.setdefault(
-                record["hash"], {"hash": record["hash"], "cost": record["cost"], "visits": 0}
+                target, {"hash": target, "cost": record["cost"], "visits": 0, "runs": []}
             )
             node["visits"] += 1
+            seen_in(node)
+            if previous is None:
+                starts.append({"run": run, "hash": target})
             # The solution the move was applied to, NO_HASH for one no move
             # reached (a start, a sample); a trace without the field links
             # consecutive visits.
             source = record.get("previous_hash", previous)
             if source is not None and source != NO_HASH:
-                edges[(source, record["hash"])] += 1
-            previous = record["hash"]
+                edge = edges.setdefault(
+                    (source, target),
+                    {"source": source, "target": target, "count": 0, "runs": []},
+                )
+                edge["count"] += 1
+                seen_in(edge)
+            if ends and ends[-1]["run"] == run:
+                ends[-1]["hash"] = target
+            else:
+                ends.append({"run": run, "hash": target})
+            previous = target
     return {
         "metadata": trace.metadata,
         "nodes": list(nodes.values()),
-        "edges": [
-            {"source": source, "target": target, "count": count}
-            for (source, target), count in edges.items()
-        ],
+        "edges": list(edges.values()),
+        "starts": starts,
+        "ends": ends,
     }
 
 

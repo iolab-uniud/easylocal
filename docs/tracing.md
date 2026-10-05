@@ -302,9 +302,13 @@ and attempt when a `run_context` came before it. As a module, `eltr.Trace(stream
 
 The `stn` format builds the network from the `solution_visited` events, which
 are recorded when the problem has a [solution hash](reference/solution-manager.md):
-one node per distinct hash, with its cost and number of visits, and one edge per
-move, from its `previous_hash` to its `hash`; a visit no move reached has no
-edge, so an algorithm that keeps several solutions gets the right edges.
+one node per distinct hash, with its cost, its number of visits and the runs
+that visit it, and one edge per move, from its `previous_hash` to its `hash`,
+with its count and runs; a visit no move reached has no edge, so an algorithm
+that keeps several solutions gets the right edges. A run is its index in the
+trace, from 0, as the summary lists it (with its stage and attempt), and
+`starts` and `ends` give the first and the last solution each run visits: the
+network of a whole solve, or of several runs in one file, keeps them apart.
 
 ### Extending ELTR without touching EasyLocal
 
