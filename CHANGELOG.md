@@ -183,6 +183,8 @@ reviewed by hand before tagging.
 - `--tuning.irace` reads numbers whatever the locale: under a decimal-comma
   locale (`it_IT`) `0.95` read as 0 in the suggested ranges and in
   configurations.txt.
+- An `unlimited` limit given a finite tuning range starts at the upper bound
+  of the range in configurations.txt, not at the lower one.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

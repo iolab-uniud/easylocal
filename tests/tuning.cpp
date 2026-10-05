@@ -473,6 +473,32 @@ void the_stub_reads_numbers_in_any_locale()
     std::filesystem::remove_all(directory);
 }
 
+// An unlimited limit given a finite range starts at its upper bound, the
+// nearest to no limit, not at the lower one.
+void an_unlimited_limit_starts_at_its_upper_bound()
+{
+    using kind = config::parameter_kind;
+    const auto directory = fresh_directory("easylocal-tuning-unlimited");
+    easylocal::irace_stub stub{
+        .directory = directory,
+        .program = "solver",
+        .parameters = {parameter(
+            "max_evaluations",
+            "unlimited",
+            kind::limit,
+            config::describe_domain(config::range(0, easylocal::unlimited)))},
+        .ranges = {{"max_evaluations", config::range(10, 1000)}},
+        .requirements = {},
+        .runners = {},
+        .fixed = {},
+        .instance = {},
+    };
+    const auto result = easylocal::write_irace_stub(stub);
+    assert(result);
+    assert(read_file(directory / "configurations.txt") == "max_evaluations\n1000\n");
+    std::filesystem::remove_all(directory);
+}
+
 } // namespace
 
 int main()
@@ -485,4 +511,5 @@ int main()
     fixed_values_are_shared_by_every_run();
     a_cost_without_a_number_is_not_tuned();
     the_stub_reads_numbers_in_any_locale();
+    an_unlimited_limit_starts_at_its_upper_bound();
 }

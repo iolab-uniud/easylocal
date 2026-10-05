@@ -194,7 +194,8 @@ lie within the declared domain and name a parameter of the app or of
 The files that exist are kept, so that the user edits them; only
 `configurations.txt` is rewritten, each time from `parameters.txt` as it is on
 disk (up to a `[global]` or `[forbidden]` section), with each value moved into
-its range when it lies outside (`moved` lists them). A parameter of
+its range when it lies outside (`moved` lists them; `unlimited` moves to the
+upper bound). A parameter of
 `parameters.txt` that the program does not have is an error.
 
 `scalar_cost(input, cost, hard_weight) -> double` is the number irace compares:

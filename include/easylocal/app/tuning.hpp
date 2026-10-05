@@ -25,6 +25,8 @@
 #include <fstream>
 #include <initializer_list>
 #include <istream>
+#include <limits>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <string_view>
@@ -443,7 +445,10 @@ inline std::pair<std::string, bool> clamp_irace_value(
     const auto high = easylocal::detail::parse_number<double>(parameter.values.back());
     if (!low || !high)
         return {value, false}; // bounds that are not numbers: irace says so
-    const auto parsed = easylocal::detail::parse_number<double>(value);
+    // An unlimited limit is above every bound: it moves to the upper one.
+    const auto parsed = value == "unlimited"
+        ? std::optional<double>{std::numeric_limits<double>::infinity()}
+        : easylocal::detail::parse_number<double>(value);
     if (parsed && *low <= *parsed && *parsed <= *high)
         return {value, false};
     const double number = std::clamp(parsed.value_or(*low), *low, *high);
