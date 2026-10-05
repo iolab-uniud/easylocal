@@ -84,3 +84,21 @@ done
 solution="$("$curl_bin" --silent "${base_url}/runs/${run_id}/solution")"
 grep -Eq '"order"' <<<"$solution" || fail "no tour in: $solution"
 grep -Eq '"length"[[:space:]]*:[[:space:]]*26' <<<"$solution" || fail "not the optimal tour: $solution"
+
+# The same app through its text hooks: the Input and the tour as text.
+text_url="http://127.0.0.1:${port}/tsp-text"
+text_input='{"input":"5\n0 2 9 10 7\n2 0 6 4 3\n9 6 0 8 5\n10 4 8 0 6\n7 3 5 6 0\n","initial_solution":"0 1 2 3 4","seed":7}'
+submit="$("$curl_bin" --silent --show-error --request POST \
+    --header 'Content-Type: application/json' --data "$text_input" \
+    "${text_url}/runners/fi/runs")"
+run_id="$(sed -E 's/.*"id"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/' <<<"$submit")"
+[[ -n "$run_id" && "$run_id" != "$submit" ]] || fail "text submission: $submit"
+for ((attempt = 0; attempt < 200; ++attempt)); do
+    status="$("$curl_bin" --silent "${text_url}/runs/${run_id}")"
+    grep -Eq '"status"[[:space:]]*:[[:space:]]*"succeeded"' <<<"$status" && break
+    sleep 0.05
+done
+solution="$("$curl_bin" --silent "${text_url}/runs/${run_id}/solution")"
+grep -Eq '"cost"[[:space:]]*:[[:space:]]*26' <<<"$solution" || fail "text run: $solution"
+grep -Eq '"solution"[[:space:]]*:[[:space:]]*"[0-9 ]+\\n"' <<<"$solution" \
+    || fail "no tour as text in: $solution"

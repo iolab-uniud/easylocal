@@ -7,13 +7,16 @@
 /// It lists the runners and the parameters, submits runs (each on its own
 /// Session, with optional parameter overrides, target and initial solution),
 /// reports their state and solution, and cancels them. A codec of the problem
-/// turns its Input, Solution and costs into JSON and back.
+/// turns its Input, Solution and costs into JSON and back; a value the codec
+/// does not handle goes through the problem's text hooks.
 
 #include <easylocal/adapters/rest/execution.hpp>
+#include <easylocal/app/io.hpp>
 #include <easylocal/app/session.hpp>
 #include <easylocal/config/domain.hpp>
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/cost/concepts.hpp>
+#include <easylocal/cost/text.hpp>
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/runners/search_run.hpp>
 
@@ -30,6 +33,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <sstream>
 #include <stdexcept>
 #include <stop_token>
 #include <string>
@@ -60,6 +64,14 @@ struct blueprint_options
     std::uint64_t seed{0};
 };
 
+/// The codec of an app served through the problem's text hooks alone: it has
+/// no member, so the Input and the solutions are JSON strings in the text of
+/// read_input, read_solution and write_solution, and the costs JSON numbers or
+/// the text of `cost::to_text`.
+struct text_codec
+{
+};
+
 namespace detail
 {
 
@@ -77,34 +89,74 @@ template<class App>
 using app_cost_t = typename app_solution_manager_t<App>::cost_type;
 
 template<class Codec, class App>
-concept application_codec =
-    requires(
-        const Codec& codec,
-        const crow::json::rvalue& payload,
-        const typename App::input_type& input,
-        const app_solution_t<App>& solution,
-        const app_cost_t<App>& cost) {
+concept codec_decodes_input =
+    requires(const Codec& codec, const crow::json::rvalue& payload) {
         {
             codec.decode_input(payload)
         } -> std::convertible_to<typename App::input_type>;
-        {
-            codec.encode_solution(input, solution)
-        } -> std::same_as<crow::json::wvalue>;
-        {
-            codec.encode_cost(cost)
-        } -> std::same_as<crow::json::wvalue>;
     };
 
 template<class Codec, class App>
-concept decodes_initial_solution =
-    requires(
-        const Codec& codec,
-        const typename App::input_type& input,
-        const crow::json::rvalue& payload) {
-        {
-            codec.decode_initial_solution(input, payload)
-        } -> std::convertible_to<app_solution_t<App>>;
-    };
+concept codec_encodes_solution = requires(
+    const Codec& codec,
+    const typename App::input_type& input,
+    const app_solution_t<App>& solution) {
+    { codec.encode_solution(input, solution) } -> std::same_as<crow::json::wvalue>;
+};
+
+template<class Codec, class App>
+concept codec_encodes_cost = requires(const Codec& codec, const app_cost_t<App>& cost) {
+    { codec.encode_cost(cost) } -> std::same_as<crow::json::wvalue>;
+};
+
+// For each value, a member of the codec or a text hook of the problem.
+template<class Codec, class App>
+concept application_codec =
+    (codec_decodes_input<Codec, App> || readable_input<typename App::input_type>)
+    && (codec_encodes_solution<Codec, App>
+        || writable_solution<typename App::input_type, app_solution_t<App>>)
+    && (codec_encodes_cost<Codec, App> || cost::text_readable<app_cost_t<App>>);
+
+template<class Codec, class App>
+concept codec_decodes_initial_solution = requires(
+    const Codec& codec,
+    const typename App::input_type& input,
+    const crow::json::rvalue& payload) {
+    {
+        codec.decode_initial_solution(input, payload)
+    } -> std::convertible_to<app_solution_t<App>>;
+};
+
+// An initial solution in a request: by the codec, or as the text of the
+// problem's read_solution.
+template<class Codec, class App>
+concept decodes_initial_solution = codec_decodes_initial_solution<Codec, App>
+    || readable_solution<typename App::input_type, app_solution_t<App>>;
+
+// The text of a JSON string, read by a text hook: what the hook throws, or a
+// value that is not a string, is a std::invalid_argument naming the field.
+template<class Read>
+[[nodiscard]] auto read_text_field(
+    const crow::json::rvalue& payload,
+    const std::string_view field,
+    const Read& read)
+{
+    if (payload.t() != crow::json::type::String)
+    {
+        throw std::invalid_argument{
+            "'" + std::string{field}
+            + "' must be a string, in the problem's text format"};
+    }
+    std::istringstream in{std::string{payload.s()}};
+    try
+    {
+        return read(in);
+    }
+    catch (const std::exception& error)
+    {
+        throw std::invalid_argument{"'" + std::string{field} + "': " + error.what()};
+    }
+}
 
 template<class Codec, class App>
 concept decodes_cost = requires(const Codec& codec, const crow::json::rvalue& payload) {
@@ -332,9 +384,14 @@ inline void collect_parameters(
 /// to it: keep it alive as long as the Crow app uses its blueprint. Calls to
 /// the codec are serialized.
 ///
-/// Requires a copyable app and a codec with `decode_input(json)`,
-/// `encode_solution(input, solution)` and `encode_cost(cost)`, and optionally
-/// `decode_initial_solution(input, json)` and `decode_cost(json)`.
+/// Each value goes through the codec when it has the member, or else through
+/// the problem's text hook, as a JSON string: the Input by `decode_input(json)`
+/// or read_input, a solution by `encode_solution(input, solution)` or
+/// write_solution, a cost by `encode_cost(cost)` or as a JSON number
+/// (`cost::to_text` for a structured cost), an initial solution by
+/// `decode_initial_solution(input, json)` or read_solution, a target by
+/// `decode_cost(json)` or the text of read_cost. Requires a copyable app and,
+/// for the Input, the solution and the cost, a codec member or a text hook.
 template<class App, class Codec>
     requires std::copy_constructible<App> &&
              std::move_constructible<Codec> &&
@@ -471,22 +528,49 @@ private:
 
     [[nodiscard]] input_type decode_input(const crow::json::rvalue& payload) const
     {
-        const std::lock_guard lock{codec_mutex_};
-        return codec_.decode_input(payload);
+        if constexpr (detail::codec_decodes_input<Codec, App>)
+        {
+            const std::lock_guard lock{codec_mutex_};
+            return codec_.decode_input(payload);
+        }
+        else
+        {
+            return detail::read_text_field(payload, "input", [](std::istream& in) {
+                return easylocal::read_input<input_type>(in);
+            });
+        }
     }
 
     [[nodiscard]] crow::json::wvalue encode_solution(
         const input_type& input,
         const solution_type& solution) const
     {
-        const std::lock_guard lock{codec_mutex_};
-        return codec_.encode_solution(input, solution);
+        if constexpr (detail::codec_encodes_solution<Codec, App>)
+        {
+            const std::lock_guard lock{codec_mutex_};
+            return codec_.encode_solution(input, solution);
+        }
+        else
+        {
+            std::ostringstream out;
+            easylocal::write_solution(input, solution, out);
+            return crow::json::wvalue{out.str()};
+        }
     }
 
     [[nodiscard]] crow::json::wvalue encode_cost(const cost_type& cost) const
     {
-        const std::lock_guard lock{codec_mutex_};
-        return codec_.encode_cost(cost);
+        if constexpr (detail::codec_encodes_cost<Codec, App>)
+        {
+            const std::lock_guard lock{codec_mutex_};
+            return codec_.encode_cost(cost);
+        }
+        else if constexpr (std::floating_point<cost_type>)
+            return crow::json::wvalue{static_cast<double>(cost)};
+        else if constexpr (std::integral<cost_type>)
+            return crow::json::wvalue{static_cast<std::int64_t>(cost)};
+        else
+            return crow::json::wvalue{cost::to_text(cost)};
     }
 
     [[nodiscard]] bool runner_exists(const std::string_view requested) const
@@ -515,8 +599,20 @@ private:
         const crow::json::rvalue& payload) const
         requires detail::decodes_initial_solution<Codec, App>
     {
-        const std::lock_guard lock{codec_mutex_};
-        return codec_.decode_initial_solution(input, payload);
+        if constexpr (detail::codec_decodes_initial_solution<Codec, App>)
+        {
+            const std::lock_guard lock{codec_mutex_};
+            return codec_.decode_initial_solution(input, payload);
+        }
+        else
+        {
+            return detail::read_text_field(
+                payload,
+                "initial_solution",
+                [&input](std::istream& in) {
+                    return easylocal::read_solution<solution_type>(input, in);
+                });
+        }
     }
 
     // The time limit of a run, in seconds: a non-negative number.
@@ -683,7 +779,8 @@ private:
             else
             {
                 throw std::invalid_argument{
-                    "initial_solution is not supported by this application codec"};
+                    "initial_solution is not supported: the codec has no "
+                    "decode_initial_solution and the problem no read_solution"};
             }
         }
         else if constexpr (session_type::supports_initial_solution)
@@ -1140,6 +1237,7 @@ private:
 ///
 /// The result is neither copyable nor movable: initialize a variable with it.
 template<class App, class Codec>
+    requires(!std::same_as<std::remove_cvref_t<Codec>, blueprint_options>)
 [[nodiscard]] app_blueprint<App, Codec> blueprint(
     std::string prefix,
     App application,
@@ -1150,6 +1248,24 @@ template<class App, class Codec>
         std::move(prefix),
         std::move(application),
         std::move(codec),
+        options,
+    };
+}
+
+/// The app_blueprint that serves the app under the prefix through the
+/// problem's text hooks, without a codec (text_codec).
+///
+/// The result is neither copyable nor movable: initialize a variable with it.
+template<class App>
+[[nodiscard]] app_blueprint<App, text_codec> blueprint(
+    std::string prefix,
+    App application,
+    blueprint_options options = {})
+{
+    return app_blueprint<App, text_codec>{
+        std::move(prefix),
+        std::move(application),
+        text_codec{},
         options,
     };
 }

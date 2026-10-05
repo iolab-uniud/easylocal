@@ -10,10 +10,33 @@ find_package(EasyLocal CONFIG REQUIRED COMPONENTS Core REST)
 target_link_libraries(tsp_rest PRIVATE EasyLocal::REST)
 ```
 
+## Without a codec
+
+The app works with problem values. When the problem has the I/O hooks of
+chapter 5, the service needs nothing else: the Input and the tours travel as
+JSON strings, in the text that `read_input`, `read_solution` and
+`write_solution` read and write, and the costs as JSON numbers.
+
+<!-- snippet: tutorial/rest_main.cpp:text -->
+```cpp
+// The Input and the tours in the text of the I/O hooks (chapter 5).
+auto text_api = el::rest::blueprint("/tsp-text", application);
+```
+
+```sh
+$ curl -X POST localhost:18080/tsp-text/runners/sa/runs \
+       -H 'Content-Type: application/json' \
+       -d '{"input": "5\n0 2 9 10 7\n2 0 6 4 3\n9 6 0 8 5\n10 4 8 0 6\n7 3 5 6 0\n", "seed": 7}'
+{"id":"1","runner":"sa","seed":7,"status":"queued",...}
+
+$ curl localhost:18080/tsp-text/runs/1/solution
+{"solution":"...","cost":26,...}
+```
+
 ## The codec
 
-The app works with problem values; a **codec** translates them from and to
-JSON:
+A **codec** gives the values a JSON form of their own; the hooks still serve
+each value it leaves out:
 
 <!-- snippet: tutorial/rest_main.cpp:codec -->
 ```cpp
@@ -67,10 +90,10 @@ struct TspCodec
 
 | Member | Required | Purpose |
 | --- | --- | --- |
-| `decode_input(const crow::json::rvalue&) -> Input` | yes | the `input` of a run request; throw `std::invalid_argument` to reject it |
-| `encode_solution(const Input&, const Solution&) -> crow::json::wvalue` | yes | the solution of a finished run |
-| `encode_cost(const Cost&) -> crow::json::wvalue` | yes | its cost |
-| `decode_initial_solution(const Input&, const crow::json::rvalue&) -> Solution` | no | accepts an `initial_solution` in the request; without it such requests are rejected, and runs start from the SolutionManager's `initial_solution()` |
+| `decode_input(const crow::json::rvalue&) -> Input` | without `read_input` | the `input` of a run request; throw `std::invalid_argument` to reject it |
+| `encode_solution(const Input&, const Solution&) -> crow::json::wvalue` | without `write_solution` | the solution of a finished run |
+| `encode_cost(const Cost&) -> crow::json::wvalue` | for a cost that is not text | its cost |
+| `decode_initial_solution(const Input&, const crow::json::rvalue&) -> Solution` | no | accepts an `initial_solution` in the request, as `read_solution` does from a string; without either such requests are rejected, and runs start from the SolutionManager's `initial_solution()` |
 | `decode_cost(const crow::json::rvalue&) -> Cost` | no | accepts a `target` in the request; without it a target is a JSON number, for arithmetic costs only |
 
 ## The service
@@ -84,6 +107,10 @@ auto application = el::app("tsp")
     | el::runner<runners::FirstImprovement>("fi")
     | el::runner<runners::SimulatedAnnealing<Classic>>("sa");
 
+// The Input and the tours in the text of the I/O hooks (chapter 5).
+auto text_api = el::rest::blueprint("/tsp-text", application);
+
+// The same app, in the JSON of TspCodec.
 auto api = el::rest::blueprint(
     "/tsp",
     std::move(application),
@@ -95,6 +122,7 @@ auto api = el::rest::blueprint(
     });
 
 crow::SimpleApp server;
+server.register_blueprint(text_api.crow_blueprint());
 server.register_blueprint(api.crow_blueprint());
 server.port(port).multithreaded().run();
 ```

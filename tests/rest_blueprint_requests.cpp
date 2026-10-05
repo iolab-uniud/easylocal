@@ -1,12 +1,14 @@
 // The REST blueprint answering requests in-process (no network): unknown runs,
 // runs that fail, a codec that fails, a run from a given initial solution, a
 // run with a target cost, runs with their own parameters, a deeply nested body,
-// a full queue and a run cancelled while still queued.
+// a full queue, a run cancelled while still queued, and a problem served
+// through its text hooks, without a codec.
 #include "../examples/assignment/cost.hpp"
 #include "../examples/assignment/cost_components.hpp"
 #include "../examples/assignment/instance.hpp"
 #include "../examples/assignment/neighborhood_explorer.hpp"
 #include "../examples/assignment/solution_manager.hpp"
+#include "../examples/tutorial/tsp.hpp"
 #include "support/assignment_capacity_delta.hpp"
 
 #include <easylocal/adapters/rest.hpp>
@@ -269,20 +271,30 @@ struct reply
         std::move(body));
 }
 
-// The run's status once it equals `status`; fails the test after 10 s.
-auto wait_for(crow::SimpleApp& server, const std::string& id, const std::string& status)
-    -> crow::json::rvalue
+// The status of the run at url once it equals `status`; fails the test after
+// 10 s.
+auto wait_for_run(
+    crow::SimpleApp& server,
+    const std::string& url,
+    const std::string& status) -> crow::json::rvalue
 {
     const auto deadline = std::chrono::steady_clock::now() + 10s;
     while (true)
     {
-        auto current = send(server, crow::HTTPMethod::GET, "/assignment/runs/" + id);
+        auto current = send(server, crow::HTTPMethod::GET, url);
         assert(current.code == 200);
         if (text(current.body["status"]) == status)
             return std::move(current.body); // a copy of an rvalue loses its keys
         assert(std::chrono::steady_clock::now() < deadline);
         std::this_thread::sleep_for(5ms);
     }
+}
+
+// The status of the assignment run `id` once it equals `status`.
+auto wait_for(crow::SimpleApp& server, const std::string& id, const std::string& status)
+    -> crow::json::rvalue
+{
+    return wait_for_run(server, "/assignment/runs/" + id, status);
 }
 
 void unknown_runs_are_not_found(crow::SimpleApp& server)
@@ -595,6 +607,63 @@ void an_arithmetic_target_is_a_number()
     assert(rejects("1e300", 0.0F));
 }
 
+// The tutorial's TSP has text hooks and no codec: the Input and the solutions
+// are JSON strings in their text format, the cost a JSON number.
+void a_problem_with_text_hooks_needs_no_codec()
+{
+    using namespace tutorial;
+    auto application = easylocal::app("tsp")
+        | (easylocal::solution_manager<TourManager>()
+            | easylocal::component<TourLength>())
+        | (easylocal::neighborhood<TwoOptExplorer>()
+            | easylocal::delta<TourLength, TwoOptLengthDelta>())
+        | easylocal::runner<easylocal::runners::FirstImprovement>("fi");
+    auto api = easylocal::rest::blueprint(
+        "/text",
+        std::move(application),
+        easylocal::rest::blueprint_options{.workers = 1});
+    crow::SimpleApp server;
+    server.loglevel(crow::LogLevel::Warning);
+    server.register_blueprint(api.crow_blueprint());
+    server.add_blueprint();
+    server.validate();
+    const auto post = [&server](std::string body) {
+        return send(
+            server,
+            crow::HTTPMethod::POST,
+            "/text/runners/fi/runs",
+            std::move(body));
+    };
+
+    const std::string input =
+        R"("5\n0 2 9 10 7\n2 0 6 4 3\n9 6 0 8 5\n10 4 8 0 6\n7 3 5 6 0\n")";
+    const auto submitted =
+        post(R"({"input": )" + input + R"(, "initial_solution": "0 1 2 3 4"})");
+    assert(submitted.code == 202);
+    const auto id = text(submitted.body["id"]);
+    wait_for_run(server, "/text/runs/" + id, "succeeded");
+    const auto solved =
+        send(server, crow::HTTPMethod::GET, "/text/runs/" + id + "/solution");
+    assert(solved.code == 200);
+    assert(solved.body["cost"].d() == 26.0);
+    assert(solved.body["solution"].t() == crow::json::type::String);
+    assert(text(solved.body["solution"]).size() == 11); // five "c ", then "\n"
+
+    // A value that is not a string, or text the hook cannot read, is a bad
+    // request.
+    const auto not_text = post(R"({"input": {"distance": []}})");
+    assert(not_text.code == 422);
+    assert(
+        text(not_text.body["error"]["message"]).starts_with("'input' must be a string"));
+    const auto unreadable = post(R"({"input": "five"})");
+    assert(unreadable.code == 422);
+    assert(text(unreadable.body["error"]["message"]) == "'input': invalid TSP header");
+    const auto bad_tour =
+        post(R"({"input": )" + input + R"(, "initial_solution": "0 1"})");
+    assert(bad_tour.code == 422);
+    assert(text(bad_tour.body["error"]["message"]).starts_with("'initial_solution': "));
+}
+
 void a_full_queue_rejects_runs_and_a_queued_run_can_be_cancelled(crow::SimpleApp& server)
 {
     // One worker, a queue of one: the first run holds the worker at the gate.
@@ -743,6 +812,7 @@ int main()
     a_run_whose_response_fails_is_not_registered(server);
     json_parameter_values_become_text();
     an_arithmetic_target_is_a_number();
+    a_problem_with_text_hooks_needs_no_codec();
     a_full_queue_rejects_runs_and_a_queued_run_can_be_cancelled(server);
     an_empty_prefix_is_rejected();
     a_zero_completed_run_capacity_is_rejected();

@@ -122,6 +122,12 @@ reviewed by hand before tagging.
   apart in a trace, the stages on the hard cost included. The memory and JSONL
   recorders keep it, and `eltr.py --format summary` gives each run its stage
   and attempt.
+- The REST blueprint needs no codec for a problem with text hooks:
+  `rest::blueprint(prefix, app, options)` serves it with `rest::text_codec`,
+  the Input and the solutions as JSON strings in the text of `read_input`,
+  `read_solution` and `write_solution`, the costs as JSON numbers (or
+  `cost::to_text`). A codec may leave out any of its members, and that value
+  goes through the hook. The tutorial's service shows it first (`/tsp-text`).
 - `eltr.py --format summary` marks `"unfinished": true` a run without
   `run_finished`, which an exception ended or a truncated trace cut. The
   solvers reference says how an exception thrown mid-run propagates.

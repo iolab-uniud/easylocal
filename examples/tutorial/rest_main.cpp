@@ -82,6 +82,12 @@ int main(int argc, char* argv[])
         | el::runner<runners::FirstImprovement>("fi")
         | el::runner<runners::SimulatedAnnealing<Classic>>("sa");
 
+    // [text] -------------------------------------------------------------
+    // The Input and the tours in the text of the I/O hooks (chapter 5).
+    auto text_api = el::rest::blueprint("/tsp-text", application);
+    // [text] -------------------------------------------------------------
+
+    // The same app, in the JSON of TspCodec.
     auto api = el::rest::blueprint(
         "/tsp",
         std::move(application),
@@ -93,6 +99,7 @@ int main(int argc, char* argv[])
         });
 
     crow::SimpleApp server;
+    server.register_blueprint(text_api.crow_blueprint());
     server.register_blueprint(api.crow_blueprint());
     server.port(port).multithreaded().run();
     // [rest] ---------------------------------------------------------------

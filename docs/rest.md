@@ -60,22 +60,38 @@ server.port(8080)
 Port, middleware, HTTP concurrency, logging, and process lifecycle remain normal
 Crow concerns.
 
-A codec supplies the problem-specific JSON boundary:
+A problem with the text hooks of [Apps and tools](reference/app-and-tools.md)
+(`read_input`, `write_solution`, `read_solution`) needs no codec:
+`blueprint(prefix, app, options)` serves it with `text_codec`, and the Input and
+the solutions are JSON strings in the text of the hooks, the costs JSON numbers
+(the text of `cost::to_text` for a structured cost).
+
+```cpp
+auto api = easylocal::rest::blueprint("/tsp", tsp_app);
+// POST /tsp/runners/sa/runs {"input": "5\n0 2 9 10 7\n...", "initial_solution": "0 1 2 3 4"}
+```
+
+A codec supplies a JSON boundary of its own; each value it does not handle
+goes through the problem's text hook, as above:
 
 ```cpp
 struct Codec
 {
+    // Or read_input, from a JSON string.
     Input decode_input(const crow::json::rvalue& value) const;
 
+    // Or write_solution, to a JSON string.
     crow::json::wvalue encode_solution(const Input& input, const Solution& solution) const;
 
+    // Or a JSON number, or the text of cost::to_text.
     crow::json::wvalue encode_cost(const Cost& cost) const;
 
-    // Optional. Called only when the request contains initial_solution.
+    // Optional, or read_solution. Called only when the request contains
+    // initial_solution.
     Solution decode_initial_solution(const Input& input, const crow::json::rvalue& value) const;
 
-    // Optional. Called only when the request contains target; without it a
-    // target is a JSON number, for arithmetic costs only.
+    // Optional. Called only when the request contains a target that is not a
+    // string; without it a target is a JSON number, for arithmetic costs only.
     Cost decode_cost(const crow::json::rvalue& value) const;
 };
 ```
@@ -84,7 +100,8 @@ The framework owns only the request envelope. `input` and `initial_solution` are
 otherwise opaque JSON values passed unchanged to the codec. A codec may therefore
 accept a structured JSON object/array, a JSON string containing an existing text
 file representation, or any other JSON representation appropriate to the
-problem. A decoded `initial_solution` must be valid for the Input (the
+problem. Through a text hook, a value that is not a string, or a text the hook
+cannot read, is rejected with `422`. A decoded `initial_solution` must be valid for the Input (the
 SolutionManager's `is_valid`), or the request is rejected with `422`. If
 `initial_solution` is omitted, the SolutionManager `initial_solution()`
 capability is used when available.
