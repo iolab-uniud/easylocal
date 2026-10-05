@@ -723,6 +723,26 @@ void session_rejects_a_run_from_an_invalid_solution()
     assert(!session.last_run_effort());
 }
 
+// The effort is the last run's: a new Input, or a run that does not complete,
+// leaves none.
+void session_forgets_the_effort_of_a_previous_run()
+{
+    easylocal::Session session{make_multi_runner_application()};
+    session.set_input(make_input(3));
+    session.set_solution(AssignmentSolution{.assignment = {0, 0}});
+    static_cast<void>(session.run("deep"));
+    assert(session.last_run_effort());
+
+    const auto ran = session.run("missing");
+    assert(!ran);
+    assert(!session.last_run_effort());
+
+    static_cast<void>(session.run("deep"));
+    assert(session.last_run_effort());
+    session.set_input(make_input(3));
+    assert(!session.last_run_effort());
+}
+
 void app_copy_preserves_graph_configuration()
 {
     auto application = make_application();
@@ -846,4 +866,5 @@ int main()
     session_distinguishes_same_tag_runners_by_name();
     session_reports_unknown_runner_without_changing_solution();
     session_rejects_a_run_from_an_invalid_solution();
+    session_forgets_the_effort_of_a_previous_run();
 }

@@ -333,6 +333,7 @@ public:
             std::unique_ptr<bound_app_type>{new bound_app_type(app_.bind(*new_input))};
 
         clear_solution_state();
+        last_run_effort_.reset();
         bound_.reset();
         input_ = std::move(new_input);
         bound_ = std::move(new_bound);
@@ -609,6 +610,8 @@ public:
             throw std::invalid_argument{
                 "run: the current solution is not valid for the Input"};
         }
+        // The effort is the last run's: none until this one completes.
+        last_run_effort_.reset();
 
         auto result =
             app_.run(name, *input_, *solution_, rng_, std::forward<Options>(options)...);
@@ -622,7 +625,8 @@ public:
     }
 
     /// The effort of the last run (evaluations, iterations, termination), when
-    /// its algorithm reports it; empty before the first run.
+    /// its algorithm reports it; empty before the first run, after a run that
+    /// did not complete (an unknown name, an exception) and after a new Input.
     [[nodiscard]]
     const std::optional<run_effort>& last_run_effort() const noexcept
     {

@@ -158,6 +158,8 @@ reviewed by hand before tagging.
   current solution is not valid for the Input, and `cli::run` rejects such a
   `--solution` with `error: solution: ...` and status 2, instead of running
   deltas that may index out of bounds.
+- `Session::last_run_effort()` is empty after a new Input and after a run that
+  does not complete, instead of keeping an older run's effort.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 
