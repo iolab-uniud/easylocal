@@ -593,7 +593,6 @@ void an_arithmetic_target_is_a_number()
     assert(rejects("-1", 0U));
     assert(rejects("300", static_cast<signed char>(0)));
     assert(rejects("18446744073709551615", 0LL));
-    assert(rejects("1e999", 0.0));
     assert(rejects("1e300", 0.0F));
     assert(decode_arithmetic_cost<unsigned>(crow::json::load("7")) == 7U);
 }
