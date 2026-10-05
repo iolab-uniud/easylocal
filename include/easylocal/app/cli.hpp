@@ -233,7 +233,7 @@ int run_traced(
     {
         if (jsonl)
         {
-            err << "trace: this cost has no JSON encoding: trace to an ELTR file\n";
+            err << "error: trace: this cost has no JSON encoding: trace to an ELTR file\n";
             return 2;
         }
     }
@@ -241,7 +241,7 @@ int run_traced(
     {
         if (!jsonl)
         {
-            err << "trace: this cost has no ELTR encoding: trace to a .jsonl file\n";
+            err << "error: trace: this cost has no ELTR encoding: trace to a .jsonl file\n";
             return 2;
         }
     }
@@ -383,9 +383,15 @@ inline int write_irace(
     };
     std::error_code error;
     if (stub.program.has_parent_path())
-        stub.program = std::filesystem::weakly_canonical(stub.program, error);
-    // A runner chosen on the command line is the only one tuned.
-    if (!command_line.runner.empty())
+    {
+        // The program as given, when it cannot be made canonical.
+        if (auto canonical = std::filesystem::weakly_canonical(stub.program, error);
+            !error)
+            stub.program = std::move(canonical);
+    }
+    // A runner chosen on the command line is the only one tuned; the default
+    // of the program's options does not restrict the tuning.
+    if (!command_line.runner.empty() && command_line.runner != settings.defaults.runner)
         stub.runners.push_back(command_line.runner);
     else
         stub.runners.assign(names.begin(), names.end());
@@ -408,19 +414,27 @@ inline int write_irace(
 
     const auto result = write_irace_stub(stub);
     for (const auto& message : result.errors)
-        err << "tuning.irace: " << message << '\n';
+        err << "error: tuning.irace: " << message << '\n';
     if (!result)
         return 2;
     for (const auto& path : result.written)
         out << "wrote " << path.string() << '\n';
     for (const auto& path : result.kept)
         out << "kept " << path.string() << " (it exists)\n";
+    if (result.tuned == 0)
+    {
+        out << "nothing to tune yet: uncomment a parameter in parameters.txt, then "
+               "run --tuning.irace again\n";
+        return 0;
+    }
     out << "updated " << result.configurations.string() << '\n';
     for (const auto& moved : result.moved)
         out << "  first configuration moved into its range: " << moved << '\n';
     out << result.tuned << " parameters to tune";
     if (result.to_complete != 0)
         out << ", " << result.to_complete << " more to complete in parameters.txt";
+    if (stub.instance.empty())
+        out << "; list the instances in instances.txt";
     out << "; then run irace in " << tuning.irace.string() << '\n';
     return 0;
 }
@@ -431,10 +445,11 @@ inline int write_irace(
 ///
 /// It parses argc and argv (and a --config file), loads the Input, starts
 /// from a random, initial or loaded solution, runs the chosen runner and
-/// prints "cost", "time" (seconds), the effort of the run ("iterations",
-/// "evaluations", "termination") when the algorithm reports it, with --report
-/// the value of each cost component, and the solution, or saves it to
-/// --output. After a run with a cost::pareto cost it prints "front" and
+/// prints "cost", "time" (the seconds of the run, the binding of the app for
+/// it included), the effort of the run ("iterations", "evaluations",
+/// "termination") when the algorithm reports it, with --report the value of
+/// each cost component, and the solution, or saves it to --output. After a
+/// run with a cost::pareto cost it prints "front" and
 /// its size, then each point, "point", its number and "cost", followed by its
 /// solution, or saves the solutions to numbered files next to --output.
 ///
@@ -444,8 +459,11 @@ inline int write_irace(
 /// with the ranges of settings.tuning, and exits without loading the Input.
 ///
 /// Returns the exit status: 0 on success, 1 when the run fails (an unreadable
-/// file or any other exception), 2 for an invalid command line, a --solution
-/// that is not valid for the Input included.
+/// or unwritable file, or any other exception), 2 for an invalid command line,
+/// a --solution that is not valid for the Input and an option the problem
+/// cannot honour (--solution or --output without the I/O hooks, a --start it
+/// has no solutions for) included, which are checked before the Input is
+/// read. Every error is printed after `error: `.
 template<class App>
 [[nodiscard]]
 int run(App application, const int argc, char* argv[], options settings = {})
@@ -495,15 +513,13 @@ int run(App application, const int argc, char* argv[], options settings = {})
     std::vector<config::requirement_info> requirements;
     if (!tuning.irace.empty())
     {
+        // write_irace_stub leaves out the cost's and the read-only ones.
         for (auto& info : application.configuration().parameters())
-            if (!info.read_only && !info.path.starts_with("cost."))
-                tunable.push_back(std::move(info));
+            tunable.push_back(std::move(info));
         for (auto& info : settings.parameters.parameters())
-            if (!info.read_only)
-                tunable.push_back(std::move(info));
+            tunable.push_back(std::move(info));
         for (auto& requirement : application.configuration().requirements())
-            if (requirement.path != "cost" && !requirement.path.starts_with("cost."))
-                requirements.push_back(std::move(requirement));
+            requirements.push_back(std::move(requirement));
         for (auto& requirement : settings.parameters.requirements())
             requirements.push_back(std::move(requirement));
     }
@@ -516,7 +532,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
         command_line.runner.empty() ? std::string{names.front()} : command_line.runner;
     if (std::find(names.begin(), names.end(), runner) == names.end())
     {
-        err << "unknown runner " << runner << "; the runners are:";
+        err << "error: unknown runner " << runner << "; the runners are:";
         for (const auto name : names)
             err << ' ' << name;
         err << '\n';
@@ -531,7 +547,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
     {
         if (!tuning.irace.empty() || !tuning.print.empty())
         {
-            err << (tuning.irace.empty() ? "tuning.print" : "tuning.irace")
+            err << "error: " << (tuning.irace.empty() ? "tuning.print" : "tuning.irace")
                 << ": this cost is not one number; give the problem a "
                    "scalar_cost(input, cost)\n";
             return 2;
@@ -555,6 +571,33 @@ int run(App application, const int argc, char* argv[], options settings = {})
     if (command_line.instance.empty())
     {
         err << "error: instance must be set\n";
+        return 2;
+    }
+
+    // What the problem cannot do is an error of the command line, found
+    // before the Input is read and the search runs.
+    const bool initial_start = command_line.start == "initial"
+        || (command_line.start.empty() && !session_type::supports_random_solution);
+    if (!command_line.solution.empty() && !session_type::supports_solution_loading)
+    {
+        err << "error: solution: this problem cannot read solutions\n";
+        return 2;
+    }
+    if (command_line.solution.empty() && initial_start
+        && !session_type::supports_initial_solution)
+    {
+        err << "error: start: this problem has no initial solution\n";
+        return 2;
+    }
+    if (command_line.solution.empty() && !initial_start
+        && !session_type::supports_random_solution)
+    {
+        err << "error: start: this problem has no random solutions\n";
+        return 2;
+    }
+    if (!command_line.output.empty() && !session_type::supports_solution_saving)
+    {
+        err << "error: output: this problem cannot write solutions\n";
         return 2;
     }
 
@@ -588,32 +631,16 @@ int run(App application, const int argc, char* argv[], options settings = {})
                     return 2;
                 }
             }
-            else
-            {
-                err << "solution: this problem cannot read solutions\n";
-                return 2;
-            }
         }
-        else if (command_line.start == "initial"
-            || (command_line.start.empty() && !session_type::supports_random_solution))
+        else if (initial_start)
         {
             if constexpr (session_type::supports_initial_solution)
                 session.use_initial_solution();
-            else
-            {
-                err << "start: this problem has no initial solution\n";
-                return 2;
-            }
         }
         else
         {
             if constexpr (session_type::supports_random_solution)
                 session.use_random_solution(session.rng());
-            else
-            {
-                err << "start: this problem has no random solutions\n";
-                return 2;
-            }
         }
 
         const auto begin = std::chrono::steady_clock::now();
@@ -666,10 +693,17 @@ int run(App application, const int argc, char* argv[], options settings = {})
             if (!tuning.print.empty())
             {
                 out << easylocal::detail::number_text(
-                    scalar_cost(session.input(), session.evaluate(), tuning.hard_weight));
+                    easylocal::scalar_cost(
+                        session.input(),
+                        session.evaluate(),
+                        tuning.hard_weight));
                 if (tuning.print == "cost_time")
                     out << ' ' << elapsed.count();
                 out << '\n';
+                // The solution, when it is asked for, is saved all the same.
+                if constexpr (session_type::supports_solution_saving)
+                    if (!command_line.output.empty())
+                        session.save_solution(command_line.output);
                 return 0;
             }
         }
@@ -688,11 +722,6 @@ int run(App application, const int argc, char* argv[], options settings = {})
             detail::write_solution(out, session, session.solution());
         else if constexpr (session_type::supports_solution_saving)
             session.save_solution(command_line.output);
-        else
-        {
-            err << "output: this problem cannot write solutions\n";
-            return 2;
-        }
         detail::write_front(out, session, command_line.output);
     }
     catch (const std::exception& error)

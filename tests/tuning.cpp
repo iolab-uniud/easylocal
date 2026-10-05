@@ -582,9 +582,47 @@ void parameters_get_irace_identifiers()
 
 } // namespace
 
+void the_stub_filters_and_says_when_nothing_is_tuned()
+{
+    using kind = config::parameter_kind;
+    const auto directory = fresh_directory("easylocal-tuning-nothing");
+    auto read_only = parameter("runners.fi.max_evaluations", "10", kind::limit);
+    read_only.read_only = true;
+    easylocal::irace_stub stub{
+        .directory = directory,
+        .program = "/opt/bin/solver",
+        .parameters =
+            {parameter("cost.weights", "[1, 1]", kind::list),
+                parameter(
+                    "cost.excess.bound",
+                    "8",
+                    kind::real,
+                    config::describe_domain(config::range(0.0, 10.0))),
+                read_only,
+                parameter("program.verbose", "false", kind::boolean)},
+        .ranges = {},
+        .requirements = {},
+        .runners = {"fi"},
+        .fixed = {},
+        .instance = {},
+    };
+    const auto result = easylocal::write_irace_stub(stub);
+    assert(result);
+    assert(result.tuned == 0);
+    assert(result.configurations.empty());
+    assert(!std::filesystem::exists(directory / "configurations.txt"));
+    std::ifstream in{directory / "parameters.txt"};
+    const std::string text{std::istreambuf_iterator<char>{in}, {}};
+    assert(text.find("cost.weights") == std::string::npos);
+    assert(text.find("cost.excess") == std::string::npos);
+    assert(text.find("max_evaluations") == std::string::npos);
+    assert(text.find("a switch: uncomment it to tune it") != std::string::npos);
+}
+
 int main()
 {
     scalar_cost_prefers_the_problem_hook();
+    the_stub_filters_and_says_when_nothing_is_tuned();
     the_stub_has_the_parameters_with_conditions();
     ranges_must_name_parameters_within_their_domains();
     cli_prints_only_the_cost();

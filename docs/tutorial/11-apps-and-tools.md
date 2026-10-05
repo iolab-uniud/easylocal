@@ -328,7 +328,7 @@ wrote tuning/target-runner
 wrote tuning/instances.txt
 wrote tuning/scenario.txt
 updated tuning/configurations.txt
-2 parameters to tune, 3 more to complete in parameters.txt; then run irace in tuning
+2 parameters to tune, 3 more to complete in parameters.txt; list the instances in instances.txt; then run irace in tuning
 ```
 
 | File | |

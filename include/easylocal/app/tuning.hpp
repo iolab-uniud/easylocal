@@ -156,13 +156,15 @@ struct irace_stub
     std::filesystem::path directory;
     /// The program that irace runs, preferably as an absolute path.
     std::filesystem::path program;
-    /// The parameters that may be tuned: those of the cost (`cost.*`, which
-    /// would change what is compared) and the read-only ones are left out.
+    /// The parameters that may be tuned; write_irace_stub leaves out those of
+    /// the cost (`cost.*`, which would change what is compared) and the
+    /// read-only ones.
     std::vector<config::parameter_info> parameters;
     /// The values to try, by path, instead of the domains of the schema.
     std::vector<tuning_range> ranges;
     /// The requirements between the parameters, written as irace's forbidden
-    /// combinations when they refer to tuned parameters.
+    /// combinations when they refer to tuned parameters; those of the cost
+    /// are left out.
     std::vector<config::requirement_info> requirements;
     /// The runners irace chooses among, each with its parameters
     /// (`runners.<name>.*`); with one runner there is no choice.
@@ -420,6 +422,7 @@ inline void suggest_irace_domain(
     {
         parameter.type = 'c';
         parameter.values = {"true", "false"};
+        parameter.note = "a switch: uncomment it to tune it";
         return;
     }
     // The lower bound of a range with no upper one, which a range to start
@@ -516,6 +519,14 @@ inline std::vector<declared_irace_parameter> read_irace_parameters(std::istream&
     return result;
 }
 
+// Whether a path is the cost's, `cost` or `cost.*`: it changes what irace
+// compares, so it is not tuned.
+[[nodiscard]]
+inline bool cost_path(const std::string_view path) noexcept
+{
+    return path == "cost" || path.starts_with("cost.");
+}
+
 // A value moved into the values of a parameter, so that a first configuration
 // is valid however the user changed the ranges: the nearest bound, or the
 // first choice. The second member says whether it moved.
@@ -609,6 +620,10 @@ inline std::vector<irace_parameter> irace_parameters(
 
     for (const auto& info : stub.parameters)
     {
+        // The cost's parameters would change what irace compares; a read-only
+        // parameter cannot be set.
+        if (info.read_only || cost_path(info.path))
+            continue;
         const auto owner = runner_of(info.path);
         if (!owner.empty()
             && std::ranges::find(stub.runners, owner) == stub.runners.end())
@@ -662,7 +677,7 @@ inline std::vector<irace_parameter> irace_parameters(
         if (info.kind == config::parameter_kind::limit && info.value == "unlimited"
             && !finite)
         {
-            parameter.note = "unlimited: every run needs a budget";
+            parameter.note = "unlimited: give it a finite range to tune it";
             result.push_back(std::move(parameter));
             continue;
         }
@@ -799,7 +814,8 @@ inline std::vector<irace_forbidden_line> irace_forbidden(
     std::vector<irace_forbidden_line> result;
     for (const auto& requirement : requirements)
     {
-        if (!refers_to_tuned(requirement.expression, parameters))
+        if (cost_path(requirement.path)
+            || !refers_to_tuned(requirement.expression, parameters))
             continue;
         irace_forbidden_line line{
             .message = requirement.message,
@@ -868,7 +884,9 @@ void write_new_file(
 /// configurations.txt (the current values, as a first configuration), which is
 /// rewritten each time to agree with parameters.txt as it is on disk, its
 /// values moved into the ranges. Returns the files written and kept, and the
-/// errors; with an invalid range, nothing is written.
+/// errors; with an invalid range, nothing is written, and with no parameter
+/// to tune yet, no configurations.txt.
+[[nodiscard]]
 inline irace_stub_result write_irace_stub(const irace_stub& stub)
 {
     irace_stub_result result;
@@ -1068,7 +1086,8 @@ inline irace_stub_result write_irace_stub(const irace_stub& stub)
         values.push_back(parameter.type == 'c' ? '"' + clamped + '"' : clamped);
     }
     result.tuned = declared.size();
-    if (!result)
+    // Nothing to tune: no configuration to write, until a parameter is.
+    if (!result || declared.empty())
         return result;
     const auto configurations = directory / "configurations.txt";
     std::ofstream out{configurations};

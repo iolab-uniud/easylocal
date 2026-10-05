@@ -161,6 +161,20 @@ reviewed by hand before tagging.
   parameters: it no longer builds an instance of every registered algorithm
   at bind (which the Session built and never ran), and runs on the same
   bound app no longer share an algorithm's state.
+- `cli::run` checks what the problem cannot do (`--solution` or `--output`
+  without the I/O hooks, a `--start` it has no solutions for) before it reads
+  the Input and runs, where `--output` failed after the run; saves the
+  solution with `--tuning.print` too, which ignored `--output`; and prints
+  every error after `error: ` (`unknown runner`, `tuning.irace: ...`, `trace:
+  ...`). Its "time" is documented as including the binding of the app.
+- `--tuning.irace`: `write_irace_stub` leaves out the cost's and the read-only
+  parameters itself, as its contract says, where `cli::run` did it for it; it
+  writes no `configurations.txt` while nothing is tuned, and `cli::run` then
+  says so, and asks for the instances when it has none; a boolean and an
+  unlimited count say how to tune them; a default runner in the program's
+  options no longer restricts the tuning to it; and the program's path stays
+  as given when it cannot be made canonical. `write_irace_stub` is
+  `[[nodiscard]]`.
 - **Breaking:** `RunParameters` is the block of a run's limits: `target`,
   `timeout` (seconds, as text) and `max_evaluations`, with
   `options<Cost>(input[, base])`, which gives their run options. `cli::run`

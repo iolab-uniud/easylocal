@@ -261,6 +261,14 @@ int main()
     assert(fronted.out.find("\npoint 1 cost [") != std::string::npos);
     assert(occurrences(fronted.out, " 0\n") >= size + 1); // the solution too
 
+    // An option the problem cannot honour is an error of the command line,
+    // found before the Input is read: the grid reads no solutions.
+    const auto unsupported = run_app(
+        grid_app(),
+        {"--instance", (directory / "no_such_grid.txt").string(), "--solution", "s.txt"});
+    assert(unsupported.status == 2);
+    assert(unsupported.err == "error: solution: this problem cannot read solutions\n");
+
     // With --output the solutions are files next to it, numbered from 1.
     const auto front_output = directory / "easylocal_cli_run_front.txt";
     const auto saved_front = run_app(
@@ -306,7 +314,7 @@ int main()
 
     const auto unknown = run({"--instance", instance, "--runner", "sa"});
     assert(unknown.status == 2);
-    assert(unknown.err == "unknown runner sa; the runners are: fi cascade\n");
+    assert(unknown.err == "error: unknown runner sa; the runners are: fi cascade\n");
 
     // A time limit: none left, the run stops at its first check.
     const auto timed_out =
