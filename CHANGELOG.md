@@ -114,6 +114,14 @@ reviewed by hand before tagging.
 - `named_run_result` has the `front` of a run with a `cost::pareto` cost, so
   `app.run("name", ...)` no longer drops it; the Session, `cli::run`, REST and
   the TextUI do not show it yet.
+### Added
+
+- `trace::event::run_context`, a core event without a cost (ELTR tag 12): the
+  solvers emit it before each run, with the pipeline stage's name and index
+  and the attempt (or MultiStart's start), so the runs of a solve can be told
+  apart in a trace, the stages on the hard cost included. The memory and JSONL
+  recorders keep it, and `eltr.py --format summary` gives each run its stage
+  and attempt.
 
 ### Changed
 

@@ -821,5 +821,27 @@ int main()
             "JSONL recorder writes solution_visited with its hash");
     }
 
+    // The run_context of a run, kept by the memory recorder with its stage
+    // name copied, and written as JSON with the name escaped.
+    {
+        easylocal::trace::memory_recorder<int> memory;
+        {
+            const std::string stage{"a \"b\"\n"};
+            easylocal::trace::emit(
+                memory,
+                easylocal::trace::event::run_context{
+                    .stage = stage,
+                    .stage_index = 2,
+                    .attempt = 3});
+        }
+        std::ostringstream jsonl;
+        easylocal::trace::write_jsonl(jsonl, memory);
+        ok &= expect(
+            jsonl.str()
+                == "{\"event\":\"run_context\",\"stage\":\"a \\\"b\\\"\\u000a\","
+                   "\"stage_index\":2,\"attempt\":3}\n",
+            "a run_context is recorded and written as JSON");
+    }
+
     return ok ? 0 : 1;
 }

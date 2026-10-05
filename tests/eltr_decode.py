@@ -36,6 +36,7 @@ CORE_EVENTS = {
     "aspiration_applied",
     "tabu_escape",
     "tabu_tenure_changed",
+    "run_context",
 }
 
 
@@ -155,6 +156,9 @@ class FixtureTraces(unittest.TestCase):
             result["runs"],
             [
                 {
+                    "stage": 'anneal "hot"',
+                    "stage_index": 1,
+                    "attempt": 0,
                     "initial_cost": 40,
                     "final_cost": -7,
                     "evaluations": 4,
@@ -162,6 +166,9 @@ class FixtureTraces(unittest.TestCase):
                     "termination": "completed",
                 },
                 {
+                    "stage": 'anneal "hot"',
+                    "stage_index": 1,
+                    "attempt": 1,
                     "initial_cost": 41,
                     "final_cost": -7,
                     "evaluations": 4,

@@ -15,7 +15,10 @@ auto controlled = solver.solve(input, easylocal::with(control, tracer).stop_at(t
 ```
 
 The optional trailing [run options](runners.md#run-options) — cancellation,
-tracer, target cost — reach every run of the solver.
+tracer, target cost — reach every run of the solver. Before each run, the
+solver sends the tracer a `run_context` event with the pipeline stage and the
+attempt (or the start), which tells the runs of a solve apart in a trace
+([Tracing](../tracing.md)).
 
 `make_solver` takes the solver class template as its key and deduces the
 runner type. A custom RNG type can be chosen by constructing the solver

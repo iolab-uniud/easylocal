@@ -168,7 +168,7 @@ public:
         // together.
         auto budget = easylocal::detail::solve_budget::of(options...);
 
-        auto best = run_once(bound_runner, budget, options...);
+        auto best = run_once(bound_runner, budget, 0, options...);
         budget.consume(best);
         auto termination = easylocal::detail::ends_runs(best);
         easylocal::detail::search_effort effort;
@@ -187,7 +187,7 @@ public:
             }
             if (budget.spent())
                 break;
-            auto candidate = run_once(bound_runner, budget, options...);
+            auto candidate = run_once(bound_runner, budget, start, options...);
             budget.consume(candidate);
             termination = easylocal::detail::ends_runs(candidate);
             effort.add(candidate);
@@ -240,11 +240,14 @@ private:
     auto run_once(
         bound_runner_type& bound_runner,
         const easylocal::detail::solve_budget& budget,
+        const std::size_t start,
         const Options&... options)
     {
+        auto solution = this->make_initial_solution(bound_runner, rng_);
+        easylocal::detail::emit_run_context({}, 0, start, options...);
         return easylocal::detail::run_with_solver_rng(
             bound_runner,
-            this->make_initial_solution(bound_runner, rng_),
+            std::move(solution),
             rng_,
             budget.options_for_run(options...));
     }

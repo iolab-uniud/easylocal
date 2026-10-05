@@ -115,6 +115,7 @@ public:
     {
         auto bound_runner = runner_.bind(input);
         auto solution = this->make_initial_solution(bound_runner, rng_);
+        easylocal::detail::emit_run_context({}, 0, 0, options...);
         return easylocal::detail::run_with_solver_rng(
             bound_runner,
             std::move(solution),

@@ -40,6 +40,15 @@ auto trace = easylocal::trace::without<easylocal::trace::event::solution_visited
 runner.run(solution, rng, easylocal::with(trace));
 ```
 
+The solvers emit `run_context` before each run they start, with the name and
+index of the pipeline stage (empty and 0 outside a pipeline) and the attempt,
+or the start of a MultiStart, from 0: in a trace of a whole solve, it tells the
+runs apart. It carries no cost, so a tracer receives it from the stages that
+run on another cost, such as a pipeline's `until_feasible()` stage on the hard
+cost, whose other events a recorder of the full cost does not observe. A run
+started outside a solver, with `runner.run(...)` or a registered runner of an
+app, has no `run_context`.
+
 Tabu search adds `aspiration_applied`, when the move just
 applied was tabu and admitted by the aspiration criterion, `tabu_escape`,
 after the random moves of a reactive list's escape, with the number applied
@@ -186,9 +195,10 @@ application event that describes itself. The core events are:
 | 9 | `aspiration_applied` | evaluations, iterations, cost |
 | 10 | `tabu_escape` | evaluations, iterations, moves |
 | 11 | `tabu_tenure_changed` | evaluations, iterations, previous_tenure, tenure |
+| 12 | `run_context` | stage (string), stage_index, attempt |
 | 128–255 | application events | as their schema says, if they have one |
 
-The counters are `u64`, the biases and the probability `f64`, `produced_move` a
+The counters, the stage index and the attempt are `u64`, the biases and the probability `f64`, `produced_move` a
 `bool`, the neighborhoods routes; the header has the authoritative list.
 
 ### Decoding ELTR
@@ -202,7 +212,7 @@ binary trace feeds the same tools as a JSONL one:
 ```sh
 scripts/eltr.py run-0042.eltrace > run-0042.jsonl
 scripts/eltr.py run-0042.eltrace --events incumbent_updated,run_finished
-scripts/eltr.py run-0042.eltrace --format summary   # metadata, event counts, costs per run
+scripts/eltr.py run-0042.eltrace --format summary   # metadata, event counts, runs
 scripts/eltr.py run-0042.eltrace --format stn       # search trajectory network
 scripts/eltr.py run-0042.eltrace --format schema    # what the trace records
 ```
@@ -213,7 +223,9 @@ infinities become `null`, as in the JSONL recorder, so the output is strict
 JSON. An application
 event without a schema is kept as its tag and the hexadecimal payload, and a run
 interrupted mid-record is read up to its last whole record with
-`--allow-truncated`. As a module, `eltr.Trace(stream)` reads the header
+`--allow-truncated`. The summary lists the runs in order, each with its initial
+and final cost, its effort and its termination, and with its stage, stage index
+and attempt when a `run_context` came before it. As a module, `eltr.Trace(stream)` reads the header
 (`metadata`, `cost_fields`, `schemas`) and iterates over the records.
 
 The `stn` format builds the network from the `solution_visited` events, which

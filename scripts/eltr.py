@@ -20,6 +20,9 @@ trace::jsonl_recorder (and null for NaN and the infinities, as it writes them),
 so the tools that read a JSONL trace read a decoded ELTR trace too. A record without a schema becomes {"event": "user" (or "unknown"
 for a core tag), "tag": ..., "payload": hex}.
 
+The summary lists the runs in order, each with its stage, stage index and
+attempt when a solver emitted a run_context before it.
+
 The STN output is the search trajectory network of the solution_visited
 events (recorded when the problem has a solution hash): one node per distinct
 hash, with its cost and number of visits, and one edge per consecutive pair of
@@ -268,11 +271,15 @@ def summary(trace: Trace) -> dict[str, Any]:
     counts: Counter[str] = Counter()
     runs: list[dict[str, Any]] = []
     solutions = set()
+    context: dict[str, Any] = {}
     for record in trace:
         name = record["event"]
         counts[name if name not in ("user", "unknown") else f"{name}:{record['tag']}"] += 1
-        if name == "run_started":
-            runs.append({"initial_cost": record["cost"]})
+        if name == "run_context":
+            context = {key: record[key] for key in ("stage", "stage_index", "attempt")}
+        elif name == "run_started":
+            runs.append({**context, "initial_cost": record["cost"]})
+            context = {}
         elif name == "run_finished":
             if not runs or "final_cost" in runs[-1]:
                 runs.append({})

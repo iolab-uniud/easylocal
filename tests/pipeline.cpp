@@ -513,21 +513,31 @@ private:
     const SolutionManager& sm_;
 };
 
-// Counts the runs a tracer sees, whatever their cost type.
+// Counts the runs a tracer sees, whatever their cost type, and keeps the
+// stage and attempt of each run_context.
 struct RunCounter
 {
     template<class Event>
-    static constexpr bool observes = false;
+    static constexpr bool observes =
+        std::same_as<Event, easylocal::trace::event::run_context>;
 
     template<class Cost>
     static constexpr bool observes<easylocal::trace::event::run_started<Cost>> = true;
 
     std::size_t runs{};
+    std::vector<std::string> contexts;
 
     template<class Event>
     void emit(const Event&) noexcept
     {
         ++runs;
+    }
+
+    void emit(const easylocal::trace::event::run_context& context)
+    {
+        contexts.push_back(
+            std::string{context.stage} + ' ' + std::to_string(context.stage_index) + ' '
+            + std::to_string(context.attempt));
     }
 };
 
@@ -714,6 +724,9 @@ bool run()
         stopped_at_feasible.evaluations == 6 + 10,
         "stage 1 stops at a zero hard cost and the effort of both stages is reported");
     ok &= expect(counter.runs == 2, "the tracer sees both stages");
+    ok &= expect(
+        counter.contexts == std::vector<std::string>{"first 0 0", "second 1 0"},
+        "each stage's run is preceded by its run_context, the hard stage included");
 
     std::stop_source stop;
     stop.request_stop();

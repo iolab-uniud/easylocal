@@ -483,6 +483,7 @@ enum class core_binary_event_tag : std::uint8_t
     aspiration_applied = 9,
     tabu_escape = 10,
     tabu_tenure_changed = 11,
+    run_context = 12,
 };
 
 inline void finish_record(std::vector<char>& buffer, std::size_t payload_offset);
@@ -545,6 +546,8 @@ inline std::vector<std::pair<std::uint8_t, binary_event_schema>> core_event_sche
         {tag(tabu_tenure_changed),
             {"tabu_tenure_changed",
                 {evaluations, iterations, {"previous_tenure", u64}, {"tenure", u64}}}},
+        {tag(run_context),
+            {"run_context", {{"stage", string}, {"stage_index", u64}, {"attempt", u64}}}},
     };
 }
 
@@ -712,6 +715,22 @@ void encode_core_event(
     out.u64(value.iterations);
     out.u64(value.previous_tenure);
     out.u64(value.tenure);
+}
+
+constexpr std::uint8_t core_event_tag(const event::run_context&) noexcept
+{
+    return static_cast<std::uint8_t>(core_binary_event_tag::run_context);
+}
+
+template<class CostWriter>
+void encode_core_event(
+    binary_record_writer& out,
+    const event::run_context& value,
+    CostWriter&)
+{
+    out.string(value.stage);
+    out.u64(value.stage_index);
+    out.u64(value.attempt);
 }
 
 template<class Cost, class CostWriter>

@@ -1,11 +1,14 @@
 #include <easylocal/solvers.hpp>
 
 #include <algorithm>
+#include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <random>
 #include <stdexcept>
 #include <string_view>
+#include <vector>
 
 namespace
 {
@@ -103,6 +106,23 @@ bool expect(const bool condition, const std::string_view message)
 }
 }
 
+// Keeps the attempts of the run_context events, and whether one had a stage.
+struct ContextTracer
+{
+    template<class Event>
+    static constexpr bool observes =
+        std::same_as<Event, easylocal::trace::event::run_context>;
+
+    std::vector<std::size_t> attempts;
+    bool staged{};
+
+    void emit(const easylocal::trace::event::run_context& context)
+    {
+        attempts.push_back(context.attempt);
+        staged = staged || !context.stage.empty() || context.stage_index != 0;
+    }
+};
+
 int main()
 {
     using namespace easylocal;
@@ -159,6 +179,13 @@ int main()
     ok &= expect(
         second.cost.value == expected_second_best,
         "MultiStart preserves the Solver-owned RNG stream across solve calls");
+
+    // Each start is preceded by its run_context, outside any stage.
+    ContextTracer tracer;
+    static_cast<void>(solver.solve(instance, with(tracer)));
+    ok &= expect(
+        tracer.attempts == std::vector<std::size_t>{0, 1, 2, 3, 4} && !tracer.staged,
+        "MultiStart emits the run_context of every start");
 
     return ok ? 0 : 1;
 }

@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 #include <vector>
 
 namespace easylocal::trace
@@ -41,6 +42,23 @@ inline std::vector<std::size_t> copy_route(const neighborhood_route_node* node)
 
 namespace event
 {
+
+/// The place of the next run in a solve, emitted by the solvers before each
+/// run they start: its pipeline stage and its attempt.
+///
+/// It carries no cost, so a tracer of any cost type receives it, the stages of
+/// a pipeline on another cost (until_feasible()) included. A run started
+/// outside a solver, such as `runner.run()`, has none.
+struct run_context
+{
+    /// The name of the pipeline stage, empty outside a pipeline; it refers to
+    /// the solver's stage while the event is emitted.
+    std::string_view stage{};
+    /// The index of the stage in the pipeline, from 0; 0 outside one.
+    std::size_t stage_index{};
+    /// The attempt within the stage, or the start of a MultiStart, from 0.
+    std::size_t attempt{};
+};
 
 /// The start of a run, emitted by `search_run::start()` once the initial
 /// solution is evaluated.

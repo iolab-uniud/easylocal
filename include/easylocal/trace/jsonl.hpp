@@ -16,6 +16,7 @@
 #include <limits>
 #include <ostream>
 #include <sstream>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 
@@ -49,6 +50,25 @@ void write_json_number(std::ostream& out, const Number value)
         }
     }
     out << easylocal::detail::number_text(value);
+}
+
+// A string as JSON: quoted, with the quote, the backslash and the control
+// characters escaped.
+inline void write_json_string(std::ostream& out, const std::string_view text)
+{
+    static constexpr char hex[] = "0123456789abcdef";
+    out << '"';
+    for (const char character : text)
+    {
+        const auto code = static_cast<unsigned char>(character);
+        if (character == '"' || character == '\\')
+            out << '\\' << character;
+        else if (code < 0x20U)
+            out << "\\u00" << hex[code >> 4U] << hex[code & 0xfU];
+        else
+            out << character;
+    }
+    out << '"';
 }
 
 } // namespace detail
@@ -150,6 +170,17 @@ public:
     /// Whether the recorder receives Event: always.
     template<class Event>
     static constexpr bool observes = true;
+
+    /// Writes the event as a JSON line.
+    void emit(const event::run_context& value)
+    {
+        write_line([&](std::ostream& out) {
+            out << "{\"event\":\"run_context\",\"stage\":";
+            detail::write_json_string(out, value.stage);
+            out << ",\"stage_index\":" << value.stage_index
+                << ",\"attempt\":" << value.attempt << "}\n";
+        });
+    }
 
     /// Writes the event as a JSON line.
     void emit(const event::run_started<Cost>& value)

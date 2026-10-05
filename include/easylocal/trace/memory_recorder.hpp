@@ -8,6 +8,7 @@
 
 #include <concepts>
 #include <cstddef>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -24,6 +25,17 @@ template<class Cost>
 class memory_recorder
 {
 public:
+    /// A recorded `event::run_context`, its stage name copied.
+    struct run_context_record
+    {
+        /// The name of the pipeline stage, empty outside a pipeline.
+        std::string stage;
+        /// The index of the stage in the pipeline, from 0.
+        std::size_t stage_index{};
+        /// The attempt within the stage, or the start of a MultiStart, from 0.
+        std::size_t attempt{};
+    };
+
     /// A recorded `event::run_started`, as it is.
     using run_started_record = event::run_started<Cost>;
 
@@ -122,11 +134,23 @@ public:
         aspiration_applied_record,
         tabu_escape_record,
         tabu_tenure_changed_record,
-        run_finished_record>;
+        run_finished_record,
+        run_context_record>;
 
     /// Whether the recorder receives Event: always.
     template<class Event>
     static constexpr bool observes = true;
+
+    /// Records the event.
+    void emit(const event::run_context& value)
+    {
+        records_.emplace_back(
+            run_context_record{
+                std::string{value.stage},
+                value.stage_index,
+                value.attempt,
+            });
+    }
 
     /// Records the event.
     void emit(const event::move_evaluated<Cost>& value)
@@ -221,6 +245,18 @@ private:
     private:
         std::vector<neighborhood_route_node> nodes_;
     };
+
+    template<class Tracer>
+    static void replay_record(Tracer& tracer, const run_context_record& value)
+    {
+        trace::emit(
+            tracer,
+            event::run_context{
+                .stage = value.stage,
+                .stage_index = value.stage_index,
+                .attempt = value.attempt,
+            });
+    }
 
     template<class Tracer>
     static void replay_record(Tracer& tracer, const move_evaluated_record& value)

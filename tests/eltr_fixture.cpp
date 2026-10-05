@@ -5,6 +5,7 @@
 #include <easylocal/cost.hpp>
 #include <easylocal/trace.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -114,6 +115,15 @@ void write_integral(const std::filesystem::path& directory)
     // trajectory edges of their own run only.
     for (long run = 0; run < 2; ++run)
     {
+        // The stage name is escaped in JSON.
+        emit_all(
+            event::run_context{
+                .stage = "anneal \"hot\"",
+                .stage_index = 1,
+                .attempt = static_cast<std::size_t>(run),
+            },
+            binary,
+            json);
         emit_all(event::run_started<long>{40 + run}, binary, json);
         emit_all(
             event::solution_visited<long>{0, 0, 0xfeedfacecafebeefULL, 40 + run},

@@ -853,7 +853,8 @@ private:
         };
 
         easylocal::detail::search_effort stage_effort;
-        auto best = run_once<Index>(bound_runner, start(), rng, stage_budget, options...);
+        auto best =
+            run_once<Index>(bound_runner, start(), 0, rng, stage_budget, options...);
         stage_effort.add(best);
         easylocal::detail::merged_front<decltype(best)> front{
             easylocal::detail::front_parameters_of(options...)};
@@ -872,8 +873,8 @@ private:
             }
             if (stage_budget.spent())
                 break;
-            auto candidate =
-                run_once<Index>(bound_runner, start(), rng, stage_budget, options...);
+            auto candidate = run_once<
+                Index>(bound_runner, start(), attempts, rng, stage_budget, options...);
             stage_effort.add(candidate);
             front.add(bound_runner, candidate);
             stage_budget.consume(candidate);
@@ -910,19 +911,21 @@ private:
         return best;
     }
 
-    // One run of the stage at Index, with what is left of the stage's budget:
-    // its target if it has one, the solve's target for the last stage, none
-    // otherwise.
+    // The attempt of the stage at Index, with what is left of the stage's
+    // budget: its target if it has one, the solve's target for the last stage,
+    // none otherwise.
     template<std::size_t Index, class BoundRunner, class Rng, class... Options>
     [[nodiscard]]
     auto run_once(
         BoundRunner& bound_runner,
         solution_type solution,
+        const std::size_t attempt,
         Rng& rng,
         const easylocal::detail::solve_budget& budget,
         const Options&... options) const
     {
         const auto& stage = std::get<Index>(stages_);
+        easylocal::detail::emit_run_context(stage.name(), Index, attempt, options...);
         const auto timed = budget.options_for_run(options...);
         if (stage.target().has_value())
         {

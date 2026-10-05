@@ -8,12 +8,15 @@
 
 #include <easylocal/runners/pareto_archive.hpp>
 #include <easylocal/runners/runner.hpp>
+#include <easylocal/trace/events.hpp>
+#include <easylocal/trace/tracer.hpp>
 
 #include <algorithm>
 #include <chrono>
 #include <concepts>
 #include <cstddef>
 #include <optional>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 
@@ -100,6 +103,31 @@ template<class... Options>
 bool stop_requested(const Options&... options) noexcept
 {
     return ((options.control != nullptr && options.control->stop_requested()) || ...);
+}
+
+// Sends the place of the next run (its stage and attempt) to the tracer of the
+// run options, if they have one.
+template<class... Options>
+void emit_run_context(
+    [[maybe_unused]] const std::string_view stage,
+    [[maybe_unused]] const std::size_t stage_index,
+    [[maybe_unused]] const std::size_t attempt,
+    const Options&... options)
+{
+    if constexpr (sizeof...(Options) > 0)
+    {
+        const trace::event::run_context context{
+            .stage = stage,
+            .stage_index = stage_index,
+            .attempt = attempt,
+        };
+        (
+            [&context](const auto& run) {
+                if (run.tracer != nullptr)
+                    trace::emit(*run.tracer, context);
+            }(options),
+            ...);
+    }
 }
 
 // What is left of a solve's limits: its deadline and its evaluations (none:
