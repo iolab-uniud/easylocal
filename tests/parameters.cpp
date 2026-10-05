@@ -207,6 +207,29 @@ void a_number_reads_back_from_its_text()
     assert(config::format_value(std::size_t{1234567}) == "1234567");
 }
 
+void values_read_back_from_their_text()
+{
+    namespace config = easylocal::config;
+    const auto round_trip = [](const auto& original) {
+        auto read = std::remove_cvref_t<decltype(original)>{};
+        return config::detail::parse_text_value(config::format_value(original), read)
+                   .empty()
+            && read == original;
+    };
+    assert(round_trip(true));
+    assert(round_trip(-42));
+    assert(round_trip(std::size_t{7}));
+    assert(round_trip(0.1));
+    assert(round_trip(std::numeric_limits<double>::infinity()));
+    assert(round_trip(easylocal::limit{easylocal::unlimited}));
+    assert(round_trip(easylocal::limit{3}));
+    assert(round_trip(std::string{"two words"}));
+    assert(round_trip(std::filesystem::path{"data/five.tsp"}));
+    assert(round_trip(std::vector<std::string>{"a", "b"}));
+    // The documented limit: no quoting, so a list element cannot hold a comma.
+    assert(!round_trip(std::vector<std::string>{"a, b"}));
+}
+
 void a_list_reads_back_from_its_text()
 {
     namespace config = easylocal::config;
@@ -214,6 +237,14 @@ void a_list_reads_back_from_its_text()
     assert(!config::detail::parse_text_value("[1, 2,]", pair).empty());
     assert(!config::detail::parse_text_value("[1]", pair).empty());
     assert(config::detail::parse_text_value("[1, 2]", pair).empty());
+    assert(
+        config::detail::parse_text_value("[1, 2, 3]", pair)
+        == "expected 2 elements, got 3");
+    assert(config::detail::parse_text_value("[1, x]", pair).starts_with("element 2: "));
+    unsigned count{};
+    assert(
+        config::detail::parse_text_value("-1", count)
+            .starts_with("expected a non-negative integer in [0, "));
     assert((pair == std::array{1, 2}));
 
     std::vector<int> values;
@@ -301,6 +332,7 @@ int main()
     first_improvement_parameters_live_with_the_search_method();
     a_limit_is_a_count_or_unlimited_in_text();
     a_number_reads_back_from_its_text();
+    values_read_back_from_their_text();
     a_list_reads_back_from_its_text();
     neighborhood_union_parameter_block_describes_bias_array();
 }

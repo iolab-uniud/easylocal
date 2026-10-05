@@ -345,8 +345,9 @@ public:
         return entries_.empty();
     }
 
-    /// The parameters, with their paths, descriptions, values as text and
-    /// whether they are read-only.
+    /// The parameters, with their paths, descriptions, values as text, whether
+    /// they are read-only, the kinds of their values, their domains and their
+    /// conditions.
     [[nodiscard]]
     std::vector<parameter_info> parameters() const
     {
@@ -575,7 +576,7 @@ private:
                             .error = override_error::parse_error,
                             .path = path,
                             .value = std::string{candidate.value},
-                            .message = std::string{error},
+                            .message = error,
                         });
                     }
                 }

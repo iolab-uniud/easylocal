@@ -213,7 +213,8 @@ inline cli_parse_result parse_cli(const int argc, char* const argv[])
 }
 
 /// The help text of a program: its usage, the options `--help` and `--config`,
-/// and every parameter of the set with its description and current value.
+/// and every parameter of the set that can be changed, with its description,
+/// the values it may take, when it matters and its current value.
 [[nodiscard]]
 inline std::string cli_help(
     const std::string_view program_name,
@@ -228,12 +229,29 @@ inline std::string cli_help(
 
     for (const auto& parameter : parameters.parameters())
     {
-        output += "  --" + parameter.path + " <value>\n";
+        // A read-only parameter cannot be set from the command line.
+        if (parameter.read_only)
+            continue;
+        const std::string_view placeholder =
+            parameter.kind == parameter_kind::boolean ? "<true|false>" : "<value>";
+        output += "  --" + parameter.path + " ";
+        output.append(placeholder);
+        output += '\n';
         if (!parameter.description.empty())
         {
             output += "      ";
             output.append(parameter.description);
             output += '\n';
+        }
+        if (parameter.domain)
+            output += "      values: " + parameter.domain.text() + '\n';
+        if (parameter.condition)
+        {
+            output += "      only if "
+                + parameter.condition->text_with(
+                    [](const std::string_view path) { return std::string{path}; },
+                    false)
+                + '\n';
         }
         output += "      current: " + parameter.value + '\n';
     }

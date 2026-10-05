@@ -245,6 +245,47 @@ void help_is_generated_from_the_configuration_tree()
     assert(help.find("current: 0.75") != std::string::npos);
 }
 
+void help_lists_domains_and_conditions_of_the_changeable_parameters()
+{
+    struct Parameters
+    {
+        bool calibrate{false};
+        int samples{0};
+        double fixed{1.0};
+
+        static consteval auto parameter_schema()
+        {
+            return easylocal::config::fields(
+                easylocal::config::field<"calibrate", &Parameters::calibrate>(
+                    "Calibrate"),
+                easylocal::config::field<"samples", &Parameters::samples>(
+                    "Samples",
+                    easylocal::config::range(1, 100))
+                    .only_if(easylocal::config::value<"calibrate">),
+                easylocal::config::field<"fixed", &Parameters::fixed>(
+                    "Fixed",
+                    easylocal::unlimited));
+        }
+
+        [[nodiscard]] easylocal::config::validation_result validate() const
+        {
+            return easylocal::config::check_schema(*this);
+        }
+    };
+
+    Parameters changeable;
+    const Parameters fixed;
+    easylocal::config::parameter_set tree;
+    tree.add("run", changeable);
+    tree.add("frozen", fixed);
+    const auto help = cli_help("solver", tree);
+    assert(help.find("--run.calibrate <true|false>") != std::string::npos);
+    assert(help.find("values: [1, 100]") != std::string::npos);
+    assert(help.find("only if run.calibrate") != std::string::npos);
+    assert(help.find("values: unlimited") != std::string::npos);
+    assert(help.find("--frozen.") == std::string::npos);
+}
+
 } // namespace
 
 int main()
@@ -258,5 +299,6 @@ int main()
     cli_batch_reuses_transactional_textual_overrides();
     cli_validation_errors_leave_configuration_unchanged();
     help_is_generated_from_the_configuration_tree();
+    help_lists_domains_and_conditions_of_the_changeable_parameters();
     return 0;
 }

@@ -27,9 +27,10 @@ struct MyParameters
 };
 ```
 
-Fields may be integral and floating-point types, `bool`, `std::string`,
-`std::filesystem::path`, and `std::array`s and `std::vector`s of those
-(written `[a, b, c]`; `[]` is an empty vector). A `group` nests another
+Fields may be integral and floating-point types, `bool`, `easylocal::limit`,
+`std::string`, `std::filesystem::path`, and `std::array`s and `std::vector`s
+of those (written `[a, b, c]`; `[]` is an empty vector; see
+[Values as text](#values-as-text)). A `group` nests another
 block: its fields are under `schedule.`, and `config::check_schema` of the
 enclosing block runs its `validate()` once the enclosing block's own fields
 pass, so that the enclosing block's `validate()` checks it too.
@@ -205,13 +206,41 @@ an object already gone.
 | an app, `app.configuration()` (also a `Session`'s) | `cost.*`, `solution_manager.*`, `neighborhood.*`, `runners.<name>.*` |
 | `MultiStart`, `LocalSearch`, `Pipeline` solvers | `starts` and the runner's (MultiStart), the runner's (LocalSearch), each stage's runner and its own `attempts`, `timeout` and `max_evaluations` under its name (Pipeline; `first.*` and `second.*` for `two_stage()`); an algorithm stage of an app's pipeline has its algorithm's `search.*` and its own neighborhood's, the cost and the SolutionManager being the app's |
 
+## Values as text
+
+Every frontend reads a value from the same text, and `config::format_value`
+writes it back in that syntax:
+
+| Type | Text |
+| --- | --- |
+| `bool` | `true` or `false` |
+| an integer | a decimal number within the type's range (no sign for an unsigned type) |
+| a floating-point number | a decimal or scientific number, `inf`, `-inf` |
+| `easylocal::limit` | a count, or `unlimited` |
+| `std::string`, `std::filesystem::path` | the text as it is |
+| `std::array`, `std::vector` | `[a, b, c]`, the brackets optional; `[]` is an empty vector, and an array needs exactly its size |
+
+Spaces around a value or an element are ignored, except in a text. A list is
+split at the commas outside nested brackets, `[[1, 2], [3, 4]]` included, and
+there is no quoting: a text element of a list cannot contain a comma or a
+bracket, so `format_value` and the parser are each other's inverse except for
+such lists. An error names what was expected, the element of a list by its
+position (`element 2: expected a number`), and the size of an array
+(`expected 2 elements, got 3`).
+
 ## Frontends
 
 | Function | Purpose |
 | --- | --- |
+| `config::parse_cli(argc, argv)` | the overrides `--path=value` and `--path value`, `--config <file>` and `--help` of a command line, with its errors |
+| `config::parse_config_text(text)` | the overrides of the text of a configuration file, as `load_config_file` reads them |
+| `config::overlay_overrides(base, top)` | one batch of two: the overrides of `top` replace those of `base` with the same path |
+| `config::override_views(overrides)` | views of owned overrides, for `apply` |
+| `config::require_valid(set)` | throws `std::invalid_argument` unless every block is valid |
+| `config::undeclared_domains(set)` | the paths of the parameters that declare no domain |
 | `config::load_and_apply(argc, argv, parameters)` | apply `--config <file>` and `--path.to.field=value` |
 | `config::load_config_file(path)` | the overrides of a file of `path = value` lines: `#` starts a whole-line comment (a `#` after a value is part of it), a UTF-8 byte order mark is skipped, a directory is an error |
-| `config::cli_help(program, parameters)` | help text with current values |
+| `config::cli_help(program, parameters)` | help text: each parameter that can be changed, with its description, its values (the domain; `true` or `false` for a boolean), when it matters (`only if ...`) and its current value |
 | `config::print_diagnostics(out, result)` | report errors |
 | `config::apply_overrides(parameters, text_overrides)` | the same as `parameters.apply(...)` |
 | `config::format_value(value)` | a value as text, in the syntax overrides use |

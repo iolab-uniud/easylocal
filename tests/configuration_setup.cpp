@@ -323,8 +323,7 @@ void diagnostics_have_a_uniform_rendering_surface()
         assert(output.str().find(
                    "solver.cooling_rate = 'not-a-number'") !=
                std::string::npos);
-        assert(output.str().find("expected floating-point value") !=
-               std::string::npos);
+        assert(output.str().find("expected a number") != std::string::npos);
     }
 }
 

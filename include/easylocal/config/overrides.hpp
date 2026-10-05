@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <expected>
 #include <filesystem>
+#include <limits>
 #include <ranges>
 #include <span>
 #include <string>
@@ -201,9 +202,11 @@ inline std::expected<std::vector<std::string_view>, std::string_view> list_eleme
     return elements;
 }
 
+// The reason a text is not a value of Value, as an override reports it:
+// empty when value was read.
 template<class Value>
 [[nodiscard]]
-std::string_view parse_text_value(const std::string_view text, Value& value)
+std::string parse_text_value(const std::string_view text, Value& value)
 {
     using value_type = std::remove_cvref_t<Value>;
 
@@ -217,7 +220,7 @@ std::string_view parse_text_value(const std::string_view text, Value& value)
         }
         std::size_t count{};
         if (const auto error = parse_text_value(text, count); !error.empty())
-            return "expected a count or 'unlimited'";
+            return "expected a non-negative count or 'unlimited'";
         value = count;
         return {};
     }
@@ -250,7 +253,18 @@ std::string_view parse_text_value(const std::string_view text, Value& value)
     {
         const auto parsed = easylocal::detail::parse_number<value_type>(text);
         if (!parsed)
-            return "expected integer";
+        {
+            // An integer of the field's type, whose range bounds the value.
+            const auto range = "["
+                + easylocal::detail::number_text(std::numeric_limits<value_type>::min())
+                + ", "
+                + easylocal::detail::number_text(std::numeric_limits<value_type>::max())
+                + "]";
+            if constexpr (std::unsigned_integral<value_type>)
+                return "expected a non-negative integer in " + range;
+            else
+                return "expected an integer in " + range;
+        }
         value = *parsed;
         return {};
     }
@@ -258,7 +272,7 @@ std::string_view parse_text_value(const std::string_view text, Value& value)
     {
         const auto parsed = easylocal::detail::parse_number<value_type>(text);
         if (!parsed)
-            return "expected floating-point value";
+            return "expected a number";
         value = *parsed;
         return {};
     }
@@ -268,15 +282,18 @@ std::string_view parse_text_value(const std::string_view text, Value& value)
 
         const auto elements = list_elements(text);
         if (!elements)
-            return elements.error();
+            return std::string{elements.error()};
         if (elements->size() != size)
-            return "wrong number of array elements";
+        {
+            return "expected " + std::to_string(size) + " elements, got "
+                + std::to_string(elements->size());
+        }
         value_type parsed{};
         for (std::size_t index = 0; index < size; ++index)
         {
             const auto error = parse_text_value((*elements)[index], parsed[index]);
             if (!error.empty())
-                return error;
+                return "element " + std::to_string(index + 1) + ": " + error;
         }
         value = std::move(parsed);
         return {};
@@ -287,15 +304,15 @@ std::string_view parse_text_value(const std::string_view text, Value& value)
 
         const auto elements = list_elements(text);
         if (!elements)
-            return elements.error();
+            return std::string{elements.error()};
         value_type parsed;
         parsed.reserve(elements->size());
-        for (const auto element_text : *elements)
+        for (std::size_t index = 0; index < elements->size(); ++index)
         {
             element_type element{};
-            const auto error = parse_text_value(element_text, element);
+            const auto error = parse_text_value((*elements)[index], element);
             if (!error.empty())
-                return error;
+                return "element " + std::to_string(index + 1) + ": " + error;
             parsed.push_back(std::move(element));
         }
         value = std::move(parsed);

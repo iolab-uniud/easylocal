@@ -32,6 +32,7 @@ if (!configured)
 $ ./easylocal_tutorial --help
   --solver.search.temperature.initial_temperature <value>
       Initial annealing temperature
+      values: (0, unlimited]
       current: 10
   ...
 $ ./easylocal_tutorial --solver.search.temperature.cooling_rate=2

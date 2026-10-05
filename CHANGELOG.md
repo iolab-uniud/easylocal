@@ -88,6 +88,17 @@ reviewed by hand before tagging.
   `parameter_schema()`, rather than in a `validate()` or at run time. The
   name of a field or group must be a segment of a path (a letter or `_`, then
   letters, digits and `_`): `"cooling rate"` or `"a.b"` no longer compiles.
+- `cli_help`, and so the `--help` of `load_and_apply` and `cli::run`, shows
+  each parameter's values (`values: (0, 1)`, `<true|false>` for a boolean)
+  and its condition (`only if ...`), and leaves out the read-only ones, which
+  the command line cannot set.
+- A value that does not parse says what was expected: `expected a
+  non-negative integer in [0, 4294967295]` (where `-1` read "expected
+  integer"), `expected a number`, `expected 2 elements, got 3`, and the
+  element of a list by its position, `element 2: ...`. The configuration
+  reference gains a "Values as text" section, with the limit that a text
+  element of a list cannot hold a comma, and the frontend functions it left
+  out.
 - `parameter_set::apply` validates the blocks the batch does not touch too,
   and `load_and_apply` relies on it: its heuristic over the paths of the
   batch rejected an override of a nested field that repaired a requirement
