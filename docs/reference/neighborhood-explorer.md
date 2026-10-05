@@ -42,8 +42,8 @@ solution, move, tabu_move)` and `easylocal::tabu_attribute(nhe, move)`.
   and can be one of its parameters.
 - The recipe checks the contract member by member when it is written (when the
   explorer declares its `solution_type`, else when it is bound), so a missing
-  `is_valid`, a `make_move` that is not `const`, or one that takes the
-  Solution by value (and changes a copy) is named in the error.
+  `move_type` or `is_valid`, or a `make_move` that is not `const`, is named in
+  the error.
 - The explorer is constructed from the SolutionManager:
   `NHE(const SM&, args...)`, `args` from `neighborhood<NHE>(args...)`. The
   construction uses parentheses, so the arguments convert as the constructor

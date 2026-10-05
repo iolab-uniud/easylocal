@@ -984,12 +984,6 @@ easylocal_add_compile_failure_test(
     "FirstImprovement"
 )
 easylocal_add_compile_failure_test(
-    recipe-make-move-by-value
-    recipe_make_move_by_value.cpp
-    "make_move must change the Solution it is given: take it as `Solution&`"
-    "CopyingNeighborhood"
-)
-easylocal_add_compile_failure_test(
     mutable-make-move
     mutable_make_move.cpp
     "the make_move of a NeighborhoodExplorer is const"

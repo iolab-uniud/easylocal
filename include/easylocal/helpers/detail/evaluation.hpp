@@ -629,10 +629,8 @@ private:
     {
         if constexpr (std::floating_point<Value>)
         {
-            const auto scale = std::max(
-                {Value{1},
-                    incremental < Value{} ? -incremental : incremental,
-                    full < Value{} ? -full : full});
+            const auto scale = (std::
+                    max)({Value{1}, incremental < Value{} ? -incremental : incremental, full < Value{} ? -full : full});
             const auto difference = incremental - full;
             return (difference < Value{} ? -difference : difference)
                 <= Value{1e-9} * scale;

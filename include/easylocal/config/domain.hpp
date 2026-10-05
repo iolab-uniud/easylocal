@@ -288,7 +288,7 @@ constexpr bool range_contains(
             // +infinity is the upper end, which open_high() excludes.
             if constexpr (std::floating_point<Value>)
             {
-                if (domain.high_open && value > std::numeric_limits<Value>::max())
+                if (domain.high_open && value > (std::numeric_limits<Value>::max)())
                     return false;
             }
             return above;
@@ -491,7 +491,7 @@ struct domain_info
         const auto contains_number = [this](const double value) {
             const bool above = low_open ? low < value : low <= value;
             const bool below = high_unlimited
-                ? !(high_open && value > std::numeric_limits<double>::max())
+                ? !(high_open && value > (std::numeric_limits<double>::max)())
                 : (high_open ? value < high : value <= high);
             return above && below;
         };

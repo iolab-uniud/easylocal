@@ -76,19 +76,9 @@ consteval bool check_explorer_contract()
         static_assert(
             const_make_move || mutable_make_move,
             "a NeighborhoodExplorer has `void make_move(Solution&, const Move&) const`");
-        if constexpr (const_make_move)
-        {
-            static_assert(
-                !requires(
-                    const NHE& explorer,
-                    Solution&& solution,
-                    const move_type& move) {
-                    explorer.make_move(std::move(solution), move);
-                },
-                "make_move must change the Solution it is given: take it as `Solution&`, "
-                "`void make_move(Solution& solution, const Move&) const`; taken by "
-                "value or by const reference, it changes a copy");
-        }
+        // A make_move that takes the Solution by value is rejected by a
+        // runner (Runner::with_neighborhood), and reported by the checks as
+        // null moves: a recipe may still hold it, for the checks to find it.
     }
     return true;
 }

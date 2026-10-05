@@ -257,9 +257,9 @@ std::string parse_text_value(const std::string_view text, Value& value)
         {
             // An integer of the field's type, whose range bounds the value.
             const auto range = "["
-                + easylocal::detail::number_text(std::numeric_limits<value_type>::min())
+                + easylocal::detail::number_text((std::numeric_limits<value_type>::min)())
                 + ", "
-                + easylocal::detail::number_text(std::numeric_limits<value_type>::max())
+                + easylocal::detail::number_text((std::numeric_limits<value_type>::max)())
                 + "]";
             if constexpr (std::unsigned_integral<value_type>)
                 return "expected a non-negative integer in " + range;
