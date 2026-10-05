@@ -18,6 +18,8 @@
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/config/setup.hpp>
 #include <easylocal/cost/text.hpp>
+#include <easylocal/utils/detail/number_text.hpp>
+#include <easylocal/utils/detail/text.hpp>
 
 #include <algorithm>
 #include <charconv>
@@ -129,20 +131,12 @@ struct parameters
     [[nodiscard]]
     std::optional<std::optional<double>> timeout_seconds() const
     {
-        const auto first = timeout.find_first_not_of(" \t");
-        if (first == std::string::npos)
+        if (easylocal::detail::trim_space(timeout).empty())
             return std::optional<double>{};
-        const auto last = timeout.find_last_not_of(" \t");
-        double seconds{};
-        const auto* const begin = timeout.data() + first;
-        const auto* const end = timeout.data() + last + 1;
-        const auto [parsed, error] = std::from_chars(begin, end, seconds);
-        if (error != std::errc{} || parsed != end || !(seconds >= 0.0)
-            || !std::isfinite(seconds))
-        {
+        const auto seconds = easylocal::detail::parse_number<double>(timeout);
+        if (!seconds || !(*seconds >= 0.0) || !std::isfinite(*seconds))
             return std::nullopt;
-        }
-        return std::optional<double>{seconds};
+        return std::optional<double>{*seconds};
     }
 };
 

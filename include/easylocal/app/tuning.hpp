@@ -324,15 +324,9 @@ inline void suggest_irace_domain(
     const config::parameter_info& info,
     const config::domain_info* bound)
 {
-    double value{};
-    try
-    {
-        value = std::stod(info.value);
-    }
-    catch (const std::exception&)
-    {
-        value = 0.0;
-    }
+    // Read as the program writes it, whatever the locale.
+    const double value =
+        easylocal::detail::parse_number<double>(info.value).value_or(0.0);
     if (info.kind == config::parameter_kind::boolean)
     {
         parameter.type = 'c';
@@ -376,17 +370,6 @@ struct declared_irace_parameter
     std::string condition;
 };
 
-[[nodiscard]]
-inline std::string_view trim_irace_text(std::string_view text)
-{
-    while (!text.empty() && (text.front() == ' ' || text.front() == '\t'))
-        text.remove_prefix(1);
-    while (!text.empty()
-        && (text.back() == ' ' || text.back() == '\t' || text.back() == '\r'))
-        text.remove_suffix(1);
-    return text;
-}
-
 // The parameters a parameters.txt declares, before its [global] or
 // [forbidden] sections; lines that are not `name "switch" type (values)` are
 // skipped.
@@ -397,11 +380,11 @@ inline std::vector<declared_irace_parameter> read_irace_parameters(std::istream&
     std::string line;
     while (std::getline(in, line))
     {
-        auto text = trim_irace_text(line);
+        auto text = easylocal::detail::trim_space(line);
         if (text.starts_with('['))
             break;
         if (const auto comment = text.find('#'); comment != std::string_view::npos)
-            text = trim_irace_text(text.substr(0, comment));
+            text = easylocal::detail::trim_space(text.substr(0, comment));
         const auto name_end = text.find_first_of(" \t");
         const auto open = text.find('(');
         const auto close = text.find(')', open == std::string_view::npos ? 0 : open);
@@ -412,8 +395,8 @@ inline std::vector<declared_irace_parameter> read_irace_parameters(std::istream&
         if (switch_end == std::string_view::npos || switch_end > open)
             continue;
         // The type, such as i or c, between the switch and the values.
-        const auto type =
-            trim_irace_text(text.substr(switch_end + 1, open - switch_end - 1));
+        const auto type = easylocal::detail::trim_space(
+            text.substr(switch_end + 1, open - switch_end - 1));
         if (type.empty())
             continue;
         declared_irace_parameter parameter;
@@ -423,7 +406,7 @@ inline std::vector<declared_irace_parameter> read_irace_parameters(std::istream&
         while (!values.empty())
         {
             const auto comma = values.find(',');
-            auto value = trim_irace_text(values.substr(0, comma));
+            auto value = easylocal::detail::trim_space(values.substr(0, comma));
             if (value.size() >= 2 && (value.front() == '"' || value.front() == '\''))
                 value = value.substr(1, value.size() - 2);
             parameter.values.emplace_back(value);
@@ -432,7 +415,8 @@ inline std::vector<declared_irace_parameter> read_irace_parameters(std::istream&
             values.remove_prefix(comma + 1);
         }
         if (const auto bar = text.find('|', close); bar != std::string_view::npos)
-            parameter.condition = std::string{trim_irace_text(text.substr(bar + 1))};
+            parameter.condition =
+                std::string{easylocal::detail::trim_space(text.substr(bar + 1))};
         result.push_back(std::move(parameter));
     }
     return result;
@@ -454,31 +438,15 @@ inline std::pair<std::string, bool> clamp_irace_value(
             return {value, false};
         return {parameter.values.front(), true};
     }
-    double low{};
-    double high{};
-    try
-    {
-        low = std::stod(parameter.values.front());
-        high = std::stod(parameter.values.back());
-    }
-    catch (const std::exception&)
-    {
+    // The numbers as the program and irace write them, whatever the locale.
+    const auto low = easylocal::detail::parse_number<double>(parameter.values.front());
+    const auto high = easylocal::detail::parse_number<double>(parameter.values.back());
+    if (!low || !high)
         return {value, false}; // bounds that are not numbers: irace says so
-    }
-    double number = low;
-    bool moved = true;
-    try
-    {
-        std::size_t used{};
-        number = std::stod(value, &used);
-        moved = used != value.size();
-    }
-    catch (const std::exception&)
-    {
-    }
-    if (!moved && low <= number && number <= high)
+    const auto parsed = easylocal::detail::parse_number<double>(value);
+    if (parsed && *low <= *parsed && *parsed <= *high)
         return {value, false};
-    number = std::clamp(number, low, high);
+    const double number = std::clamp(parsed.value_or(*low), *low, *high);
     if (parameter.type == 'i')
         return {easylocal::detail::number_text(std::llround(number)), true};
     return {irace_number(number), true};

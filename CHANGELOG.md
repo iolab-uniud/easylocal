@@ -180,6 +180,9 @@ reviewed by hand before tagging.
 - `--tuning.irace` fails with status 2 for a cost that is not one number (no
   `scalar_cost`, such as a Pareto cost), instead of writing a scenario whose
   every run fails.
+- `--tuning.irace` reads numbers whatever the locale: under a decimal-comma
+  locale (`it_IT`) `0.95` read as 0 in the suggested ranges and in
+  configurations.txt.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

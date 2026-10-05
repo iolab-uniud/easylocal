@@ -13,6 +13,7 @@
 #include <easylocal/runners/simulated_annealing.hpp>
 
 #include <cassert>
+#include <clocale>
 #include <filesystem>
 #include <fstream>
 #include <initializer_list>
@@ -436,6 +437,42 @@ void a_cost_without_a_number_is_not_tuned()
     assert(!std::filesystem::exists(directory));
 }
 
+// The stub reads numbers as the program writes them, whatever the locale: a
+// decimal comma (it_IT) does not turn 0.5 into 0.
+void the_stub_reads_numbers_in_any_locale()
+{
+    using kind = config::parameter_kind;
+    const char* const previous = std::setlocale(LC_NUMERIC, nullptr);
+    const std::string saved = previous != nullptr ? previous : "C";
+    if (std::setlocale(LC_NUMERIC, "it_IT.UTF-8") == nullptr
+        && std::setlocale(LC_NUMERIC, "it_IT") == nullptr)
+        return; // no comma locale on this system
+    const auto directory = fresh_directory("easylocal-tuning-locale");
+    easylocal::irace_stub stub{
+        .directory = directory,
+        .program = "solver",
+        .parameters = {parameter("rate", "0.5", kind::real)},
+        .ranges = {},
+        .requirements = {},
+        .runners = {},
+        .fixed = {},
+        .instance = {},
+    };
+    const auto suggested = easylocal::write_irace_stub(stub);
+    const auto parameters = read_file(directory / "parameters.txt");
+    std::ofstream{directory / "parameters.txt"} << "rate \"--rate=\" r (0.25, 0.75)\n";
+    stub.parameters = {parameter("rate", "0.9", kind::real)};
+    const auto clamped = easylocal::write_irace_stub(stub);
+    const auto configurations = read_file(directory / "configurations.txt");
+    std::setlocale(LC_NUMERIC, saved.c_str());
+
+    assert(suggested);
+    assert(contains(parameters, "# rate \"--rate=\" r,log (0.05, 5)"));
+    assert(clamped);
+    assert(configurations == "rate\n0.75\n");
+    std::filesystem::remove_all(directory);
+}
+
 } // namespace
 
 int main()
@@ -447,4 +484,5 @@ int main()
     cli_writes_the_stub_without_an_instance();
     fixed_values_are_shared_by_every_run();
     a_cost_without_a_number_is_not_tuned();
+    the_stub_reads_numbers_in_any_locale();
 }
