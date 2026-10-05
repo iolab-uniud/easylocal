@@ -15,9 +15,11 @@
 #include <easylocal/cost.hpp>
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/runners/search_run.hpp>
+#include <easylocal/trace/tracer.hpp>
+#include <easylocal/utils/detail/number_text.hpp>
 
 #include <algorithm>
-#include <charconv>
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <concepts>
@@ -589,36 +591,26 @@ struct async_runner_result
         + (effort->evaluations == 1 ? " evaluation)" : " evaluations)");
 }
 
-// A number of seconds as text: empty when it is not a non-negative number.
+// A number of seconds as text, spaces around it allowed: empty when it is not
+// a non-negative number.
 [[nodiscard]] inline std::optional<double> seconds_text(const std::string_view text)
 {
-    const auto first = text.find_first_not_of(" \t");
-    if (first == std::string_view::npos)
-        return std::nullopt;
-    const auto last = text.find_last_not_of(" \t");
-    double seconds{};
-    const auto* const end = text.data() + last + 1;
-    const auto [parsed, error] = std::from_chars(text.data() + first, end, seconds);
-    if (error != std::errc{} || parsed != end || !(seconds >= 0.0)
-        || !std::isfinite(seconds))
+    const auto seconds = easylocal::detail::parse_number<double>(text);
+    if (!seconds || !(*seconds >= 0.0) || !std::isfinite(*seconds))
         return std::nullopt;
     return seconds;
 }
 
-// A count as text: empty when it is not a non-negative whole number.
+// A count as text, spaces around it allowed: empty when it is not a
+// non-negative whole number.
 [[nodiscard]] inline std::optional<std::size_t> count_text(const std::string_view text)
 {
-    const auto first = text.find_first_not_of(" \t");
-    if (first == std::string_view::npos)
-        return std::nullopt;
-    const auto last = text.find_last_not_of(" \t");
-    std::size_t count{};
-    const auto* const end = text.data() + last + 1;
-    const auto [parsed, error] = std::from_chars(text.data() + first, end, count);
-    if (error != std::errc{} || parsed != end)
-        return std::nullopt;
-    return count;
+    return easylocal::detail::parse_number<std::size_t>(text);
 }
+
+// The shortest time between two progress events of a run: the run's worker
+// posts no more often, and never while one is pending.
+inline constexpr std::chrono::milliseconds progress_event_interval{50};
 
 // Seconds as the progress label shows them: one decimal, such as 12.3s.
 [[nodiscard]] inline std::string seconds_label(const double seconds)
@@ -1380,6 +1372,9 @@ private:
         using namespace ftxui;
         if (event == Event::Custom && run_future_.valid())
         {
+            // The next report may post again.
+            if (progress_event_pending_)
+                progress_event_pending_->store(false);
             refresh_runner_progress();
             if (run_future_.wait_for(std::chrono::seconds{0})
                 == std::future_status::ready)
@@ -2415,6 +2410,7 @@ private:
             set_status(status_kind::info, "Runner executing: " + run_name_);
 
             run_progress_state_ = std::make_shared<easylocal::shared_run_progress>();
+            progress_event_pending_ = std::make_shared<std::atomic<bool>>(false);
 
             std::promise<async_runner_result<typename tester_type::solution_type>> promise;
             run_future_ = promise.get_future();
@@ -2422,6 +2418,7 @@ private:
             const auto name = run_name_;
 
             const auto progress_state = run_progress_state_;
+            const auto event_pending = progress_event_pending_;
             // Each background run gets its own generator, seeded from the
             // session's RNG (itself seeded by options.seed), so runs are
             // reproducible and never share state with the UI thread.
@@ -2437,43 +2434,42 @@ private:
                     evaluations,
                     promise = std::move(promise),
                     event_app,
-                    progress_state](std::stop_token stop_token) mutable {
+                    progress_state,
+                    event_pending](std::stop_token stop_token) mutable {
                     async_runner_result<typename tester_type::solution_type> completion;
+                    // A progress event at the first report, then at most one
+                    // per interval, and none while the last is pending: the
+                    // clock is read every 64 reports.
                     std::size_t reports = 0;
+                    auto last_event = std::chrono::steady_clock::now();
                     auto observer = [&](const easylocal::run_progress& progress) {
                         progress_state->store(progress);
-
-                        ++reports;
-                        if (event_app != nullptr &&
-                            (reports == 1 || reports % 64 == 0 ||
-                             progress.evaluations ==
-                                 progress.evaluation_limit.value_or(0)))
-                        {
-                            event_app->PostEvent(ftxui::Event::Custom);
-                        }
+                        if (event_app == nullptr || (++reports != 1 && reports % 64 != 0))
+                            return;
+                        const auto now = std::chrono::steady_clock::now();
+                        if (reports != 1 && now - last_event < progress_event_interval)
+                            return;
+                        if (event_pending->exchange(true))
+                            return;
+                        last_event = now;
+                        event_app->PostEvent(ftxui::Event::Custom);
                     };
                     const easylocal::run_control control{stop_token, observer};
 
                     try
                     {
-                        auto options = easylocal::with(control);
+                        // One run path, with or without a target.
+                        easylocal::run_options<
+                            easylocal::trace::null_tracer,
+                            typename tester_type::cost_type>
+                            options{.control = &control, .target = std::move(target)};
                         if (seconds)
                             options = options.timeout(*seconds);
                         if (evaluations)
                             options = options.max_evaluations(*evaluations);
-                        auto result = target
-                            ? application.run(
-                                  name,
-                                  *input,
-                                  std::move(solution),
-                                  run_rng,
-                                  options.stop_at(*target))
-                            : application.run(
-                                  name,
-                                  *input,
-                                  std::move(solution),
-                                  run_rng,
-                                  options);
+                        auto result =
+                            application
+                                .run(name, *input, std::move(solution), run_rng, options);
                         if (result)
                         {
                             completion.solution.emplace(std::move(result->solution));
@@ -2519,11 +2515,8 @@ private:
 
     void apply_seed()
     {
-        std::uint64_t seed{};
-        const auto* first = seed_text_.data();
-        const auto* last = first + seed_text_.size();
-        const auto [end, error] = std::from_chars(first, last, seed);
-        if (error != std::errc{} || end != last)
+        const auto parsed = easylocal::detail::parse_number<std::uint64_t>(seed_text_);
+        if (!parsed)
         {
             set_status(
                 status_kind::error,
@@ -2532,6 +2525,7 @@ private:
             return;
         }
 
+        const auto seed = *parsed;
         seed_ = seed;
         tester_.set_seed(seed);
         set_status(
@@ -2744,6 +2738,7 @@ private:
         progress_visible_ = false;
         progress_ = {};
         run_progress_state_.reset();
+        progress_event_pending_.reset();
 
         // Every ending replaces the Last run box, a failure included.
         if (!completion.error.empty())
@@ -3483,6 +3478,8 @@ private:
     std::jthread run_worker_{};
     std::future<async_runner_result<typename tester_type::solution_type>> run_future_{};
     std::shared_ptr<easylocal::shared_run_progress> run_progress_state_;
+    // Whether a progress event of the run is waiting for the event loop.
+    std::shared_ptr<std::atomic<bool>> progress_event_pending_;
     std::string run_name_;
     std::string run_before_;
     bool input_visible_{};

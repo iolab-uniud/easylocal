@@ -83,6 +83,7 @@ int main()
 {
     using easylocal::tui::path_display_mode;
     using easylocal::tui::detail::context_pages_available;
+    using easylocal::tui::detail::count_text;
     using easylocal::tui::detail::directory_entries;
     using easylocal::tui::detail::display_path;
     using easylocal::tui::detail::editable_path;
@@ -95,12 +96,29 @@ int main()
     using easylocal::tui::detail::progress_mode;
     using easylocal::tui::detail::progress_ratio;
     using easylocal::tui::detail::progress_snapshot;
+    using easylocal::tui::detail::seconds_label;
+    using easylocal::tui::detail::seconds_text;
     using easylocal::tui::detail::solution_stage;
     using easylocal::tui::detail::solution_stage_of;
     using easylocal::tui::detail::split_text_lines;
     using easylocal::tui::detail::tester_page;
     using easylocal::tui::detail::value_text;
     using easylocal::tui::detail::wrap_text_lines;
+
+    // The limits of the Run page: spaces around a number are allowed.
+    assert(seconds_text("2.5") == 2.5);
+    assert(seconds_text(" 10 ") == 10.0);
+    assert(seconds_text("0") == 0.0);
+    assert(!seconds_text("-1"));
+    assert(!seconds_text("soon"));
+    assert(!seconds_text("inf"));
+    assert(!seconds_text(""));
+    assert(count_text("1000") == 1000U);
+    assert(count_text("\t7 ") == 7U);
+    assert(!count_text("-1"));
+    assert(!count_text("1.5"));
+    assert(!count_text("many"));
+    assert(seconds_label(12.34) == "12.3s");
 
     assert(value_text(member_described{}) == "member");
     assert(value_text(adl_case::value{}) == "adl");

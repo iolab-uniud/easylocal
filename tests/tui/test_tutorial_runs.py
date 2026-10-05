@@ -107,6 +107,19 @@ def test_an_invalid_time_limit_runs_nothing(tui):
     tui.expect_absent("Runner executing")
 
 
+def test_an_invalid_evaluation_budget_runs_nothing(tui):
+    tui.press("I", F5)
+    tui.focus("P Problem parameters")
+    tui.press(*[DOWN] * 10, RIGHT)  # the last row, then from seconds to evaluations
+    tui.type("many")
+    tui.select("fi", key=UP)
+    tui.press("G")
+    tui.expect("Parameters of fi")
+    tui.press(ENTER)
+    tui.expect("Evaluations: give a non-negative whole number, or nothing")
+    tui.expect_absent("Runner executing")
+
+
 def test_an_evaluation_budget_stops_the_run(tui):
     # One evaluation, the initial one: First Improvement stops on the initial
     # tour.

@@ -587,6 +587,10 @@ reviewed by hand before tagging.
   twice (the run's session is configured before it gets the Input), and the
   target and the cost of a run are encoded once: status polls no longer wait
   for the codec.
+- TextUI: a run posts its progress to the event loop at most every 50 ms,
+  and never while the last event is pending, where it posted one every 64
+  evaluations (about 900,000 a second with a fast delta), each redrawing the
+  screen. The seed field, like the limits, accepts spaces around the number.
 - TextUI: the Run page no longer shows an `X Stop running` button, which no
   one could press: a run's progress window covers the page, and its `X Stop`
   stops the run. The launcher's header comment no longer says that its apps
