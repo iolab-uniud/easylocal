@@ -130,7 +130,8 @@ The generated API reference (`scripts/api-docs.py`, MrDocs) is made of the
 - The comment of a public declaration (a class, a concept, a function, an
   alias, a public field) and the leading comment of a header (`/// \file`) are
   written with `///`; every other comment (in `detail`, in a body, on a private
-  member) with `//`.
+  member) with `//`. The `\file` comment is read in the header only: the
+  reference has no page for it.
 - The first paragraph is the brief, shown in the indexes: one sentence, then a
   `///` line before the rest. Wrap the text at 80 columns.
 - A class says what it does and how it ends or what it returns; a parameter
@@ -143,8 +144,8 @@ The generated API reference (`scripts/api-docs.py`, MrDocs) is made of the
 - An algorithm's `run(run, solution, ...)` says that the bound runner calls it;
   a member of a policy interface is described once, on its concept.
 - Code and paths with angle brackets go in backticks (`` `runners.<name>.*` ``),
-  or MrDocs reads them as HTML; a code example is a paragraph indented by four
-  spaces.
+  or MrDocs reads them as HTML; a code example goes between `/// \code` and
+  `/// \endcode` (an indented paragraph becomes one run-on line).
 - Every public declaration has a comment: types, concepts, enums and their
   values, aliases, functions, members and public fields, the members of a
   class template specialization, special members (constructors, assignments,

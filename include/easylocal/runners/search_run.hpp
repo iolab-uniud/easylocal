@@ -1120,12 +1120,14 @@ bool reaches_target(const Run& run, const Cost& candidate, const Cost& best)
 /// The best solution of a run and its cost, for the algorithms that return the
 /// best solution they visited rather than the last one:
 ///
-///     best_so_far best{solution, current.cost()};
-///     ...
-///     if (best.update(run, solution, current))
-///         idle_iterations = 0;
-///     ...
-///     return run.finish(std::move(best.solution), std::move(best.cost));
+/// \code
+/// best_so_far best{solution, current.cost()};
+/// ...
+/// if (best.update(run, solution, current))
+///     idle_iterations = 0;
+/// ...
+/// return run.finish(std::move(best.solution), std::move(best.cost));
+/// \endcode
 template<class Solution, class Cost>
 struct best_so_far
 {
