@@ -205,6 +205,9 @@ reviewed by hand before tagging.
 - REST: `GET /parameters` no longer reports every parameter as `read_only`
   (a run may change any of them), and lists the `kind`, `domain`, `active` and
   `condition` of each parameter.
+- REST: when the execution pool cannot create one of its worker threads, its
+  constructor throws instead of waiting forever for the workers already
+  started.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

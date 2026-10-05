@@ -67,10 +67,18 @@ public:
         : queue_capacity_{std::max<std::size_t>(queue_capacity, 1)}
     {
         workers = std::max<std::size_t>(workers, 1);
-        workers_.reserve(workers);
-        for (std::size_t index = 0; index < workers; ++index)
+        try
         {
-            workers_.emplace_back([this] { worker_loop(); });
+            workers_.reserve(workers);
+            for (std::size_t index = 0; index < workers; ++index)
+                workers_.emplace_back([this] { worker_loop(); });
+        }
+        catch (...)
+        {
+            // The workers already started must end, or joining them would
+            // wait forever.
+            stop();
+            throw;
         }
     }
 
@@ -81,11 +89,7 @@ public:
 
     ~execution_pool()
     {
-        {
-            const std::lock_guard lock{mutex_};
-            stopping_ = true;
-        }
-        ready_.notify_all();
+        stop();
     }
 
     /// Queues a task, and returns whether it was accepted: false when the queue
@@ -130,6 +134,17 @@ public:
     }
 
 private:
+    // Refuses new tasks and wakes the workers, which end once the queue is
+    // empty.
+    void stop() noexcept
+    {
+        {
+            const std::lock_guard lock{mutex_};
+            stopping_ = true;
+        }
+        ready_.notify_all();
+    }
+
     void worker_loop() noexcept
     {
         while (true)
