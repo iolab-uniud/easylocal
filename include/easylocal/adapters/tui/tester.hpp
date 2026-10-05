@@ -76,22 +76,22 @@ struct options
     /// The seed of the session's random generator.
     std::uint64_t seed{};
     /// The Input file, loaded at the start when it is set.
-    std::string input_path{};
+    std::filesystem::path input_path{};
     /// The initial path of the solution file on the Input/Output page.
-    std::string solution_path{};
+    std::filesystem::path solution_path{};
     /// How paths are shown.
     path_display_mode path_display{path_display_mode::relative};
     /// The directory relative paths start from; empty: the working directory.
     std::filesystem::path path_base{};
-    /// The longest text of a solution or a move shown, in characters; longer
-    /// ones are truncated.
+    /// The longest text of an Input, a solution or a move shown, in bytes;
+    /// longer ones are truncated. 0: no limit.
     std::size_t max_render_chars{4096};
-    /// The random moves drawn per valid move by the random distribution check.
+    /// The random moves drawn per valid move by the random distribution check,
+    /// which draws none with 0.
     std::size_t random_distribution_rounds{20};
-    /// The most entries a diagnostic, such as the list of neighbors, shows.
+    /// The most moves the list of neighbors shows, the others only counted; 0
+    /// shows none.
     std::size_t max_diagnostic_entries{256};
-    /// The label of the q key, which leaves the tester.
-    std::string exit_label{"quit"};
 };
 
 namespace detail
@@ -2984,12 +2984,18 @@ private:
                    render_status(),
                    paragraphAlignCenter(current_page_shortcuts()),
                    paragraphAlignCenter(
-                       "F3 I/O  F4 Move  F5 Run  |  F1 Input  F2 Solution  S Show solution  |  ? Help  |  q " +
-                       options_.exit_label +
-                       "  |  Tab/Shift-Tab focus") | dim,
-               }) |
-               size(HEIGHT, EQUAL, detail::terminal_available_height()) |
-               border;
+                       "F3 I/O  F4 Move  F5 Run  |  F1 Input  F2 Solution  S Show solution  |  ? Help  |  q "
+                       + exit_label() + "  |  Tab/Shift-Tab focus")
+                       | dim,
+               })
+            | size(HEIGHT, EQUAL, detail::terminal_available_height()) | border;
+    }
+
+    // What q does: it quits a tester, and leads back to the list from a
+    // launcher's.
+    [[nodiscard]] std::string exit_label() const
+    {
+        return role_ == frontend_role::standalone ? "quit" : "back to applications";
     }
 
     [[nodiscard]] std::string current_instance_name() const
@@ -3287,7 +3293,7 @@ private:
                 "Enter on a runner runs it too, after its parameters; X in the "
                 "progress window stops the run"),
             separator(),
-            text("Q  " + options_.exit_label),
+            text("Q  " + exit_label()),
             text("? / H  help   Esc  close"),
             separator(),
             text("Page shortcuts apply only to the active page.") | dim,

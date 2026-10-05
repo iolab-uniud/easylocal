@@ -38,7 +38,7 @@ struct launcher_options
     /// title.
     std::string title{"EasyLocal Tester"};
     /// The options of the testers it opens; their titles add the app's name,
-    /// and their exit leads back to the list.
+    /// and their q leads back to the list.
     options tester{};
 };
 
@@ -158,9 +158,8 @@ private:
     {
         auto settings = options_.tester;
         settings.title = options_.title + " - " + name;
-        settings.exit_label = "back to applications";
         // The file of the shared Input, which a tester may have loaded.
-        settings.input_path = input_ ? input_file_.string() : std::string{};
+        settings.input_path = input_ ? input_file_ : std::filesystem::path{};
         if (launched.memory)
             settings.seed = launched.memory->seed;
 

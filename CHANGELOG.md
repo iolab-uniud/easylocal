@@ -587,6 +587,11 @@ reviewed by hand before tagging.
   twice (the run's session is configured before it gets the Input), and the
   target and the cost of a run are encoded once: status polls no longer wait
   for the codec.
+- **Breaking:** TextUI: `tui::options::input_path` and `solution_path` are
+  `std::filesystem::path`, as `path_base` is, and `exit_label` is gone: q
+  quits a tester, and leads back to the list from a launcher's. The fields
+  say their units and what 0 means (`max_render_chars` in bytes, 0 for no
+  limit), and the tutorial's chapter 12 lists them.
 - TextUI: each page's actions are defined once, and its buttons, its
   shortcut line, the help and the keys come from them: the labels agree
   (`I First improving` was "I Improve" in the shortcut line, `U Distribution`

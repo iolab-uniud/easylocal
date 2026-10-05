@@ -213,7 +213,13 @@ inline auto tsp_app()
 
 `tui::options` sets the `title`, the `seed` of the RNG used for random
 solutions, random moves and stochastic runners, and the initial `input_path`
-and `solution_path`. The seed can also be changed on the Run page ("Random
+and `solution_path` (relative to `path_base`, or to the working directory
+when it is empty; `path_display` chooses how paths are shown). Three bounds
+keep large values readable: `max_render_chars`, the longest text of an Input,
+a solution or a move shown, in bytes (4096; 0 for no limit),
+`max_diagnostic_entries`, the moves the list of neighbors shows (256), and
+`random_distribution_rounds`, the random moves the distribution check draws
+per valid move (20). The seed can also be changed on the Run page ("Random
 seed", then Enter or *Apply seed*): the RNG restarts from it, and the header
 shows the current seed.
 
