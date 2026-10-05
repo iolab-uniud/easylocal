@@ -11,7 +11,9 @@ endif()
 # Compile every installed header in its own translation unit.  Keeping the
 # probes generated from the include tree makes self-containment coverage follow
 # the public surface automatically instead of relying on one hand-written test
-# source per header.
+# source per header. A probe is written only when its content changes, so a
+# configure does not rebuild them all, and the probes of removed headers are
+# deleted.
 function(easylocal_add_header_self_containment_test name dependency)
     set(headers ${ARGN})
     set(probe_dir "${CMAKE_CURRENT_BINARY_DIR}/header-self-containment/${name}")
@@ -21,15 +23,20 @@ function(easylocal_add_header_self_containment_test name dependency)
     foreach(header IN LISTS headers)
         string(MAKE_C_IDENTIFIER "${header}" probe_id)
         set(source "${probe_dir}/${probe_id}.cpp")
-        file(WRITE "${source}"
-            "#include <${header}>\n\n"
-            "void easylocal_header_probe_${probe_id}() {}\n")
+        file(CONFIGURE OUTPUT "${source}" CONTENT
+            "#include <${header}>\n\nvoid easylocal_header_probe_${probe_id}() {}\n")
         list(APPEND sources "${source}")
     endforeach()
 
     set(main_source "${probe_dir}/main.cpp")
-    file(WRITE "${main_source}" "int main() { return 0; }\n")
+    file(CONFIGURE OUTPUT "${main_source}" CONTENT "int main() { return 0; }\n")
     list(APPEND sources "${main_source}")
+
+    file(GLOB written "${probe_dir}/*.cpp")
+    list(REMOVE_ITEM written ${sources})
+    if(written)
+        file(REMOVE ${written})
+    endif()
 
     set(target "easylocal_${name}_headers_self_containment")
     add_executable("${target}" ${sources})
