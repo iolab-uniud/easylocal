@@ -16,12 +16,12 @@
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/runners/search_run.hpp>
 #include <easylocal/trace/tracer.hpp>
-#include <easylocal/utils/detail/number_text.hpp>
 
 #include <algorithm>
 #include <array>
 #include <atomic>
 #include <cassert>
+#include <charconv>
 #include <chrono>
 #include <cmath>
 #include <concepts>
@@ -588,21 +588,37 @@ struct async_runner_result
         + (effort->evaluations == 1 ? " evaluation)" : " evaluations)");
 }
 
-// A number of seconds as text, spaces around it allowed: empty when it is not
-// a non-negative number.
+// A number as text, spaces and tabs around it allowed (std::from_chars):
+// empty when the text is not one, or has more. The seed, the seconds and the
+// evaluations of the Run page are read alike.
+template<class Number>
+[[nodiscard]] std::optional<Number> number_from_text(const std::string_view text)
+{
+    const auto first = text.find_first_not_of(" \t");
+    if (first == std::string_view::npos)
+        return std::nullopt;
+    const auto last = text.find_last_not_of(" \t");
+    Number value{};
+    const auto* const end = text.data() + last + 1;
+    const auto [parsed, error] = std::from_chars(text.data() + first, end, value);
+    if (error != std::errc{} || parsed != end)
+        return std::nullopt;
+    return value;
+}
+
+// A number of seconds as text: empty when it is not a non-negative number.
 [[nodiscard]] inline std::optional<double> seconds_text(const std::string_view text)
 {
-    const auto seconds = easylocal::detail::parse_number<double>(text);
+    const auto seconds = number_from_text<double>(text);
     if (!seconds || !(*seconds >= 0.0) || !std::isfinite(*seconds))
         return std::nullopt;
     return seconds;
 }
 
-// A count as text, spaces around it allowed: empty when it is not a
-// non-negative whole number.
+// A count as text: empty when it is not a non-negative whole number.
 [[nodiscard]] inline std::optional<std::size_t> count_text(const std::string_view text)
 {
-    return easylocal::detail::parse_number<std::size_t>(text);
+    return number_from_text<std::size_t>(text);
 }
 
 // The shortest time between two progress events of a run: the run's worker
@@ -2357,7 +2373,7 @@ private:
 
     void apply_seed()
     {
-        const auto parsed = easylocal::detail::parse_number<std::uint64_t>(seed_text_);
+        const auto parsed = detail::number_from_text<std::uint64_t>(seed_text_);
         if (!parsed)
         {
             set_status(
