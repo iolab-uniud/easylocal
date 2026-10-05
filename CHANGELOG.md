@@ -162,6 +162,8 @@ reviewed by hand before tagging.
   does not complete, instead of keeping an older run's effort.
 - `cli::run` exits with status 1 and `error: unknown exception` when a run
   throws something other than a `std::exception`, instead of terminating.
+- `save_solution` (and `Session::save_solution` to a file) report the errors
+  of the final flush and close, and every write error names the file.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

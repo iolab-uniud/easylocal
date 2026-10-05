@@ -294,7 +294,8 @@ void write_solution(const Input& input, const Solution& solution, std::ostream& 
 
 /// Writes a Solution of input to a file, as write_solution does to a stream.
 ///
-/// Throws std::runtime_error, naming the file, when it cannot be written.
+/// Throws std::runtime_error, naming the file, when it cannot be opened,
+/// written, flushed or closed.
 template<class Input, class Solution>
     requires writable_solution<Input, Solution>
 void save_solution(
@@ -305,7 +306,18 @@ void save_solution(
     std::ofstream out{path};
     if (!out)
         throw std::runtime_error{"failed to open Solution file: " + path.string()};
-    write_solution(input, solution, out);
+    try
+    {
+        write_solution(input, solution, out);
+    }
+    catch (const std::exception& error)
+    {
+        throw std::runtime_error{path.string() + ": " + error.what()};
+    }
+    // The data may reach the file only when it is flushed and closed.
+    out.close();
+    if (out.fail())
+        throw std::runtime_error{"failed to write Solution file: " + path.string()};
 }
 
 /// The text of a value for people, with the first hook of describable.

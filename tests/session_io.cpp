@@ -259,6 +259,22 @@ inline auto operator<<(std::ostream& out, const Solution& solution) -> std::ostr
 
 } // namespace stream_io
 
+namespace failing_io
+{
+
+// A Solution whose write hook fails the stream.
+struct Solution
+{
+};
+
+inline auto operator<<(std::ostream& out, const Solution&) -> std::ostream&
+{
+    out.setstate(std::ios::failbit);
+    return out;
+}
+
+} // namespace failing_io
+
 namespace describe_io
 {
 
@@ -567,6 +583,22 @@ void free_file_errors_name_the_file()
     assert(message.find("easylocal_io_missing.tmp") != std::string::npos);
 }
 
+void free_file_write_errors_name_the_file()
+{
+    const auto output_path = std::filesystem::path{"easylocal_io_failed_write.tmp"};
+    std::string message;
+    try
+    {
+        easylocal::save_solution(stream_io::Input{}, failing_io::Solution{}, output_path);
+    }
+    catch (const std::runtime_error& error)
+    {
+        message = error.what();
+    }
+    assert(message.find(output_path.string()) != std::string::npos);
+    std::filesystem::remove(output_path);
+}
+
 void describe_prefers_the_value_hooks()
 {
     assert(easylocal::describe(describe_io::Member{}) == "member");
@@ -587,5 +619,6 @@ int main()
     free_functions_follow_the_same_protocol();
     free_file_functions_follow_the_same_protocol();
     free_file_errors_name_the_file();
+    free_file_write_errors_name_the_file();
     describe_prefers_the_value_hooks();
 }
