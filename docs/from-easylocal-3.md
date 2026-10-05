@@ -1083,7 +1083,7 @@ The moves of a union are a variant of the explorers' moves, so the
 | EasyLocal 3 | EasyLocal |
 | --- | --- |
 | `FirstDescent` | `runners::FirstImprovement` (the scan restarts from the first move) |
-| `SteepestDescent` | `runners::BestImprovement` |
+| `SteepestDescent` | `runners::BestImprovement` (ties go to the first best move, not drawn at random) |
 | `HillClimbing` | `runners::HillClimbing` |
 | `LateAcceptanceHillClimbing` | `runners::LateAcceptanceHillClimbing` (the history records the current cost, see [Runners](reference/runners.md)) |
 | `GreatDeluge` | `runners::GreatDeluge` |
@@ -1095,8 +1095,9 @@ The moves of a union are a variant of the explorers' moves, so the
 
 Not available yet: kickers, the `TokenRingSearch`, `GRASP` and
 `VariableNeighborhoodDescent` solvers, `SampleTabuSearch`, and the modelling
-layer (`AutoState`, expressions). The shifting penalty runner and Simulated
-Annealing with learning are in the [roadmap](roadmap.md). A runner of your
+layer (`AutoState`, expressions). The shifting penalty runner, Simulated
+Annealing with learning, kicks, Iterated Local Search and VND are in the
+[roadmap](roadmap.md). A runner of your
 own is written once on `search_run` ([chapter 7](tutorial/07-custom-runner.md)).
 
 The EasyLocal 3 code compared here is the Bitbucket repository

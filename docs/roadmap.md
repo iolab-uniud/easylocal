@@ -181,6 +181,26 @@ part of the design.
 
 **When.** Not scheduled.
 
+## Kicks, Iterated Local Search and Variable Neighborhood Descent
+
+**Why.** EasyLocal 3 had kickers (a perturbation of several moves applied at
+once to leave a local optimum), the `TokenRingSearch` and
+`VariableNeighborhoodDescent` solvers. A pipeline runs its stages once, in a
+fixed order: it cannot go back to an earlier stage when a later one improves,
+nor perturb its solution between rounds, which Iterated Local Search and VND
+need.
+
+**What.** A kick, a sequence of random (or enumerated) moves of a
+neighborhood applied together, as a stage of its own; pipeline rounds (run the
+stages again, from the last solution, while a round improves the best cost or
+until a budget), and a restart rule (back to the first stage on an
+improvement), which together give Iterated Local Search (descent, kick,
+acceptance) and VND (descents on neighborhoods in turn, back to the first
+after an improvement). The rounds share the solve's budget and progress, as
+the stages do.
+
+**When.** Not scheduled.
+
 ## Parameter tuning
 
 **Why.** The parameters of a search are usually tuned with an automatic

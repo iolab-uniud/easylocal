@@ -73,6 +73,11 @@ unlimited by default, except `max_idle_iterations` (1000).
 The budget is checked only before evaluating a move, so an empty neighborhood
 is a local optimum even when the budget is exhausted.
 
+Best Improvement applies the first of the best moves in the order of
+`moves()`: its ties are broken deterministically, where EasyLocal 3's
+`SteepestDescent` drew among them at random. An explorer that wants random
+ties shuffles its moves.
+
 Hill Climbing accepts a random move when its cost is better or equivalent to
 the current one, so it moves across plateaus where a descent stops. It ends
 with `idle_limit_reached` after `max_idle_iterations` consecutive proposals
@@ -162,7 +167,7 @@ Tabu lists in `runners::tabu`; their parameters are the group `tabu_list`:
 | `Frequency` (TS5) | `threshold` | while its attribute was applied in more than `threshold` of the iterations; needs `tabu_attribute`, not `inverse` |
 | `ObjectiveBased` | `tenure` | while its cost is equivalent to one reached in the last `tenure` iterations, by the cost semantics (`equivalent`); needs neither inverse nor attribute |
 | `LimDynamic` (limited dynamic) | `min_tenure`, `max_tenure`, `idle_threshold` | for a tenure that grows by one after `idle_threshold` idle iterations and falls back to `min_tenure` on an improvement or at `max_tenure` |
-| `Foo` (FOO, Fluctuation Of the Objective) | `window`, `increment`, `fluctuation` | for a tenure that grows by `increment` when the costs of the last `window` iterations spread less than `fluctuation`, and shrinks by one otherwise; needs `cost::delta` |
+| `Foo` (FOO, Fluctuation Of the Objective) | `window`, `increment`, `fluctuation` | for a tenure that grows by `increment` when the costs of the last `window` iterations spread less than `fluctuation`, and shrinks by one otherwise; needs `cost::delta`, whose spread across two hard levels of a `cost::hierarchical` is infinite, so a window that changes the hard cost shrinks the tenure |
 | `RandomFoo` (randomized FOO) | ranges of the three | as `Foo`, drawing them again at each window |
 
 Most lists forbid moves through the neighborhood's `inverse`, `Frequency`
@@ -358,6 +363,15 @@ Extra `run` arguments (an RNG, for example) are passed through
 
 `evaluation` / `candidate` expose `cost()`; `finish` without a reason uses the
 one recorded by `should_stop()`, or `completed`.
+
+A decorated facility, the one `wrap` returns to `with_evaluation`, has the
+interface of the facility it wraps: the types `evaluation_type` and
+`candidate_type`, `evaluate(solution) -> evaluation_type`,
+`evaluate_move(solution, current, move) -> candidate_type` and
+`commit(solution, current, candidate)`, the costs of an evaluation and of a
+candidate being `cost()` of the run's cost type. It forwards them, adding its
+own work (a delay, a count, a cache); the run keeps the counters, the events
+and the limits around it.
 
 An algorithm that returns the best solution it visited, rather than the last,
 keeps it in a `best_so_far{solution, cost}`: `best.update(run, solution,
