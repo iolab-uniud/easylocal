@@ -247,6 +247,9 @@ reviewed by hand before tagging.
   names what they need (an arithmetic cost, a `cost::pareto` cost), as
   Simulated Annealing does, whose message now names `cost::delta` rather than
   a difference of costs; the rejected run no longer adds a second error.
+- The TimeBased annealing schedule reads its clock as a run checks its time
+  limit, at an interval of proposals that adapts to about a millisecond
+  between readings, and at each early cooling, instead of at every proposal.
 
 ### Added
 

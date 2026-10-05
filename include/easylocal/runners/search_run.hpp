@@ -14,6 +14,7 @@
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
+#include <easylocal/runners/detail/throttled_clock.hpp>
 #include <easylocal/runners/pareto_archive.hpp>
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/trace/events.hpp>
@@ -935,11 +936,8 @@ public:
     }
 
 private:
-    // Whether the deadline has passed. The clock is read at the first check,
-    // then at an interval of checks that adapts so that readings come about a
-    // millisecond apart: it doubles while they come sooner, halves while they
-    // come later. A fast loop reads the clock rarely; a slow one, at every
-    // check.
+    // Whether the deadline has passed, reading the clock through the
+    // throttle (detail::throttled_clock): a fast loop reads it rarely.
     [[nodiscard]]
     bool time_is_up()
     {
@@ -947,22 +945,10 @@ private:
             return false;
         if (time_up_)
             return true;
-        if (++checks_since_clock_ < clock_interval_)
+        const auto now = clock_.due();
+        if (!now)
             return false;
-        checks_since_clock_ = 0;
-
-        const auto now = std::chrono::steady_clock::now();
-        if (clock_read_)
-        {
-            const auto gap = now - last_clock_reading_;
-            if (gap < clock_spacing / 2 && clock_interval_ < max_clock_interval)
-                clock_interval_ *= 2;
-            else if (gap > clock_spacing * 2 && clock_interval_ > 1)
-                clock_interval_ /= 2;
-        }
-        last_clock_reading_ = now;
-        clock_read_ = true;
-        time_up_ = now >= *deadline_;
+        time_up_ = *now >= *deadline_;
         return time_up_;
     }
 
@@ -1110,16 +1096,8 @@ private:
     termination_reason stop_reason_{termination_reason::completed};
     const cost_type* target_{};
     bool target_reached_{};
-    static constexpr std::chrono::steady_clock::duration clock_spacing =
-        std::chrono::milliseconds{1};
-    static constexpr std::size_t max_clock_interval = std::size_t{1} << 20U;
     std::optional<std::chrono::steady_clock::time_point> deadline_;
-    // The last reading of the clock, when clock_read_ (not an optional, which
-    // GCC 15 at -O3 reports as maybe uninitialized).
-    std::chrono::steady_clock::time_point last_clock_reading_{};
-    bool clock_read_{false};
-    std::size_t clock_interval_{1};
-    std::size_t checks_since_clock_{};
+    detail::throttled_clock<> clock_;
     bool time_up_{};
     EASYLOCAL_NO_UNIQUE_ADDRESS std::conditional_t<
         archives_front,

@@ -7,6 +7,7 @@
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost/concepts.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
+#include <easylocal/runners/detail/throttled_clock.hpp>
 #include <easylocal/runners/search_run.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
 #include <easylocal/utils/limit.hpp>
@@ -1092,7 +1093,9 @@ struct TimeBasedParameters
 ///
 /// The annealing ends when the time is over or the final temperature is
 /// reached. The trajectory depends on the speed of the machine, so equal seeds
-/// do not give equal runs. The clock is read once per proposal.
+/// do not give equal runs. The clock is read at an interval of proposals that
+/// adapts so that readings come about a millisecond apart, as a run's time
+/// limit is checked, and at each early cooling.
 template<class Clock = std::chrono::steady_clock>
 class BasicTimeBased
 {
@@ -1143,7 +1146,8 @@ public:
     void reset() noexcept
     {
         temperature_ = parameters_.initial_temperature;
-        start_ = Clock::now();
+        clock_.reset();
+        start_ = clock_.now();
         level_start_ = start_;
         level_time_ =
             running_time_ / static_cast<typename duration::rep>(temperature_levels_);
@@ -1159,26 +1163,29 @@ public:
         return temperature_;
     }
 
-    /// Reads the clock, and multiplies the temperature by cooling_rate when the
-    /// time of the level is over or after accepted_per_temperature acceptances
-    /// at it.
+    /// Multiplies the temperature by cooling_rate when the time of the level
+    /// is over or after accepted_per_temperature acceptances at it.
     ///
-    /// An early cooling spreads the time left over the remaining levels; once
-    /// allowed_running_time is over the annealing is finished.
+    /// The clock is read when its interval of proposals is due, and at an
+    /// early cooling. An early cooling spreads the time left over the remaining
+    /// levels; once allowed_running_time is over the annealing is finished.
     void on_iteration(const bool accepted) noexcept
     {
         assert(!finished());
-        const auto now = Clock::now();
+        accepted_ += accepted ? 1U : 0U;
+        const auto accepted_cutoff = accepted_ >= parameters_.accepted_per_temperature;
+        const auto reading = accepted_cutoff ? clock_.now() : clock_.due();
+        if (!reading)
+            return;
+        const auto now = *reading;
         if (now - start_ >= running_time_)
         {
             timed_out_ = true;
             return;
         }
 
-        accepted_ += accepted ? 1U : 0U;
         const auto level_elapsed = now - level_start_;
         const auto time_over = level_elapsed >= level_time_;
-        const auto accepted_cutoff = accepted_ >= parameters_.accepted_per_temperature;
         if (!time_over && !accepted_cutoff)
             return;
 
@@ -1233,6 +1240,7 @@ private:
     std::size_t completed_levels_{};
     std::size_t accepted_{};
     bool timed_out_{};
+    easylocal::detail::throttled_clock<Clock> clock_;
 };
 
 /// The TimeBased schedule, timed by `std::chrono::steady_clock`.

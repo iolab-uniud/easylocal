@@ -237,7 +237,9 @@ a count within rounding of an integer being that integer, so that 1 to 0.001 by
 the schedules with a budget spread it over them.
 
 `TimeBased` reads the clock (`std::chrono::steady_clock`; `BasicTimeBased<Clock>`
-takes another one) once per proposal. Its trajectory depends on the speed of
+takes another one) as a run checks its time limit: at an interval of proposals
+that adapts so that readings come about a millisecond apart, and at each early
+cooling. Its trajectory depends on the speed of
 the machine, so equal seeds do not give equal runs.
 
 `Reheating<Descent>` reheats any schedule whose parameters have an
