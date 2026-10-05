@@ -498,6 +498,11 @@ class Pipeline
     using initialization_support = easylocal::detail::InitializationSupport<
         typename first_stage_type::bound_runner_type,
         RNG>;
+    // What a builder returns: a reference to the pipeline on an lvalue, the
+    // pipeline itself on a temporary.
+    template<class Self>
+    using builder_result =
+        std::conditional_t<std::is_lvalue_reference_v<Self>, Pipeline&, Pipeline>;
 
 public:
     /// The random number generator it owns.
@@ -541,50 +546,33 @@ public:
     {
     }
 
-    /// The same pipeline, with its RNG seeded with `seed`.
-    Pipeline& seed(const std::uint64_t seed) &
+    /// The same pipeline, with its RNG seeded with `seed`: this pipeline on an
+    /// lvalue, the moved pipeline on a temporary.
+    template<class Self>
         requires std::constructible_from<RNG, std::uint64_t>
+    builder_result<Self> seed(this Self&& self, const std::uint64_t seed)
     {
-        rng_ = RNG{seed};
-        return *this;
-    }
-
-    /// The same pipeline, with its RNG seeded with `seed`.
-    [[nodiscard]]
-    Pipeline&& seed(const std::uint64_t seed) &&
-        requires std::constructible_from<RNG, std::uint64_t>
-    {
-        rng_ = RNG{seed};
-        return std::move(*this);
+        Pipeline& pipeline = self;
+        pipeline.rng_ = RNG{seed};
+        return std::forward<Self>(self);
     }
 
     /// The same pipeline, building its initial solutions as `initialization`
     /// says: initialization::initial or random, rejected at compile time when
-    /// the first stage does not support it, or a Mode, checked here.
-    template<class Initialization>
+    /// the first stage does not support it, or a Mode, checked here. This
+    /// pipeline on an lvalue, the moved pipeline on a temporary.
+    template<class Self, class Initialization>
         requires easylocal::detail::accepted_initialization<
             Initialization,
             typename first_stage_type::bound_runner_type,
             RNG>
-    Pipeline& initialization(const Initialization initialization) &
+    builder_result<Self> initialization(
+        this Self&& self,
+        const Initialization initialization)
     {
-        this->initialization_mode(initialization_support::to_mode(initialization));
-        return *this;
-    }
-
-    /// The same pipeline, building its initial solutions as `initialization`
-    /// says: initialization::initial or random, rejected at compile time when
-    /// the first stage does not support it, or a Mode, checked here.
-    template<class Initialization>
-        requires easylocal::detail::accepted_initialization<
-            Initialization,
-            typename first_stage_type::bound_runner_type,
-            RNG>
-    [[nodiscard]]
-    Pipeline&& initialization(const Initialization initialization) &&
-    {
-        this->initialization_mode(initialization_support::to_mode(initialization));
-        return std::move(*this);
+        Pipeline& pipeline = self;
+        pipeline.initialization_mode(initialization_support::to_mode(initialization));
+        return std::forward<Self>(self);
     }
 
     /// The pipeline with `stage` after its stages, its RNG and initialization

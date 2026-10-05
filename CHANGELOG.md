@@ -149,6 +149,8 @@ reviewed by hand before tagging.
 - After a cancellation, or once the solve's budget is spent, a pipeline skips
   the stages between the first and the last (0 attempts in their report)
   instead of binding and running each one past the budget.
+- `Pipeline::seed()` and `Pipeline::initialization()` on a temporary return the
+  pipeline by value, not a `Pipeline&&` that could dangle.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

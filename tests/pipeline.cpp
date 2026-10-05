@@ -560,6 +560,19 @@ bool run()
             .initialization(initialization::initial)
             .seed(42);
     static_assert(decltype(shared_solver)::supports_initial);
+    // The builders return the pipeline by reference on an lvalue and by value
+    // on a temporary, so that `auto&& p = pipeline(...).seed(1)` cannot dangle.
+    using SharedPipeline = decltype(shared_solver);
+    static_assert(
+        std::same_as<decltype(std::declval<SharedPipeline&>().seed(1)), SharedPipeline&>);
+    static_assert(
+        std::same_as<decltype(std::declval<SharedPipeline>().seed(1)), SharedPipeline>);
+    static_assert(std::same_as<
+        decltype(std::declval<SharedPipeline&>().initialization(initialization::initial)),
+        SharedPipeline&>);
+    static_assert(std::same_as<
+        decltype(std::declval<SharedPipeline>().initialization(initialization::initial)),
+        SharedPipeline>);
     // two_stage(runner) is the pipeline of the same runner until feasible,
     // then on the whole cost.
     static_assert(std::same_as<
