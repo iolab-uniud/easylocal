@@ -268,8 +268,9 @@ stateDiagram-v2
 Cancellation and deletion deliberately have different semantics. `POST
 /runs/<id>/cancel` requests cooperative stop and returns `202`; the resource
 remains queryable so the client can observe `cancelled` and retrieve a partial
-solution. `DELETE /runs/<id>` is permitted only after the run is terminal and
-returns `204 No Content`. Deleting an active run returns `409`.
+solution. A queued run is `cancelled` at once, without a solution, and leaves
+its place in the queue. `DELETE /runs/<id>` is permitted only after the run is
+terminal and returns `204 No Content`. Deleting an active run returns `409`.
 
 Every runner is cancellable: the control is carried by the framework-owned
 `search_run`, so no per-runner capability is advertised.

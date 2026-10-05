@@ -815,23 +815,12 @@ private:
             auto body = run_body(record);
             const bool accepted = execution_.try_submit(
                 [this, session = std::move(session), record, runner]() mutable {
-                    bool cancelled_before_start = false;
                     {
+                        // A run cancelled while queued is already terminal.
                         const std::lock_guard lock{record->mutex};
-                        if (record->stop_source.stop_requested())
-                        {
-                            record->state = run_state::cancelled;
-                            cancelled_before_start = true;
-                        }
-                        else
-                        {
-                            record->state = run_state::running;
-                        }
-                    }
-                    if (cancelled_before_start)
-                    {
-                        remember_completed(record->id);
-                        return;
+                        if (record->state != run_state::queued)
+                            return;
+                        record->state = run_state::running;
                     }
 
                     auto observer = [record](const easylocal::run_progress& progress) {
@@ -881,7 +870,8 @@ private:
                     }
 
                     remember_completed(record->id);
-                });
+                },
+                record->stop_source.get_token());
 
             if (!accepted)
             {
@@ -984,6 +974,9 @@ private:
             return detail::run_not_found(id);
         }
 
+        // A queued run ends cancelled at once, and leaves its place in the
+        // queue; a running one stops at its next check.
+        bool was_queued = false;
         {
             const std::lock_guard lock{record->mutex};
             if (is_terminal(record->state))
@@ -993,8 +986,13 @@ private:
                     "run_not_active",
                     "run is already terminal");
             }
+            was_queued = record->state == run_state::queued;
+            if (was_queued)
+                record->state = run_state::cancelled;
             record->stop_source.request_stop();
         }
+        if (was_queued)
+            remember_completed(record->id);
 
         return detail::json_response(202, run_body(record));
     }

@@ -4,6 +4,7 @@
 #include <chrono>
 #include <future>
 #include <memory>
+#include <stop_token>
 
 namespace
 {
@@ -60,10 +61,45 @@ void task_exceptions_do_not_kill_workers()
     assert(survived_future.wait_for(5s) == std::future_status::ready);
 }
 
+void a_cancelled_task_never_runs_and_leaves_the_queue()
+{
+    easylocal::rest::execution_pool pool{1, 1};
+
+    std::promise<void> first_started;
+    auto first_started_future = first_started.get_future();
+    std::promise<void> release_first;
+    auto release_first_future = release_first.get_future().share();
+    assert(pool.try_submit(
+        [started = std::move(first_started),
+            release = std::move(release_first_future)]() mutable {
+            started.set_value();
+            release.wait();
+        }));
+    assert(first_started_future.wait_for(5s) == std::future_status::ready);
+
+    // Queued, then cancelled: its place goes to the next task.
+    auto ran_cancelled = std::make_shared<bool>(false);
+    std::stop_source cancel;
+    assert(
+        pool.try_submit([ran_cancelled] { *ran_cancelled = true; }, cancel.get_token()));
+    cancel.request_stop();
+
+    std::promise<void> next_finished;
+    auto next_finished_future = next_finished.get_future();
+    assert(pool.try_submit([finished = std::move(next_finished)]() mutable {
+        finished.set_value();
+    }));
+
+    release_first.set_value();
+    assert(next_finished_future.wait_for(5s) == std::future_status::ready);
+    assert(!*ran_cancelled);
+}
+
 } // namespace
 
 int main()
 {
     bounded_queue_rejects_excess_work_deterministically();
     task_exceptions_do_not_kill_workers();
+    a_cancelled_task_never_runs_and_leaves_the_queue();
 }

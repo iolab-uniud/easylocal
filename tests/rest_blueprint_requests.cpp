@@ -560,8 +560,8 @@ void a_full_queue_rejects_runs_and_a_queued_run_can_be_cancelled(crow::SimpleApp
     assert(cancelled.code == 202);
     assert(cancelled.body["cancellation_requested"].b());
 
-    run_gate.open();
-    wait_for(server, running, "succeeded");
+    // Cancelled at once, while the worker is still held at the gate.
+    assert(text(cancelled.body["status"]) == "cancelled");
     const auto never_started = wait_for(server, queued_id, "cancelled");
     assert(never_started["progress"]["evaluations"].u() == 0);
 
@@ -572,11 +572,18 @@ void a_full_queue_rejects_runs_and_a_queued_run_can_be_cancelled(crow::SimpleApp
     assert(solution.code == 409);
     assert(text(solution.body["error"]["code"]) == "result_not_ready");
 
+    // It left its place in the queue, and can be forgotten.
+    const auto replacement = submit(server, "gated", R"({"input": {}})");
+    assert(replacement.code == 202);
     assert(
         send(server, crow::HTTPMethod::Delete, "/assignment/runs/" + queued_id).code
         == 204);
     assert(
         send(server, crow::HTTPMethod::GET, "/assignment/runs/" + queued_id).code == 404);
+
+    run_gate.open();
+    wait_for(server, running, "succeeded");
+    wait_for(server, text(replacement.body["id"]), "succeeded");
 }
 
 // Destroying the blueprint stops its runs: the running one stops, the queued

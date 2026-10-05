@@ -199,6 +199,9 @@ reviewed by hand before tagging.
 - REST: a request body whose arrays and objects nest deeper than 64 levels is
   rejected with `400 invalid_json` before it is parsed, instead of exhausting
   the stack of the parser's thread.
+- REST: cancelling a queued run makes it `cancelled` at once: it leaves its
+  place in the queue and can be deleted, instead of staying `queued` until a
+  worker took it.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

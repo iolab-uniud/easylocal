@@ -11,6 +11,7 @@
 #include <functional>
 #include <future>
 #include <mutex>
+#include <stop_token>
 #include <thread>
 #include <utility>
 #include <vector>
@@ -33,8 +34,10 @@ namespace easylocal::rest
 /// A fixed set of worker threads that run tasks taken from a bounded queue.
 ///
 /// A task that throws does not stop its worker: the exception is ignored, and
-/// the task is responsible for recording it. Destruction refuses new tasks,
-/// lets the workers finish the queued ones, and joins them.
+/// the task is responsible for recording it. A task whose stop token is
+/// stopped before a worker takes it never runs, and leaves its place in the
+/// queue. Destruction refuses new tasks, lets the workers finish the queued
+/// ones, and joins them.
 class execution_pool
 {
 private:
@@ -47,6 +50,13 @@ private:
     // us the same move-only, one-shot callable semantics for the queue.
     using queued_task = std::packaged_task<void()>;
 #endif
+
+    // A queued task, dropped once its stop token is stopped.
+    struct queued_entry
+    {
+        queued_task task;
+        std::stop_token cancel;
+    };
 
 public:
     /// From the number of worker threads and the capacity of the queue of
@@ -80,17 +90,28 @@ public:
 
     /// Queues a task, and returns whether it was accepted: false when the queue
     /// is full or the pool is being destroyed.
+    ///
+    /// Once cancel is stopped the task is dropped without running, if no
+    /// worker has taken it yet; the tasks dropped do not count against the
+    /// capacity.
     template<class Function>
         requires std::invocable<Function&>
-    [[nodiscard]] bool try_submit(Function&& function)
+    [[nodiscard]] bool try_submit(Function&& function, std::stop_token cancel = {})
     {
         {
             const std::lock_guard lock{mutex_};
+            std::erase_if(queue_, [](const queued_entry& entry) {
+                return entry.cancel.stop_requested();
+            });
             if (stopping_ || queue_.size() >= queue_capacity_)
             {
                 return false;
             }
-            queue_.emplace_back(std::forward<Function>(function));
+            queue_.push_back(
+                queued_entry{
+                    .task = queued_task{std::forward<Function>(function)},
+                    .cancel = std::move(cancel),
+                });
         }
         ready_.notify_one();
         return true;
@@ -113,7 +134,7 @@ private:
     {
         while (true)
         {
-            queued_task task;
+            queued_entry entry;
             {
                 std::unique_lock lock{mutex_};
                 ready_.wait(lock, [this] {
@@ -125,15 +146,17 @@ private:
                     return;
                 }
 
-                task = std::move(queue_.front());
+                entry = std::move(queue_.front());
                 queue_.pop_front();
             }
+            if (entry.cancel.stop_requested())
+                continue;
 
             // A failed job must not kill the worker.  Application-specific
             // task state is responsible for recording/reporting exceptions.
             try
             {
-                task();
+                entry.task();
             }
             catch (...)
             {
@@ -144,7 +167,7 @@ private:
     std::size_t queue_capacity_;
     std::mutex mutex_;
     std::condition_variable ready_;
-    std::deque<queued_task> queue_;
+    std::deque<queued_entry> queue_;
     bool stopping_{};
     std::vector<std::jthread> workers_;
 };
