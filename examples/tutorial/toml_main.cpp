@@ -1,5 +1,5 @@
 // The tutorial's Simulated Annealing, configured from a TOML file (ConfigTOML
-// component): ./easylocal_tutorial_toml annealing.toml
+// component): easylocal_tutorial_toml [file.toml], annealing.toml by default.
 #include "tsp.hpp"
 
 #include <easylocal/adapters/toml.hpp>
@@ -30,15 +30,20 @@ int main(int argc, char* argv[])
 
     // [toml] ---------------------------------------------------------------
     el::config::parameter_set configuration;
-    configuration.add("solver", sa.configuration()); // --solver.search.*
+    configuration.add("solver", sa.configuration()); // paths solver.*
 
     // Read the file: every key becomes a "path = value" override.
     const auto file =
         el::config::load_toml_file(argc > 1 ? argv[1] : EASYLOCAL_TUTORIAL_CONFIG);
     if (!file)
     {
+        // A value's diagnostic names its path; a parse error, its line.
         for (const auto& diagnostic : file.diagnostics)
-            std::cerr << diagnostic.path << ": " << diagnostic.message << '\n';
+        {
+            if (!diagnostic.path.empty())
+                std::cerr << diagnostic.path << ": ";
+            std::cerr << diagnostic.message << '\n';
+        }
         return 2;
     }
 
@@ -57,7 +62,7 @@ int main(int argc, char* argv[])
     std::mt19937_64 rng{42};
     auto search = sa.bind(tsp);
     const auto result = search.run(search.initial_solution(), rng);
-    std::cout << applied.applied_parameter_blocks << " parameter blocks from the file\n"
+    std::cout << file.overrides.size() << " values from the file\n"
               << "cost " << result.cost << '\n';
     return 0;
 }

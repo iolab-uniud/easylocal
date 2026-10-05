@@ -7,14 +7,14 @@
 
 #include <easylocal/config/overrides.hpp>
 
-#include <toml++/toml.hpp>
-
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <filesystem>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <toml++/toml.hpp>
 #include <utility>
 #include <vector>
 
@@ -26,8 +26,8 @@ enum class toml_config_error
 {
     /// The text is not valid TOML.
     parse_error,
-    /// A value that is not a string, a number, a boolean or an array of numbers
-    /// and booleans.
+    /// A value that is not a string, a number, a boolean or an array of numbers,
+    /// booleans and such arrays: a date, a time, or an array holding a string.
     unsupported_value,
 };
 
@@ -38,8 +38,13 @@ struct toml_config_diagnostic
     toml_config_error error;
     /// The dotted path of the value, empty for a parse error.
     std::string path;
-    /// The description of the error.
+    /// The description of the error; for a parse error, after the place of
+    /// the error, `file:line:column: ` (`line:column: ` without a file name).
     std::string message;
+    /// The line of a parse error, from 1; 0 when it is not known.
+    std::size_t line{};
+    /// The column of a parse error, from 1; 0 when it is not known.
+    std::size_t column{};
 };
 
 /// The overrides read from a TOML document, and the errors found.
@@ -107,39 +112,37 @@ inline bool toml_scalar_text(const toml::node& node, std::string& output)
     return false;
 }
 
+// The text of a value, or why it has none. An array is the text of a list,
+// [a, b], its elements numbers, booleans or arrays of them: a string inside an
+// array has no text yet, since a list's elements are not quoted.
 [[nodiscard]]
-inline bool toml_value_text(const toml::node& node, std::string& output)
+inline std::string_view toml_value_text(const toml::node& node, std::string& output)
 {
-    if (toml_scalar_text(node, output))
-    {
-        return true;
-    }
-
     const auto* const array = node.as_array();
     if (array == nullptr)
     {
-        return false;
+        if (toml_scalar_text(node, output))
+            return {};
+        return "a TOML date or time is not a parameter value";
     }
 
     output = '[';
     bool first = true;
     for (const auto& element : *array)
     {
+        if (element.is_string())
+            return "an array cannot hold strings: its elements must be numbers, "
+                   "booleans or arrays";
         std::string element_text;
-        if (element.is_string() || !toml_scalar_text(element, element_text))
-        {
-            return false;
-        }
-
+        if (const auto error = toml_value_text(element, element_text); !error.empty())
+            return error;
         if (!first)
-        {
             output += ", ";
-        }
         output += element_text;
         first = false;
     }
     output += ']';
-    return true;
+    return {};
 }
 
 inline void flatten_toml_table(
@@ -159,13 +162,12 @@ inline void flatten_toml_table(
         }
 
         std::string value;
-        if (!toml_value_text(node, value))
+        if (const auto error = toml_value_text(node, value); !error.empty())
         {
             result.diagnostics.push_back({
                 .error = toml_config_error::unsupported_value,
                 .path = std::move(path),
-                .message =
-                    "TOML value cannot be represented by the textual override mapper",
+                .message = std::string{error},
             });
             continue;
         }
@@ -188,11 +190,28 @@ inline void append_toml_parse_error(
     });
 }
 
+// A parse error with its place: file:line:column: description.
 inline void append_toml_parse_error(
     toml_config_parse_result& result,
     const toml::parse_error& error)
 {
-    append_toml_parse_error(result, error.description());
+    const auto& source = error.source();
+    const auto line = static_cast<std::size_t>(source.begin.line);
+    const auto column = static_cast<std::size_t>(source.begin.column);
+    std::string place;
+    if (source.path && !source.path->empty())
+        place = *source.path + ':';
+    if (line != 0)
+        place += std::to_string(line) + ':' + std::to_string(column) + ':';
+    result.diagnostics.push_back({
+        .error = toml_config_error::parse_error,
+        .path = {},
+        .message = place.empty()
+            ? std::string{error.description()}
+            : place + ' ' + std::string{error.description()},
+        .line = line,
+        .column = column,
+    });
 }
 
 // The overrides of the TOML document that parse() returns, with its parse

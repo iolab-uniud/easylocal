@@ -316,7 +316,9 @@ inline constexpr std::size_t max_json_depth = 64;
 }
 
 // A JSON parameter value as the text a parameter_set parses: numbers in their
-// shortest exact form, true/false, strings verbatim, [a, b] for arrays.
+// shortest exact form, true/false, strings verbatim, [a, b] for arrays of
+// numbers, booleans and such arrays. A string inside an array is rejected, as
+// in a TOML file: a list's elements are not quoted, so "a, b" would be two.
 [[nodiscard]] inline std::string parameter_text(
     const crow::json::rvalue& value,
     const std::string& path)
@@ -344,10 +346,11 @@ inline constexpr std::size_t max_json_depth = 64;
         std::string text{"["};
         for (const auto& element : value)
         {
-            if (element.t() == crow::json::type::List
+            if (element.t() == crow::json::type::String
                 || element.t() == crow::json::type::Object)
                 throw std::invalid_argument{
-                    "parameter '" + path + "': array elements must be values"};
+                    "parameter '" + path
+                    + "': array elements must be numbers, booleans or arrays"};
             if (text.size() > 1)
                 text += ", ";
             text += parameter_text(element, path);

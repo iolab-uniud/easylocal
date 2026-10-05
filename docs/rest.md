@@ -244,8 +244,10 @@ are equivalent, and may be mixed:
 }
 ```
 
-Values are JSON numbers, booleans, strings or arrays of them; a string is
-read as the parameter's text, so the values that `GET /parameters` lists can be
+Values are JSON numbers, booleans, strings, or arrays of numbers, booleans
+and such arrays (`[[1, 2], [3]]`), as in a TOML file; a string inside an array
+is rejected, since list elements are not quoted. A string is read as the
+parameter's text, so the values that `GET /parameters` lists can be
 sent back as they are. They are applied all or none before the run's initial
 solution is built: an unknown path or an invalid value rejects the request
 with `422` and the code `invalid_parameters`, whose message names each path.

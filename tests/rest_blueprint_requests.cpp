@@ -603,6 +603,25 @@ void json_parameter_values_become_text()
     assert(parameter_text(crow::json::load("true"), "p") == "true");
     assert(parameter_text(crow::json::load(R"("eil51.tsp")"), "p") == "eil51.tsp");
     assert(parameter_text(crow::json::load("[1, 2.5]"), "p") == "[1, 2.5]");
+    assert(parameter_text(crow::json::load("false"), "p") == "false");
+    assert(parameter_text(crow::json::load("[true, false]"), "p") == "[true, false]");
+    // Arrays of arrays are lists of lists, as on the command line.
+    assert(parameter_text(crow::json::load("[[1, 2], [3]]"), "p") == "[[1, 2], [3]]");
+    // A string inside an array, which "a, b" would split, an object or null:
+    // rejected.
+    for (const auto* const rejected : {R"(["a, b"])", R"([{"x": 1}])", "null", "[null]"})
+    {
+        std::string message;
+        try
+        {
+            static_cast<void>(parameter_text(crow::json::load(rejected), "p"));
+        }
+        catch (const std::invalid_argument& error)
+        {
+            message = error.what();
+        }
+        assert(message.starts_with("parameter 'p': "));
+    }
 }
 
 void an_arithmetic_target_is_a_number()

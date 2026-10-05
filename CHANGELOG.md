@@ -221,6 +221,16 @@ reviewed by hand before tagging.
   (`target_reached`, `cancelled`, ...), its `cost` and its final counts. A run
   is `cancelled` when its runner says so, no longer when a cancellation came
   after it had ended on its own terms.
+- TOML: a parse error says where it is: `config::toml_config_diagnostic` has
+  the `line` and the `column` of the error, and its message starts with
+  `file:line:column:`. An array of arrays, `[[1, 2], [3]]`, sets a list of
+  lists, as on the command line, and an unsupported value says what it is (a
+  date or time, or an array holding strings) instead of naming the "textual
+  override mapper".
+- **Breaking:** REST: the `parameters` of a run accept arrays of arrays, and
+  reject a string inside an array with `422`, as a TOML file does: `["a, b"]`
+  was split at the comma into two elements. The tutorial's TOML program
+  prints the number of values read and a parse error without an empty path.
 - **Breaking:** REST: the solution of a run that ended without one (cancelled
   while queued) is `409 no_solution`, where it was `result_not_ready` as for a
   run still active. The REST reference no longer calls the status shape

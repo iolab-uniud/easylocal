@@ -161,6 +161,13 @@ max_iterations = 500
     assert(!malformed.diagnostics.empty());
     assert(malformed.diagnostics.front().error ==
            easylocal::config::toml_config_error::parse_error);
+    // A parse error says where it is: the file, the line and the column.
+    const auto misplaced =
+        easylocal::config::parse_toml_text("a = 1\nb = = 2\n", "annealing.toml");
+    assert(!misplaced);
+    assert(misplaced.diagnostics.front().line == 2);
+    assert(misplaced.diagnostics.front().column > 0);
+    assert(misplaced.diagnostics.front().message.starts_with("annealing.toml:2:"));
 
     const auto unsupported = easylocal::config::parse_toml_text(
         "date = 1979-05-27\n");
@@ -177,6 +184,15 @@ max_iterations = 500
     assert(string_array.diagnostics.front().error ==
            easylocal::config::toml_config_error::unsupported_value);
     assert(string_array.diagnostics.front().path == "names");
+    assert(string_array.diagnostics.front().message.find("strings") != std::string::npos);
+
+    // Arrays of arrays are lists of lists, as on the command line.
+    const auto nested = easylocal::config::parse_toml_text("pairs = [[1, 2], [3]]\n");
+    assert(nested);
+    assert(nested.overrides.front().value == "[[1, 2], [3]]");
+    const auto nested_strings =
+        easylocal::config::parse_toml_text("pairs = [[1], [\"a\"]]\n");
+    assert(!nested_strings);
 
     values_are_read_by_their_toml_type();
 }

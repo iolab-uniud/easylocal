@@ -294,15 +294,20 @@ the same `path = value` override as the command line, and applies them with
 <!-- snippet: tutorial/toml_main.cpp:toml -->
 ```cpp
 el::config::parameter_set configuration;
-configuration.add("solver", sa.configuration()); // --solver.search.*
+configuration.add("solver", sa.configuration()); // paths solver.*
 
 // Read the file: every key becomes a "path = value" override.
 const auto file =
     el::config::load_toml_file(argc > 1 ? argv[1] : EASYLOCAL_TUTORIAL_CONFIG);
 if (!file)
 {
+    // A value's diagnostic names its path; a parse error, its line.
     for (const auto& diagnostic : file.diagnostics)
-        std::cerr << diagnostic.path << ": " << diagnostic.message << '\n';
+    {
+        if (!diagnostic.path.empty())
+            std::cerr << diagnostic.path << ": ";
+        std::cerr << diagnostic.message << '\n';
+    }
     return 2;
 }
 
@@ -318,8 +323,10 @@ if (!applied)
 }
 ```
 
-- `load_toml_file` fails on a malformed file, and on values that have no
-  parameter counterpart, such as dates; its diagnostics give the path.
+- `load_toml_file` fails on a malformed file, whose diagnostic starts with
+  `file:line:column:`, and on values that have no parameter counterpart, such
+  as dates or an array of strings; their diagnostics give the path. An array
+  of arrays, `[[1, 2], [3]]`, sets a list of lists.
 - Each value is read by its TOML type: `true` and `false` set a `bool`, an
   integer sets a number, a float sets only a floating-point number (`3.0`
   does not set an integer).
