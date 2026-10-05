@@ -1,7 +1,10 @@
 #pragma once
 
-// Dependency-free EasyLocal Core umbrella. Optional adapters under
-// easylocal/adapters/ deliberately remain opt-in headers/components.
+/// \file
+/// EasyLocal Core, without dependencies, in one header.
+///
+/// The optional adapters, under easylocal/adapters/, are included on their
+/// own, with their components.
 // IWYU pragma: begin_exports
 #include <easylocal/app/app.hpp>
 #include <easylocal/app/check.hpp>

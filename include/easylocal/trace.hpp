@@ -1,7 +1,10 @@
 #pragma once
 
-// Semantic search tracing. Include individual trace/ headers to pull in only
-// the events and tracer protocol, or a specific recorder.
+/// \file
+/// The search tracing (easylocal::trace), in one header.
+///
+/// Include a header of trace/ to pull in only the events and the tracer
+/// protocol, or one recorder.
 // IWYU pragma: begin_exports
 #include <easylocal/trace/binary.hpp>
 #include <easylocal/trace/events.hpp>

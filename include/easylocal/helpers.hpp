@@ -1,7 +1,10 @@
 #pragma once
 
-// Problem-side components: SolutionManager and NeighborhoodExplorer
-// protocols, neighborhood composition and recipes.
+/// \file
+/// The problem-side components, in one header.
+///
+/// The SolutionManager and neighborhood explorer protocols, neighborhood
+/// composition and the recipes.
 // IWYU pragma: begin_exports
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/neighborhood_union.hpp>

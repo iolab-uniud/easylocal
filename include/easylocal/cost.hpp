@@ -1,8 +1,10 @@
 #pragma once
 
-// Cost models (easylocal::cost): value contract and delta, semantic relations,
-// lexicographic, hierarchical and pareto costs, cost expressions over
-// components.
+/// \file
+/// The cost models (easylocal::cost), in one header.
+///
+/// The value contract and delta, the semantic relations, the lexicographic,
+/// hierarchical and Pareto costs, and the cost expressions over components.
 // IWYU pragma: begin_exports
 #include <easylocal/cost/concepts.hpp>
 #include <easylocal/cost/expression.hpp>
