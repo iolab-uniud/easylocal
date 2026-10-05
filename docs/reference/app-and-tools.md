@@ -154,9 +154,13 @@ lie within the declared domain and name a parameter of the app or of
 
 `write_irace_stub(irace_stub) -> irace_stub_result` writes the scenario:
 
-- `parameters.txt`: the parameters with a finite domain, as `path "--path=" type
-  (values)`, with `r`, `i` (`,log` on a logarithmic range), `o` for a set of
-  numbers and `c` for text and the runner; real values have irace's 4 digits
+- `parameters.txt`: the parameters with a finite domain, as `name "--path=" type
+  (values)`, where `name`, the irace identifier, is the path with every
+  character but letters, digits, `.` and `_` turned into `_` (a numeric suffix
+  tells apart two paths that would get the same identifier, and `runner` is
+  reserved); conditions, `[forbidden]` and `configurations.txt` use the
+  identifiers, and `configurations.txt` maps them back through the switch;
+  with `r`, `i` (`,log` on a logarithmic range), `o` for a set of numbers and `c` for text and the runner; real values have irace's 4 digits
   after the point, or as many as a bound needs (at most 15, written as
   `digits` in `scenario.txt`), and an open real bound moves inward by one such
   step, an open integer bound to the nearest integer inside the range. With several runners a categorical `runner` is

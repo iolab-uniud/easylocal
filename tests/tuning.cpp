@@ -540,6 +540,45 @@ void bounds_keep_their_precision()
     std::filesystem::remove_all(directory);
 }
 
+// irace names a parameter with letters, digits, '.' and '_': a path with other
+// characters (a runner "slow-fi") gets an identifier of its own, distinct from
+// the others, while its switch stays the program's.
+void parameters_get_irace_identifiers()
+{
+    using kind = config::parameter_kind;
+    const auto directory = fresh_directory("easylocal-tuning-identifiers");
+    const auto unit = config::describe_domain(config::range(0.0, 1.0));
+    easylocal::irace_stub stub{
+        .directory = directory,
+        .program = "solver",
+        .parameters =
+            {parameter("runners.slow-fi.rate", "0.5", kind::real, unit),
+                parameter("runners.slow_fi.rate", "0.25", kind::real, unit),
+                parameter("runners.fi.rate", "0.75", kind::real, unit)},
+        .ranges = {},
+        .requirements = {},
+        .runners = {"slow-fi", "slow_fi", "fi"},
+        .fixed = {},
+        .instance = {},
+    };
+    const auto result = easylocal::write_irace_stub(stub);
+    assert(result);
+    const auto parameters = read_file(directory / "parameters.txt");
+    assert(contains(
+        parameters,
+        "runners.slow_fi.rate \"--runners.slow-fi.rate=\" r (0, 1) | runner == "
+        "\"slow-fi\"\n"));
+    assert(contains(
+        parameters,
+        "runners.slow_fi.rate_2 \"--runners.slow_fi.rate=\" r (0, 1) | runner == "
+        "\"slow_fi\"\n"));
+    assert(
+        read_file(directory / "configurations.txt")
+        == "runner runners.slow_fi.rate runners.slow_fi.rate_2 runners.fi.rate\n"
+           "\"slow-fi\" 0.5 NA NA\n");
+    std::filesystem::remove_all(directory);
+}
+
 } // namespace
 
 int main()
@@ -554,4 +593,5 @@ int main()
     the_stub_reads_numbers_in_any_locale();
     an_unlimited_limit_starts_at_its_upper_bound();
     bounds_keep_their_precision();
+    parameters_get_irace_identifiers();
 }

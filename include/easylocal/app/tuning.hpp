@@ -23,11 +23,14 @@
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <initializer_list>
 #include <istream>
 #include <limits>
+#include <map>
 #include <optional>
 #include <ostream>
+#include <set>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -268,8 +271,9 @@ inline std::string irace_number(const double value)
 // One line of parameters.txt.
 struct irace_parameter
 {
-    std::string name;
-    char type{}; // c, o, i, r
+    std::string name; // the irace identifier
+    std::string path; // the program's parameter; empty for the runner
+    char type{};      // c, o, i, r
     bool logarithmic{};
     std::vector<std::string> values; // two bounds, or the choices
     std::string condition;
@@ -279,6 +283,47 @@ struct irace_parameter
     std::string note;
     std::string_view description;
 };
+
+// The irace identifiers of the parameters, by path: irace names a parameter
+// with letters, digits, '.' and '_', so every other character becomes '_',
+// and an identifier taken already (by another path, or "runner", the choice
+// of the runner) gets a numeric suffix. The switch stays the path.
+[[nodiscard]]
+inline std::map<std::string, std::string, std::less<>> irace_identifiers(
+    const std::vector<config::parameter_info>& infos)
+{
+    std::map<std::string, std::string, std::less<>> identifiers;
+    std::set<std::string, std::less<>> taken{"runner"};
+    for (const auto& info : infos)
+    {
+        std::string base = info.path;
+        for (auto& character : base)
+        {
+            const bool kept = (character >= 'a' && character <= 'z')
+                || (character >= 'A' && character <= 'Z')
+                || (character >= '0' && character <= '9') || character == '.'
+                || character == '_';
+            if (!kept)
+                character = '_';
+        }
+        auto identifier = base;
+        for (std::size_t suffix = 2; taken.contains(identifier); ++suffix)
+            identifier = base + '_' + easylocal::detail::number_text(suffix);
+        taken.insert(identifier);
+        identifiers.emplace(info.path, std::move(identifier));
+    }
+    return identifiers;
+}
+
+// The identifier of path; the path itself when it is not a parameter.
+[[nodiscard]]
+inline std::string irace_identifier_of(
+    const std::string_view path,
+    const std::map<std::string, std::string, std::less<>>& identifiers)
+{
+    const auto found = identifiers.find(path);
+    return found != identifiers.end() ? found->second : std::string{path};
+}
 
 [[nodiscard]]
 inline std::string irace_domain_text(const irace_parameter& parameter)
@@ -302,7 +347,8 @@ inline std::string irace_line(const irace_parameter& parameter)
     std::string type{parameter.type};
     if (parameter.logarithmic)
         type += ",log";
-    std::string line = parameter.name + " \"--" + parameter.name + "=\" " + type + ' '
+    const auto& path = parameter.path.empty() ? parameter.name : parameter.path;
+    std::string line = parameter.name + " \"--" + path + "=\" " + type + ' '
         + irace_domain_text(parameter);
     if (!parameter.condition.empty())
         line += " | " + parameter.condition;
@@ -407,6 +453,7 @@ inline void suggest_irace_domain(
 struct declared_irace_parameter
 {
     std::string name;
+    std::string path; // what its switch, "--<path>=", sets
     char type{};
     std::vector<std::string> values;
     std::string condition;
@@ -443,6 +490,10 @@ inline std::vector<declared_irace_parameter> read_irace_parameters(std::istream&
             continue;
         declared_irace_parameter parameter;
         parameter.name = std::string{text.substr(0, name_end)};
+        const auto switch_begin = text.find('"', name_end);
+        auto switch_text = text.substr(switch_begin + 1, switch_end - switch_begin - 1);
+        if (switch_text.starts_with("--") && switch_text.ends_with('='))
+            parameter.path = std::string{switch_text.substr(2, switch_text.size() - 3)};
         parameter.type = type.front();
         auto values = text.substr(open + 1, close - open - 1);
         while (!values.empty())
@@ -532,6 +583,7 @@ inline std::vector<irace_parameter> irace_parameters(
     const int digits,
     std::vector<std::string>& errors)
 {
+    const auto identifiers = irace_identifiers(stub.parameters);
     std::vector<irace_parameter> result;
     for (const auto& range : stub.ranges)
     {
@@ -561,7 +613,8 @@ inline std::vector<irace_parameter> irace_parameters(
             && std::ranges::find(stub.runners, owner) == stub.runners.end())
             continue; // a runner that is not tuned
         irace_parameter parameter;
-        parameter.name = info.path;
+        parameter.name = irace_identifier_of(info.path, identifiers);
+        parameter.path = info.path;
         parameter.default_value = info.value;
         parameter.description = info.description;
         if (!owner.empty() && stub.runners.size() > 1)
@@ -636,10 +689,10 @@ inline std::string irace_reference(
     const bool boolean =
         info != infos.end() && info->kind == config::parameter_kind::boolean;
     const auto tuned = std::ranges::find_if(parameters, [&](const auto& parameter) {
-        return parameter.active && parameter.name == path;
+        return parameter.active && parameter.path == path;
     });
     if (tuned != parameters.end())
-        return boolean ? "(" + std::string{path} + " == \"true\")" : std::string{path};
+        return boolean ? "(" + tuned->name + " == \"true\")" : tuned->name;
     if (info == infos.end())
         return "NA";
     if (boolean)
@@ -656,12 +709,14 @@ inline std::string irace_reference(
 [[nodiscard]]
 inline std::string irace_name(
     const std::string_view path,
-    const std::vector<config::parameter_info>& infos)
+    const std::vector<config::parameter_info>& infos,
+    const std::map<std::string, std::string, std::less<>>& identifiers)
 {
     const auto info = std::ranges::find(infos, path, &config::parameter_info::path);
+    const auto identifier = irace_identifier_of(path, identifiers);
     if (info != infos.end() && info->kind == config::parameter_kind::boolean)
-        return "(" + std::string{path} + " == \"true\")";
-    return std::string{path};
+        return "(" + identifier + " == \"true\")";
+    return identifier;
 }
 
 [[nodiscard]]
@@ -671,7 +726,7 @@ inline bool refers_to_tuned(
 {
     return std::ranges::any_of(expression.references(), [&](const std::string& path) {
         return std::ranges::any_of(parameters, [&](const auto& parameter) {
-            return parameter.active && parameter.name == path;
+            return parameter.active && parameter.path == path;
         });
     });
 }
@@ -684,14 +739,17 @@ inline void apply_irace_conditions(
     std::vector<irace_parameter>& parameters,
     const std::vector<config::parameter_info>& infos)
 {
+    const auto identifiers = irace_identifiers(infos);
     for (auto& parameter : parameters)
     {
+        if (parameter.path.empty())
+            continue; // the runner
         const auto info =
-            std::ranges::find(infos, parameter.name, &config::parameter_info::path);
+            std::ranges::find(infos, parameter.path, &config::parameter_info::path);
         if (info == infos.end() || !info->condition)
             continue;
         const auto named = info->condition->text_with([&](const std::string_view path) {
-            return irace_name(path, infos);
+            return irace_name(path, infos, identifiers);
         });
         if (!refers_to_tuned(*info->condition, parameters))
         {
@@ -736,6 +794,7 @@ inline std::vector<irace_forbidden_line> irace_forbidden(
     const std::vector<irace_parameter>& parameters,
     const std::vector<config::parameter_info>& infos)
 {
+    const auto identifiers = irace_identifiers(infos);
     std::vector<irace_forbidden_line> result;
     for (const auto& requirement : requirements)
     {
@@ -749,7 +808,7 @@ inline std::vector<irace_forbidden_line> irace_forbidden(
                 }),
             .named =
                 "!" + requirement.expression.text_with([&](const std::string_view path) {
-                    return irace_name(path, infos);
+                    return irace_name(path, infos, identifiers);
                 }),
         };
         if (line.named == line.expression)
@@ -939,21 +998,42 @@ inline irace_stub_result write_irace_stub(const irace_stub& stub)
     const auto declared = detail::read_irace_parameters(declared_in);
     const auto default_runner =
         stub.runners.empty() ? std::string{} : stub.runners.front();
+    // Each declared parameter sets the program's parameter its switch names,
+    // or else the one of its identifier (or path).
+    std::map<std::string, std::string, std::less<>> paths;
+    for (const auto& [path, identifier] : detail::irace_identifiers(stub.parameters))
+        paths.emplace(identifier, path);
+    const auto known = [&](const std::string_view path) {
+        return std::ranges::find(stub.parameters, path, &config::parameter_info::path)
+            != stub.parameters.end()
+            || std::ranges::find(stub.fixed, path, &config::owned_text_override::path)
+            != stub.fixed.end();
+    };
     std::vector<std::string> values;
     for (const auto& parameter : declared)
     {
+        std::string path;
+        if (parameter.name != "runner")
+        {
+            if (!parameter.path.empty() && known(parameter.path))
+                path = parameter.path;
+            else if (const auto found = paths.find(parameter.name); found != paths.end())
+                path = found->second;
+            else if (known(parameter.name))
+                path = parameter.name;
+        }
         std::string value;
         if (parameter.name == "runner")
             value = default_runner;
         else if (const auto fixed = std::ranges::find(
                      stub.fixed,
-                     parameter.name,
+                     path,
                      &config::owned_text_override::path);
-            fixed != stub.fixed.end())
+            !path.empty() && fixed != stub.fixed.end())
             value = fixed->value;
         else if (const auto info = std::ranges::find(
                      stub.parameters,
-                     parameter.name,
+                     path,
                      &config::parameter_info::path);
             info != stub.parameters.end())
             value = info->value;
@@ -964,11 +1044,9 @@ inline irace_stub_result write_irace_stub(const irace_stub& stub)
                 + ", which is not a parameter to tune");
             continue;
         }
-        const auto owner = detail::runner_of(parameter.name);
-        const auto info = std::ranges::find(
-            stub.parameters,
-            parameter.name,
-            &config::parameter_info::path);
+        const auto owner = detail::runner_of(path);
+        const auto info =
+            std::ranges::find(stub.parameters, path, &config::parameter_info::path);
         const bool runner_off = parameter.condition.starts_with("runner == ")
             && !owner.empty() && owner != default_runner;
         const bool condition_off =
@@ -980,7 +1058,7 @@ inline irace_stub_result write_irace_stub(const irace_stub& stub)
         }
         auto [clamped, moved] = detail::clamp_irace_value(parameter, value);
         if (moved)
-            result.moved.push_back(parameter.name + " = " + clamped);
+            result.moved.push_back(path + " = " + clamped);
         values.push_back(parameter.type == 'c' ? '"' + clamped + '"' : clamped);
     }
     result.tuned = declared.size();

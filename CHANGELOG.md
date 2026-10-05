@@ -188,6 +188,12 @@ reviewed by hand before tagging.
 - The irace scenario keeps the precision of real bounds with more than 4
   decimals (`digits` in scenario.txt, at most 15), which irace rejected, and
   open integer bounds that are fractional are no longer off by one.
+- Each parameter of an irace scenario gets an irace identifier (other
+  characters than letters, digits, `.` and `_` turned into `_`, a numeric
+  suffix on a collision, `runner` reserved), used in parameters.txt, its
+  conditions and `[forbidden]` lines and configurations.txt, while its switch
+  stays the path: a runner such as `slow-fi` gave a parameters.txt that irace
+  rejected.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 
