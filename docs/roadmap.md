@@ -81,6 +81,12 @@ same public surface the other adapters use (`app`, `Session`, `app.run`, the
 parameter sets), with a binding library for Python, such as nanobind, and
 a C interface for Julia.
 
+Each frontend is a template on the app's type today: the TextUI and REST are
+compiled with the problem. A binding needs a session whose type does not
+depend on the app's, a runtime-erased Session (runner names, parameter paths,
+solutions and costs as text or JSON, runs by name), which the TextUI and REST
+could then share instead of each instantiating its own; after 4.0.
+
 **When.** Not scheduled. Like the other adapters, it would live outside
 `EasyLocal::Core` and could become a separate project once the API is stable.
 
