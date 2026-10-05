@@ -1613,12 +1613,14 @@ struct MetropolisAcceptance
         assert(std::isfinite(temperature));
         assert(temperature > 0.0);
 
+        // In double: long double arithmetic, software on aarch64 Linux and
+        // x87 on x86-64, costs several times more and dominated cheap moves,
+        // and the probability is compared with a double anyway.
         using cost::delta;
-        const auto difference =
-            static_cast<long double>(delta(candidate, current));
+        const auto difference = static_cast<double>(delta(candidate, current));
         assert(!std::isnan(difference));
 
-        if (difference <= 0.0L)
+        if (difference <= 0.0)
         {
             return true;
         }
@@ -1627,10 +1629,7 @@ struct MetropolisAcceptance
             return false;
         }
 
-        // The probability is compared with a double, so exp in double: the
-        // long double exp costs several times more and dominated cheap moves.
-        const auto probability = std::exp(static_cast<double>(
-            -difference / static_cast<long double>(temperature)));
+        const auto probability = std::exp(-difference / temperature);
         std::uniform_real_distribution<double> draw{0.0, 1.0};
         return draw(rng) < probability;
     }

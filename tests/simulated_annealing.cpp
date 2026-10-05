@@ -14,6 +14,7 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
@@ -768,6 +769,16 @@ int main()
         const auto soft_improvement = hierarchical{0, 9.0};
         const auto hard_improvement = hierarchical{-1, 1000.0};
         const auto hard_worsening = hierarchical{1, -1000.0};
+
+        // The delta is a double, so that Metropolis needs no long double
+        // arithmetic, unless the soft delta is a long double.
+        static_assert(
+            std::same_as<decltype(easylocal::cost::delta(current, current)), double>);
+        static_assert(std::same_as<
+            decltype(easylocal::cost::delta(
+                hierarchical{0, 1.0L},
+                hierarchical{0, 1.0L})),
+            long double>);
 
         ok &= expect(
             metropolis.accept(soft_improvement, current, 2.0, rng),

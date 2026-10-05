@@ -342,6 +342,10 @@ reviewed by hand before tagging.
 
 ### Fixed
 
+- The Metropolis criterion of Simulated Annealing computes in `double`, and
+  `cost::delta` of a `cost::hierarchical` returns a `double` (a `long double`
+  only when the soft delta is one): every worsening move did `long double`
+  arithmetic, software on aarch64 Linux and x87 on x86-64.
 - `trace::jsonl_recorder` writes its numbers in the classic locale: a stream
   imbued with a locale that groups digits wrote `"evaluations":1,234`, which
   is not JSON. The line keeps the stream's flags and precision only.

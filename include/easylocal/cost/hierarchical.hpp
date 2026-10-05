@@ -33,6 +33,20 @@ concept synth_three_way_comparable =
         { lhs < rhs } -> std::convertible_to<bool>;
     };
 
+// The type of a hierarchical delta, which has the infinities of a change of
+// the hard cost: double, or long double when the soft delta is one. A double
+// keeps the Metropolis criterion off long double arithmetic, which is
+// software on aarch64 Linux and x87 on x86-64.
+template<class SoftCost>
+using hierarchical_delta_t = std::conditional_t<
+    std::same_as<
+        std::remove_cvref_t<decltype(delta(
+            std::declval<const SoftCost&>(),
+            std::declval<const SoftCost&>()))>,
+        long double>,
+    long double,
+    double>;
+
 } // namespace detail
 
 /// A hierarchical cost: the hard cost has strict priority, the soft cost is
@@ -93,7 +107,7 @@ public:
 
     /// `delta(candidate, current)`, when the soft cost has a delta.
     [[nodiscard]]
-    friend constexpr long double operator-(
+    friend constexpr auto operator-(
         const hierarchical& candidate,
         const hierarchical& current)
         requires has_delta<hierarchical>
@@ -106,38 +120,40 @@ private:
     SoftCost soft_;
 };
 
-/// Hard-preserving numeric delta.
+/// Hard-preserving numeric delta: minus infinity when the hard cost improves,
+/// infinity when it worsens, the soft delta otherwise.
 ///
-/// A namespace-scope function (not a hidden friend) so that the qualified
-/// cost::delta(...) also finds it.
+/// A double, or a long double when the soft delta is one. A namespace-scope
+/// function (not a hidden friend) so that the qualified cost::delta(...) also
+/// finds it.
 template<class HardCost, class SoftCost>
     requires requires(const HardCost& lhs, const HardCost& rhs) {
         { lhs < rhs } -> std::convertible_to<bool>;
         { lhs == rhs } -> std::convertible_to<bool>;
     } && has_delta<SoftCost>
 [[nodiscard]]
-constexpr long double delta(
+constexpr auto delta(
     const hierarchical<HardCost, SoftCost>& candidate,
     const hierarchical<HardCost, SoftCost>& current)
 {
+    using result = detail::hierarchical_delta_t<SoftCost>;
     if (candidate.hard() < current.hard())
     {
-        return -std::numeric_limits<long double>::infinity();
+        return -std::numeric_limits<result>::infinity();
     }
     if (current.hard() < candidate.hard())
     {
-        return std::numeric_limits<long double>::infinity();
+        return std::numeric_limits<result>::infinity();
     }
     if (candidate.hard() == current.hard())
     {
-        return static_cast<long double>(
-            delta(candidate.soft(), current.soft()));
+        return static_cast<result>(delta(candidate.soft(), current.soft()));
     }
 
     // A hierarchical cost requires a total ordering of the hard branch for
     // a meaningful numeric delta. Conservatively make an unordered hard
     // transition unacceptable to delta-based algorithms.
-    return std::numeric_limits<long double>::infinity();
+    return std::numeric_limits<result>::infinity();
 }
 
 /// The zero of a hierarchical cost: the zero of the hard and of the soft cost.
