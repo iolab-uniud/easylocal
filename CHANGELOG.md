@@ -127,6 +127,9 @@ reviewed by hand before tagging.
   it or an `initial_solution` a problem with random solutions starts from a
   random one, where every run started from `initial_solution()`. Run
   resources report the `start`.
+- The REST examples listen on `127.0.0.1` only, not on every interface, and
+  exit with status 1 when they cannot listen on their port, where they exited
+  with 0.
 - `rest::blueprint_options::max_timeout` bounds the time of the runs of a REST
   service: a request with a longer `timeout` is rejected with `422`, and a run
   without one gets that limit.

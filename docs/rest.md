@@ -52,7 +52,8 @@ crow::SimpleApp server;
 server.register_blueprint(assignment_api.crow_blueprint());
 server.register_blueprint(tsp_api.crow_blueprint());
 
-server.port(8080)
+server.bindaddr("127.0.0.1")
+      .port(8080)
       .multithreaded()
       .run();
 ```
@@ -454,10 +455,11 @@ infrastructure.
 
 The adapter still performs ordinary protocol/application validation and relies
 on maintained Crow/Asio HTTP parsing. Queue/history bounds and `max_timeout`
-are resource-control semantics, not a substitute for edge security: without
-`max_timeout` a client may ask for a run without a time limit, which holds a
-worker until it ends or is cancelled. The body size is left to Crow and the
-proxy in front of it.
+are resource-control semantics, not a substitute for edge security. The
+examples listen on `127.0.0.1` only, as a service should unless it is meant to
+be reached from other hosts. Without `max_timeout` a client may ask for a run
+without a time limit, which holds a worker until it ends or is cancelled. The
+body size is left to Crow and the proxy in front of it.
 
 No Crow, Asio, HTTP, or JSON type appears in a Core signature. The architecture
 test also prevents optional adapters from reaching into `easylocal/detail/*`.

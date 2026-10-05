@@ -6,7 +6,10 @@
 
 #include <crow.h>
 
+#include <chrono>
 #include <cstdint>
+#include <future>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 
@@ -101,6 +104,14 @@ int main(int argc, char* argv[])
     crow::SimpleApp server;
     server.register_blueprint(text_api.crow_blueprint());
     server.register_blueprint(api.crow_blueprint());
-    server.port(port).multithreaded().run();
+    // Listening on this machine only; a port that cannot be bound is an error.
+    auto serving = server.bindaddr("127.0.0.1").port(port).multithreaded().run_async();
+    server.wait_for_server_start();
+    if (serving.wait_for(std::chrono::milliseconds{200}) == std::future_status::ready)
+    {
+        std::cerr << "error: cannot listen on 127.0.0.1:" << port << '\n';
+        return 1;
+    }
+    serving.get(); // until a signal stops the server
     // [rest] ---------------------------------------------------------------
 }
