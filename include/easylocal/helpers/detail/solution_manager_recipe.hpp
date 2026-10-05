@@ -1,12 +1,15 @@
 #pragma once
 
 // Builder behind solution_manager<SM>() | <cost expression>: the user
-// SolutionManager with its constructor arguments, and the one cost expression
-// whose leaves are the cost components.
+// SolutionManager with its constructor arguments (its parameters first, when
+// its parameters_type is a parameter block), and the one cost expression whose
+// leaves are the cost components.
 
+#include <easylocal/config/detail/parameterized.hpp>
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/helpers/detail/cost_expression.hpp>
 #include <easylocal/helpers/detail/cost_layer.hpp>
+#include <easylocal/utils/detail/attributes.hpp>
 #include <easylocal/utils/detail/meta.hpp>
 
 #include <concepts>
@@ -37,19 +40,22 @@ template<class BaseSM, class BaseArgsTuple>
 [[nodiscard]]
 BaseSM construct_base_solution_manager(
     const typename BaseSM::input_type& instance,
+    const config::detail::parameters_holder<BaseSM>& parameters,
     const BaseArgsTuple& base_args)
 {
     static_assert(
         base_solution_manager_constructible_v<
             BaseSM,
             typename BaseSM::input_type,
-            BaseArgsTuple>,
+            config::detail::construction_arguments_t<BaseSM, BaseArgsTuple>>,
         "a SolutionManager derived from solution_manager_base must inherit "
-        "the base constructors; did you forget `using solution_manager_base::solution_manager_base;`?");
+        "the base constructors; did you forget `using solution_manager_base::solution_manager_base;`? "
+        "(a SolutionManager with a parameters_type is constructed from the "
+        "Input, its parameters and its recipe arguments)");
 
     return std::apply(
         [&](const auto&... args) { return BaseSM(instance, args...); },
-        base_args);
+        parameters.arguments(base_args));
 }
 
 template<class BaseSM, class Leaves>
@@ -75,12 +81,29 @@ public:
     using service_type =
         cost_layer_with_expression<component_service_type, expression_type>;
 
+    using parameters_holder_type = config::detail::parameters_holder<BaseSM>;
+    using parameters_storage_type = typename parameters_holder_type::parameters_type;
+
+    static constexpr bool configurable =
+        expression_type::configurable || config::detail::parameterized<BaseSM>;
+
     solution_manager_with_cost_recipe(
         BaseArgsTuple base_args,
-        Expression expression)
+        Expression expression,
+        parameters_storage_type parameters = {})
         : base_args_{std::move(base_args)},
-          expression_{std::move(expression)}
+          expression_{std::move(expression)},
+          parameters_{std::move(parameters)}
     {
+    }
+
+    // The SolutionManager's parameters, to read or change.
+    template<class Self>
+    [[nodiscard]]
+    auto& parameters(this Self& self) noexcept
+        requires config::detail::parameterized<BaseSM>
+    {
+        return self.parameters_.parameters();
     }
 
     template<class Dependency>
@@ -95,7 +118,10 @@ public:
         auto components = std::apply(
             [&](const auto&... specs) {
                 return component_service_type{
-                    construct_base_solution_manager<BaseSM>(instance, base_args_),
+                    construct_base_solution_manager<BaseSM>(
+                        instance,
+                        parameters_,
+                        base_args_),
                     specs...,
                 };
             },
@@ -104,26 +130,23 @@ public:
         return service_type{std::move(components), expression_};
     }
 
-    // The configurable parameters of the expression: the weights of its sums
-    // and its tolerance, by their place in it, and the parameters of its
-    // components and functions, under their names; a runner puts them under
-    // "cost".
+    // The configurable parameters of the recipe, as a runner and an app give
+    // them: those of the expression under "cost" (the weights of its sums and
+    // its tolerance, by their place in it, and the parameters of its
+    // components and functions, under their names), and the SolutionManager's
+    // under "solution_manager".
     [[nodiscard]]
     config::parameter_set configuration() &
-        requires expression_type::configurable
+        requires configurable
     {
-        config::parameter_set parameters;
-        expression_.add_parameters(parameters, std::string{});
-        return parameters;
+        return make_configuration(*this);
     }
 
     [[nodiscard]]
     config::parameter_set configuration() const&
-        requires expression_type::configurable
+        requires configurable
     {
-        config::parameter_set parameters;
-        expression_.add_parameters(parameters, std::string{});
-        return parameters;
+        return make_configuration(*this);
     }
 
     // A temporary has no configuration: the set would refer to it after it is
@@ -131,8 +154,25 @@ public:
     config::parameter_set configuration() const&& = delete;
 
 private:
+    template<class Self>
+    [[nodiscard]]
+    static config::parameter_set make_configuration(Self& self)
+    {
+        config::parameter_set parameters;
+        if constexpr (expression_type::configurable)
+        {
+            config::parameter_set cost;
+            self.expression_.add_parameters(cost, std::string{});
+            parameters.add("cost", cost);
+        }
+        if constexpr (config::detail::parameterized<BaseSM>)
+            parameters.add("solution_manager", self.parameters_);
+        return parameters;
+    }
+
     BaseArgsTuple base_args_;
     expression_type expression_;
+    EASYLOCAL_NO_UNIQUE_ADDRESS parameters_holder_type parameters_;
 };
 
 template<class BaseSM, class BaseArgsTuple>
@@ -146,9 +186,13 @@ public:
 
     using base_type = BaseSM;
     using service_type = BaseSM;
+    using parameters_holder_type = config::detail::parameters_holder<BaseSM>;
+    using parameters_storage_type = typename parameters_holder_type::parameters_type;
 
-    explicit solution_manager_recipe(BaseArgsTuple base_args)
-        : base_args_{std::move(base_args)}
+    explicit solution_manager_recipe(
+        BaseArgsTuple base_args,
+        parameters_storage_type parameters = {})
+        : base_args_{std::move(base_args)}, parameters_{std::move(parameters)}
     {
     }
 
@@ -157,10 +201,10 @@ public:
     [[nodiscard]]
     auto with_cost(Expression expression) const &
     {
-        return solution_manager_with_cost_recipe<
-            BaseSM,
-            BaseArgsTuple,
-            Expression>{base_args_, std::move(expression)};
+        return solution_manager_with_cost_recipe<BaseSM, BaseArgsTuple, Expression>{
+            base_args_,
+            std::move(expression),
+            parameters_.parameters()};
     }
 
     template<class Expression>
@@ -168,10 +212,10 @@ public:
     [[nodiscard]]
     auto with_cost(Expression expression) &&
     {
-        return solution_manager_with_cost_recipe<
-            BaseSM,
-            BaseArgsTuple,
-            Expression>{std::move(base_args_), std::move(expression)};
+        return solution_manager_with_cost_recipe<BaseSM, BaseArgsTuple, Expression>{
+            std::move(base_args_),
+            std::move(expression),
+            parameters_.parameters()};
     }
 
     template<class Dependency>
@@ -183,11 +227,12 @@ public:
     [[nodiscard]]
     service_type construct(const typename BaseSM::input_type& instance) const
     {
-        return construct_base_solution_manager<BaseSM>(instance, base_args_);
+        return construct_base_solution_manager<BaseSM>(instance, parameters_, base_args_);
     }
 
 private:
     BaseArgsTuple base_args_;
+    EASYLOCAL_NO_UNIQUE_ADDRESS parameters_holder_type parameters_;
 };
 
 template<class BaseSM, class BaseArgsTuple, class Expression>

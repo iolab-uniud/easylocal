@@ -51,6 +51,13 @@ The SolutionManager is constructed from the Input when a runner is bound:
 `SM(const Input&, args...)`, where `args` come from the recipe
 `solution_manager<SM>(args...)` and convert as the constructor takes them.
 
+A SolutionManager whose `parameters_type` is a parameter block is constructed
+from it, after the Input: `SM(const Input&, const parameters_type&, args...)`.
+`solution_manager<SM>(parameters, args...)` gives them (without a first
+argument of that type, they are the defaults); the recipe holds them, and a
+runner and an app expose them at their root, as `solution_manager.*`, beside
+`cost.*` (see [Configuration](configuration.md#configurable-objects)).
+
 ## Convenience base
 
 ```cpp

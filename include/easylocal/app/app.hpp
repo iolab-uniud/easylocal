@@ -840,7 +840,8 @@ public:
     }
 
     /// The parameters of the app: its cost expression ("cost"), its
-    /// neighborhood ("neighborhood") and each registered runner's
+    /// SolutionManager ("solution_manager"), its neighborhood
+    /// ("neighborhood") and each registered runner's
     /// (`runners.<name>`, for parameters that are a parameter block, and
     /// `runners.<name>.neighborhood` for its own neighborhood).
     ///
@@ -855,7 +856,7 @@ public:
     {
         self.check_registration_names();
         config::parameter_set parameters;
-        config::add_configuration(parameters, "cost", self.solution_manager_spec_);
+        config::add_configuration(parameters, {}, self.solution_manager_spec_);
         config::add_configuration(parameters, "neighborhood", self.neighborhood_spec_);
         std::apply(
             [&](auto&... registration) {

@@ -115,7 +115,8 @@ int main()
         });
     };
     ok &= expect(
-        has("tolerance.relative") && has("tolerance.absolute") && !has("weights"),
+        has("cost.tolerance.relative") && has("cost.tolerance.absolute")
+            && !has("cost.weights"),
         "the tolerance is a parameter of the cost expression, under cost in an app");
 
     return ok ? 0 : 1;

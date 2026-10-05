@@ -338,7 +338,7 @@ void cost_expression_weights_are_runtime_configurable()
                   easylocal::component<ScaledValue<3>>(),
                   easylocal::cost::sum(easylocal::component<ScaledValue<4>>())));
     easylocal::config::parameter_set tree;
-    tree.add("cost", recipe.configuration());
+    tree.add(recipe.configuration());
 
     constexpr std::array overrides{
         text_override{"cost.hard.weights", "[2, 20]"},
@@ -363,7 +363,7 @@ void cost_expression_weights_must_be_finite()
             easylocal::cost::weighted(easylocal::component<ScaledValue<1>>(), 0.5),
             easylocal::component<ScaledValue<2>>());
     easylocal::config::parameter_set tree;
-    tree.add("cost", recipe.configuration());
+    tree.add(recipe.configuration());
 
     for (const auto* const weights : {"[inf, 1]", "[1, nan]", "[-inf, 1]"})
     {

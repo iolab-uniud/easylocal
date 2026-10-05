@@ -691,8 +691,9 @@ public:
     }
 
     /// The parameters of the algorithm ("search"), of the cost expression
-    /// ("cost") and of the neighborhood ("neighborhood"), with paths relative
-    /// to the runner: whoever composes it adds a prefix, if any.
+    /// ("cost"), of the SolutionManager ("solution_manager") and of the
+    /// neighborhood ("neighborhood"), with paths relative to the runner:
+    /// whoever composes it adds a prefix, if any.
     ///
     /// The set refers to this runner, which must stay in place while it is
     /// used: a temporary runner has no configuration().
@@ -702,7 +703,7 @@ public:
     {
         config::parameter_set parameters;
         self.algorithm_.add_configuration(parameters);
-        config::add_configuration(parameters, "cost", self.solution_manager_spec_);
+        config::add_configuration(parameters, {}, self.solution_manager_spec_);
         config::add_configuration(parameters, "neighborhood", self.neighborhood_spec_);
         return parameters;
     }

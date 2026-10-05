@@ -41,6 +41,10 @@ reviewed by hand before tagging.
   the expression. A function's `configuration()`, which `cost::apply` used to
   read, no longer compiles. The tutorial's hierarchical cost has its bound of
   8 as a parameter, `cost.excess.bound` (chapter 9).
+- A SolutionManager follows the rule too: one whose `parameters_type` is a
+  parameter block is constructed from the Input and it,
+  `solution_manager<SM>(parameters, args...)`, and its parameters are at the
+  root of a runner and of an app, `solution_manager.*`, beside `cost.*`.
 - `check(app, ...)` reports, as `runner parameters`, a registered runner whose
   `parameters_type` is not a parameter block (and not empty): the app runs it,
   but no frontend can change its parameters. The tutorial's `RandomDescent`

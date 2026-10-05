@@ -102,15 +102,49 @@ using service_t = typename Spec::service_type;
 /// The recipe of a SolutionManager constructed from the Input and `args`.
 ///
 /// It needs a cost: `| component<C>()` or a cost expression, such as
-/// `| cost::sum(component<A>(), component<B>())`.
+/// `| cost::sum(component<A>(), component<B>())`. For a SolutionManager whose
+/// parameters_type is a parameter block, a first argument of that type gives
+/// its parameters, which otherwise are the defaults, and follows the Input in
+/// its construction arguments; they are configurable under
+/// `solution_manager.*` in a runner or an app.
 template<class SM, class... Args>
 [[nodiscard]]
 auto solution_manager(Args&&... args)
 {
-    return detail::solution_manager_recipe<
-        SM,
-        std::tuple<std::decay_t<Args>...>>{
-        std::tuple<std::decay_t<Args>...>{std::forward<Args>(args)...}};
+    if constexpr (config::detail::parameterized<SM> && sizeof...(Args) > 0)
+    {
+        return [](auto&& first, auto&&... rest) {
+            if constexpr (std::same_as<
+                              std::remove_cvref_t<decltype(first)>,
+                              typename SM::parameters_type>)
+            {
+                return detail::solution_manager_recipe<
+                    SM,
+                    std::tuple<std::decay_t<decltype(rest)>...>>{
+                    std::tuple<std::decay_t<decltype(rest)>...>{
+                        std::forward<decltype(rest)>(rest)...},
+                    std::forward<decltype(first)>(first)};
+            }
+            else
+            {
+                return detail::solution_manager_recipe<
+                    SM,
+                    std::tuple<
+                        std::decay_t<decltype(first)>,
+                        std::decay_t<decltype(rest)>...>>{
+                    std::tuple<
+                        std::decay_t<decltype(first)>,
+                        std::decay_t<decltype(rest)>...>{
+                        std::forward<decltype(first)>(first),
+                        std::forward<decltype(rest)>(rest)...}};
+            }
+        }(std::forward<Args>(args)...);
+    }
+    else
+    {
+        return detail::solution_manager_recipe<SM, std::tuple<std::decay_t<Args>...>>{
+            std::tuple<std::decay_t<Args>...>{std::forward<Args>(args)...}};
+    }
 }
 
 /// A cost component, a leaf of a cost expression, constructed from the Input

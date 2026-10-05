@@ -57,6 +57,62 @@ private:
     const Line& line_;
 };
 
+struct PickParameters
+{
+    int picks{3};
+
+    static consteval auto parameter_schema()
+    {
+        return config::fields(
+            config::field<"picks", &PickParameters::picks>(
+                "Values picked by the initial solution",
+                config::range(0, 3)));
+    }
+
+    [[nodiscard]] config::validation_result validate() const
+    {
+        return config::check_schema(*this);
+    }
+};
+
+// A SolutionManager with parameters: how many values its initial solution
+// picks.
+class PickingManager
+{
+public:
+    using input_type = Line;
+    using solution_type = Picks;
+    using parameters_type = PickParameters;
+
+    PickingManager(const Line& line, const PickParameters& parameters)
+        : line_{line}, picks_{parameters.picks}
+    {
+    }
+
+    [[nodiscard]] const Line& input() const noexcept
+    {
+        return line_;
+    }
+
+    [[nodiscard]] static bool is_valid(const Picks&) noexcept
+    {
+        return true;
+    }
+
+    [[nodiscard]] Picks initial_solution() const
+    {
+        Picks result;
+        result.chosen.resize(static_cast<std::size_t>(picks_));
+        for (std::size_t index = 0; index < result.chosen.size(); ++index)
+            result.chosen[index] = static_cast<int>(index);
+        return result;
+    }
+
+private:
+    const Line& line_;
+    int picks_;
+};
+
 struct ThresholdParameters
 {
     int threshold{4};
@@ -247,14 +303,14 @@ int main()
             "a component is built from the parameters of its recipe");
         auto parameters = recipe.configuration();
         ok &= expect(
-            has_parameter(parameters, "above.threshold", "4"),
+            has_parameter(parameters, "cost.above.threshold", "4"),
             "a component's parameters are under its name");
-        const std::array change{config::text_override{"above.threshold", "6"}};
+        const std::array change{config::text_override{"cost.above.threshold", "6"}};
         ok &= expect(
             static_cast<bool>(parameters.apply(change))
                 && recipe.construct(line).evaluate(picks) == 1,
             "a changed parameter builds the component again");
-        const std::array invalid{config::text_override{"above.threshold", "200"}};
+        const std::array invalid{config::text_override{"cost.above.threshold", "200"}};
         ok &=
             expect(!parameters.apply(invalid), "a component's parameters are validated");
     }
@@ -271,11 +327,11 @@ int main()
             "a function is built from its parameters");
         auto parameters = recipe.configuration();
         ok &= expect(
-            has_parameter(parameters, "excess.bound", "10")
-                && has_parameter(parameters, "above.threshold", "4")
-                && has_parameter(parameters, "soft.weights", "[2, 1]"),
+            has_parameter(parameters, "cost.excess.bound", "10")
+                && has_parameter(parameters, "cost.above.threshold", "4")
+                && has_parameter(parameters, "cost.soft.weights", "[2, 1]"),
             "functions and components by name, weights by place");
-        const std::array change{config::text_override{"excess.bound", "15"}};
+        const std::array change{config::text_override{"cost.excess.bound", "15"}};
         ok &= expect(
             static_cast<bool>(parameters.apply(change))
                 && recipe.construct(line).evaluate(picks).hard() == 2,
@@ -292,6 +348,30 @@ int main()
         ok &= expect(
             has_parameter(parameters, "cost.excess.bound", "12"),
             "a runner gives a function's parameters as cost.<name>");
+    }
+
+    {
+        // A SolutionManager with parameters, at the root solution_manager.
+        auto recipe = solution_manager<PickingManager>(PickParameters{.picks = 2})
+            | cost::sum(component<Total>(), component<AboveThreshold>());
+        ok &= expect(
+            recipe.construct(line).base().initial_solution().chosen.size() == 2,
+            "a SolutionManager is built from the parameters of its recipe");
+        auto parameters = recipe.configuration();
+        ok &= expect(
+            has_parameter(parameters, "solution_manager.picks", "2")
+                && has_parameter(parameters, "cost.weights", "[1, 1]"),
+            "a SolutionManager's parameters are under solution_manager");
+        const std::array change{config::text_override{"solution_manager.picks", "1"}};
+        ok &= expect(
+            static_cast<bool>(parameters.apply(change))
+                && recipe.construct(line).base().initial_solution().chosen.size() == 1,
+            "a changed parameter builds the SolutionManager again");
+        auto runner = easylocal::make_runner<easylocal::runners::FirstImprovement>({})
+            | recipe | easylocal::neighborhood<DropExplorer>();
+        ok &= expect(
+            has_parameter(runner.configuration(), "solution_manager.picks", "1"),
+            "a runner gives them at its root");
     }
 
     {

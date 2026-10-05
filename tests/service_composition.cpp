@@ -476,7 +476,7 @@ int main()
               component<ColocatedCardinalityComponent>());
 
     easylocal::config::parameter_set sum_configuration;
-    sum_configuration.add("solver.cost", sum_recipe.configuration());
+    sum_configuration.add("solver", sum_recipe.configuration());
     constexpr std::array sum_override{
         easylocal::config::text_override{
             "solver.cost.weights",
@@ -498,7 +498,7 @@ int main()
         | easylocal::cost::sum(easylocal::cost::weighted(
               component<AssignmentCardinalityComponent>(), 3));
     easylocal::config::parameter_set aggregation_configuration;
-    aggregation_configuration.add("solver.cost", no_aggregate_recipe.configuration());
+    aggregation_configuration.add("solver", no_aggregate_recipe.configuration());
     constexpr std::array aggregation_override{
         easylocal::config::text_override{
             "solver.cost.weights",

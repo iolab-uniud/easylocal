@@ -166,8 +166,9 @@ an object already gone.
 | the cost expression of a SolutionManager recipe | `weights` of a `cost::sum`; children by position (`0.*`, `1.*`), `hard.*` and `soft.*` of a `cost::hard_soft`; `tolerance.*` of a `cost::approximately`; each component and `cost::apply` function with a `parameters_type` under its `name()` (`<name>.*`) |
 | `neighborhood_union` with `random_biases` | `random_biases`, and each child's parameters under its position (`0.*`, `1.*`) |
 | `neighborhood<NHE>(parameters, args...)` for an explorer with `parameters_type` | the explorer's parameters |
-| `runner.configuration()` | `search.*`, `cost.*`, `neighborhood.*` |
-| an app, `app.configuration()` (also a `Session`'s) | `cost.*`, `neighborhood.*`, `runners.<name>.*` |
+| `solution_manager<SM>(parameters, args...)` for a SolutionManager with `parameters_type` | the SolutionManager's parameters, as `solution_manager.*` in a runner or an app |
+| `runner.configuration()` | `search.*`, `cost.*`, `solution_manager.*`, `neighborhood.*` |
+| an app, `app.configuration()` (also a `Session`'s) | `cost.*`, `solution_manager.*`, `neighborhood.*`, `runners.<name>.*` |
 | `MultiStart`, `LocalSearch`, `Pipeline` solvers | `starts` and the runner's (MultiStart), the runner's (LocalSearch), each stage's runner and its own `attempts`, `timeout` and `max_evaluations` under its name (Pipeline; `first.*` and `second.*` for `two_stage()`) |
 
 ## Frontends
