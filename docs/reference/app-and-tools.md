@@ -90,7 +90,7 @@ registered twice (`"sa-fast"`, `"sa-slow"`).
 | `configuration()` | the app's parameters as a `config::parameter_set`: `cost.*`, `neighborhood.*` and `runners.<name>.*` |
 | `bind(input)` | the `BoundApp`: services built once for `input`, which it borrows (a temporary Input is rejected) |
 | `run("name", input, solution, rng, options...)` | run the runner or pipeline registered under a name; `std::optional<named_run_result>`, empty for an unknown name |
-| `make_runner<A>("name")` | a standalone `Runner` with that runner's parameters and the app's recipes, for a solver: `make_solver<Solver>(application.make_runner<A>("name"), config)` |
+| `make_runner<A>("name")` | a standalone `Runner` with that runner's parameters and the app's recipes, for a solver: `make_solver<Solver>(application.make_runner<A>("name"))` |
 | `check_registration_names()` | throws `std::invalid_argument` unless the names are valid |
 
 `run` binds the app to the Input for that run only, with the current runner

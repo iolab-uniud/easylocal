@@ -267,7 +267,8 @@ int main()
         // runs.
         solvers::MultiStart solver{
             grid_runner<HillClimbing>({.max_idle_iterations = 50}),
-            solvers::MultiStartConfig{.parameters = {.starts = 10}, .seed = 3}};
+            {.starts = 10}};
+        solver.seed(3);
         const auto result = solver.solve(grid);
         ok &= expect(
             valid_front(result.front) && result.front.size() >= 3,

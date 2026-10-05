@@ -143,7 +143,6 @@ int main()
         [[maybe_unused]] Solver invalid{
             runner,
             solvers::MultiStartParameters{.starts = 0},
-            initialization::random,
             std::mt19937_64{42}};
     }
     catch (const std::invalid_argument&)
@@ -154,12 +153,12 @@ int main()
 
     constexpr std::size_t starts = 5;
     constexpr std::uint64_t seed = 1234;
-    auto solver = make_solver<solvers::MultiStart>(
-        runner,
-        solvers::MultiStartConfig<initialization::Random>{
-            .parameters = {.starts = starts},
-            .initialization = initialization::random,
-            .seed = seed});
+    auto solver =
+        make_solver<solvers::MultiStart>(
+            runner,
+            solvers::MultiStartParameters{.starts = starts})
+            .initialization(initialization::random)
+            .seed(seed);
 
     std::mt19937_64 reference{seed};
     std::uint64_t expected_best = 0;

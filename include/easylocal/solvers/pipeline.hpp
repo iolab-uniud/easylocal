@@ -26,6 +26,7 @@
 #include <easylocal/solvers/initialization.hpp>
 #include <easylocal/solvers/solver.hpp>
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <concepts>
@@ -85,6 +86,9 @@ struct StageParameters
 
 template<class Runner>
 class pipeline_stage;
+
+template<std::uniform_random_bit_generator RNG, class... Stages>
+class Pipeline;
 
 /// A stage of a pipeline: a named runner, with an optional target cost, a
 /// number of attempts, and an optional time limit and evaluation budget.
@@ -217,6 +221,37 @@ public:
         return pipeline_stage{*this}.with_max_evaluations(count);
     }
 
+    /// The same stage, whose attempts after the first start from a new
+    /// solution built as `initialization` says, rather than from the solution
+    /// the stage received: initialization::initial, random or automatic,
+    /// rejected at compile time when the runner does not support it.
+    template<class Initialization>
+        requires easylocal::detail::accepted_initialization<
+            Initialization,
+            bound_runner_type,
+            std::mt19937_64>
+    [[nodiscard]]
+    pipeline_stage with_restart(const Initialization initialization) &&
+    {
+        restart_ = easylocal::detail::initialization_kind_of(initialization);
+        return std::move(*this);
+    }
+
+    /// The same stage, whose attempts after the first start from a new
+    /// solution built as `initialization` says, rather than from the solution
+    /// the stage received: initialization::initial, random or automatic,
+    /// rejected at compile time when the runner does not support it.
+    template<class Initialization>
+        requires easylocal::detail::accepted_initialization<
+            Initialization,
+            bound_runner_type,
+            std::mt19937_64>
+    [[nodiscard]]
+    pipeline_stage with_restart(const Initialization initialization) const&
+    {
+        return pipeline_stage{*this}.with_restart(initialization);
+    }
+
     /// The limits of the stage started now: its deadline and its evaluations,
     /// none when it has no limit of its own.
     [[nodiscard]]
@@ -254,6 +289,7 @@ public:
             std::move(runner_).with_hard_cost()};
         stage.parameters_ = parameters_;
         stage.target_ = cost::zero<hard_cost_type>();
+        stage.restart_ = restart_;
         return stage;
     }
 
@@ -302,11 +338,14 @@ public:
 private:
     template<class>
     friend class pipeline_stage;
+    template<std::uniform_random_bit_generator, class...>
+    friend class Pipeline;
 
     std::string name_;
     Runner runner_;
     std::optional<cost_type> target_;
     StageParameters parameters_{};
+    std::optional<easylocal::detail::initialization_kind> restart_;
 };
 
 /// The stage `name` of a pipeline, running `runner`.
@@ -338,6 +377,15 @@ struct stage_until_feasible
 {
 };
 
+/// A stage modifier: the attempts after the first start from a new solution.
+template<class Initialization>
+struct stage_restart
+{
+    /// How the new solutions are built: initialization::initial, random or
+    /// automatic.
+    Initialization initialization;
+};
+
 /// The stage stops as soon as its best cost reaches `cost`, written in the
 /// stage's own cost: `stage(...) & target(0)`, as `with_target(0)`.
 template<class Cost>
@@ -361,6 +409,21 @@ constexpr stage_attempts attempts(const std::size_t count) noexcept
 constexpr stage_until_feasible until_feasible() noexcept
 {
     return {};
+}
+
+/// The attempts of the stage after the first start from a new solution built
+/// as `initialization` says, rather than from the solution the stage received:
+/// `stage(...) & attempts(10) & restart(initialization::random)`, as
+/// `with_restart(initialization::random)`.
+template<class Initialization>
+    requires std::same_as<Initialization, initialization::Initial>
+    || std::same_as<Initialization, initialization::Random>
+    || std::same_as<Initialization, initialization::Automatic>
+[[nodiscard]]
+constexpr stage_restart<Initialization> restart(
+    const Initialization initialization) noexcept
+{
+    return {initialization};
 }
 
 /// The stage with a target: `stage.with_target(target.cost)`.
@@ -392,6 +455,23 @@ template<class Runner>
 auto operator&(pipeline_stage<Runner> stage, stage_until_feasible)
 {
     return std::move(stage).until_feasible();
+}
+
+/// The stage whose attempts after the first start from a new solution:
+/// `stage.with_restart(restart.initialization)`.
+///
+/// Requires a runner whose SolutionManager builds that solution.
+template<class Runner, class Initialization>
+    requires easylocal::detail::accepted_initialization<
+        Initialization,
+        easylocal::detail::bound_runner_t<Runner>,
+        std::mt19937_64>
+[[nodiscard]]
+pipeline_stage<Runner> operator&(
+    pipeline_stage<Runner> stage,
+    const stage_restart<Initialization> restart)
+{
+    return std::move(stage).with_restart(restart.initialization);
 }
 
 /// The stage with a time limit or an evaluation budget: `stage & timeout(10s)`,
@@ -474,9 +554,6 @@ std::optional<termination_reason> ends_stage(
 
 } // namespace detail
 
-template<std::uniform_random_bit_generator RNG, class... Stages>
-class Pipeline;
-
 /// Runners in sequence over the same Input and Solution: each stage starts from
 /// the solution of the previous one, the first from an initial solution.
 ///
@@ -488,21 +565,16 @@ class Pipeline;
 /// a first stage whose SolutionManager builds an initial or a random solution.
 template<std::uniform_random_bit_generator RNG, class... Stages>
 class Pipeline
-    : public easylocal::detail::InitializationSupport<
+    : public easylocal::detail::solver_start<
           typename std::tuple_element_t<0, std::tuple<Stages...>>::bound_runner_type,
           RNG>
 {
     using first_stage_type = std::tuple_element_t<0, std::tuple<Stages...>>;
     using last_stage_type =
         std::tuple_element_t<sizeof...(Stages) - 1, std::tuple<Stages...>>;
-    using initialization_support = easylocal::detail::InitializationSupport<
+    using start_type = easylocal::detail::solver_start<
         typename first_stage_type::bound_runner_type,
         RNG>;
-    // What a builder returns: a reference to the pipeline on an lvalue, the
-    // pipeline itself on a temporary.
-    template<class Self>
-    using builder_result =
-        std::conditional_t<std::is_lvalue_reference_v<Self>, Pipeline&, Pipeline>;
 
 public:
     /// The random number generator it owns.
@@ -523,10 +595,10 @@ public:
 
     /// Whether the first stage can build an initial solution
     /// (`initial_solution()`).
-    using initialization_support::supports_initial;
+    using start_type::supports_initial;
     /// Whether the first stage can build a random solution
     /// (`random_solution(rng)`).
-    using initialization_support::supports_random;
+    using start_type::supports_random;
 
     static_assert(
         supports_initial || supports_random,
@@ -535,45 +607,25 @@ public:
     /// The number of stages.
     static constexpr std::size_t stage_count = sizeof...(Stages);
 
-    /// The stages, initialized randomly when the first stage supports it,
-    /// otherwise from its initial solution.
+    /// The same pipeline, with its RNG seeded with `seed`: this pipeline on an
+    /// lvalue, the moved pipeline on a temporary. Each solve() continues the
+    /// stream, so the seed reproduces the sequence of solves.
+    using start_type::seed;
+    /// The same pipeline, building its initial solutions as `initialization`
+    /// says: initialization::initial, random or automatic, rejected at compile
+    /// time when the first stage does not support it. This pipeline on an
+    /// lvalue, the moved pipeline on a temporary.
+    using start_type::initialization;
+    /// The RNG, which feeds the initial solutions and the runs.
+    using start_type::rng;
+
+    /// The stages, with `rng` and initialization::automatic.
     Pipeline(std::tuple<Stages...> stages, RNG rng)
         : Pipeline(
               std::move(stages),
               std::move(rng),
-              supports_random ? initialization::Mode::random
-                              : initialization::Mode::initial)
+              easylocal::detail::initialization_kind::automatic)
     {
-    }
-
-    /// The same pipeline, with its RNG seeded with `seed`: this pipeline on an
-    /// lvalue, the moved pipeline on a temporary. Each solve() continues the
-    /// stream, so the seed reproduces the sequence of solves.
-    template<class Self>
-        requires std::constructible_from<RNG, std::uint64_t>
-    builder_result<Self> seed(this Self&& self, const std::uint64_t seed)
-    {
-        Pipeline& pipeline = self;
-        pipeline.rng_ = RNG{seed};
-        return std::forward<Self>(self);
-    }
-
-    /// The same pipeline, building its initial solutions as `initialization`
-    /// says: initialization::initial or random, rejected at compile time when
-    /// the first stage does not support it, or a Mode, checked here. This
-    /// pipeline on an lvalue, the moved pipeline on a temporary.
-    template<class Self, class Initialization>
-        requires easylocal::detail::accepted_initialization<
-            Initialization,
-            typename first_stage_type::bound_runner_type,
-            RNG>
-    builder_result<Self> initialization(
-        this Self&& self,
-        const Initialization initialization)
-    {
-        Pipeline& pipeline = self;
-        pipeline.initialization_mode(initialization_support::to_mode(initialization));
-        return std::forward<Self>(self);
     }
 
     /// The pipeline with `stage` after its stages, its RNG and initialization
@@ -582,13 +634,12 @@ public:
     [[nodiscard]]
     Pipeline<RNG, Stages..., pipeline_stage<Runner>> then(pipeline_stage<Runner> stage) &&
     {
-        const auto mode = this->initialization_mode();
         return Pipeline<RNG, Stages..., pipeline_stage<Runner>>{
             std::tuple_cat(
                 std::move(stages_),
                 std::tuple<pipeline_stage<Runner>>{std::move(stage)}),
-            std::move(rng_),
-            mode};
+            std::move(this->rng_),
+            this->kind()};
     }
 
     /// The pipeline with `stage` after its stages, its RNG and initialization
@@ -599,14 +650,6 @@ public:
         pipeline_stage<Runner> stage) const&
     {
         return Pipeline{*this}.then(std::move(stage));
-    }
-
-    /// The RNG, which feeds the initial solutions and the runs.
-    template<class Self>
-    [[nodiscard]]
-    auto& rng(this Self&& self) noexcept
-    {
-        return self.rng_;
     }
 
     /// The stage at `Index`.
@@ -635,9 +678,9 @@ public:
         return execute(
             input,
             [this](const auto& bound_runner) {
-                return this->make_initial_solution(bound_runner, rng_);
+                return this->make_initial_solution(bound_runner);
             },
-            rng_,
+            this->rng_,
             options...);
     }
 
@@ -691,8 +734,11 @@ private:
     template<std::uniform_random_bit_generator, class...>
     friend class Pipeline;
 
-    Pipeline(std::tuple<Stages...> stages, RNG rng, const initialization::Mode mode)
-        : initialization_support{mode}, stages_{std::move(stages)}, rng_{std::move(rng)}
+    Pipeline(
+        std::tuple<Stages...> stages,
+        RNG rng,
+        const easylocal::detail::initialization_kind kind)
+        : start_type{std::move(rng), kind}, stages_{std::move(stages)}
     {
     }
 
@@ -801,15 +847,10 @@ private:
             }
         }
         auto bound_runner = std::get<Index>(stages_).runner().bind(input);
-        auto result = run_stage<Index>(
-            bound_runner,
-            incoming,
-            first_start,
-            rng,
-            budget,
-            reports,
-            effort,
-            options...);
+        auto result = run_stage<
+            Index>(bound_runner, incoming, first_start, rng, budget, reports, options...);
+        effort.evaluations += reports.back().evaluations;
+        effort.iterations += reports.back().iterations;
         if constexpr (Index + 1 == stage_count)
             return result;
         else
@@ -824,7 +865,11 @@ private:
                 options...);
     }
 
-    // The attempts of the stage at Index, keeping the best.
+    // The attempts of the stage at Index, keeping the best, and its report.
+    //
+    // The first attempt starts from the solution the stage receives (for the
+    // first stage, from the pipeline's start); the others from a new solution
+    // when the stage restarts them, else as the first.
     template<
         std::size_t Index,
         class BoundRunner,
@@ -839,76 +884,54 @@ private:
         Rng& rng,
         easylocal::detail::solve_budget& budget,
         std::vector<stage_report>& reports,
-        easylocal::detail::search_effort& effort,
         const Options&... options) const
     {
         const auto& stage = std::get<Index>(stages_);
-        // What is left of the solve's budget, at most the stage's own limits.
-        auto stage_budget = budget.within(stage.limits());
-        const auto start = [&]() -> solution_type {
+        const auto received = [&]() -> solution_type {
             if constexpr (Index == 0)
                 return first_start(bound_runner);
             else
                 return *incoming;
         };
-
-        easylocal::detail::search_effort stage_effort;
-        auto best =
-            run_once<Index>(bound_runner, start(), 0, rng, stage_budget, options...);
-        stage_effort.add(best);
-        easylocal::detail::merged_front<decltype(best)> front{
-            easylocal::detail::front_parameters_of(options...)};
-        front.add(bound_runner, best);
-        stage_budget.consume(best);
-        budget.consume(best);
-        auto termination = detail::ends_stage(bound_runner, best, stage.target());
-        auto last_termination = easylocal::detail::termination_of(best);
-        std::size_t attempts = 1;
-        for (; attempts < stage.parameters().attempts && !termination; ++attempts)
-        {
-            if (easylocal::detail::stop_requested(options...))
-            {
-                termination = termination_reason::cancelled;
-                break;
-            }
-            if (stage_budget.spent())
-                break;
-            auto candidate = run_once<
-                Index>(bound_runner, start(), attempts, rng, stage_budget, options...);
-            stage_effort.add(candidate);
-            front.add(bound_runner, candidate);
-            stage_budget.consume(candidate);
-            budget.consume(candidate);
-            termination = detail::ends_stage(bound_runner, candidate, stage.target());
-            last_termination = easylocal::detail::termination_of(candidate);
-            if (bound_runner.better(candidate.cost, best.cost))
-                best = std::move(candidate);
-        }
-        // Why the stage stopped: a run that ended it, the time or the
-        // evaluations running out, before an attempt or during the last one,
-        // or else the end of its last attempt.
-        if (!termination)
-            termination = stage_budget.spent();
-        if (!termination)
-            termination = last_termination;
-        if (termination)
-            easylocal::detail::set_termination(best, *termination);
-        front.assign_to(best);
+        const auto attempt_start = [&](const std::size_t attempt) -> solution_type {
+            if (attempt > 0 && stage.restart_)
+                return easylocal::detail::make_start_solution(
+                    *stage.restart_,
+                    bound_runner,
+                    rng);
+            return received();
+        };
+        auto outcome = easylocal::detail::run_attempts(
+            bound_runner,
+            stage.parameters().attempts,
+            budget,
+            stage.limits(),
+            [&](const std::size_t attempt, const easylocal::detail::solve_budget& left) {
+                return run_once<Index>(
+                    bound_runner,
+                    attempt_start(attempt),
+                    attempt,
+                    rng,
+                    left,
+                    options...);
+            },
+            [&](const auto& result) {
+                return detail::ends_stage(bound_runner, result, stage.target());
+            },
+            options...);
 
         stage_report report{
             .name = stage.name(),
-            .attempts = attempts,
-            .evaluations = stage_effort.evaluations,
-            .iterations = stage_effort.iterations,
-            .termination = termination,
+            .attempts = outcome.attempts,
+            .evaluations = outcome.effort.evaluations,
+            .iterations = outcome.effort.iterations,
+            .termination = outcome.termination,
             .cost = {},
         };
         if constexpr (cost::text_readable<typename BoundRunner::cost_type>)
-            report.cost = cost::to_text(best.cost);
+            report.cost = cost::to_text(outcome.best.cost);
         reports.push_back(std::move(report));
-        effort.evaluations += stage_effort.evaluations;
-        effort.iterations += stage_effort.iterations;
-        return best;
+        return std::move(outcome.best);
     }
 
     // The attempt of the stage at Index, with what is left of the stage's
@@ -954,7 +977,6 @@ private:
     }
 
     std::tuple<Stages...> stages_;
-    RNG rng_;
 };
 
 /// The pipeline with one more stage: `pipeline.then(stage)`.

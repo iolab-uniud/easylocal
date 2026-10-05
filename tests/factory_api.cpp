@@ -232,11 +232,10 @@ void recipe_arguments_convert_as_constructors_take_them()
         | (solution_manager<ScaledSolutionManager>(2) | component<ScaledComponent>(3))
         | (neighborhood<ScaledNeighborhoodExplorer>(4)
             | delta<ScaledComponent, ScaledDeltaEvaluator>(5));
-    auto solver = make_solver<solvers::LocalSearch>(
-        runner,
-        solvers::LocalSearchConfig<initialization::Initial>{
-            .initialization = initialization::initial,
-            .seed = 17});
+    auto solver =
+        make_solver<solvers::LocalSearch>(runner)
+            .initialization(initialization::initial)
+            .seed(17);
     const Instance instance{};
     assert(solver.solve(instance).cost == 0);
 
@@ -318,23 +317,22 @@ int main()
         | (solution_manager<SolutionManager>() | component<CostComponent>())
         | neighborhood<NeighborhoodExplorer>();
 
-    auto local_solver = make_solver<solvers::LocalSearch>(
-        configured_runner,
-        solvers::LocalSearchConfig<initialization::Initial>{
-            .initialization = initialization::initial,
-            .seed = 17});
+    auto local_solver =
+        make_solver<solvers::LocalSearch>(configured_runner)
+            .initialization(initialization::initial)
+            .seed(17);
 
     const Instance instance{};
     const auto local_result = local_solver.solve(instance);
     assert(local_result.solution.value == 0);
     assert(local_result.cost == 0);
 
-    auto multistart_solver = make_solver<solvers::MultiStart>(
-        configured_runner,
-        solvers::MultiStartConfig<initialization::Initial>{
-            .parameters = {.starts = 3},
-            .initialization = initialization::initial,
-            .seed = 17});
+    auto multistart_solver =
+        make_solver<solvers::MultiStart>(
+            configured_runner,
+            solvers::MultiStartParameters{.starts = 3})
+            .initialization(initialization::initial)
+            .seed(17);
     const auto multistart_result = multistart_solver.solve(instance);
     assert(multistart_result.solution.value == 0);
     assert(multistart_result.cost == 0);

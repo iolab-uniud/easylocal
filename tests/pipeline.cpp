@@ -173,6 +173,26 @@ struct Noisy
     }
 };
 
+// Keeps the solutions its runs start from.
+struct StartRecorder
+{
+    std::shared_ptr<std::vector<Solution>> starts =
+        std::make_shared<std::vector<Solution>>();
+
+    template<class Context>
+    auto run(const Context& context, const Solution& solution) const
+    {
+        starts->push_back(solution);
+        return outcome(context, solution);
+    }
+};
+
+// Whether a stage takes `& restart(Initialization{})`.
+template<class Stage, class Initialization>
+concept restartable = requires(Stage stage) {
+    std::move(stage) & easylocal::solvers::restart(Initialization{});
+};
+
 bool expect(const bool condition, const std::string_view message)
 {
     if (!condition)
@@ -843,6 +863,30 @@ int main()
         *from_given.runs == 2 && from_solution.stages[0].attempts == 2
             && from_solution.solution.hard == 0 && from_solution.solution.soft == 2,
         "run() starts every attempt of the first stage from the given solution");
+
+    // A stage that restarts its attempts starts the first from the solution
+    // it receives, the others from a new one: here the initial solution.
+    const StartRecorder recorder;
+    const auto restarted = solvers::pipeline(
+        solvers::stage("polish", el::Runner{SoftDown{}} | sm | nhe),
+        solvers::stage("again", el::Runner{recorder} | sm | nhe) & solvers::attempts(3)
+            & solvers::restart(el::initialization::initial));
+    std::mt19937_64 restart_rng{5};
+    const auto restarted_result =
+        restarted.run(instance, Solution{.hard = 4, .soft = 6}, restart_rng);
+    const auto& starts = *recorder.starts;
+    ok &= expect(
+        restarted_result.stages[1].attempts == 3 && starts.size() == 3
+            && starts[0].hard == 4 && starts[0].soft == 2 && starts[1].hard == 5
+            && starts[1].soft == 9 && starts[2].hard == 5,
+        "restart() starts the attempts after the first from a new solution");
+    using recorder_stage =
+        decltype(solvers::stage("again", el::Runner{recorder} | sm | nhe));
+    static_assert(restartable<recorder_stage, el::initialization::Initial>);
+    static_assert(restartable<recorder_stage, el::initialization::Automatic>);
+    static_assert(
+        !restartable<recorder_stage, el::initialization::Random>,
+        "a restart the SolutionManager does not support is rejected");
 
     // Without a target, a stage runs all its attempts and keeps the best.
     const Noisy noisy;

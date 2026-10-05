@@ -9,10 +9,21 @@ initial solutions and orchestrates its runners.
 ## Construction
 
 ```cpp
-auto solver = make_solver<solvers::X>(runner, solvers::XConfig<Initialization>{...});
+auto solver = make_solver<solvers::MultiStart>(runner, solvers::MultiStartParameters{.starts = 5})
+                  .initialization(initialization::random)
+                  .seed(7);
 auto result = solver.solve(input);
 auto controlled = solver.solve(input, easylocal::with(control, tracer).stop_at(target));
 ```
+
+Every solver is built from its runner (and, for MultiStart, its parameters)
+and configured with the same two builders, which return the solver: itself on
+an lvalue, by value on a temporary.
+
+| Builder | Default | Effect |
+| --- | --- | --- |
+| `.seed(n)` | 0 | seeds the solver's RNG |
+| `.initialization(tag)` | `initialization::automatic` | how the initial solutions are built ([Initialization](#initialization)) |
 
 The optional trailing [run options](runners.md#run-options) — cancellation,
 tracer, target cost — reach every run of the solver. Before each run, the
@@ -21,26 +32,29 @@ attempt (or the start), which tells the runs of a solve apart in a trace
 ([Tracing](../tracing.md)).
 
 `make_solver` takes the solver class template as its key and deduces the
-runner type. A custom RNG type can be chosen by constructing the solver
-directly: `solvers::X<Runner, RNG>{runner, ..., RNG{seed}}`.
+runner type. A custom RNG type is the last constructor argument, from which
+the solver deduces it: `solvers::LocalSearch{runner, RNG{seed}}`,
+`solvers::MultiStart{runner, parameters, RNG{seed}}`, and for a pipeline
+`solvers::pipeline<RNG>(stages...)`.
 
 ## Built-in solvers
 
-| Solver | Config | Behaviour |
+| Solver | Built with | Behaviour |
 | --- | --- | --- |
-| `solvers::LocalSearch` | `LocalSearchConfig{initialization, seed}` | one initial solution, one run |
-| `solvers::MultiStart` | `MultiStartConfig{parameters = {starts}, initialization, seed}` | up to `starts` runs from fresh solutions, keeps the best by cost semantics |
-| `solvers::Pipeline` | built from stages with `\|` or `pipeline(...)` (below) | runners in sequence, each stage from the solution of the previous one |
+| `solvers::LocalSearch` | `LocalSearch{runner}` | one initial solution, one run |
+| `solvers::MultiStart` | `MultiStart{runner, {.starts = n}}` (`MultiStartParameters`) | up to `starts` runs from fresh solutions, keeps the best by cost semantics |
+| `solvers::Pipeline` | stages with `\|` or `pipeline(...)` (below) | runners in sequence, each stage from the solution of the previous one |
 
 Results carry the effort of the whole solve: `evaluations` and `iterations`
 add up over MultiStart's starts and a pipeline's stages and attempts. With a
 `cost::pareto` cost, the `front` of MultiStart's result merges the fronts of
 all its starts, and so does the front of a stage over its attempts.
 
-`MultiStart` ends early when a start is cancelled or reaches the target, or
-when the solve's time or evaluations are spent; its termination is then
+`MultiStart`'s starts and a pipeline stage's attempts run in the same loop.
+It ends early when a run is cancelled, reaches the target or its time limit,
+or when the solve's time or evaluations are spent; the termination is then
 `cancelled`, `target_reached`, `time_limit_reached` or
-`evaluation_budget_exhausted`, otherwise `completed`.
+`evaluation_budget_exhausted`, otherwise the last run's.
 
 A solve's time limit and evaluation budget (`solve(input,
 easylocal::timeout(30s))`, `easylocal::max_evaluations(1'000'000)`, or both,
@@ -60,7 +74,7 @@ using namespace easylocal::solvers;
 auto solver = (stage("feasible", descent) & until_feasible() & attempts(10))
     | stage("descent", descent)
     | stage("anneal", annealing);
-auto result = solver.initialization(initialization::random).seed(7).solve(input);
+auto result = solver.seed(7).solve(input);
 ```
 
 `&` gives a stage its options and `|` chains the stages. `&` binds tighter
@@ -82,6 +96,7 @@ their costs may differ.
 | `& target(cost)` | `.with_target(cost)` | the stage stops as soon as its best cost reaches `cost`, in the stage's own cost |
 | `& until_feasible()` | `.until_feasible()` | the stage runs `runner.with_hard_cost()` until the hard cost is zero; requires a `cost::hierarchical` cost |
 | `& attempts(n)` | `.with_attempts(n)` | up to `n` runs while the target is not reached, keeping the best; the first stage starts each from a new initial solution, the others from the solution they received |
+| `& restart(tag)` | `.with_restart(tag)` | the attempts after the first start from a new solution built as the [initialization](#initialization) tag says, rather than as the first; checked at compile time against the stage's SolutionManager |
 | `& max_evaluations(n)` | `.max_evaluations(n)` | the stage stops once it has made `n` evaluations, its attempts together; the next stage runs with what is left of the solve's budget |
 | `& timeout(d)` | `.timeout(d)` | the stage stops once `d` (a `std::chrono` duration or seconds) has passed since it started, its attempts together; the next stage runs with what is left of the solve's time |
 
@@ -90,9 +105,8 @@ components of the hard branch, and deltas attached to soft components are
 ignored; with another expression producing a hierarchical cost it evaluates
 them all and keeps the hard part.
 
-The pipeline's `.initialization(...)` and `.seed(...)` return the pipeline;
-by default it starts from a random solution when the first stage supports it,
-with seed 0, as the other solvers.
+The pipeline's `.initialization(...)` and `.seed(...)` are those of every
+solver, and refer to its first stage.
 A caller's target applies to the last stage, unless that stage has its own.
 After a cancellation, or once the solve's time or evaluations are spent, the
 stages between the first and the last are skipped without binding their
@@ -102,7 +116,12 @@ has the last stage's cost.
 
 `pipeline.run(input, solution, rng, options...)` runs the stages from a given
 solution with the caller's RNG: the first stage's attempts all start from that
-solution. It is how an app runs a pipeline registered by name.
+solution, unless the stage restarts them (`& restart(initialization::random)`,
+a multi-start). It is how an app runs a pipeline registered by name.
+
+Attempts from the same solution repeat the same run for a runner that takes no
+RNG and keeps no state between runs (First and Best Improvement): give such a
+stage a target, or restart its attempts from random solutions.
 
 The result is the last stage's, with the effort of every stage and attempt,
 and `result.stages`: per stage its name, attempts, evaluations, iterations,
@@ -124,9 +143,9 @@ hard/soft model, `(stage("first", first) & until_feasible()) | stage("second",
 second)`: the second stage works on the whole cost. `two_stage(runner)` uses the same
 runner for both. Its parameters are `first.*` and `second.*`.
 
-All solvers expose `supports_initial`, `supports_random`,
-`supports(initialization::Mode)`, `initialization_mode()` (get and set) and
-`rng()`; for a pipeline they refer to its first stage.
+All solvers expose `supports_initial`, `supports_random`, `seed(n)`,
+`initialization(tag)` and `rng()`; for a pipeline they refer to its first
+stage.
 
 ## Exceptions
 
@@ -142,12 +161,15 @@ exception` for what is not a `std::exception`) and returns 1.
 
 ## Initialization
 
-| Spelling | Checked |
-| --- | --- |
-| `initialization::initial`, `initialization::random` | at compile time against the SolutionManager |
-| `initialization::Mode::initial`, `Mode::random` | at runtime, when set |
+| Tag | Starts from | Requires |
+| --- | --- | --- |
+| `initialization::automatic` (the default) | a random solution when the SolutionManager builds one, else its initial solution | either |
+| `initialization::initial` | `initial_solution()` | `initial_solution()` |
+| `initialization::random` | `random_solution(rng)`, with the solver's RNG | `random_solution(rng)` |
 
-There is never an implicit fallback from one mode to the other.
+A tag is checked at compile time against the SolutionManager: a solver given
+one it does not support does not compile. Besides `automatic`, there is never a
+fallback from one to the other.
 
 ## Design choices
 

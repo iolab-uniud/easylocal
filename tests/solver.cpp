@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <iostream>
 #include <random>
-#include <stdexcept>
 #include <string_view>
 #include <utility>
 
@@ -109,6 +108,10 @@ struct RandomAlgorithm
     }
 };
 
+// Whether the solver's initialization() takes the tag Initialization.
+template<class Solver, class Initialization>
+concept accepts = requires(Solver& solver) { solver.initialization(Initialization{}); };
+
 bool expect(bool condition, std::string_view message)
 {
     if (!condition) std::cerr << "FAILED: " << message << '\n';
@@ -129,64 +132,27 @@ int main()
     using DeterministicSolver = solvers::LocalSearch<DeterministicRunner>;
     static_assert(DeterministicSolver::supports_initial);
     static_assert(!DeterministicSolver::supports_random);
-    static_assert(DeterministicSolver::supports(initialization::Mode::initial));
-    static_assert(!DeterministicSolver::supports(initialization::Mode::random));
-    static_assert(std::constructible_from<
-        DeterministicSolver,
-        DeterministicRunner,
-        initialization::Initial,
-        std::mt19937_64>);
-    static_assert(!std::constructible_from<
-        DeterministicSolver,
-        DeterministicRunner,
-        initialization::Random,
-        std::mt19937_64>);
+    // A tag the SolutionManager does not support is rejected at compile time.
+    static_assert(accepts<DeterministicSolver, initialization::Initial>);
+    static_assert(accepts<DeterministicSolver, initialization::Automatic>);
+    static_assert(!accepts<DeterministicSolver, initialization::Random>);
 
-    auto deterministic_solver = make_solver<solvers::LocalSearch>(
-        deterministic_runner,
-        solvers::LocalSearchConfig<initialization::Initial>{
-            .initialization = initialization::initial,
-            .seed = 42});
+    auto deterministic_solver =
+        make_solver<solvers::LocalSearch>(deterministic_runner)
+            .initialization(initialization::initial)
+            .seed(42);
     const auto deterministic = deterministic_solver.solve(instance);
     ok &= expect(
         deterministic.solution.value == 11,
         "deterministic initialization is delegated through the bound SolutionManager");
 
-    bool rejected_unsupported_runtime_mode = false;
-    try
-    {
-        [[maybe_unused]] solvers::LocalSearch runtime_selected{
-            deterministic_runner,
-            initialization::Mode::random,
-            std::mt19937_64{42}};
-    }
-    catch (const std::invalid_argument&)
-    {
-        rejected_unsupported_runtime_mode = true;
-    }
+    // By default, the only initialization it supports.
     ok &= expect(
-        rejected_unsupported_runtime_mode,
-        "runtime initialization rejects a mode unsupported by the SolutionManager");
-
-    DeterministicSolver deterministic_runtime_selected{
-        deterministic_runner,
-        initialization::Mode::initial,
-        std::mt19937_64{42}};
-    bool rejected_unsupported_runtime_setter = false;
-    try
-    {
-        deterministic_runtime_selected.initialization_mode(
-            initialization::Mode::random);
-    }
-    catch (const std::invalid_argument&)
-    {
-        rejected_unsupported_runtime_setter = true;
-    }
-    ok &= expect(
-        rejected_unsupported_runtime_setter &&
-            deterministic_runtime_selected.initialization_mode() ==
-                initialization::Mode::initial,
-        "runtime initialization setter rejects unsupported modes without changing state");
+        make_solver<solvers::LocalSearch>(deterministic_runner)
+                .solve(instance)
+                .solution.value
+            == 11,
+        "automatic initialization falls back on the initial solution");
 
     auto random_runner = Runner{RandomAlgorithm{}}
         | (solution_manager<RandomSM>() | component<ValueCost>())
@@ -196,11 +162,10 @@ int main()
     static_assert(!RandomSolver::supports_initial);
     static_assert(RandomSolver::supports_random);
 
-    auto random_solver = make_solver<solvers::LocalSearch>(
-        random_runner,
-        solvers::LocalSearchConfig<initialization::Random>{
-            .initialization = initialization::random,
-            .seed = 1234});
+    auto random_solver =
+        make_solver<solvers::LocalSearch>(random_runner)
+            .initialization(initialization::random)
+            .seed(1234);
 
     std::mt19937_64 reference{1234};
     const auto expected_initial = reference();
@@ -226,22 +191,28 @@ int main()
     static_assert(SelectableSolver::supports_initial);
     static_assert(SelectableSolver::supports_random);
 
-    solvers::LocalSearch selectable_solver{
-        selectable_runner,
-        initialization::Mode::initial,
-        std::mt19937_64{7}};
-    ok &= expect(
-        selectable_solver.initialization_mode() == initialization::Mode::initial,
-        "runtime-selected Solver reports its initialization mode");
-    ok &= expect(
-        selectable_solver.solve(instance).solution.value == 11,
-        "runtime-selected deterministic initialization is used");
-
-    selectable_solver.initialization_mode(initialization::Mode::random);
+    solvers::LocalSearch selectable_solver{selectable_runner, std::mt19937_64{7}};
     std::mt19937_64 selectable_reference{7};
     ok &= expect(
         selectable_solver.solve(instance).solution.value == selectable_reference(),
-        "runtime initialization can be changed to another supported mode");
+        "automatic initialization prefers a random solution");
+
+    selectable_solver.initialization(initialization::initial);
+    ok &= expect(
+        selectable_solver.solve(instance).solution.value == 11,
+        "the initialization chosen on an lvalue is used");
+
+    // The builders return the solver itself on an lvalue, a new one on a
+    // temporary.
+    static_assert(
+        std::same_as<decltype(selectable_solver.seed(1)), decltype(selectable_solver)&>);
+    static_assert(std::same_as<
+        decltype(std::move(selectable_solver).initialization(initialization::random)),
+        decltype(selectable_solver)>);
+    ok &= expect(
+        &selectable_solver.seed(3).initialization(initialization::random)
+            == &selectable_solver,
+        "the builders chain on an lvalue");
 
     return ok ? 0 : 1;
 }

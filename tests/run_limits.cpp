@@ -226,12 +226,10 @@ int main()
 
     // A LocalSearch gives its time limit to its one run.
     namespace solvers = el::solvers;
-    auto single = el::make_solver<solvers::LocalSearch>(
-        runner,
-        solvers::LocalSearchConfig<el::initialization::Initial>{
-            .initialization = el::initialization::initial,
-            .seed = 4,
-        });
+    auto single =
+        el::make_solver<solvers::LocalSearch>(runner)
+            .initialization(el::initialization::initial)
+            .seed(4);
     const auto searched = single.solve(instance, el::timeout(20ms));
     ok &= expect(
         searched.termination == el::termination_reason::time_limit_reached,
@@ -280,13 +278,12 @@ int main()
 
     // A solve's time limit bounds all its runs: a MultiStart of endless starts
     // stops at it.
-    auto restarts = el::make_solver<solvers::MultiStart>(
-        runner,
-        solvers::MultiStartConfig<el::initialization::Initial>{
-            .parameters = {.starts = 1000},
-            .initialization = el::initialization::initial,
-            .seed = 3,
-        });
+    auto restarts =
+        el::make_solver<solvers::MultiStart>(
+            runner,
+            solvers::MultiStartParameters{.starts = 1000})
+            .initialization(el::initialization::initial)
+            .seed(3);
     const auto multi_started = clock::now();
     const auto restarted = restarts.solve(instance, el::timeout(60ms));
     const auto multi_elapsed = clock::now() - multi_started;
@@ -375,13 +372,12 @@ int main()
             && shared.termination == el::termination_reason::evaluation_budget_exhausted,
         "a MultiStart shares the solve's evaluation budget");
     // The budget may run out during the last start: the solve still says so.
-    auto single_start = el::make_solver<solvers::MultiStart>(
-        runner,
-        solvers::MultiStartConfig<el::initialization::Initial>{
-            .parameters = {.starts = 1},
-            .initialization = el::initialization::initial,
-            .seed = 3,
-        });
+    auto single_start =
+        el::make_solver<solvers::MultiStart>(
+            runner,
+            solvers::MultiStartParameters{.starts = 1})
+            .initialization(el::initialization::initial)
+            .seed(3);
     const auto last_start = single_start.solve(instance, el::max_evaluations(5));
     ok &= expect(
         last_start.evaluations == 5

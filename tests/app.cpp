@@ -415,12 +415,11 @@ void app_can_make_and_equip_solvers()
     };
 
     auto application = make_application();
-    auto solver = easylocal::make_solver<easylocal::solvers::LocalSearch>(
-        application.make_runner<easylocal::runners::FirstImprovement>("fi"),
-        easylocal::solvers::LocalSearchConfig<easylocal::initialization::Initial>{
-            .initialization = easylocal::initialization::initial,
-            .seed = 17,
-        });
+    auto solver =
+        easylocal::make_solver<easylocal::solvers::LocalSearch>(
+            application.make_runner<easylocal::runners::FirstImprovement>("fi"))
+            .initialization(easylocal::initialization::initial)
+            .seed(17);
 
     const auto result = solver.solve(instance);
     auto bound_app = application.bind(instance);
@@ -468,12 +467,10 @@ void named_runner_registrations_can_be_selected_for_solver_creation()
     assert(quick_result.evaluations <= 1);
     assert(deep_result.evaluations >= quick_result.evaluations);
 
-    auto solver = easylocal::make_solver<easylocal::solvers::LocalSearch>(
-        deep_runner,
-        easylocal::solvers::LocalSearchConfig<easylocal::initialization::Initial>{
-            .initialization = easylocal::initialization::initial,
-            .seed = 23,
-        });
+    auto solver =
+        easylocal::make_solver<easylocal::solvers::LocalSearch>(deep_runner)
+            .initialization(easylocal::initialization::initial)
+            .seed(23);
     const auto solver_result = solver.solve(instance);
     assert(solver_result.evaluations == deep_result.evaluations);
 

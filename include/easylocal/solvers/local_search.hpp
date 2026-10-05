@@ -8,7 +8,6 @@
 #include <easylocal/solvers/solver.hpp>
 
 #include <concepts>
-#include <cstddef>
 #include <cstdint>
 #include <random>
 #include <utility>
@@ -16,34 +15,22 @@
 namespace easylocal::solvers
 {
 
-/// The configuration of LocalSearch: the initialization and the RNG seed.
-template<class Initialization = initialization::Random>
-struct LocalSearchConfig
-{
-    /// How the initial solution is built: a tag or an initialization::Mode.
-    Initialization initialization{initialization::random};
-    /// The seed of the solver's RNG, seeded once: each solve() continues its
-    /// stream, so the seed reproduces the sequence of solves.
-    std::uint64_t seed{0};
-};
-
-/// The simplest Solver: bind one Runner to an Instance, construct the initial
-/// solution according to the selected mode, then run the search.
+/// The simplest Solver: binds one Runner to an Instance, builds an initial
+/// solution, then runs the search once and returns its result.
 ///
-/// The Solver owns the RNG; random initialization and random-aware algorithms
-/// consume the same explicit stream, preserving deterministic replay from a
-/// seed.
-///
-/// The Runner/SolutionManager type determines which initialization modes exist.
-/// Static tags validate this at compile time; initialization::Mode provides the
-/// same choice at runtime for CLI/configuration and is validated immediately.
+/// The Solver owns the RNG, seeded with 0 unless `.seed(n)` says otherwise;
+/// random initialization and random-aware algorithms consume the same stream,
+/// so a seed reproduces the solve. `.initialization(tag)` chooses the initial
+/// solution, `initialization::automatic` by default (random when the
+/// SolutionManager builds random solutions); a tag the SolutionManager does not
+/// support is rejected at compile time.
 template<class RunnerType, std::uniform_random_bit_generator RNG = std::mt19937_64>
 class LocalSearch
-    : public easylocal::detail::InitializationSupport<
+    : public easylocal::detail::solver_start<
           easylocal::detail::bound_runner_t<RunnerType>,
           RNG>
 {
-    using initialization_support = easylocal::detail::InitializationSupport<
+    using start_type = easylocal::detail::solver_start<
         easylocal::detail::bound_runner_t<RunnerType>,
         RNG>;
 
@@ -60,46 +47,33 @@ public:
     using solution_type = typename bound_runner_type::solution_type;
 
     /// Whether the runner can build an initial solution (`initial_solution()`).
-    using initialization_support::supports_initial;
+    using start_type::supports_initial;
     /// Whether the runner can build a random solution (`random_solution(rng)`).
-    using initialization_support::supports_random;
+    using start_type::supports_random;
 
-    /// initialization: initialization::initial or random, rejected at compile
-    /// time when the runner does not support it, or a Mode, checked here.
-    template<class Initialization>
-        requires easylocal::detail::
-                     accepted_initialization<Initialization, bound_runner_type, RNG>
-    LocalSearch(RunnerType runner, Initialization initialization, RNG rng)
-        : initialization_support{initialization},
-          runner_{std::move(runner)},
-          rng_{std::move(rng)}
-    {
-    }
-
-    /// From a runner, an initialization, and a seed that constructs the RNG.
-    template<class Initialization, class Seed>
-        requires std::constructible_from<RNG, Seed>
-        && easylocal::detail::
-            accepted_initialization<Initialization, bound_runner_type, RNG>
-    LocalSearch(RunnerType runner, Initialization initialization, Seed seed)
-        : LocalSearch(std::move(runner), initialization, RNG{std::move(seed)})
-    {
-    }
-
-    /// From a runner and a LocalSearchConfig.
-    template<class Initialization>
-        requires std::constructible_from<RNG, std::uint64_t>
-    LocalSearch(RunnerType runner, LocalSearchConfig<Initialization> config)
-        : LocalSearch(std::move(runner), config.initialization, RNG{config.seed})
-    {
-    }
-
+    /// The same solver, with its RNG seeded with `seed`: this solver on an
+    /// lvalue, the moved solver on a temporary. Each solve() continues the
+    /// stream, so the seed reproduces the sequence of solves.
+    using start_type::seed;
+    /// The same solver, building its initial solution as `initialization`
+    /// says: initialization::initial, random or automatic, rejected at compile
+    /// time when the runner does not support it. This solver on an lvalue, the
+    /// moved solver on a temporary.
+    using start_type::initialization;
     /// The RNG, which feeds initialization and runs.
-    template<class Self>
-    [[nodiscard]]
-    auto& rng(this Self&& self) noexcept
+    using start_type::rng;
+
+    /// From a runner, with an RNG seeded with 0.
+    explicit LocalSearch(RunnerType runner)
+        requires std::constructible_from<RNG, std::uint64_t>
+        : LocalSearch(std::move(runner), RNG{std::uint64_t{0}})
     {
-        return self.rng_;
+    }
+
+    /// From a runner and the RNG it owns.
+    LocalSearch(RunnerType runner, RNG rng)
+        : start_type{std::move(rng)}, runner_{std::move(runner)}
+    {
     }
 
     /// Solves from one initial solution.
@@ -114,12 +88,12 @@ public:
                  (supports_initial || supports_random)
     {
         auto bound_runner = runner_.bind(input);
-        auto solution = this->make_initial_solution(bound_runner, rng_);
+        auto solution = this->make_initial_solution(bound_runner);
         easylocal::detail::emit_run_context({}, 0, 0, options...);
         return easylocal::detail::run_with_solver_rng(
             bound_runner,
             std::move(solution),
-            rng_,
+            this->rng_,
             options...);
     }
 
@@ -138,17 +112,14 @@ public:
 
 private:
     RunnerType runner_;
-    RNG rng_;
 };
 
-/// `LocalSearch{runner, initialization, rng}` deduces the runner and RNG types.
-template<class RunnerType, class Initialization, class RNG>
-LocalSearch(RunnerType, Initialization, RNG)
-    -> LocalSearch<RunnerType, RNG>;
+/// `LocalSearch{runner}` deduces the runner type, with the default RNG.
+template<class RunnerType>
+LocalSearch(RunnerType) -> LocalSearch<RunnerType>;
 
-/// `LocalSearch{runner, config}` deduces the runner type, with the default RNG.
-template<class RunnerType, class Initialization>
-LocalSearch(RunnerType, LocalSearchConfig<Initialization>)
-    -> LocalSearch<RunnerType>;
+/// `LocalSearch{runner, rng}` deduces the runner and RNG types.
+template<class RunnerType, std::uniform_random_bit_generator RNG>
+LocalSearch(RunnerType, RNG) -> LocalSearch<RunnerType, RNG>;
 
 } // namespace easylocal::solvers

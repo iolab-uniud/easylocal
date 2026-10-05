@@ -1,15 +1,16 @@
 #pragma once
 
-/// \file How a solver builds the initial solution: initialization::initial or
-/// initialization::random, as compile-time tags or as a runtime Mode, and
-/// detail::InitializationSupport, the part of the solvers that keeps the
-/// choice.
+/// \file How a solver builds its initial solutions: initialization::initial,
+/// initialization::random or initialization::automatic, compile-time tags
+/// checked against the SolutionManager, and detail::solver_start, the part of
+/// the solvers that keeps the choice, the RNG and their builders.
 
 #include <easylocal/solvers/solver.hpp>
 
 #include <concepts>
-#include <stdexcept>
+#include <cstdint>
 #include <type_traits>
+#include <utility>
 
 namespace easylocal
 {
@@ -17,14 +18,19 @@ namespace easylocal
 namespace initialization
 {
 
-/// Static tags are useful when initialization is fixed by the program: an
-/// unsupported choice is then rejected at compile time.
+/// The tag of the initial solution, from `initial_solution()`.
 struct Initial
 {
 };
 
-/// The tag for a random initial solution, from `random_solution(rng)`.
+/// The tag of a random initial solution, from `random_solution(rng)`.
 struct Random
+{
+};
+
+/// The tag of the default initialization: random when the SolutionManager
+/// builds random solutions, else its initial solution.
+struct Automatic
 {
 };
 
@@ -33,40 +39,94 @@ inline constexpr Initial initial{};
 /// Starts from the SolutionManager's `random_solution(rng)`, with the solver's
 /// RNG.
 inline constexpr Random random{};
-
-/// Mode is the runtime-facing counterpart, suitable for CLI/configuration.
-///
-/// Unsupported runtime selections are rejected explicitly; there is never an
-/// implicit fallback from one initialization mode to another.
-enum class Mode
-{
-    /// From the SolutionManager's `initial_solution()`.
-    initial,
-    /// From the SolutionManager's `random_solution(rng)`, with the solver's
-    /// RNG.
-    random,
-};
+/// Starts from a random solution when the SolutionManager builds one, else
+/// from its initial solution: the default of every solver.
+inline constexpr Automatic automatic{};
 
 } // namespace initialization
 
 namespace detail
 {
 
-// An initialization a solver over BoundRunner accepts: a tag the runner
-// supports, checked at compile time, or a Mode, checked when it is given.
+// The initialization chosen with a tag, kept by a solver or a stage.
+enum class initialization_kind
+{
+    automatic,
+    initial,
+    random,
+};
+
+// An initialization tag a bound runner supports with RNG, checked at compile
+// time: initial needs initial_solution(), random needs random_solution(rng),
+// automatic needs either.
 template<class Initialization, class BoundRunner, class RNG>
 concept accepted_initialization =
     (std::same_as<std::remove_cvref_t<Initialization>, initialization::Initial>
         && bound_runner_with_initial_solution<BoundRunner>)
     || (std::same_as<std::remove_cvref_t<Initialization>, initialization::Random>
         && bound_runner_with_random_solution<BoundRunner, RNG>)
-    || std::same_as<std::remove_cvref_t<Initialization>, initialization::Mode>;
+    || (std::same_as<std::remove_cvref_t<Initialization>, initialization::Automatic>
+        && (bound_runner_with_initial_solution<BoundRunner>
+            || bound_runner_with_random_solution<BoundRunner, RNG>));
 
-// The initialization of a solver whose runs start from solutions of
-// BoundRunner: which modes it supports, the selected one, and the initial
-// solution it builds. The solver owns the RNG and passes it in.
+[[nodiscard]]
+constexpr initialization_kind initialization_kind_of(initialization::Initial) noexcept
+{
+    return initialization_kind::initial;
+}
+
+[[nodiscard]]
+constexpr initialization_kind initialization_kind_of(initialization::Random) noexcept
+{
+    return initialization_kind::random;
+}
+
+[[nodiscard]]
+constexpr initialization_kind initialization_kind_of(initialization::Automatic) noexcept
+{
+    return initialization_kind::automatic;
+}
+
+// A new solution of bound_runner, as kind says: automatic is random when the
+// bound runner builds random solutions with RNG. The kind was checked against
+// the bound runner when it was chosen.
 template<class BoundRunner, class RNG>
-class InitializationSupport
+[[nodiscard]]
+typename BoundRunner::solution_type make_start_solution(
+    const initialization_kind kind,
+    const BoundRunner& bound_runner,
+    RNG& rng)
+{
+    constexpr bool with_initial = bound_runner_with_initial_solution<BoundRunner>;
+    constexpr bool with_random = bound_runner_with_random_solution<BoundRunner, RNG>;
+    static_assert(
+        with_initial || with_random,
+        "a solver needs a SolutionManager with initial_solution() or "
+        "random_solution(rng)");
+    if constexpr (with_initial && with_random)
+    {
+        if (kind == initialization_kind::initial)
+            return bound_runner.initial_solution();
+        return bound_runner.random_solution(rng);
+    }
+    else if constexpr (with_random)
+        return bound_runner.random_solution(rng);
+    else
+        return bound_runner.initial_solution();
+}
+
+// What a builder of a solver returns: a reference to the solver on an lvalue,
+// the moved solver on a temporary.
+template<class Self>
+using builder_result_t = std::conditional_t<
+    std::is_lvalue_reference_v<Self>,
+    std::remove_reference_t<Self>&,
+    std::remove_cvref_t<Self>>;
+
+// The start of a solver whose runs start from solutions of BoundRunner: its
+// RNG, its initialization, and their builders seed() and initialization().
+template<class BoundRunner, class RNG>
+class solver_start
 {
 public:
     static constexpr bool supports_initial =
@@ -74,92 +134,55 @@ public:
     static constexpr bool supports_random =
         bound_runner_with_random_solution<BoundRunner, RNG>;
 
-    [[nodiscard]]
-    static constexpr bool supports(const initialization::Mode mode) noexcept
+    template<class Self>
+        requires std::constructible_from<RNG, std::uint64_t>
+    builder_result_t<Self> seed(this Self&& self, const std::uint64_t seed)
     {
-        switch (mode)
-        {
-        case initialization::Mode::initial:
-            return supports_initial;
-        case initialization::Mode::random:
-            return supports_random;
-        }
-        return false;
+        solver_start& start = self;
+        start.rng_ = RNG{seed};
+        return std::forward<Self>(self);
     }
 
-    [[nodiscard]]
-    initialization::Mode initialization_mode() const noexcept
+    template<class Self, class Initialization>
+        requires accepted_initialization<Initialization, BoundRunner, RNG>
+    builder_result_t<Self> initialization(
+        this Self&& self,
+        const Initialization initialization)
     {
-        return mode_;
+        solver_start& start = self;
+        start.kind_ = initialization_kind_of(initialization);
+        return std::forward<Self>(self);
     }
 
-    // Throws std::invalid_argument when the mode is not supported.
-    void initialization_mode(const initialization::Mode mode)
+    template<class Self>
+    [[nodiscard]]
+    auto& rng(this Self&& self) noexcept
     {
-        validate(mode);
-        mode_ = mode;
+        return self.rng_;
     }
 
 protected:
-    template<class Initialization>
-        requires accepted_initialization<Initialization, BoundRunner, RNG>
-    explicit InitializationSupport(const Initialization initialization)
-        : mode_{to_mode(initialization)}
+    explicit solver_start(RNG rng, const initialization_kind kind = {})
+        : rng_{std::move(rng)}, kind_{kind}
     {
-        validate(mode_);
+    }
+
+    // A new initial solution, with the solver's RNG.
+    [[nodiscard]]
+    typename BoundRunner::solution_type make_initial_solution(
+        const BoundRunner& bound_runner)
+    {
+        return make_start_solution(kind_, bound_runner, rng_);
     }
 
     [[nodiscard]]
-    typename BoundRunner::solution_type make_initial_solution(
-        const BoundRunner& bound_runner,
-        RNG& rng) const
+    initialization_kind kind() const noexcept
     {
-        switch (mode_)
-        {
-        case initialization::Mode::initial:
-            if constexpr (supports_initial)
-                return bound_runner.initial_solution();
-            break;
-        case initialization::Mode::random:
-            if constexpr (supports_random)
-                return bound_runner.random_solution(rng);
-            break;
-        }
-        // The constructor and the setter validate the mode: a guard in case a
-        // mode is added.
-        throw std::logic_error{"unsupported Solver initialization mode"};
+        return kind_;
     }
 
-    // The mode of an initialization tag, or the mode itself.
-    static constexpr initialization::Mode to_mode(const initialization::Initial) noexcept
-    {
-        return initialization::Mode::initial;
-    }
-
-    static constexpr initialization::Mode to_mode(const initialization::Random) noexcept
-    {
-        return initialization::Mode::random;
-    }
-
-    static constexpr initialization::Mode to_mode(
-        const initialization::Mode mode) noexcept
-    {
-        return mode;
-    }
-
-private:
-    static void validate(const initialization::Mode mode)
-    {
-        if (!supports(mode))
-        {
-            throw std::invalid_argument{
-                mode == initialization::Mode::initial
-                    ? "initial solution initialization is not supported by this Solver"
-                    : "random solution initialization is not supported by this Solver"};
-        }
-    }
-
-    initialization::Mode mode_;
+    RNG rng_;
+    initialization_kind kind_;
 };
 
 } // namespace detail

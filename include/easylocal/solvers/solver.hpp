@@ -375,10 +375,90 @@ std::optional<termination_reason> ends_runs(const Result& result) noexcept
     return std::nullopt;
 }
 
+// What the attempts of run_attempts did: the best run, with the front of all
+// of them; how many ran; their effort; and why they stopped, if a run or the
+// budget says so.
+template<class Result>
+struct attempts_outcome
+{
+    Result best;
+    std::size_t attempts{};
+    search_effort effort;
+    std::optional<termination_reason> termination;
+};
+
+// Up to `count` runs, run_attempt(index, budget) each, keeping the best by the
+// bound runner's cost semantics: MultiStart's starts and a pipeline stage's
+// attempts.
+//
+// The runs share `budget`, the solve's, tightened by `limits`, their own; both
+// count what each run uses. They stop at a run for which ends(result) gives a
+// reason, at a cancellation, or once the budget is spent. The termination is
+// the reason that stopped them, else the last run's; the best result has it,
+// and the front merged from every run.
+template<class BoundRunner, class RunAttempt, class Ends, class... Options>
+[[nodiscard]]
+auto run_attempts(
+    const BoundRunner& bound_runner,
+    const std::size_t count,
+    solve_budget& budget,
+    const solve_budget& limits,
+    const RunAttempt& run_attempt,
+    const Ends& ends,
+    const Options&... options)
+{
+    auto attempt_budget = budget.within(limits);
+    auto best = run_attempt(std::size_t{0}, std::as_const(attempt_budget));
+    using result_type = decltype(best);
+    search_effort effort;
+    merged_front<result_type> front{front_parameters_of(options...)};
+    const auto account = [&](const result_type& result) {
+        effort.add(result);
+        front.add(bound_runner, result);
+        attempt_budget.consume(result);
+        budget.consume(result);
+    };
+    account(best);
+    auto termination = ends(best);
+    auto last_termination = termination_of(best);
+    std::size_t attempts = 1;
+    for (; attempts < count && !termination; ++attempts)
+    {
+        if (stop_requested(options...))
+        {
+            termination = termination_reason::cancelled;
+            break;
+        }
+        if (attempt_budget.spent())
+            break;
+        auto candidate = run_attempt(attempts, std::as_const(attempt_budget));
+        account(candidate);
+        termination = ends(candidate);
+        last_termination = termination_of(candidate);
+        if (bound_runner.better(candidate.cost, best.cost))
+            best = std::move(candidate);
+    }
+    // The time or the evaluations ran out, before an attempt or during the
+    // last one; or else the end of the last attempt.
+    if (!termination)
+        termination = attempt_budget.spent();
+    if (!termination)
+        termination = last_termination;
+    if (termination)
+        set_termination(best, *termination);
+    front.assign_to(best);
+    return attempts_outcome<result_type>{
+        .best = std::move(best),
+        .attempts = attempts,
+        .effort = effort,
+        .termination = termination,
+    };
+}
+
 } // namespace detail
 
 /// Constructs a Solver from its arguments, e.g.
-/// make_solver<solvers::MultiStart>(runner, solvers::MultiStartConfig{...}).
+/// make_solver<solvers::MultiStart>(runner, solvers::MultiStartParameters{...}).
 ///
 /// The Solver class template is its own key; its arguments are deduced.
 template<template<class...> class Solver, class... Args>

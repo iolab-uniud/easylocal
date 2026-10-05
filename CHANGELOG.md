@@ -36,7 +36,7 @@ reviewed by hand before tagging.
   `make_solver<Solver, A>`, `for_each_registration_name`,
   `for_each_runner_registration`) are no longer public: an algorithm
   registered twice (`"sa-fast"`, `"sa-slow"`) had no single runner. A solver
-  is `make_solver<Solver>(application.make_runner<A>("name"), config)`.
+  is `make_solver<Solver>(application.make_runner<A>("name"))`.
 - A runner registered in an app may bring its own neighborhood, the third
   argument of `runner` (`runner<SA>("sa", {...}, neighborhood<Swap>() |
   delta<...>())`, or of `with_runner`): it is built over the app's
@@ -121,6 +121,30 @@ reviewed by hand before tagging.
   best.txt` saves the solutions to `best.1.txt`, `best.2.txt`, ...; the REST
   solution resource has a `front` array of `{cost, solution}`, encoded as the
   run's cost and solution are.
+  `app.run("name", ...)` no longer drops it; the Session, `cli::run`, REST and
+  the TextUI do not show it yet.
+- **Breaking:** the solvers are configured one way: `LocalSearch{runner}`,
+  `MultiStart{runner, {.starts = n}}` and a pipeline all take `.seed(n)` and
+  `.initialization(tag)`, which return the solver (itself on an lvalue, by
+  value on a temporary). `LocalSearchConfig` and `MultiStartConfig` are
+  removed, and so are the runtime `initialization::Mode`, `supports(Mode)`
+  and `initialization_mode()`: an initialization is a tag, checked at compile
+  time. A custom RNG is the solver's last constructor argument
+  (`MultiStart{runner, parameters, RNG{seed}}`).
+- **Breaking:** every solver starts by default from `initialization::automatic`,
+  a random solution when the SolutionManager builds one, else its initial
+  solution, with seed 0: LocalSearch and MultiStart required
+  `random_solution` unless told otherwise, while a pipeline adapted.
+- **Breaking:** MultiStart and the attempts of a pipeline stage run in one
+  loop, so they stop, count their budget and merge their fronts the same way;
+  MultiStart's termination is now, like a stage's, the last start's when no
+  start, cancellation or budget ended it early (it was always `completed`).
+- A pipeline stage may restart its attempts: `stage(...) & attempts(10) &
+  restart(initialization::random)` starts the attempts after the first from a
+  new solution rather than from the one the stage received, so a pipeline
+  registered in an app, which runs from the current solution, can
+  multi-start.
+
 ### Added
 
 - `trace::event::run_context`, a core event without a cost (ELTR tag 12): the

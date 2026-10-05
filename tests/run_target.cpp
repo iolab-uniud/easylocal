@@ -361,9 +361,8 @@ int main()
         "a run with a decorated evaluation keeps the time limit");
 
     // Solvers.
-    auto local_search = make_solver<solvers::LocalSearch>(
-        fi,
-        solvers::LocalSearchConfig<initialization::Initial>{.initialization = initialization::initial});
+    auto local_search =
+        make_solver<solvers::LocalSearch>(fi).initialization(initialization::initial);
     const auto solved = local_search.solve(ten, stop_at(4));
     ok &= expect(solved.cost == 4 && solved.termination == termination_reason::target_reached,
                  "LocalSearch passes the target to its run");
@@ -375,18 +374,16 @@ int main()
     ok &= expect(cancelled.termination == termination_reason::cancelled && cancelled.evaluations == 1,
                  "LocalSearch is cancellable");
 
-    auto multi_start = make_solver<solvers::MultiStart>(
-        fi,
-        solvers::MultiStartConfig<initialization::Initial>{
-            .parameters = {.starts = 5},
-            .initialization = initialization::initial,
-        });
+    auto multi_start =
+        make_solver<solvers::MultiStart>(fi, solvers::MultiStartParameters{.starts = 5})
+            .initialization(initialization::initial);
     const auto all_starts = multi_start.solve(ten);
     ok &= expect(all_starts.evaluations == 5 * unbounded.evaluations &&
                      all_starts.iterations == 5 * unbounded.iterations,
                  "MultiStart reports the effort of every start");
-    ok &= expect(all_starts.termination == termination_reason::completed,
-                 "MultiStart completes after all its starts");
+    ok &= expect(
+        all_starts.termination == unbounded.termination,
+        "MultiStart ends as its last start did, after all its starts");
 
     RunCounter starts;
     const auto first_hit = multi_start.solve(ten, with(no_stop, starts).stop_at(0));

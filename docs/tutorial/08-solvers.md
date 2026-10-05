@@ -6,16 +6,13 @@ reproduces the run, and orchestrates one or more runners.
 
 <!-- snippet: tutorial/main.cpp:solvers -->
 ```cpp
-auto solver = el::make_solver<el::solvers::MultiStart>(
-    fi,
-    el::solvers::MultiStartConfig<el::initialization::Random>{
-        .parameters = {.starts = 5},
-        .initialization = el::initialization::random,
-        .seed = 1,
-    });
+el::solvers::MultiStart solver{fi, {.starts = 5}};
+solver.initialization(el::initialization::random).seed(1);
 const auto best = solver.solve(tsp);
 ```
 
+A solver is built from its runner (MultiStart also from its parameters, here
+five starts), then `.initialization(...)` and `.seed(...)` configure it.
 `initialization::random` starts every run from a random tour, so
 `TourManager` needs a member it did not have yet, `random_solution`:
 
@@ -39,14 +36,17 @@ The built-in solvers live in `easylocal::solvers`:
 
 | Solver | Does | Needs |
 | --- | --- | --- |
-| `LocalSearch` | builds an initial solution, runs once | the chosen initialization |
-| `MultiStart` | `starts` independent runs, keeps the best | the chosen initialization |
+| `LocalSearch` | builds an initial solution, runs once | `initial_solution` or `random_solution` |
+| `MultiStart` | `starts` independent runs, keeps the best | `initial_solution` or `random_solution` |
 | `Pipeline` | runners in sequence, each stage from the solution of the previous one | stages with the same Input and Solution |
 
-- The initialization is chosen statically, with `initialization::initial` or
-  `initialization::random` checked at compile time against the
-  SolutionManager, or at runtime with `initialization::Mode`.
-- `make_solver<Solver>(runner, config)` deduces the solver type from the runner.
+- The initialization is a tag, `initialization::initial` or
+  `initialization::random`, checked at compile time against the
+  SolutionManager. Without one, a solver starts from a random solution when
+  the SolutionManager builds one, else from its initial solution
+  (`initialization::automatic`), with seed 0.
+- `make_solver<Solver>(runner[, parameters])` deduces the solver type from the
+  runner, as `solvers::MultiStart{runner, {...}}` does.
 - `solver.solve(input, el::with(control, tracer))` cancels and traces a solve
   like a run ([chapter 15](15-observing-and-controlling.md)); the result counts
   the evaluations and iterations of all the runs.
@@ -104,7 +104,9 @@ const auto result = solver.seed(7).solve(tsp);
 - `until_feasible()` runs the stage on the hard cost until it is zero;
   `target(cost)` stops a stage at another target, in its own cost.
 - `attempts(5)` repeats the stage, here from a new random tour, while it has
-  not reached its target, and keeps the best run.
+  not reached its target, and keeps the best run. The attempts of a later
+  stage start from the solution it received, unless
+  `restart(initialization::random)` starts them from new random tours.
 - `result.stages` reports each stage (attempts, effort, termination, cost),
   and the parameters of a stage are under its name (`climb.search.*`,
   `feasible.attempts`). `examples/tutorial/pipeline_main.cpp` is the complete

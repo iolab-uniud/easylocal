@@ -165,13 +165,8 @@ int main(int argc, char* argv[])
     // [custom-runner-use] --------------------------------------------------
 
     // [solvers] ------------------------------------------------------------
-    auto solver = el::make_solver<el::solvers::MultiStart>(
-        fi,
-        el::solvers::MultiStartConfig<el::initialization::Random>{
-            .parameters = {.starts = 5},
-            .initialization = el::initialization::random,
-            .seed = 1,
-        });
+    el::solvers::MultiStart solver{fi, {.starts = 5}};
+    solver.initialization(el::initialization::random).seed(1);
     const auto best = solver.solve(tsp);
     // [solvers] ------------------------------------------------------------
 
