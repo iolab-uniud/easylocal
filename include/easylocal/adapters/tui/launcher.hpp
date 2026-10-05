@@ -205,7 +205,7 @@ private:
     {
         using namespace ftxui;
 
-        auto app = App::TerminalOutput();
+        auto app = ftxui::App::TerminalOutput();
         // The entry selected last, so that coming back to the list keeps it.
         int& selected = selected_;
         bool open = false;

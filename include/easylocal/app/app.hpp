@@ -1,10 +1,10 @@
 #pragma once
 
 /// \file
-/// app: a problem's components gathered under a name, written as a pipe
+/// App: a problem's components gathered under a name, written as a pipe
 /// (app("tsp") | solution_manager | neighborhood | runner<...>("name", {...})).
 ///
-/// An app is bound to an Input (bound_app) to get its services, runs any of its
+/// An app is bound to an Input (BoundApp) to get its services, runs any of its
 /// runners by name, and exposes all its parameters as one parameter_set. Tools
 /// (Session, TextUI, REST) work on apps.
 
@@ -143,18 +143,28 @@ consteval std::size_t app_runner_index()
 {
     static_assert(
         app_runner_count_v<Algorithm, Registrations...> == 1,
-        "runner<Algorithm>() requires exactly one registration of Algorithm");
+        "this lookup by algorithm requires exactly one registration of Algorithm");
     return app_runner_index_impl<Algorithm, 0, Registrations...>();
 }
 
-// The registration of Algorithm called name, const when registrations is.
-template<class Algorithm, std::size_t Index = 0, class Tuple>
-[[nodiscard]]
-std::conditional_t<
-    std::is_const_v<Tuple>,
-    const app_runner_registration<Algorithm>,
-    app_runner_registration<Algorithm>>&
-app_runner_registration_by_name(Tuple& registrations, const std::string_view name)
+// The index of the only registration of Algorithm in a tuple of registrations.
+template<class Algorithm, class Tuple>
+struct app_runner_index_in;
+
+template<class Algorithm, class... Registrations>
+struct app_runner_index_in<Algorithm, std::tuple<Registrations...>>
+{
+    static constexpr std::size_t value = app_runner_index<Algorithm, Registrations...>();
+};
+
+// Calls visit(registration) on the registration of Algorithm called name and
+// returns what it returns, a Result; throws std::invalid_argument when there
+// is none.
+template<class Result, class Algorithm, std::size_t Index = 0, class Tuple, class Visit>
+Result visit_runner_registration_named(
+    Tuple& registrations,
+    const std::string_view name,
+    Visit&& visit)
 {
     if constexpr (Index == std::tuple_size_v<std::remove_const_t<Tuple>>)
     {
@@ -171,14 +181,13 @@ app_runner_registration_by_name(Tuple& registrations, const std::string_view nam
         {
             auto& registration = std::get<Index>(registrations);
             if (registration.name == name)
-            {
-                return registration;
-            }
+                return visit(registration);
         }
 
-        return app_runner_registration_by_name<Algorithm, Index + 1>(
+        return visit_runner_registration_named<Result, Algorithm, Index + 1>(
             registrations,
-            name);
+            name,
+            visit);
     }
 }
 
@@ -208,21 +217,6 @@ public:
     const NHE& neighborhood_explorer() const noexcept
     {
         return neighborhood_;
-    }
-
-    [[nodiscard]]
-    solution_type initial_solution() const
-        requires has_initial_solution<SM>
-    {
-        return solution_manager_.initial_solution();
-    }
-
-    template<class RNG>
-    [[nodiscard]]
-    solution_type random_solution(RNG& rng) const
-        requires has_random_solution<SM, RNG>
-    {
-        return solution_manager_.random_solution(rng);
     }
 
     template<class... RunArgs>
@@ -275,161 +269,9 @@ private:
     NHE& neighborhood_;
 };
 
-template<class SMSpec, class NHESpec, class... Registrations>
-    requires is_solution_manager_spec_v<SMSpec> && is_neighborhood_spec_v<NHESpec>
-    && detail::evaluable_solution_manager<service_t<SMSpec>>
-    && easylocal::neighborhood_explorer_for<service_t<NHESpec>, service_t<SMSpec>>
-class bound_app
-{
-public:
-    using solution_manager_type = service_t<SMSpec>;
-    using neighborhood_explorer_type = service_t<NHESpec>;
-    using input_type = typename solution_manager_type::input_type;
-
-    static constexpr std::size_t runner_count = sizeof...(Registrations);
-
-    bound_app(
-        const input_type& input,
-        const SMSpec& solution_manager_spec,
-        const NHESpec& neighborhood_spec,
-        const std::tuple<Registrations...>& registrations)
-        : input_{input},
-          solution_manager_{solution_manager_spec.construct(input_)},
-          neighborhood_{neighborhood_spec.construct(solution_manager_)},
-          algorithms_{make_algorithms(registrations)}
-    {
-        assert(
-            std::addressof(solution_manager_.input()) ==
-                std::addressof(input_));
-        assert(
-            std::addressof(neighborhood_.input()) ==
-                std::addressof(input_));
-    }
-
-    bound_app(const bound_app&) = delete;
-    bound_app& operator=(const bound_app&) = delete;
-    bound_app(bound_app&&) = delete;
-    bound_app& operator=(bound_app&&) = delete;
-
-    [[nodiscard]]
-    const input_type& input() const noexcept
-    {
-        return input_;
-    }
-
-    template<class Self>
-    [[nodiscard]]
-    auto& solution_manager(this Self&& self) noexcept
-    {
-        return self.solution_manager_;
-    }
-
-    template<class Self>
-    [[nodiscard]]
-    auto& neighborhood(this Self&& self) noexcept
-    {
-        return self.neighborhood_;
-    }
-
-    template<class Algorithm>
-    [[nodiscard]]
-    auto runner()
-    {
-        constexpr auto index = app_runner_index<Algorithm, Registrations...>();
-        using registration_type =
-            std::tuple_element_t<index, std::tuple<Registrations...>>;
-        using algorithm_type = typename registration_type::algorithm_type;
-
-        return app_runner_ref<
-            algorithm_type,
-            solution_manager_type,
-            neighborhood_explorer_type>{
-            std::get<index>(algorithms_),
-            solution_manager_,
-            neighborhood_,
-        };
-    }
-
-    template<std::size_t Index>
-        requires (Index < runner_count)
-    [[nodiscard]]
-    auto runner_at()
-    {
-        using registration_type =
-            std::tuple_element_t<Index, std::tuple<Registrations...>>;
-        using algorithm_type = typename registration_type::algorithm_type;
-
-        return app_runner_ref<
-            algorithm_type,
-            solution_manager_type,
-            neighborhood_explorer_type>{
-            std::get<Index>(algorithms_),
-            solution_manager_,
-            neighborhood_,
-        };
-    }
-
-    template<class Algorithm, class... RunArgs>
-    [[nodiscard]]
-    auto run(typename solution_manager_type::solution_type solution, RunArgs&&... args)
-    {
-        return runner<Algorithm>().run(
-            std::move(solution),
-            std::forward<RunArgs>(args)...);
-    }
-
-    template<std::size_t Index, class... RunArgs>
-        requires (Index < runner_count)
-    [[nodiscard]]
-    auto run_at(
-        typename solution_manager_type::solution_type solution,
-        RunArgs&&... args)
-    {
-        return runner_at<Index>().run(
-            std::move(solution),
-            std::forward<RunArgs>(args)...);
-    }
-
-    template<std::size_t Index, std::uniform_random_bit_generator RNG, class... Options>
-        requires (Index < runner_count)
-    [[nodiscard]]
-    auto run_at_with_rng(
-        typename solution_manager_type::solution_type solution,
-        RNG& rng,
-        Options&&... options)
-    {
-        return runner_at<Index>().run_with_rng(
-            std::move(solution),
-            rng,
-            std::forward<Options>(options)...);
-    }
-
-private:
-    static auto make_algorithms(const std::tuple<Registrations...>& registrations)
-    {
-        return std::apply(
-            [](const auto&... registration) {
-                return std::tuple<registration_algorithm_t<Registrations>...>{
-                    make_algorithm(registration)...};
-            },
-            registrations);
-    }
-
-    template<class Registration>
-    static registration_algorithm_t<Registration> make_algorithm(
-        const Registration& registration)
-    {
-        if constexpr (is_pipeline_registration_v<Registration>)
-            return {};
-        else
-            return registration_algorithm_t<Registration>{registration.config};
-    }
-
-    const input_type& input_;
-    solution_manager_type solution_manager_;
-    neighborhood_explorer_type neighborhood_;
-    std::tuple<registration_algorithm_t<Registrations>...> algorithms_;
-};
+// The members of App and BoundApp keyed by algorithm type rather than by name,
+// for the library and its tests: a type registered twice has no single runner.
+struct app_access;
 
 template<class Spec>
 struct app_input_type
@@ -443,8 +285,209 @@ struct app_input_type<Spec>
     using input_type = typename service_t<Spec>::input_type;
 };
 
+} // namespace detail
+
+/// An app bound to an Input: the services built for it once (the
+/// SolutionManager and the neighborhood explorer) and the runners, run by name
+/// on them.
+///
+/// App::bind returns it; it borrows the Input, which must outlive it, and
+/// cannot be copied or moved, since its services refer to each other. The
+/// runners keep their state from one run to the next, and their parameters as
+/// they were at bind. Requires a SolutionManager recipe with a cost and a
+/// neighborhood recipe for it.
 template<class SMSpec, class NHESpec, class... Registrations>
-class app_builder : public app_input_type<SMSpec>
+    requires detail::is_solution_manager_spec_v<SMSpec>
+    && detail::is_neighborhood_spec_v<NHESpec>
+    && detail::evaluable_solution_manager<detail::service_t<SMSpec>>
+    && easylocal::neighborhood_explorer_for<
+        detail::service_t<NHESpec>,
+        detail::service_t<SMSpec>>
+class BoundApp
+{
+public:
+    /// The SolutionManager built from the recipe.
+    using solution_manager_type = detail::service_t<SMSpec>;
+    /// The neighborhood explorer built from the recipe.
+    using neighborhood_explorer_type = detail::service_t<NHESpec>;
+    /// The Input of the problem.
+    using input_type = typename solution_manager_type::input_type;
+    /// The Solution of the problem.
+    using solution_type = typename solution_manager_type::solution_type;
+    /// The cost of a solution.
+    using cost_type = typename solution_manager_type::cost_type;
+
+    /// The services of the app's recipes built for input, and its runners
+    /// constructed from their parameters.
+    BoundApp(
+        const input_type& input,
+        const SMSpec& solution_manager_spec,
+        const NHESpec& neighborhood_spec,
+        const std::tuple<Registrations...>& registrations)
+        : BoundApp{
+              input,
+              solution_manager_spec,
+              neighborhood_spec,
+              registrations,
+              std::index_sequence_for<Registrations...>{}}
+    {
+    }
+
+    BoundApp(const BoundApp&) = delete;
+    BoundApp& operator=(const BoundApp&) = delete;
+    BoundApp(BoundApp&&) = delete;
+    BoundApp& operator=(BoundApp&&) = delete;
+
+    /// The Input the app is bound to.
+    [[nodiscard]]
+    const input_type& input() const noexcept
+    {
+        return input_;
+    }
+
+    /// The SolutionManager, const when the bound app is.
+    template<class Self>
+    [[nodiscard]]
+    auto& solution_manager(this Self&& self) noexcept
+    {
+        return self.solution_manager_;
+    }
+
+    /// The neighborhood explorer, const when the bound app is.
+    template<class Self>
+    [[nodiscard]]
+    auto& neighborhood(this Self&& self) noexcept
+    {
+        return self.neighborhood_;
+    }
+
+    /// Runs the runner or the pipeline registered under name from solution and
+    /// returns its result; empty when nothing has that name.
+    ///
+    /// A runner runs on these services and gets rng when its algorithm takes
+    /// one; a pipeline runs with its stages' own recipes and rng. The options are run
+    /// options, such as with(control, tracer). The solution must be valid for the Input.
+    template<std::uniform_random_bit_generator RNG, class... Options>
+    [[nodiscard]]
+    std::optional<named_run_result<solution_type, cost_type>> run(
+        const std::string_view name,
+        solution_type solution,
+        RNG& rng,
+        Options&&... options)
+    {
+        std::optional<named_run_result<solution_type, cost_type>> outcome;
+        const auto run_registration = [&]<std::size_t Index>() {
+            const auto& registration = std::get<Index>(registrations_);
+            if (outcome || registration.name != name)
+                return;
+
+            auto result = [&] {
+                if constexpr (detail::is_pipeline_registration_v<
+                                  std::remove_cvref_t<decltype(registration)>>)
+                    return registration.pipeline.run(input_, solution, rng, options...);
+                else
+                    return runner_at<Index>().run_with_rng(
+                        std::move(solution),
+                        rng,
+                        std::forward<Options>(options)...);
+            }();
+            static_assert(
+                search_result_for<decltype(result), solution_type, cost_type>,
+                "running a runner by name requires its result to provide the "
+                "solution and its cost (see easylocal::search_result_for)");
+            std::optional<run_effort> effort;
+            if constexpr (requires {
+                              { result.evaluations } -> std::convertible_to<std::size_t>;
+                              { result.iterations } -> std::convertible_to<std::size_t>;
+                              {
+                                  result.termination
+                              } -> std::convertible_to<termination_reason>;
+                          })
+            {
+                effort = run_effort{
+                    .evaluations = result.evaluations,
+                    .iterations = result.iterations,
+                    .termination = result.termination,
+                };
+            }
+            outcome.emplace(
+                named_run_result<solution_type, cost_type>{
+                    .solution = std::move(result.solution),
+                    .cost = result.cost,
+                    .effort = effort,
+                });
+        };
+        [&]<std::size_t... Index>(std::index_sequence<Index...>) {
+            (run_registration.template operator()<Index>(), ...);
+        }(std::index_sequence_for<Registrations...>{});
+        return outcome;
+    }
+
+private:
+    friend struct detail::app_access;
+
+    template<std::size_t... Index>
+    BoundApp(
+        const input_type& input,
+        const SMSpec& solution_manager_spec,
+        const NHESpec& neighborhood_spec,
+        const std::tuple<Registrations...>& registrations,
+        std::index_sequence<Index...>)
+        : input_{input},
+          solution_manager_{solution_manager_spec.construct(input_)},
+          neighborhood_{neighborhood_spec.construct(solution_manager_)},
+          algorithms_{make_algorithm(std::get<Index>(registrations))...},
+          registrations_{registrations}
+    {
+        assert(std::addressof(solution_manager_.input()) == std::addressof(input_));
+        assert(std::addressof(neighborhood_.input()) == std::addressof(input_));
+    }
+
+    template<std::size_t Index>
+    [[nodiscard]]
+    auto runner_at()
+    {
+        using registration_type =
+            std::tuple_element_t<Index, std::tuple<Registrations...>>;
+        using algorithm_type = typename registration_type::algorithm_type;
+        return detail::app_runner_ref<
+            algorithm_type,
+            solution_manager_type,
+            neighborhood_explorer_type>{
+            std::get<Index>(algorithms_),
+            solution_manager_,
+            neighborhood_,
+        };
+    }
+
+    template<class Registration>
+    static detail::registration_algorithm_t<Registration> make_algorithm(
+        const Registration& registration)
+    {
+        if constexpr (detail::is_pipeline_registration_v<Registration>)
+            return {};
+        else
+            return detail::registration_algorithm_t<Registration>{registration.config};
+    }
+
+    const input_type& input_;
+    solution_manager_type solution_manager_;
+    neighborhood_explorer_type neighborhood_;
+    std::tuple<detail::registration_algorithm_t<Registrations>...> algorithms_;
+    std::tuple<Registrations...> registrations_;
+};
+
+/// A problem's components under a name: a SolutionManager recipe (with its
+/// cost), a neighborhood recipe and the runners and pipelines registered by
+/// name, which tools list, configure and run.
+///
+/// easylocal::app(name) starts one, and `|` adds the components, each step a
+/// new App type; bind(input) builds its services for an Input (a BoundApp),
+/// run(name, input, solution, rng) runs a runner on fresh ones. The name of a
+/// registration is its key: the runners and their parameters
+/// (`runners.<name>.*`) are found by it.
+template<class SMSpec, class NHESpec, class... Registrations>
+class App : public detail::app_input_type<SMSpec>
 {
     static_assert(
         std::copy_constructible<SMSpec> &&
@@ -453,25 +496,27 @@ class app_builder : public app_input_type<SMSpec>
         "app graph specifications and runner registrations must be copy constructible");
 
 public:
-    // Whether the app, with Spec as its solution manager recipe, can be bound
-    // and run: a solution manager, a neighborhood and a runner at least.
+    /// Whether the app, with Spec as its SolutionManager recipe, can be bound
+    /// and run: a SolutionManager, a neighborhood and a runner at least.
     template<class Spec>
-    static constexpr bool complete = !std::same_as<Spec, unconfigured_t>
-        && !std::same_as<NHESpec, unconfigured_t> && (sizeof...(Registrations) > 0);
+    static constexpr bool complete = !std::same_as<Spec, detail::unconfigured_t>
+        && !std::same_as<NHESpec, detail::unconfigured_t>
+        && (sizeof...(Registrations) > 0);
 
+    /// Whether the app has its SolutionManager recipe.
     static constexpr bool has_solution_manager =
-        !std::same_as<SMSpec, unconfigured_t>;
+        !std::same_as<SMSpec, detail::unconfigured_t>;
+    /// Whether the app has its neighborhood recipe.
     static constexpr bool has_neighborhood =
-        !std::same_as<NHESpec, unconfigured_t>;
+        !std::same_as<NHESpec, detail::unconfigured_t>;
+    /// The number of runners and pipelines registered.
     static constexpr std::size_t runner_count = sizeof...(Registrations);
 
-    explicit app_builder(std::string name)
-        : name_{std::move(name)}
-    {
-    }
+    /// An app named name, without components.
+    explicit App(std::string name) : name_{std::move(name)} {}
 
-    app_builder(
-        std::string name,
+    /// An app named name, with these components.
+    App(std::string name,
         SMSpec solution_manager_spec,
         NHESpec neighborhood_spec,
         std::tuple<Registrations...> registrations)
@@ -482,21 +527,37 @@ public:
     {
     }
 
+    /// The name of the app.
     [[nodiscard]]
     std::string_view name() const noexcept
     {
         return name_;
     }
 
+    /// The names of the registered runners and pipelines, in the order of
+    /// registration: the names tools list and run.
+    [[nodiscard]]
+    std::vector<std::string_view> runner_names() const
+    {
+        return std::apply(
+            [](const auto&... registration) {
+                return std::vector<std::string_view>{
+                    std::string_view{registration.name}...};
+            },
+            registrations_);
+    }
+
+    /// The app with spec as its SolutionManager recipe: the method spelling of
+    /// `app | spec`.
     template<class Spec>
-        requires std::same_as<SMSpec, unconfigured_t> &&
-                 is_solution_manager_spec_v<std::remove_cvref_t<Spec>>
+        requires std::same_as<SMSpec, detail::unconfigured_t>
+        && detail::is_solution_manager_spec_v<std::remove_cvref_t<Spec>>
     [[nodiscard]]
     auto with_solution_manager(Spec&& spec) &&
     {
         using spec_type = std::remove_cvref_t<Spec>;
-        static_assert(validate_solution_manager_spec<spec_type>());
-        return app_builder<spec_type, NHESpec, Registrations...>{
+        static_assert(detail::validate_solution_manager_spec<spec_type>());
+        return App<spec_type, NHESpec, Registrations...>{
             std::move(name_),
             std::forward<Spec>(spec),
             std::move(neighborhood_spec_),
@@ -504,15 +565,17 @@ public:
         };
     }
 
+    /// The app with spec as its neighborhood recipe: the method spelling of
+    /// `app | spec`.
     template<class Spec>
-        requires (!std::same_as<SMSpec, unconfigured_t>) &&
-                 std::same_as<NHESpec, unconfigured_t> &&
-                 is_neighborhood_spec_v<std::remove_cvref_t<Spec>>
+        requires(!std::same_as<SMSpec, detail::unconfigured_t>)
+        && std::same_as<NHESpec, detail::unconfigured_t>
+        && detail::is_neighborhood_spec_v<std::remove_cvref_t<Spec>>
     [[nodiscard]]
     auto with_neighborhood(Spec&& spec) &&
     {
         using spec_type = std::remove_cvref_t<Spec>;
-        return app_builder<SMSpec, spec_type, Registrations...>{
+        return App<SMSpec, spec_type, Registrations...>{
             std::move(name_),
             std::move(solution_manager_spec_),
             std::forward<Spec>(spec),
@@ -520,36 +583,36 @@ public:
         };
     }
 
-    template<configurable_app_algorithm Algorithm>
-        requires (!std::same_as<SMSpec, unconfigured_t>) &&
-                 (!std::same_as<NHESpec, unconfigured_t>)
+    /// The app with a runner of Algorithm registered as name: the method
+    /// spelling of `app | runner<Algorithm>(name, parameters)`.
+    template<detail::configurable_app_algorithm Algorithm>
+        requires(!std::same_as<SMSpec, detail::unconfigured_t>)
+        && (!std::same_as<NHESpec, detail::unconfigured_t>)
     [[nodiscard]]
     auto with_runner(
         std::string name,
         typename Algorithm::parameters_type parameters = {}) &&
     {
-        return std::move(*this).with_runner(app_runner_registration<Algorithm>{
-            .name = std::move(name),
-            .config = std::move(parameters),
-        });
+        return std::move(*this).with_runner(
+            detail::app_runner_registration<Algorithm>{
+                .name = std::move(name),
+                .config = std::move(parameters),
+            });
     }
 
-    template<configurable_app_algorithm Algorithm>
-        requires (!std::same_as<SMSpec, unconfigured_t>) &&
-                 (!std::same_as<NHESpec, unconfigured_t>)
+    /// The app with a runner registration, made by easylocal::runner.
+    template<class Algorithm>
+        requires(!std::same_as<SMSpec, detail::unconfigured_t>)
+        && (!std::same_as<NHESpec, detail::unconfigured_t>)
     [[nodiscard]]
-    auto with_runner(app_runner_registration<Algorithm> registration) &&
+    auto with_runner(detail::app_runner_registration<Algorithm> registration) &&
     {
-        using registration_type = app_runner_registration<Algorithm>;
+        using registration_type = detail::app_runner_registration<Algorithm>;
         auto registrations = std::tuple_cat(
             std::move(registrations_),
             std::tuple<registration_type>{std::move(registration)});
 
-        return app_builder<
-            SMSpec,
-            NHESpec,
-            Registrations...,
-            registration_type>{
+        return App<SMSpec, NHESpec, Registrations..., registration_type>{
             std::move(name_),
             std::move(solution_manager_spec_),
             std::move(neighborhood_spec_),
@@ -557,13 +620,18 @@ public:
         };
     }
 
+    /// The app with a pipeline registration, made by easylocal::pipeline: the
+    /// method spelling of `app | pipeline(name, ...)`.
+    ///
+    /// Requires a pipeline with the app's Input and Solution, and its last
+    /// stage with the app's cost.
     template<class Pipeline>
-        requires(!std::same_as<SMSpec, unconfigured_t>)
-        && (!std::same_as<NHESpec, unconfigured_t>)
+        requires(!std::same_as<SMSpec, detail::unconfigured_t>)
+        && (!std::same_as<NHESpec, detail::unconfigured_t>)
     [[nodiscard]]
-    auto with_pipeline(app_pipeline_registration<Pipeline> registration) &&
+    auto with_pipeline(detail::app_pipeline_registration<Pipeline> registration) &&
     {
-        using solution_manager_type = service_t<SMSpec>;
+        using solution_manager_type = detail::service_t<SMSpec>;
         static_assert(
             std::same_as<
                 typename Pipeline::input_type,
@@ -578,12 +646,12 @@ public:
                 typename solution_manager_type::cost_type>,
             "the last stage of a pipeline registered in an app must have the app's "
             "cost");
-        using registration_type = app_pipeline_registration<Pipeline>;
+        using registration_type = detail::app_pipeline_registration<Pipeline>;
         auto registrations = std::tuple_cat(
             std::move(registrations_),
             std::tuple<registration_type>{std::move(registration)});
 
-        return app_builder<SMSpec, NHESpec, Registrations..., registration_type>{
+        return App<SMSpec, NHESpec, Registrations..., registration_type>{
             std::move(name_),
             std::move(solution_manager_spec_),
             std::move(neighborhood_spec_),
@@ -591,46 +659,35 @@ public:
         };
     }
 
-    // The parameters of the only runner of type Algorithm, const when the app
-    // is.
+    /// The parameters of the runner of Algorithm registered as name, to read
+    /// or change from code; const when the app is.
+    ///
+    /// Every run reads them, so a change applies from the next run. Throws
+    /// std::invalid_argument when no runner of Algorithm has that name.
     template<class Algorithm, class Self>
-        requires(app_runner_count_v<Algorithm, Registrations...> == 1)
+        requires(detail::app_runner_count_v<Algorithm, Registrations...> > 0)
     [[nodiscard]]
-    auto& runner_config(this Self&& self) noexcept
+    auto& runner_parameters(this Self&& self, const std::string_view name)
     {
-        constexpr auto index = app_runner_index<Algorithm, Registrations...>();
-        return std::get<index>(self.registrations_).config;
+        using parameters_type = std::conditional_t<
+            std::is_const_v<std::remove_reference_t<Self>>,
+            const typename Algorithm::parameters_type,
+            typename Algorithm::parameters_type>;
+        return detail::visit_runner_registration_named<parameters_type&, Algorithm>(
+            self.registrations_,
+            name,
+            [](auto& registration) -> parameters_type& { return registration.config; });
     }
 
-    // The parameters of the runner of type Algorithm registered as name,
-    // const when the app is.
-    template<class Algorithm, class Self>
-        requires(app_runner_count_v<Algorithm, Registrations...> > 0)
-    [[nodiscard]]
-    auto& runner_config(this Self&& self, const std::string_view name)
-    {
-        return app_runner_registration_by_name<Algorithm>(self.registrations_, name)
-            .config;
-    }
-
-    template<class Algorithm>
-        requires(app_runner_count_v<Algorithm, Registrations...> == 1)
-    [[nodiscard]]
-    std::string_view runner_name() const noexcept
-    {
-        constexpr auto index = app_runner_index<Algorithm, Registrations...>();
-        return std::get<index>(registrations_).name;
-    }
-
-    // The parameters of the app: its cost expression ("cost"), its
-    // neighborhood ("neighborhood") and each registered runner's
-    // ("runners.<name>", for parameters that are a parameter block). Every
-    // run reads them, so a change applies from the next run; read-only when
-    // the app is const. The set refers to this app, which must stay in place
-    // while it is used: a temporary app has no configuration().
-    //
-    // Throws std::invalid_argument when the registration names are not valid
-    // (check_registration_names).
+    /// The parameters of the app: its cost expression ("cost"), its
+    /// neighborhood ("neighborhood") and each registered runner's
+    /// (`runners.<name>`, for parameters that are a parameter block).
+    ///
+    /// Every run reads them, so a change applies from the next run; read-only
+    /// when the app is const. The set refers to this app, which must stay in
+    /// place while it is used: a temporary app has no configuration(). Throws
+    /// std::invalid_argument when the registration names are not valid
+    /// (check_registration_names).
     template<class Self>
     [[nodiscard]]
     config::parameter_set configuration(this Self& self)
@@ -647,16 +704,13 @@ public:
         return parameters;
     }
 
-    // Throws std::invalid_argument unless the names of the runners and
-    // pipelines are valid: non-empty, distinct, and made of letters, digits,
-    // '_' and '-', since each is the key of a registration and a segment of
-    // its parameter paths (`runners.<name>.*`).
+    /// Throws std::invalid_argument unless the names of the runners and
+    /// pipelines are valid: non-empty, distinct, and made of letters, digits,
+    /// '_' and '-', since each is the key of a registration and a segment of
+    /// its parameter paths (`runners.<name>.*`).
     void check_registration_names() const
     {
-        std::vector<std::string_view> names;
-        for_each_registration_name([&names](const std::string_view name) {
-            names.push_back(name);
-        });
+        const auto names = runner_names();
         for (std::size_t index = 0; index < names.size(); ++index)
         {
             const auto name = names[index];
@@ -687,104 +741,38 @@ public:
         }
     }
 
-    // Visits the runners (not the pipelines), in the order they were
-    // registered: visitor.template operator()<Algorithm>(name, config).
-    template<class Visitor>
-    void for_each_runner_registration(Visitor&& visitor) const
-    {
-        auto by_type =
-            [&]<class Algorithm, std::size_t>(
-                const std::string_view name,
-                const typename Algorithm::parameters_type& config) {
-                visitor.template operator()<Algorithm>(name, config);
-            };
-        [&]<std::size_t... Index>(std::index_sequence<Index...>) {
-            (visit_runner<Index>(by_type), ...);
-        }(std::index_sequence_for<Registrations...>{});
-    }
-
-    // Visits the name of every registration, runner or pipeline, in order: the
-    // names the tools list and run.
-    template<class Visitor>
-    void for_each_registration_name(Visitor&& visitor) const
-    {
-        std::apply(
-            [&](const auto&... registration) {
-                (visitor(std::string_view{registration.name}), ...);
-            },
-            registrations_);
-    }
-
+    /// A standalone Runner of the runner of Algorithm registered as name: its
+    /// parameters and the app's recipes, for a solver.
+    ///
+    /// Throws std::invalid_argument when no runner of Algorithm has that name.
     template<class Algorithm>
-        requires (app_runner_count_v<Algorithm, Registrations...> == 1) &&
-                 std::copy_constructible<SMSpec> &&
-                 std::copy_constructible<NHESpec>
-    [[nodiscard]]
-    auto make_runner() const
-    {
-        constexpr auto index = app_runner_index<Algorithm, Registrations...>();
-        const auto& registration = std::get<index>(registrations_);
-        return easylocal::make_runner<Algorithm>(registration.config)
-            | solution_manager_spec_ | neighborhood_spec_;
-    }
-
-    template<class Algorithm>
-        requires (app_runner_count_v<Algorithm, Registrations...> > 0) &&
-                 std::copy_constructible<SMSpec> &&
-                 std::copy_constructible<NHESpec>
+        requires(detail::app_runner_count_v<Algorithm, Registrations...> > 0)
     [[nodiscard]]
     auto make_runner(const std::string_view name) const
     {
-        const auto& registration =
-            app_runner_registration_by_name<Algorithm>(registrations_, name);
-        return easylocal::make_runner<Algorithm>(registration.config)
-            | solution_manager_spec_ | neighborhood_spec_;
+        using runner_type = decltype(make_runner_of(
+            std::declval<const detail::app_runner_registration<Algorithm>&>()));
+        return detail::visit_runner_registration_named<runner_type, Algorithm>(
+            registrations_,
+            name,
+            [&](const auto& registration) -> runner_type {
+                return make_runner_of(registration);
+            });
     }
 
-    template<template<class...> class Solver, class RunnerAlgorithm, class SolverConfig>
-        requires (app_runner_count_v<RunnerAlgorithm, Registrations...> == 1) &&
-                 std::copy_constructible<SMSpec> &&
-                 std::copy_constructible<NHESpec> &&
-                 requires {
-                     Solver{
-                         std::declval<const app_builder&>().template make_runner<RunnerAlgorithm>(),
-                         std::declval<SolverConfig>()};
-                 }
-    [[nodiscard]]
-    auto make_solver(SolverConfig&& config) const
-    {
-        return easylocal::make_solver<Solver>(
-            make_runner<RunnerAlgorithm>(),
-            std::forward<SolverConfig>(config));
-    }
-
-    template<template<class...> class Solver, class RunnerAlgorithm, class SolverConfig>
-        requires (app_runner_count_v<RunnerAlgorithm, Registrations...> > 0) &&
-                 std::copy_constructible<SMSpec> &&
-                 std::copy_constructible<NHESpec> &&
-                 requires {
-                     Solver{
-                         std::declval<const app_builder&>().template make_runner<RunnerAlgorithm>(std::declval<std::string_view>()),
-                         std::declval<SolverConfig>()};
-                 }
-    [[nodiscard]]
-    auto make_solver(
-        const std::string_view runner_name,
-        SolverConfig&& config) const
-    {
-        return easylocal::make_solver<Solver>(
-            make_runner<RunnerAlgorithm>(runner_name),
-            std::forward<SolverConfig>(config));
-    }
-
+    /// The app bound to input: its services built for it, which it borrows (a
+    /// temporary Input is rejected).
+    ///
+    /// Throws std::invalid_argument when the registration names are not valid
+    /// (check_registration_names).
     template<class Spec = SMSpec>
         requires complete<Spec> && Spec::template
-    constructible_from<const typename service_t<Spec>::input_type>&& NHESpec::
-        template constructible_from<service_t<Spec>> [[nodiscard]]
-        auto bind(const typename service_t<Spec>::input_type& input) const
+    constructible_from<const typename detail::service_t<Spec>::input_type>&& NHESpec::
+        template constructible_from<detail::service_t<Spec>> [[nodiscard]]
+        auto bind(const typename detail::service_t<Spec>::input_type& input) const
     {
         check_registration_names();
-        return bound_app<SMSpec, NHESpec, Registrations...>{
+        return BoundApp<SMSpec, NHESpec, Registrations...>{
             input,
             solution_manager_spec_,
             neighborhood_spec_,
@@ -792,200 +780,98 @@ public:
         };
     }
 
-    // A bound app stores a reference to its Input. Reject temporaries at the
-    // boundary instead of permitting a bound app with a dangling reference.
+    /// Deleted: a bound app refers to its Input, which a temporary is not.
     template<class Spec = SMSpec>
         requires complete<Spec>
-    auto bind(typename service_t<Spec>::input_type&&) const = delete;
+    auto bind(typename detail::service_t<Spec>::input_type&&) const = delete;
 
+    /// Deleted: a bound app refers to its Input, which a temporary is not.
     template<class Spec = SMSpec>
         requires complete<Spec>
-    auto bind(const typename service_t<Spec>::input_type&&) const = delete;
+    auto bind(const typename detail::service_t<Spec>::input_type&&) const = delete;
 
-    // Execute one runner against a freshly bound app.  The app graph and
-    // immutable Input may be shared across concurrent calls; mutable
-    // SolutionManager, Neighborhood and algorithm state are reconstructed for
-    // every invocation, from the current runner parameters.  Adapters can
-    // therefore schedule independent runs without making bound_app itself
-    // thread-safe.
-    template<class Algorithm, class Spec = SMSpec, class... RunArgs>
-        requires complete<Spec>
-    [[nodiscard]]
-    auto run(
-        const typename service_t<Spec>::input_type& input,
-        typename service_t<Spec>::solution_type solution,
-        RunArgs&&... args) const
-    {
-        auto bound = bind(input);
-        return bound.template run<Algorithm>(
-            std::move(solution),
-            std::forward<RunArgs>(args)...);
-    }
-
-    template<std::size_t Index, class Spec = SMSpec, class... RunArgs>
-        requires complete<Spec> && (Index < sizeof...(Registrations))
-    [[nodiscard]]
-    auto run_at(
-        const typename service_t<Spec>::input_type& input,
-        typename service_t<Spec>::solution_type solution,
-        RunArgs&&... args) const
-    {
-        auto bound = bind(input);
-        return bound.template run_at<Index>(
-            std::move(solution),
-            std::forward<RunArgs>(args)...);
-    }
-
-    // Runs registration Index on a freshly bound app, giving rng to the
-    // algorithm if it takes one.
-    template<
-        std::size_t Index,
-        std::uniform_random_bit_generator RNG,
-        class Spec = SMSpec,
-        class... Options>
-        requires complete<Spec> && (Index < sizeof...(Registrations))
-    [[nodiscard]]
-    auto run_at_with_rng(
-        const typename service_t<Spec>::input_type& input,
-        typename service_t<Spec>::solution_type solution,
-        RNG& rng,
-        Options&&... options) const
-    {
-        auto bound = bind(input);
-        return bound.template run_at_with_rng<Index>(
-            std::move(solution),
-            rng,
-            std::forward<Options>(options)...);
-    }
-
-    // Runs the runner or the pipeline registered under name from solution: a
-    // runner on a freshly bound app, giving rng to the algorithm if it takes
-    // one, a pipeline with its stages' own recipes and rng; options are
-    // with(control, tracer). Empty when nothing has that name. This is how tools
-    // run the runner a user picks.
+    /// Runs the runner or the pipeline registered under name from solution, on
+    /// the app freshly bound to input, and returns its result; empty when
+    /// nothing has that name.
+    ///
+    /// It is BoundApp::run on a bound app of its own, with the current
+    /// parameters: the app and the Input may be shared by concurrent runs,
+    /// which do not share state. The runner gets rng when its algorithm takes
+    /// one; the options are run options, such as with(control, tracer). This
+    /// is how tools run the runner a user picks. The solution must be valid
+    /// for the Input.
     template<std::uniform_random_bit_generator RNG, class Spec = SMSpec, class... Options>
         requires complete<Spec>
     [[nodiscard]]
     auto run(
         const std::string_view name,
-        const typename service_t<Spec>::input_type& input,
-        typename service_t<Spec>::solution_type solution,
+        const typename detail::service_t<Spec>::input_type& input,
+        typename detail::service_t<Spec>::solution_type solution,
         RNG& rng,
         Options&&... options) const
     {
-        using solution_type = typename service_t<Spec>::solution_type;
-        using cost_type = typename service_t<Spec>::cost_type;
-
-        std::optional<named_run_result<solution_type, cost_type>> outcome;
-        const auto run_registration =
-            [&]<std::size_t Index>() {
-                const auto& registration = std::get<Index>(registrations_);
-                if (outcome || registration.name != name)
-                    return;
-
-                auto result = [&] {
-                    if constexpr (is_pipeline_registration_v<
-                                      std::remove_cvref_t<decltype(registration)>>)
-                        return registration.pipeline
-                            .run(input, solution, rng, options...);
-                    else
-                        return run_at_with_rng<Index>(
-                            input,
-                            std::move(solution),
-                            rng,
-                            std::forward<Options>(options)...);
-                }();
-                static_assert(
-                    search_result_for<decltype(result), solution_type, cost_type>,
-                    "running a runner by name requires its result to provide the "
-                    "solution and its cost (see easylocal::search_result_for)");
-                std::optional<run_effort> effort;
-                if constexpr (requires {
-                                  {
-                                      result.evaluations
-                                  } -> std::convertible_to<std::size_t>;
-                                  {
-                                      result.iterations
-                                  } -> std::convertible_to<std::size_t>;
-                                  {
-                                      result.termination
-                                  } -> std::convertible_to<termination_reason>;
-                              })
-                {
-                    effort = run_effort{
-                        .evaluations = result.evaluations,
-                        .iterations = result.iterations,
-                        .termination = result.termination,
-                    };
-                }
-                outcome.emplace(
-                    named_run_result<solution_type, cost_type>{
-                        .solution = std::move(result.solution),
-                        .cost = result.cost,
-                        .effort = effort,
-                    });
-            };
-        [&]<std::size_t... Index>(std::index_sequence<Index...>) {
-            (run_registration.template operator()<Index>(), ...);
-        }(std::index_sequence_for<Registrations...>{});
-        return outcome;
+        auto bound = bind(input);
+        return bound
+            .run(name, std::move(solution), rng, std::forward<Options>(options)...);
     }
 
-    /// Adds a SolutionManager to the app: the pipe spelling of
-    /// with_solution_manager.
+    /// Adds a SolutionManager recipe to the app: `app | spec`.
     template<class Spec>
-        requires requires(app_builder builder, Spec&& spec) {
+        requires requires(App builder, Spec&& spec) {
             std::move(builder).with_solution_manager(std::forward<Spec>(spec));
         }
     [[nodiscard]]
-    friend auto operator|(app_builder builder, Spec&& spec)
+    friend auto operator|(App builder, Spec&& spec)
     {
         return std::move(builder).with_solution_manager(std::forward<Spec>(spec));
     }
 
-    /// Adds a neighborhood to the app: the pipe spelling of with_neighborhood.
+    /// Adds the neighborhood recipe to the app: `app | spec`.
     template<class Spec>
-        requires requires(app_builder builder, Spec&& spec) {
+        requires requires(App builder, Spec&& spec) {
             std::move(builder).with_neighborhood(std::forward<Spec>(spec));
         }
     [[nodiscard]]
-    friend auto operator|(app_builder builder, Spec&& spec)
+    friend auto operator|(App builder, Spec&& spec)
     {
         return std::move(builder).with_neighborhood(std::forward<Spec>(spec));
     }
 
-    /// Registers a runner in the app: the pipe spelling of with_runner.
+    /// Registers a runner in the app: `app | runner<Algorithm>(name, ...)`.
     template<class Algorithm>
         requires requires(
-            app_builder builder,
-            app_runner_registration<Algorithm> registration) {
+            App builder,
+            detail::app_runner_registration<Algorithm> registration) {
             std::move(builder).with_runner(std::move(registration));
         }
     [[nodiscard]]
     friend auto operator|(
-        app_builder builder,
-        app_runner_registration<Algorithm> registration)
+        App builder,
+        detail::app_runner_registration<Algorithm> registration)
     {
         return std::move(builder).with_runner(std::move(registration));
     }
 
-    /// Registers a pipeline in the app: the pipe spelling of with_pipeline.
+    /// Registers a pipeline in the app: `app | pipeline(name, ...)`.
     template<class Pipeline>
     [[nodiscard]]
     friend auto operator|(
-        app_builder builder,
-        app_pipeline_registration<Pipeline> registration)
+        App builder,
+        detail::app_pipeline_registration<Pipeline> registration)
     {
         return std::move(builder).with_pipeline(std::move(registration));
     }
 
 private:
+    friend struct detail::app_access;
+
     template<class Registration>
     static void add_runner_configuration(
         config::parameter_set& parameters,
         Registration& registration)
     {
-        if constexpr (is_pipeline_registration_v<std::remove_const_t<Registration>>)
+        using registration_type = std::remove_const_t<Registration>;
+        if constexpr (detail::is_pipeline_registration_v<registration_type>)
         {
             parameters.add(
                 "runners." + registration.name,
@@ -993,26 +879,20 @@ private:
         }
         else
         {
-            using parameters_type =
-                typename std::remove_const_t<Registration>::config_type;
+            using parameters_type = typename registration_type::config_type;
             if constexpr (config::parameter_block<parameters_type>)
                 parameters.add("runners." + registration.name, registration.config);
         }
     }
 
-    template<std::size_t Index, class Visitor>
-    void visit_runner(Visitor& visitor) const
+    // The standalone Runner of a runner registration.
+    template<class Registration>
+    [[nodiscard]]
+    auto make_runner_of(const Registration& registration) const
     {
-        using registration_type =
-            std::tuple_element_t<Index, std::tuple<Registrations...>>;
-        if constexpr (!is_pipeline_registration_v<registration_type>)
-        {
-            const auto& registration = std::get<Index>(registrations_);
-            visitor.template
-            operator()<typename registration_type::algorithm_type, Index>(
-                std::string_view{registration.name},
-                registration.config);
-        }
+        return easylocal::make_runner<typename Registration::algorithm_type>(
+                   registration.config)
+            | solution_manager_spec_ | neighborhood_spec_;
     }
 
     std::string name_;
@@ -1021,21 +901,101 @@ private:
     std::tuple<Registrations...> registrations_{};
 };
 
+namespace detail
+{
+
+// The members of App and BoundApp keyed by algorithm type: for a type
+// registered once, and for the library's own tools and tests.
+struct app_access
+{
+    // The parameters of the only runner of Algorithm, const when the app is.
+    template<class Algorithm, class AppType>
+    [[nodiscard]]
+    static auto& runner_parameters(AppType& application) noexcept
+    {
+        using registrations_type =
+            std::remove_const_t<decltype(application.registrations_)>;
+        return std::get<app_runner_index_in<Algorithm, registrations_type>::value>(
+            application.registrations_)
+            .config;
+    }
+
+    // Visits the runners (not the pipelines), in the order they were
+    // registered: visitor.template operator()<Algorithm>(name, parameters).
+    template<class SM, class NH, class... Rs, class Visitor>
+    static void for_each_runner(const App<SM, NH, Rs...>& application, Visitor&& visitor)
+    {
+        std::apply(
+            [&](const auto&... registration) {
+                (visit_runner(registration, visitor), ...);
+            },
+            application.registrations_);
+    }
+
+    // The only runner of Algorithm on a bound app.
+    template<class Algorithm, class SM, class NH, class... Rs>
+    [[nodiscard]]
+    static auto runner(BoundApp<SM, NH, Rs...>& bound)
+    {
+        return bound.template runner_at<app_runner_index<Algorithm, Rs...>()>();
+    }
+
+    // Runs the only runner of Algorithm of a bound app, with its own result
+    // type: run(solution, args...).
+    template<class Algorithm, class SM, class NH, class... Rs, class... RunArgs>
+    [[nodiscard]]
+    static auto run(
+        BoundApp<SM, NH, Rs...>& bound,
+        typename BoundApp<SM, NH, Rs...>::solution_type solution,
+        RunArgs&&... args)
+    {
+        return runner<Algorithm>(bound).run(
+            std::move(solution),
+            std::forward<RunArgs>(args)...);
+    }
+
+    // Runs the only runner of Algorithm on an app freshly bound to input.
+    template<class Algorithm, class SM, class NH, class... Rs, class... RunArgs>
+    [[nodiscard]]
+    static auto run(
+        const App<SM, NH, Rs...>& application,
+        const typename service_t<SM>::input_type& input,
+        typename service_t<SM>::solution_type solution,
+        RunArgs&&... args)
+    {
+        auto bound = application.bind(input);
+        return run<Algorithm>(bound, std::move(solution), std::forward<RunArgs>(args)...);
+    }
+
+private:
+    template<class Registration, class Visitor>
+    static void visit_runner(const Registration& registration, Visitor& visitor)
+    {
+        if constexpr (!is_pipeline_registration_v<Registration>)
+        {
+            visitor.template operator()<typename Registration::algorithm_type>(
+                std::string_view{registration.name},
+                registration.config);
+        }
+    }
+};
+
 } // namespace detail
 
-/// Starts an app named name, without components: a SolutionManager, a
-/// neighborhood and runners are added to it with `|` (or with_solution_manager,
-/// with_neighborhood and with_runner).
+/// Starts an app named name, without components: a SolutionManager recipe, a
+/// neighborhood recipe and runners are added to it with `|`.
 [[nodiscard]]
-inline auto app(std::string name)
+inline App<detail::unconfigured_t, detail::unconfigured_t> app(std::string name)
 {
-    return detail::app_builder<
-        detail::unconfigured_t,
-        detail::unconfigured_t>{std::move(name)};
+    return App<detail::unconfigured_t, detail::unconfigured_t>{std::move(name)};
 }
 
-/// A named runner registration for an app, e.g.
-/// app("tsp") | sm | nhe | runner<runners::FirstImprovement>("fi", {...}).
+/// A runner registration for an app: `app("tsp") | sm | nhe |
+/// runner<runners::FirstImprovement>("fi", {...})`.
+///
+/// The name is its key, and the segment of its parameter paths
+/// (`runners.<name>.*`). Requires an algorithm with a default-constructible
+/// parameters_type, constructible from it.
 template<detail::configurable_app_algorithm Algorithm>
 [[nodiscard]]
 detail::app_runner_registration<Algorithm> runner(
@@ -1045,8 +1005,8 @@ detail::app_runner_registration<Algorithm> runner(
     return {.name = std::move(name), .config = std::move(parameters)};
 }
 
-/// A named registration of a pipeline already built, e.g.
-/// pipeline("cascade", (stage(...) & until_feasible()) | stage(...)).
+/// A pipeline registration for an app, of a pipeline already built:
+/// `pipeline("cascade", (stage(...) & until_feasible()) | stage(...))`.
 template<std::uniform_random_bit_generator RNG, class... Stages>
 [[nodiscard]]
 detail::app_pipeline_registration<solvers::Pipeline<RNG, Stages...>> pipeline(
@@ -1056,9 +1016,9 @@ detail::app_pipeline_registration<solvers::Pipeline<RNG, Stages...>> pipeline(
     return {.name = std::move(name), .pipeline = std::move(pipeline)};
 }
 
-/// A named pipeline registration for an app, run by name from the current
-/// solution like a runner, e.g.
-/// app("tsp") | sm | nhe | pipeline("cascade", stage(...), stage(...)).
+/// A pipeline registration for an app, run by name from the current solution
+/// like a runner: `app("tsp") | sm | nhe | pipeline("cascade", stage(...),
+/// stage(...))`.
 ///
 /// Its parameters are its stages' under `runners.<name>`. Requires stages with
 /// the app's Input and Solution, the last one with the app's cost.

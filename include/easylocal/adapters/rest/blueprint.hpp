@@ -19,6 +19,7 @@
 
 #include <crow.h>
 
+#include <algorithm>
 #include <atomic>
 #include <cmath>
 #include <concepts>
@@ -490,23 +491,16 @@ private:
 
     [[nodiscard]] bool runner_exists(const std::string_view requested) const
     {
-        bool found = false;
         const std::lock_guard lock{application_mutex_};
-        application_.for_each_registration_name([&](const std::string_view name) {
-            found = found || name == requested;
-        });
-        return found;
+        const auto names = application_.runner_names();
+        return std::ranges::find(names, requested) != names.end();
     }
 
     [[nodiscard]] std::vector<std::string> runner_names() const
     {
-        std::vector<std::string> names;
         const std::lock_guard lock{application_mutex_};
-        names.reserve(App::runner_count);
-        application_.for_each_registration_name([&](const std::string_view name) {
-            names.emplace_back(name);
-        });
-        return names;
+        const auto names = application_.runner_names();
+        return {names.begin(), names.end()};
     }
 
     [[nodiscard]] std::shared_ptr<run_record> find_run(const std::string& id) const

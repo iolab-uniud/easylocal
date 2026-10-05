@@ -79,7 +79,7 @@ auto make_io_application(const char* name)
             .with_neighborhood(easylocal::neighborhood<neighborhood_type>())
             .template with_runner<easylocal::runners::FirstImprovement>("fi");
 
-    application.template runner_config<easylocal::runners::FirstImprovement>()
+    application.template runner_parameters<easylocal::runners::FirstImprovement>("fi")
         .max_evaluations = 1;
 
     return application;

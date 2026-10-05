@@ -52,24 +52,30 @@ so its first stage's attempts all start from that solution), and configured
 under `runners.<name>.<stage>.*` (`--runners.cascade.climb.search.*`,
 `runners.cascade.feasible.attempts`).
 
-| Member | Purpose |
+`app("name")` returns an `App`, and each `|` a new `App` type, which spells
+out all its recipes: let `auto` deduce it, or a function that returns it. The
+name of a registration is its key: the members below find a runner by it,
+never by its algorithm type or its position, so an algorithm may be
+registered twice (`"sa-fast"`, `"sa-slow"`).
+
+| Member of `App` | Purpose |
 | --- | --- |
 | `name()` | the app name |
-| `runner_config<A>()`, `runner_config<A>("name")` | the stored parameters |
-| `runner_name<A>()` | the registered name |
+| `runner_names()` | the names of the runners and pipelines, in the order of registration |
+| `runner_parameters<A>("name")` | the stored parameters of the runner of algorithm `A` registered as `name`; `std::invalid_argument` for an unknown name |
 | `configuration()` | the app's parameters as a `config::parameter_set`: `cost.*`, `neighborhood.*` and `runners.<name>.*` |
-| `bind(input)` | the *bound app*: services built once for `input`, which it borrows (a temporary Input is rejected) |
+| `bind(input)` | the `BoundApp`: services built once for `input`, which it borrows (a temporary Input is rejected) |
 | `run("name", input, solution, rng, options...)` | run the runner or pipeline registered under a name; `std::optional<named_run_result>`, empty for an unknown name |
-| `run<A>(input, solution, args...)`, `run_at<I>(...)` | run by algorithm or by registration index |
-| `run_at_with_rng<I>(input, solution, rng, options...)` | run by index; `rng` goes to stochastic algorithms only |
-| `make_runner<A>([name])`, `make_solver<Solver, A>([name,] config)` | standalone runner or solver |
-| `for_each_registration_name(visitor)` | the name of every registration, runner or pipeline, in order |
-| `for_each_runner_registration[_indexed](visitor)` | iterate the runner registrations (adapters) |
+| `make_runner<A>("name")` | a standalone `Runner` with that runner's parameters and the app's recipes, for a solver: `make_solver<Solver>(application.make_runner<A>("name"), config)` |
+| `check_registration_names()` | throws `std::invalid_argument` unless the names are valid |
 
-The `run` members bind the app to the Input for that run only, with the
-current runner parameters. A bound app (`bind`) offers
-`solution_manager()`, `neighborhood()`, `input()`, `runner<A>()`,
-`run<A>(solution, args...)` and `run_at<I>(...)` on services built once.
+`run` binds the app to the Input for that run only, with the current runner
+parameters: the app and the Input may be shared by concurrent runs. A
+`BoundApp` offers `input()`, `solution_manager()`, `neighborhood()` and
+`run("name", solution, rng, options...)` on services built once, whose runners
+keep their state from one run to the next. `Runner::bind` returns a
+`BoundRunner`, with `input()`, `solution_manager()`, `initial_solution()`,
+`random_solution(rng)`, `better(a, b)` and `run(solution, args...)`.
 
 `named_run_result{solution, cost, effort}` keeps what every runner result
 provides (`search_result_for`): a runner chosen by name may be any algorithm,

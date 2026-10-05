@@ -210,7 +210,8 @@ template<class App>
 bool check_runners(const App& application, app_check_report& report)
 {
     bool valid = true;
-    application.for_each_runner_registration(
+    app_access::for_each_runner(
+        application,
         [&]<class Algorithm>(std::string_view name, const auto& config) {
             const auto runner = "runner " + std::string{name} + ": ";
             if constexpr (requires { config.validate(); })

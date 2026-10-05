@@ -25,11 +25,11 @@ held as an object: `make_runner<Algorithm>(args...)` or `Runner{Algorithm{...}}`
 | Member | Purpose |
 | --- | --- |
 | `parameters()` | the algorithm's parameters, to read or change (parameterized algorithms) |
-| `bind(const Input&)` | build the services and the algorithm for an Input (temporaries are rejected) |
+| `bind(const Input&)` | build the services and the algorithm for an Input, a `BoundRunner` (temporaries are rejected) |
 | `configuration()` | the parameters of the algorithm (`search`), the cost (`cost`) and the neighborhood (`neighborhood`), as a `config::parameter_set` |
 | `with_hard_cost()` | the same runner on the hard branch of a hierarchical cost |
-| bound runner: `run(solution, args..., [with(...)])` | run the algorithm |
-| bound runner: `initial_solution()`, `random_solution(rng)`, `input()`, `better(a, b)` | helpers |
+| `BoundRunner`: `run(solution, args..., [with(...)])` | run the algorithm |
+| `BoundRunner`: `initial_solution()`, `random_solution(rng)`, `input()`, `better(a, b)` | helpers |
 
 ## Built-in algorithms
 

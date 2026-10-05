@@ -48,8 +48,9 @@ void simulated_annealing_is_registrable_with_its_policy_parameters()
         runners::SimulatedAnnealingParameters<runners::temperature::ClassicParameters>>);
     const auto application = make_application();
     assert(
-        application.runner_config<Annealing>().temperature.samples_per_temperature == 20);
-    assert(application.runner_config<Annealing>().validate());
+        application.runner_parameters<Annealing>("sa").temperature.samples_per_temperature
+        == 20);
+    assert(application.runner_parameters<Annealing>("sa").validate());
 }
 
 void a_seed_reproduces_stochastic_runs()
@@ -66,9 +67,12 @@ void deterministic_runners_ignore_the_rng()
     const Tour initial{{0, 1, 2, 3, 4}};
     std::mt19937_64 rng{1};
     const auto before = rng;
-    const auto with_rng = application.run_at_with_rng<0>(five_cities(), initial, rng);
-    const auto plain = application.run_at<0>(five_cities(), initial);
-    assert(with_rng.cost == plain.cost);
+    const auto with_rng = application.run("fi", five_cities(), initial, rng);
+    const auto plain = el::detail::app_access::run<runners::FirstImprovement>(
+        application,
+        five_cities(),
+        initial);
+    assert(with_rng && with_rng->cost == plain.cost);
     assert(rng == before);
 }
 
@@ -78,7 +82,7 @@ void stochastic_runners_consume_the_rng()
     const Tour initial{{0, 1, 2, 3, 4}};
     std::mt19937_64 rng{1};
     const auto before = rng;
-    (void)application.run_at_with_rng<1>(five_cities(), initial, rng);
+    (void)application.run("sa", five_cities(), initial, rng);
     assert(rng != before);
 }
 

@@ -84,11 +84,9 @@ auto make_application()
             .with_runner<easylocal::runners::FirstImprovement>("fi")
             .with_runner<easylocal::runners::BestImprovement>("bi");
 
-    application
-        .runner_config<easylocal::runners::FirstImprovement>()
+    application.runner_parameters<easylocal::runners::FirstImprovement>("fi")
         .max_evaluations = 100;
-    application
-        .runner_config<easylocal::runners::BestImprovement>()
+    application.runner_parameters<easylocal::runners::BestImprovement>("bi")
         .max_evaluations = 100;
 
     return application;
@@ -119,9 +117,8 @@ concept can_bind_rvalue_input =
     };
 
 using AssignmentApp = decltype(make_application());
-using AssignmentRunner = decltype(
-    std::declval<const AssignmentApp&>()
-        .template make_runner<easylocal::runners::FirstImprovement>());
+using AssignmentRunner = decltype(std::declval<const AssignmentApp&>()
+        .template make_runner<easylocal::runners::FirstImprovement>("fi"));
 
 template<class Runtime>
 concept has_legacy_instance_type = requires {
@@ -149,16 +146,11 @@ void app_owns_runner_configuration_and_names()
     auto application = make_application();
 
     assert(application.name() == "assignment");
+    assert((application.runner_names() == std::vector<std::string_view>{"fi", "bi"}));
     assert(
-        application.runner_name<easylocal::runners::FirstImprovement>() ==
-        std::string_view{"fi"});
-    assert(
-        application.runner_name<easylocal::runners::BestImprovement>() ==
-        std::string_view{"bi"});
-    assert(
-        application
-            .runner_config<easylocal::runners::FirstImprovement>()
-            .max_evaluations == 100);
+        application.runner_parameters<easylocal::runners::FirstImprovement>("fi")
+            .max_evaluations
+        == 100);
 }
 
 void one_input_materializes_one_shared_graph_for_all_runners()
@@ -175,8 +167,10 @@ void one_input_materializes_one_shared_graph_for_all_runners()
     assert(&bound_app.solution_manager().input() == &instance);
     assert(&bound_app.neighborhood().input() == &instance);
 
-    auto fi = bound_app.runner<easylocal::runners::FirstImprovement>();
-    auto bi = bound_app.runner<easylocal::runners::BestImprovement>();
+    auto fi = easylocal::detail::app_access::runner<easylocal::runners::FirstImprovement>(
+        bound_app);
+    auto bi = easylocal::detail::app_access::runner<easylocal::runners::BestImprovement>(
+        bound_app);
 
     assert(&fi.solution_manager() == &bound_app.solution_manager());
     assert(&bi.solution_manager() == &bound_app.solution_manager());
@@ -195,10 +189,16 @@ void registered_runners_are_executable()
     auto bound_app = application.bind(instance);
     const auto initial = bound_app.solution_manager().initial_solution();
 
-    const auto fi = bound_app.run<easylocal::runners::FirstImprovement>(initial);
+    const auto fi =
+        easylocal::detail::app_access::run<easylocal::runners::FirstImprovement>(
+            bound_app,
+            initial);
     assert(bound_app.solution_manager().is_valid(fi.solution));
 
-    const auto bi = bound_app.run<easylocal::runners::BestImprovement>(initial);
+    const auto bi =
+        easylocal::detail::app_access::run<easylocal::runners::BestImprovement>(
+            bound_app,
+            initial);
     assert(bound_app.solution_manager().is_valid(bi.solution));
 }
 
@@ -227,23 +227,37 @@ void direct_app_runs_use_fresh_bound_app_state()
     auto seed_bound_app = application.bind(instance);
     const auto initial = seed_bound_app.solution_manager().initial_solution();
 
-    const auto first = application.run<StatefulRunner>(instance, initial);
-    const auto second = application.run<StatefulRunner>(instance, initial);
+    const auto first = easylocal::detail::app_access::run<StatefulRunner>(
+        application,
+        instance,
+        initial);
+    const auto second = easylocal::detail::app_access::run<StatefulRunner>(
+        application,
+        instance,
+        initial);
     assert(first.invocation == 1);
     assert(second.invocation == 1);
 
-    auto concurrent_first = std::async(
-        std::launch::async,
-        [&] { return application.run<StatefulRunner>(instance, initial); });
-    auto concurrent_second = std::async(
-        std::launch::async,
-        [&] { return application.run<StatefulRunner>(instance, initial); });
+    auto concurrent_first = std::async(std::launch::async, [&] {
+        return easylocal::detail::app_access::run<StatefulRunner>(
+            application,
+            instance,
+            initial);
+    });
+    auto concurrent_second = std::async(std::launch::async, [&] {
+        return easylocal::detail::app_access::run<StatefulRunner>(
+            application,
+            instance,
+            initial);
+    });
     assert(concurrent_first.get().invocation == 1);
     assert(concurrent_second.get().invocation == 1);
 
     auto shared_bound_app = application.bind(instance);
-    const auto shared_first = shared_bound_app.run<StatefulRunner>(initial);
-    const auto shared_second = shared_bound_app.run<StatefulRunner>(initial);
+    const auto shared_first =
+        easylocal::detail::app_access::run<StatefulRunner>(shared_bound_app, initial);
+    const auto shared_second =
+        easylocal::detail::app_access::run<StatefulRunner>(shared_bound_app, initial);
     assert(shared_first.invocation == 1);
     assert(shared_second.invocation == 2);
 }
@@ -262,8 +276,8 @@ void registered_runners_can_be_run_by_name()
     // The same runner, chosen by name or by algorithm, gives the same search.
     const auto by_name = application.run("bi", instance, initial, rng);
     assert(by_name);
-    const auto by_algorithm =
-        application.run<easylocal::runners::BestImprovement>(instance, initial);
+    const auto by_algorithm = easylocal::detail::app_access::run<
+        easylocal::runners::BestImprovement>(application, instance, initial);
     assert(by_name->solution == by_algorithm.solution);
 
     // No runner has that name: nothing runs.
@@ -316,18 +330,17 @@ void pipelines_are_registered_and_run_by_name()
 
     // The names of every registration, in order; the runners alone without the
     // pipeline, which keeps the runners' lookup by algorithm.
-    std::vector<std::string_view> names;
-    application.for_each_registration_name([&](const std::string_view name) {
-        names.push_back(name);
-    });
-    assert((names == std::vector<std::string_view>{"fi", "cascade", "bi"}));
+    assert((
+        application.runner_names()
+        == std::vector<std::string_view>{"fi", "cascade", "bi"}));
     std::size_t runners = 0;
-    application.for_each_runner_registration(
+    easylocal::detail::app_access::for_each_runner(
+        application,
         [&]<class Algorithm>(
             std::string_view,
             const typename Algorithm::parameters_type&) { ++runners; });
     assert(runners == 2);
-    application.runner_config<BestImprovement>().max_evaluations = 100;
+    application.runner_parameters<BestImprovement>("bi").max_evaluations = 100;
 
     // Run by name from a solution, as the pipeline runs it.
     const auto initial = application.bind(instance).solution_manager().initial_solution();
@@ -384,7 +397,7 @@ void app_can_materialize_standard_runners()
     };
 
     auto application = make_application();
-    auto runner = application.make_runner<easylocal::runners::FirstImprovement>();
+    auto runner = application.make_runner<easylocal::runners::FirstImprovement>("fi");
     auto bound = runner.bind(instance);
     assert(&bound.input() == &instance);
     const auto initial = bound.initial_solution();
@@ -402,9 +415,8 @@ void app_can_make_and_equip_solvers()
     };
 
     auto application = make_application();
-    auto solver = application.make_solver<
-        easylocal::solvers::LocalSearch,
-        easylocal::runners::FirstImprovement>(
+    auto solver = easylocal::make_solver<easylocal::solvers::LocalSearch>(
+        application.make_runner<easylocal::runners::FirstImprovement>("fi"),
         easylocal::solvers::LocalSearchConfig<easylocal::initialization::Initial>{
             .initialization = easylocal::initialization::initial,
             .seed = 17,
@@ -433,11 +445,9 @@ void named_runner_registrations_can_be_selected_for_solver_creation()
             .with_runner<easylocal::runners::FirstImprovement>("quick")
             .with_runner<easylocal::runners::FirstImprovement>("deep");
 
-    application
-        .runner_config<easylocal::runners::FirstImprovement>("quick")
+    application.runner_parameters<easylocal::runners::FirstImprovement>("quick")
         .max_evaluations = 1;
-    application
-        .runner_config<easylocal::runners::FirstImprovement>("deep")
+    application.runner_parameters<easylocal::runners::FirstImprovement>("deep")
         .max_evaluations = 100;
 
     const auto quick_runner =
@@ -458,10 +468,8 @@ void named_runner_registrations_can_be_selected_for_solver_creation()
     assert(quick_result.evaluations <= 1);
     assert(deep_result.evaluations >= quick_result.evaluations);
 
-    auto solver = application.make_solver<
-        easylocal::solvers::LocalSearch,
-        easylocal::runners::FirstImprovement>(
-        "deep",
+    auto solver = easylocal::make_solver<easylocal::solvers::LocalSearch>(
+        deep_runner,
         easylocal::solvers::LocalSearchConfig<easylocal::initialization::Initial>{
             .initialization = easylocal::initialization::initial,
             .seed = 23,
@@ -509,11 +517,15 @@ void app_builder_pipes_and_registration_parameters()
               "fi", {.max_evaluations = 5});
 
     static_assert(std::same_as<decltype(fluent), decltype(piped)>);
-    assert(fluent.runner_config<easylocal::runners::FirstImprovement>()
-               .max_evaluations == 5);
-    assert(piped.runner_config<easylocal::runners::FirstImprovement>()
-               .max_evaluations == 5);
-    assert(piped.runner_name<easylocal::runners::FirstImprovement>() == "fi");
+    assert(
+        fluent.runner_parameters<easylocal::runners::FirstImprovement>("fi")
+            .max_evaluations
+        == 5);
+    assert(
+        piped.runner_parameters<easylocal::runners::FirstImprovement>("fi")
+            .max_evaluations
+        == 5);
+    assert(piped.runner_names().front() == "fi");
 }
 
 // The message of the std::invalid_argument that f throws, empty when it

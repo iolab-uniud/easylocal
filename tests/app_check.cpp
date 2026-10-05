@@ -37,11 +37,9 @@ using namespace assignment;
             .with_runner<easylocal::runners::FirstImprovement>("fi")
             .with_runner<easylocal::runners::BestImprovement>("bi");
 
-    application
-        .runner_config<easylocal::runners::FirstImprovement>()
+    application.runner_parameters<easylocal::runners::FirstImprovement>("fi")
         .max_evaluations = 100;
-    application
-        .runner_config<easylocal::runners::BestImprovement>()
+    application.runner_parameters<easylocal::runners::BestImprovement>("bi")
         .max_evaluations = 100;
 
     return application;
@@ -233,8 +231,7 @@ void check_fails_on_a_broken_realized_graph()
             .with_neighborhood(easylocal::neighborhood<BrokenNeighborhoodExplorer>())
             .with_runner<easylocal::runners::FirstImprovement>("fi");
 
-    application
-        .runner_config<easylocal::runners::FirstImprovement>()
+    application.runner_parameters<easylocal::runners::FirstImprovement>("fi")
         .max_evaluations = 10;
 
     const AssignmentInstance instance{
@@ -298,7 +295,8 @@ void check_names_the_runner_with_invalid_parameters()
                     CapacityCostComponent,
                     ReassignCapacityDeltaEvaluator>())
             .with_runner<easylocal::runners::HillClimbing>("climb");
-    application.runner_config<easylocal::runners::HillClimbing>().max_idle_iterations = 0;
+    application.runner_parameters<easylocal::runners::HillClimbing>("climb")
+        .max_idle_iterations = 0;
 
     const AssignmentInstance instance{
         .demand = {4, 4, 2},
@@ -332,7 +330,7 @@ void check_reports_an_invalid_nested_group()
                     ReassignCapacityDeltaEvaluator>())
             .with_runner<Annealing>("anneal");
     // An invalid temperature schedule, a group of the runner's parameters.
-    application.runner_config<Annealing>().temperature.cooling_rate = 2.0;
+    application.runner_parameters<Annealing>("anneal").temperature.cooling_rate = 2.0;
 
     const AssignmentInstance instance{
         .demand = {4, 4, 2},

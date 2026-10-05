@@ -36,10 +36,10 @@ using namespace assignment;
             .with_runner<easylocal::runners::FirstImprovement>("fi")
             .with_runner<easylocal::runners::BestImprovement>("bi");
 
-    application.runner_config<easylocal::runners::FirstImprovement>().max_evaluations =
-        100;
-    application.runner_config<easylocal::runners::BestImprovement>().max_evaluations =
-        100;
+    application.runner_parameters<easylocal::runners::FirstImprovement>("fi")
+        .max_evaluations = 100;
+    application.runner_parameters<easylocal::runners::BestImprovement>("bi")
+        .max_evaluations = 100;
     return application;
 }
 
@@ -71,10 +71,12 @@ int main()
     };
     const easylocal::run_control control{stop.get_token(), observer};
 
-    const auto result = application.run<easylocal::runners::FirstImprovement>(
-        input,
-        std::move(initial),
-        easylocal::with(control));
+    const auto result =
+        easylocal::detail::app_access::run<easylocal::runners::FirstImprovement>(
+            application,
+            input,
+            std::move(initial),
+            easylocal::with(control));
 
     assert(observations >= 3);
     assert(last_evaluations == result.evaluations);
@@ -96,10 +98,12 @@ int main()
     const easylocal::run_control best_control{
         best_stop.get_token(),
         best_observer};
-    const auto best_result = application.run_at<1>(
-        input,
-        std::move(best_initial),
-        easylocal::with(best_control));
+    const auto best_result =
+        easylocal::detail::app_access::run<easylocal::runners::BestImprovement>(
+            application,
+            input,
+            std::move(best_initial),
+            easylocal::with(best_control));
     assert(best_observations >= 3);
     assert(best_result.evaluations == 3);
     assert(
@@ -111,10 +115,12 @@ int main()
     std::stop_source already_stopped;
     already_stopped.request_stop();
     const easylocal::run_control stopped_control{already_stopped.get_token()};
-    const auto stopped_result = application.run_at<1>(
-        input,
-        runtime.solution_manager().initial_solution(),
-        easylocal::with(stopped_control));
+    const auto stopped_result =
+        easylocal::detail::app_access::run<easylocal::runners::BestImprovement>(
+            application,
+            input,
+            runtime.solution_manager().initial_solution(),
+            easylocal::with(stopped_control));
     assert(stopped_result.evaluations == 1);
     assert(
         stopped_result.termination ==

@@ -583,12 +583,7 @@ public:
     [[nodiscard]]
     std::vector<std::string_view> runner_names() const
     {
-        std::vector<std::string_view> names;
-        names.reserve(App::runner_count);
-        app_.for_each_registration_name([&](const std::string_view name) {
-            names.push_back(name);
-        });
-        return names;
+        return app_.runner_names();
     }
 
     /// Runs the runner or pipeline registered under name from the current

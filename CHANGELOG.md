@@ -19,6 +19,25 @@ reviewed by hand before tagging.
   compile with a message: the difference of two unsigned costs wraps around,
   so Simulated Annealing never accepted an improving move.
   `cost::arithmetic` excludes them, weights included.
+
+### Apps and tools
+
+- **Breaking:** the types of an app are public and documented: `App`, what
+  `app()` and each `|` return (formerly `detail::app_builder`), `BoundApp`,
+  what `App::bind` returns (formerly `detail::bound_app`), and `BoundRunner`,
+  what `Runner::bind` returns (formerly `detail::bound_runner`). The name of a
+  registration is the key of their members: `runner_names()` lists the
+  runners and pipelines, `runner_parameters<A>("name")` replaces
+  `runner_config<A>([name])`, `make_runner<A>("name")` replaces
+  `make_runner<A>([name])`, and `BoundApp::run("name", solution, rng,
+  options...)` runs a runner on services built once. The members keyed by
+  algorithm type or by registration index (`run<A>`, `run_at<I>`,
+  `run_at_with_rng<I>`, `runner<A>()`, `runner_at<I>()`, `runner_name<A>()`,
+  `make_solver<Solver, A>`, `for_each_registration_name`,
+  `for_each_runner_registration`) are no longer public: an algorithm
+  registered twice (`"sa-fast"`, `"sa-slow"`) had no single runner. A solver
+  is `make_solver<Solver>(application.make_runner<A>("name"), config)`.
+
 ### Changed
 
 - **Breaking:** `search_run::with_context(ctx)` is replaced by

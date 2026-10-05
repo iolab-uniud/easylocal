@@ -154,8 +154,8 @@ public:
                     "cascade",
                     easylocal::solvers::stage("first", descent),
                     easylocal::solvers::stage("second", descent)));
-    application.runner_config<easylocal::runners::FirstImprovement>().max_evaluations =
-        100;
+    application.runner_parameters<easylocal::runners::FirstImprovement>("fi")
+        .max_evaluations = 100;
     return application;
 }
 

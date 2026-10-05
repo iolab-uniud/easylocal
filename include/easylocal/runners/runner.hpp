@@ -4,7 +4,7 @@
 /// Runner: a search algorithm composed with a SolutionManager recipe and a
 /// neighborhood recipe (make_runner).
 ///
-/// Binding it to an Input builds the services (bound_runner) on which the
+/// Binding it to an Input builds the services (BoundRunner) on which the
 /// algorithm runs; its parameters (search, cost, neighborhood) are exposed as
 /// one parameter_set.
 
@@ -279,26 +279,41 @@ auto run_algorithm(
     }(std::make_index_sequence<arguments::forwarded_count>{});
 }
 
+} // namespace detail
+
+/// A runner bound to an Input: the services built for it (a SolutionManager
+/// and a neighborhood explorer) and the algorithm, which run(solution, ...)
+/// runs on them.
+///
+/// Runner::bind returns it; it borrows the Input, which must outlive it, and
+/// cannot be copied or moved, since its services refer to each other. Requires
+/// a SolutionManager recipe with a cost and a neighborhood recipe for it.
 template<class Algorithm, class SMSpec, class NHESpec>
-    requires is_solution_manager_spec_v<SMSpec> &&
-             is_neighborhood_spec_v<NHESpec> &&
-             runner_neighborhood_explorer<
-                 service_t<NHESpec>,
-                 service_t<SMSpec>>
-class bound_runner
+    requires detail::is_solution_manager_spec_v<SMSpec>
+    && detail::is_neighborhood_spec_v<NHESpec>
+    && detail::runner_neighborhood_explorer<
+        detail::service_t<NHESpec>,
+        detail::service_t<SMSpec>>
+class BoundRunner
 {
 public:
-    using solution_manager_type = service_t<SMSpec>;
-    using neighborhood_explorer_type = service_t<NHESpec>;
+    /// The SolutionManager built from the recipe.
+    using solution_manager_type = detail::service_t<SMSpec>;
+    /// The neighborhood explorer built from the recipe.
+    using neighborhood_explorer_type = detail::service_t<NHESpec>;
+    /// The Input of the problem.
     using input_type = typename solution_manager_type::input_type;
+    /// The Solution of the problem.
     using solution_type = typename solution_manager_type::solution_type;
+    /// The cost of a solution.
     using cost_type = typename solution_manager_type::cost_type;
 
-    static_assert(validate_delta_bindings<
-                  solution_manager_type,
-                  neighborhood_explorer_type>());
+    static_assert(detail::validate_delta_bindings<
+        solution_manager_type,
+        neighborhood_explorer_type>());
 
-    bound_runner(
+    /// The services of the recipes built for input, with the algorithm.
+    BoundRunner(
         Algorithm algorithm,
         const input_type& input,
         const SMSpec& solution_manager_spec,
@@ -318,24 +333,26 @@ public:
             "NeighborhoodExplorer must share the bound Instance");
     }
 
-    bound_runner(const bound_runner&) = delete;
-    bound_runner& operator=(const bound_runner&) = delete;
-    bound_runner(bound_runner&&) = delete;
-    bound_runner& operator=(bound_runner&&) = delete;
+    BoundRunner(const BoundRunner&) = delete;
+    BoundRunner& operator=(const BoundRunner&) = delete;
+    BoundRunner(BoundRunner&&) = delete;
+    BoundRunner& operator=(BoundRunner&&) = delete;
 
+    /// The Input the runner is bound to.
     [[nodiscard]]
     const input_type& input() const noexcept
     {
         return input_;
     }
 
-    // The SolutionManager, for the solution identity of the solvers.
+    /// The SolutionManager, for the solution identity of the solvers.
     [[nodiscard]]
     const solution_manager_type& solution_manager() const noexcept
     {
         return solution_manager_;
     }
 
+    /// The SolutionManager's initial_solution().
     [[nodiscard]]
     solution_type initial_solution() const
         requires has_initial_solution<solution_manager_type>
@@ -343,6 +360,7 @@ public:
         return solution_manager_.initial_solution();
     }
 
+    /// A random_solution(rng) of the SolutionManager.
     template<class RNG>
     [[nodiscard]]
     solution_type random_solution(RNG& rng) const
@@ -351,6 +369,8 @@ public:
         return solution_manager_.random_solution(rng);
     }
 
+    /// Whether candidate is better than reference, as the search compares
+    /// costs.
     [[nodiscard]]
     constexpr bool better(const cost_type& candidate, const cost_type& reference) const
         requires easylocal::cost::has_better<solution_manager_type>
@@ -361,29 +381,30 @@ public:
             reference);
     }
 
-    // Runs the algorithm from the given solution. Algorithm arguments (e.g.
-    // an RNG) may be followed by easylocal::with(control, tracer).
+    /// Runs the algorithm from solution and returns its result.
+    ///
+    /// The algorithm's arguments (such as an RNG) may be followed by run
+    /// options, such as easylocal::with(control, tracer). The solution must be
+    /// valid for the Input.
     template<class... RunArgs>
     [[nodiscard]]
     auto run(solution_type solution, RunArgs&&... run_args)
-        requires algorithm_runnable<
+        requires detail::algorithm_runnable<
             Algorithm,
-            runner_context<solution_manager_type, neighborhood_explorer_type>,
+            detail::runner_context<solution_manager_type, neighborhood_explorer_type>,
             RunArgs...>
     {
         assert(
             solution_manager_.is_valid(solution) &&
             "initial Solution must be compatible with the bound Instance");
 
-        const runner_context<
-            solution_manager_type,
-            neighborhood_explorer_type>
+        const detail::runner_context<solution_manager_type, neighborhood_explorer_type>
             context{
                 solution_manager_,
                 neighborhood_,
-            };
+        };
 
-        return run_algorithm(
+        return detail::run_algorithm(
             algorithm_,
             context,
             std::move(solution),
@@ -396,6 +417,9 @@ private:
     solution_manager_type solution_manager_;
     neighborhood_explorer_type neighborhood_;
 };
+
+namespace detail
+{
 
 // An algorithm whose parameters are a parameter block it is built from: a
 // Runner holds the parameters and builds the algorithm when it is bound.
@@ -708,7 +732,7 @@ public:
                  (SMSpec::template constructible_from<const input_type>) &&
                  (NHESpec::template constructible_from<solution_manager_type>)
     {
-        return detail::bound_runner<Algorithm, SMSpec, NHESpec>{
+        return BoundRunner<Algorithm, SMSpec, NHESpec>{
             algorithm_.make(),
             input,
             solution_manager_spec_,
@@ -721,7 +745,7 @@ public:
         requires (SMSpec::template constructible_from<const input_type>) &&
                  (NHESpec::template constructible_from<solution_manager_type>)
     {
-        return detail::bound_runner<Algorithm, SMSpec, NHESpec>{
+        return BoundRunner<Algorithm, SMSpec, NHESpec>{
             std::move(algorithm_).make(),
             input,
             solution_manager_spec_,

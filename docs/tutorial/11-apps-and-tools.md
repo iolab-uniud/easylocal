@@ -30,7 +30,7 @@ auto piped_application = el::app("tsp") | sm | nhe
   runs nothing by itself.
 - A runner is registered by its algorithm class and a name, optionally with its
   parameters (`parameters_type`). They are stored in the app and can be changed
-  later with `runner_config<Algorithm>()` or `runner_config<Algorithm>("name")`.
+  later with `runner_parameters<Algorithm>("name")`.
 - Simulated Annealing is registered with its temperature policy's parameters:
   `runners::SimulatedAnnealing<Classic>` takes `ClassicParameters`.
 - The two spellings are equivalent: `with_*` calls, or pipes with
