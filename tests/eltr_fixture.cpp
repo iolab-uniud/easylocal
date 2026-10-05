@@ -10,6 +10,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <ostream>
 #include <type_traits>
 #include <vector>
@@ -135,9 +136,12 @@ void write_integral(const std::filesystem::path& directory)
             event::neighborhood_selection{
                 .attempt = 0,
                 .child = 1,
-                .bias = 3.0,
-                .active_bias_total = 4.0,
-                .conditional_probability = 0.75,
+                // Values a float cannot hold, and a NaN, which both formats
+                // write as null.
+                .bias = 0.1,
+                .active_bias_total = 0.30000000000000004,
+                .conditional_probability =
+                    run == 0 ? 1.0 / 3.0 : std::numeric_limits<double>::quiet_NaN(),
                 .produced_move = true,
                 .neighborhood = &inner,
             },

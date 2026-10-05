@@ -40,19 +40,6 @@ CORE_EVENTS = {
 }
 
 
-def same(decoded, expected):
-    """Equal, with JSONL's six significant digits for floating-point fields."""
-    if isinstance(expected, float) or isinstance(decoded, float):
-        return math.isclose(decoded, expected, rel_tol=1e-5)
-    if isinstance(expected, dict):
-        return decoded.keys() == expected.keys() and all(
-            same(decoded[key], expected[key]) for key in expected
-        )
-    if isinstance(expected, list):
-        return len(decoded) == len(expected) and all(map(same, decoded, expected))
-    return decoded == expected
-
-
 def decode(path, **options):
     with open(path, "rb") as stream:
         return list(eltr.Trace(stream, **options))
@@ -122,9 +109,8 @@ class FixtureTraces(unittest.TestCase):
         decoded = decode(self.path / "integral.eltr")
         core = [record for record in decoded if record["event"] in CORE_EVENTS]
         expected = self.expected("integral.jsonl")
-        self.assertEqual(len(core), len(expected))
-        for got, want in zip(core, expected):
-            self.assertTrue(same(got, want), f"{got} != {want}")
+        # Exactly: both write the shortest text of each double, NaN as null.
+        self.assertEqual(core, expected)
         self.assertEqual({record["event"] for record in core}, CORE_EVENTS)
 
     def test_application_events_by_their_schema_or_raw(self):
