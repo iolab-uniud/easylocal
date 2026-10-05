@@ -118,10 +118,10 @@ void a_target_from_the_configuration_stops_a_run()
     // options() gives the run options of every limit set.
     const auto options = run.options<double>(session.input());
     assert(options.target && *options.target == 29.0);
-    assert(!options.timeout && options.max_evaluations.is_unlimited());
+    assert(!options.time_limit && options.evaluation_limit.is_unlimited());
     const el::RunParameters limits{.timeout = "2.5", .max_evaluations = 7};
     const auto bounded = limits.options<double>(session.input());
-    assert(!bounded.target && bounded.timeout && bounded.max_evaluations == 7);
+    assert(!bounded.target && bounded.time_limit && bounded.evaluation_limit == 7);
     session.use_initial_solution();
     assert(session.run(
         "fi",

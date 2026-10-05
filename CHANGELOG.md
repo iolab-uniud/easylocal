@@ -200,12 +200,11 @@ reviewed by hand before tagging.
   `allowed_reheats`, and `Hybrid::sample_limit()` is
   `samples_per_temperature()`, as in `FixedLength`. Pareto Late Acceptance's
   `max_iterations`, the iterations before it may stop, is `min_iterations`.
-  `run_options` has the fields `timeout` and `max_evaluations` (a limit,
-  unlimited by default) instead of `time_limit` and `evaluation_budget`; its
-  members `timeout(...)` and `max_evaluations(n)` are `with_timeout(...)` and
-  `with_max_evaluations(n)`, like a pipeline stage's (the free functions
-  `timeout(...)` and `max_evaluations(n)` stay), and
-  `search_run::no_evaluation_limit` is gone: `easylocal::unlimited`.
+  The evaluation budget of `run_options` is the field `evaluation_limit` (a
+  limit, unlimited by default) instead of the optional `evaluation_budget`; it
+  is set with `max_evaluations(n)`, as the time limit `time_limit` with
+  `timeout(...)`, and `search_run::no_evaluation_limit` is gone:
+  `easylocal::unlimited`.
 - The briefs of the `LimDynamic`, `Foo` and `RandomFoo` tabu lists and the
   runners reference expand their names (limited dynamic tenure, Fluctuation Of
   the Objective) and give their sources.

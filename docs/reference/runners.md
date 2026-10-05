@@ -367,8 +367,8 @@ Great Deluge, Simulated Annealing and the tabu searches use it.
 | `with(control, tracer)` | both |
 | `stop_at(target)`, `with(...).stop_at(target)` | stop as soon as the best cost is at least as good as `target` |
 | `options.without_target()` | the same options without their target (a pipeline gives them to a stage that is not the last) |
-| `max_evaluations(n)`, `with(...).with_max_evaluations(n)` | stop once the run has made `n` evaluations, the initial one included; a runner's own `max_evaluations`, if smaller, still applies; termination `evaluation_budget_exhausted` |
-| `timeout(5s)`, `timeout(2.5)`, `with(...).with_timeout(...)` | stop once the time limit has passed since the run started: a `std::chrono` duration or a number of seconds; termination `time_limit_reached` |
+| `max_evaluations(n)`, `with(...).max_evaluations(n)` | stop once the run has made `n` evaluations, the initial one included; a runner's own `max_evaluations`, if smaller, still applies; termination `evaluation_budget_exhausted` |
+| `timeout(5s)`, `timeout(2.5)`, `with(...).timeout(...)` | stop once the time limit has passed since the run started: a `std::chrono` duration or a number of seconds; termination `time_limit_reached` |
 
 `run_control{stop_token, observer}` calls `observer(const run_progress&)` with
 `evaluations`, `iterations` and `evaluation_limit`. A frontend that shows the
@@ -376,7 +376,7 @@ progress from another thread stores it in a `shared_run_progress` from the
 observer and loads a copy when it draws, as the TextUI and the REST server do.
 
 The options combine in any order:
-`with(control).with_timeout(30s).with_max_evaluations(100000).stop_at(0)`.
+`with(control).timeout(30s).max_evaluations(100000).stop_at(0)`.
 They are the fields `control`, `tracer`, `target`, `timeout` (none: no time
 limit) and `max_evaluations` (an `easylocal::limit`, unlimited by default) of
 `run_options`. A

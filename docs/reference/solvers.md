@@ -44,7 +44,7 @@ when the solve's time or evaluations are spent; its termination is then
 
 A solve's time limit and evaluation budget (`solve(input,
 easylocal::timeout(30s))`, `easylocal::max_evaluations(1'000'000)`, or both,
-`with(control).with_timeout(30s).with_max_evaluations(1'000'000)`) bound all its runs
+`with(control).timeout(30s).max_evaluations(1'000'000)`) bound all its runs
 together: `LocalSearch` gives them to its one run, `MultiStart` starts no run
 once they are spent and gives each start what is left, and a pipeline gives
 each stage what is left.
@@ -82,8 +82,8 @@ their costs may differ.
 | `& target(cost)` | `.with_target(cost)` | the stage stops as soon as its best cost reaches `cost`, in the stage's own cost |
 | `& until_feasible()` | `.until_feasible()` | the stage runs `runner.with_hard_cost()` until the hard cost is zero; requires a `cost::hierarchical` cost |
 | `& attempts(n)` | `.with_attempts(n)` | up to `n` runs while the target is not reached, keeping the best; the first stage starts each from a new initial solution, the others from the solution they received |
-| `& max_evaluations(n)` | `.with_max_evaluations(n)` | the stage stops once it has made `n` evaluations, its attempts together; the next stage runs with what is left of the solve's budget |
-| `& timeout(d)` | `.with_timeout(d)` | the stage stops once `d` (a `std::chrono` duration or seconds) has passed since it started, its attempts together; the next stage runs with what is left of the solve's time |
+| `& max_evaluations(n)` | `.max_evaluations(n)` | the stage stops once it has made `n` evaluations, its attempts together; the next stage runs with what is left of the solve's budget |
+| `& timeout(d)` | `.timeout(d)` | the stage stops once `d` (a `std::chrono` duration or seconds) has passed since it started, its attempts together; the next stage runs with what is left of the solve's time |
 
 With a `cost::hard_soft` cost expression, `until_feasible()` evaluates only the
 components of the hard branch, and deltas attached to soft components are

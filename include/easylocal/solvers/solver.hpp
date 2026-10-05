@@ -213,11 +213,11 @@ struct solve_budget
         }();
         if (deadline)
         {
-            limited.timeout = std::max(
+            limited.time_limit = std::max(
                 std::chrono::steady_clock::duration::zero(),
                 *deadline - std::chrono::steady_clock::now());
         }
-        limited.max_evaluations = evaluations ? limit{*evaluations} : unlimited;
+        limited.evaluation_limit = evaluations ? limit{*evaluations} : unlimited;
         return limited;
     }
 
@@ -225,10 +225,10 @@ private:
     template<class Options>
     void take(const Options& options)
     {
-        if (options.timeout)
-            deadline = deadline_after(*options.timeout);
-        if (!options.max_evaluations.is_unlimited())
-            evaluations = options.max_evaluations;
+        if (options.time_limit)
+            deadline = deadline_after(*options.time_limit);
+        if (!options.evaluation_limit.is_unlimited())
+            evaluations = options.evaluation_limit;
     }
 };
 

@@ -250,8 +250,8 @@ auto run_algorithm(
     if constexpr (arguments::has_options)
     {
         const auto& options = std::get<sizeof...(Args) - 1>(forwarded);
-        if (options.timeout)
-            deadline = detail::deadline_after(*options.timeout);
+        if (options.time_limit)
+            deadline = detail::deadline_after(*options.time_limit);
     }
 
     // The caller's evaluation budget, which the runner's own may tighten, and
@@ -261,7 +261,7 @@ auto run_algorithm(
     if constexpr (arguments::has_options)
     {
         const auto& options = std::get<sizeof...(Args) - 1>(forwarded);
-        evaluation_limit = options.max_evaluations;
+        evaluation_limit = options.evaluation_limit;
         front = options.front;
     }
 

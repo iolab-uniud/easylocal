@@ -176,10 +176,10 @@ struct run_options
     /// The cost at which the run stops, if any.
     std::optional<Target> target{};
     /// The time after which the run stops, if any, counted from its start.
-    std::optional<std::chrono::steady_clock::duration> timeout{};
+    std::optional<std::chrono::steady_clock::duration> time_limit{};
     /// The evaluations the run may make, the initial one included; unlimited
     /// by default. The runner's own budget, if smaller, still applies.
-    limit max_evaluations{unlimited};
+    limit evaluation_limit{unlimited};
     /// What the archive of a run with a cost::pareto cost keeps (default one
     /// point per non-dominated cost, unbounded).
     pareto_archive_parameters front{};
@@ -193,8 +193,8 @@ struct run_options
             .control = control,
             .tracer = tracer,
             .target = std::move(cost),
-            .timeout = timeout,
-            .max_evaluations = max_evaluations,
+            .time_limit = time_limit,
+            .evaluation_limit = evaluation_limit,
             .front = front,
         };
     }
@@ -208,35 +208,35 @@ struct run_options
             .control = control,
             .tracer = tracer,
             .target = std::nullopt,
-            .timeout = timeout,
-            .max_evaluations = max_evaluations,
+            .time_limit = time_limit,
+            .evaluation_limit = evaluation_limit,
             .front = front,
         };
     }
 
-    /// The same options with a time limit: with(control).with_timeout(5s).
+    /// The same options with a time limit: with(control).timeout(5s).
     ///
     /// Throws `std::invalid_argument` when the limit is negative or not a
     /// number.
     template<class Rep, class Period>
     [[nodiscard]]
-    run_options with_timeout(const std::chrono::duration<Rep, Period> limit) const
+    run_options timeout(const std::chrono::duration<Rep, Period> limit) const
     {
         auto options = *this;
-        options.timeout = detail::steady_time_limit(limit);
+        options.time_limit = detail::steady_time_limit(limit);
         return options;
     }
 
     /// The same options with an evaluation budget:
-    /// with(control).with_max_evaluations(10000).
+    /// with(control).max_evaluations(10000).
     ///
     /// The run stops, with termination_reason::evaluation_budget_exhausted,
     /// once it has made `count` evaluations, the initial one included.
     [[nodiscard]]
-    run_options with_max_evaluations(const limit count) const
+    run_options max_evaluations(const limit count) const
     {
         auto options = *this;
-        options.max_evaluations = count;
+        options.evaluation_limit = count;
         return options;
     }
 
@@ -253,15 +253,15 @@ struct run_options
     }
 
     /// The same options with a time limit in seconds:
-    /// with(control).with_timeout(2.5).
+    /// with(control).timeout(2.5).
     ///
     /// Throws `std::invalid_argument` when the number is negative or not
     /// finite.
     [[nodiscard]]
-    run_options with_timeout(const double seconds) const
+    run_options timeout(const double seconds) const
     {
         auto options = *this;
-        options.timeout = detail::steady_time_limit(seconds);
+        options.time_limit = detail::steady_time_limit(seconds);
         return options;
     }
 };
@@ -314,7 +314,7 @@ template<class Rep, class Period>
 [[nodiscard]]
 run_options<trace::null_tracer> timeout(const std::chrono::duration<Rep, Period> limit)
 {
-    return run_options<trace::null_tracer>{}.with_timeout(limit);
+    return run_options<trace::null_tracer>{}.timeout(limit);
 }
 
 /// Run options with only an evaluation budget:
@@ -326,7 +326,7 @@ run_options<trace::null_tracer> timeout(const std::chrono::duration<Rep, Period>
 [[nodiscard]]
 inline run_options<trace::null_tracer> max_evaluations(const limit count)
 {
-    return run_options<trace::null_tracer>{}.with_max_evaluations(count);
+    return run_options<trace::null_tracer>{}.max_evaluations(count);
 }
 
 /// Run options with only a time limit in seconds: easylocal::timeout(2.5).
@@ -335,7 +335,7 @@ inline run_options<trace::null_tracer> max_evaluations(const limit count)
 [[nodiscard]]
 inline run_options<trace::null_tracer> timeout(const double seconds)
 {
-    return run_options<trace::null_tracer>{}.with_timeout(seconds);
+    return run_options<trace::null_tracer>{}.timeout(seconds);
 }
 
 /// One execution of a search algorithm. search_run exposes the search context

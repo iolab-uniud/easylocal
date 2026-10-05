@@ -37,7 +37,7 @@ const auto observed = descent_search.run(
   result reports `termination_reason::target_reached`.
 - A time limit ends the run once it has passed: `el::timeout(5s)` (any
   `std::chrono` duration) or `el::timeout(2.5)` (seconds), alone or as
-  `el::with(control).with_timeout(5s).stop_at(cost)`. The result reports
+  `el::with(control).timeout(5s).stop_at(cost)`. The result reports
   `termination_reason::time_limit_reached`; no thread is started, the run
   reads the clock among its other checks.
 - An evaluation budget, `el::max_evaluations(n)`, ends the run after `n`

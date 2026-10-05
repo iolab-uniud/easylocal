@@ -1053,10 +1053,9 @@ private:
                         }
                         auto options = easylocal::with(control);
                         if (record->timeout)
-                            options = options.with_timeout(*record->timeout);
+                            options = options.timeout(*record->timeout);
                         if (record->max_evaluations)
-                            options =
-                                options.with_max_evaluations(*record->max_evaluations);
+                            options = options.max_evaluations(*record->max_evaluations);
                         const bool ran = record->target
                             ? session.run(runner, options.stop_at(*record->target))
                             : session.run(runner, options);

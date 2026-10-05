@@ -2470,9 +2470,9 @@ private:
                     {
                         auto options = easylocal::with(control);
                         if (seconds)
-                            options = options.with_timeout(*seconds);
+                            options = options.timeout(*seconds);
                         if (evaluations)
-                            options = options.with_max_evaluations(*evaluations);
+                            options = options.max_evaluations(*evaluations);
                         auto result = target
                             ? application.run(
                                   name,
