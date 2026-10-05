@@ -168,6 +168,11 @@ reviewed by hand before tagging.
   which the lookup of a problem's own hooks does not find: they work for types
   with `easylocal` among their associated namespaces, which recursed into their
   own constraints.
+- The names of an app's runners and pipelines are validated: non-empty,
+  distinct, of letters, digits, `_` and `-`; `configuration()` and `bind()`
+  throw `std::invalid_argument` otherwise, and `check(app, ...)` reports it
+  (and the real cause of an invalid app configuration) instead of blaming the
+  pipelines.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

@@ -23,6 +23,12 @@ A registered algorithm must expose a default-constructible `parameters_type`
 and be constructible from it. The same algorithm may be registered under
 several names.
 
+The names of the runners and pipelines of an app must be non-empty, distinct,
+and made of letters, digits, `_` and `-`: each is the key of a registration
+and a segment of its parameter paths (`runners.<name>.*`). `configuration()`
+and `bind()` throw `std::invalid_argument` otherwise, and `check(app, ...)`
+reports it as `registration names`.
+
 ### Pipelines
 
 An app also registers [pipelines](solvers.md#pipeline), beside its runners and

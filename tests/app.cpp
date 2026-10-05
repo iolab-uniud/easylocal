@@ -6,6 +6,7 @@
 #include "support/assignment_capacity_delta.hpp"
 
 #include <easylocal/app/app.hpp>
+#include <easylocal/app/check.hpp>
 #include <easylocal/app/session.hpp>
 #include <easylocal/runners/best_improvement.hpp>
 #include <easylocal/runners/first_improvement.hpp>
@@ -515,6 +516,76 @@ void app_builder_pipes_and_registration_parameters()
     assert(piped.runner_name<easylocal::runners::FirstImprovement>() == "fi");
 }
 
+// The message of the std::invalid_argument that f throws, empty when it
+// throws none.
+template<class F>
+std::string invalid_argument_of(F f)
+{
+    try
+    {
+        f();
+    }
+    catch (const std::invalid_argument& error)
+    {
+        return error.what();
+    }
+    return {};
+}
+
+template<class App>
+void expect_rejected_names(const App& application, const std::string_view message)
+{
+    const AssignmentInstance instance{
+        .demand = {4, 4, 2},
+        .capacity = {5, 5},
+    };
+    const auto bound = invalid_argument_of([&] {
+        static_cast<void>(application.bind(instance));
+    });
+    assert(bound.find(message) != std::string::npos);
+    const auto configured = invalid_argument_of([&] {
+        static_cast<void>(application.configuration());
+    });
+    assert(configured.find(message) != std::string::npos);
+
+    // check() reports the names, and does not bind the app.
+    const auto report = easylocal::check(application, instance);
+    assert(!report.passed());
+    assert(report.failures().front().check == "registration names");
+    assert(report.failures().front().message.find(message) != std::string::npos);
+}
+
+// Registration names are the keys of the runners and the segments of their
+// parameter paths: non-empty, distinct, of letters, digits, '_' and '-'.
+void registration_names_are_validated()
+{
+    auto sm = easylocal::solution_manager<AssignmentSolutionManager>()
+        | assignment::assignment_cost();
+    auto nhe = easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
+        | easylocal::delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>();
+    using easylocal::runners::BestImprovement;
+    using easylocal::runners::FirstImprovement;
+
+    expect_rejected_names(
+        easylocal::app("twice") | sm | nhe | easylocal::runner<FirstImprovement>("same")
+            | easylocal::runner<BestImprovement>("same"),
+        "two runners or pipelines are named 'same'");
+    expect_rejected_names(
+        easylocal::app("unnamed") | sm | nhe | easylocal::runner<FirstImprovement>(""),
+        "a runner or pipeline needs a name");
+    expect_rejected_names(
+        easylocal::app("dotted") | sm | nhe
+            | easylocal::runner<FirstImprovement>("first.improvement"),
+        "'first.improvement'");
+
+    const auto valid = easylocal::app("valid") | sm | nhe
+        | easylocal::runner<FirstImprovement>("first-improvement_2");
+    const auto names = invalid_argument_of([&] {
+        static_cast<void>(valid.configuration());
+    });
+    assert(names.empty());
+}
+
 int main()
 {
     app_builder_pipes_and_registration_parameters();
@@ -527,4 +598,5 @@ int main()
     app_can_materialize_standard_runners();
     app_can_make_and_equip_solvers();
     named_runner_registrations_can_be_selected_for_solver_creation();
+    registration_names_are_validated();
 }

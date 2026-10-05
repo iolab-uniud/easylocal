@@ -12,6 +12,7 @@
 #include <easylocal/solvers.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
 
+#include <algorithm>
 #include <cassert>
 #include <concepts>
 #include <cstddef>
@@ -23,6 +24,7 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace easylocal
 {
@@ -626,10 +628,14 @@ public:
     // run reads them, so a change applies from the next run; read-only when
     // the app is const. The set refers to this app, which must stay in place
     // while it is used: a temporary app has no configuration().
+    //
+    // Throws std::invalid_argument when the registration names are not valid
+    // (check_registration_names).
     template<class Self>
     [[nodiscard]]
     config::parameter_set configuration(this Self& self)
     {
+        self.check_registration_names();
         config::parameter_set parameters;
         config::add_configuration(parameters, "cost", self.solution_manager_spec_);
         config::add_configuration(parameters, "neighborhood", self.neighborhood_spec_);
@@ -639,6 +645,46 @@ public:
             },
             self.registrations_);
         return parameters;
+    }
+
+    // Throws std::invalid_argument unless the names of the runners and
+    // pipelines are valid: non-empty, distinct, and made of letters, digits,
+    // '_' and '-', since each is the key of a registration and a segment of
+    // its parameter paths (`runners.<name>.*`).
+    void check_registration_names() const
+    {
+        std::vector<std::string_view> names;
+        for_each_registration_name([&names](const std::string_view name) {
+            names.push_back(name);
+        });
+        for (std::size_t index = 0; index < names.size(); ++index)
+        {
+            const auto name = names[index];
+            if (name.empty())
+            {
+                throw std::invalid_argument{
+                    "app " + name_ + ": a runner or pipeline needs a name"};
+            }
+            const auto path_character = [](const char character) {
+                return (character >= 'a' && character <= 'z')
+                    || (character >= 'A' && character <= 'Z')
+                    || (character >= '0' && character <= '9') || character == '_'
+                    || character == '-';
+            };
+            if (!std::ranges::all_of(name, path_character))
+            {
+                throw std::invalid_argument{
+                    "app " + name_ + ": the runner or pipeline name '" + std::string{name}
+                    + "' may contain only letters, digits, '_' and '-'"};
+            }
+            if (std::ranges::find(names.begin(), names.begin() + index, name)
+                != names.begin() + index)
+            {
+                throw std::invalid_argument{
+                    "app " + name_ + ": two runners or pipelines are named '"
+                    + std::string{name} + "'"};
+            }
+        }
     }
 
     // Visits the runners (not the pipelines), in the order they were
@@ -737,6 +783,7 @@ public:
         template constructible_from<service_t<Spec>> [[nodiscard]]
         auto bind(const typename service_t<Spec>::input_type& input) const
     {
+        check_registration_names();
         return bound_app<SMSpec, NHESpec, Registrations...>{
             input,
             solution_manager_spec_,

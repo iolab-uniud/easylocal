@@ -185,6 +185,24 @@ void check_app_moves(
     }
 }
 
+// The check of the registration names, which binding the app requires: false
+// when they are not valid.
+template<class App>
+bool check_registration_names(const App& application, app_check_report& report)
+{
+    try
+    {
+        application.check_registration_names();
+    }
+    catch (const std::invalid_argument& error)
+    {
+        report.check(false, "registration names", error.what());
+        return false;
+    }
+    report.check(true, "registration names", {});
+    return true;
+}
+
 // The checks of the registered runners: their parameters are valid, and
 // construct the runner. False when some parameters are invalid: a runner
 // asserts that they are valid, and binding the app constructs its runners.
@@ -254,8 +272,10 @@ template<class App, class Instance, class Solution>
         detail::app_delta_binding_count_v<neighborhood_type>;
     report.coverage().runner_registrations = App::runner_count;
 
-    // Binding the app constructs its runners: not with invalid parameters.
-    if (!detail::check_runners(application, report))
+    // Binding the app requires valid registration names and constructs its
+    // runners: not with invalid parameters.
+    if (!detail::check_registration_names(application, report)
+        || !detail::check_runners(application, report))
         return report;
     auto bound = application.bind(instance);
 
@@ -346,12 +366,9 @@ template<class App, class Instance, class Solution>
             "app configuration",
             "the app's parameters are invalid");
     }
-    catch (const std::invalid_argument&)
+    catch (const std::invalid_argument& error)
     {
-        report.check(
-            false,
-            "app configuration",
-            "a registered pipeline has unnamed or duplicate stages");
+        report.check(false, "app configuration", error.what());
     }
 
     // Every parameter declares its domain, for validation and tuning: a
@@ -387,10 +404,12 @@ template<class App, class Instance>
         application.bind(instance).solution_manager().initial_solution();
     }
 {
-    // Binding the app constructs its runners: not with invalid parameters.
+    // Binding the app requires valid registration names and constructs its
+    // runners: not with invalid parameters.
     app_check_report report{application.name()};
     report.coverage().runner_registrations = App::runner_count;
-    if (!detail::check_runners(application, report))
+    if (!detail::check_registration_names(application, report)
+        || !detail::check_runners(application, report))
         return report;
     auto bound = application.bind(instance);
     return check(application, instance, bound.solution_manager().initial_solution());
