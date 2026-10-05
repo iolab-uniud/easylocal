@@ -76,7 +76,7 @@ struct ParetoLateAcceptanceHillClimbingParameters
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
-    config::validation_result validate() const noexcept
+    constexpr config::validation_result validate() const noexcept
     {
         return config::check_schema(*this);
     }
@@ -136,7 +136,7 @@ public:
     template<class Run, std::uniform_random_bit_generator RNG>
         requires Run::archives_front
         && detail::random_move_context<typename Run::context_type, RNG>
-        && detail::search_context<typename Run::context_type>
+        && detail::strict_improvement_context<typename Run::context_type>
         && has_random_solution<
             std::remove_cvref_t<decltype(std::declval<const Run&>().solution_manager())>,
             RNG>

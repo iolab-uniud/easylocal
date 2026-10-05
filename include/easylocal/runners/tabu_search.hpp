@@ -631,10 +631,9 @@ struct CyclicParameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
+        // The schema checks each tenure, not that there is one.
         if (tenures.empty())
             return config::validation_result::failure("tenures must not be empty");
-        if (std::ranges::find(tenures, std::size_t{0}) != tenures.end())
-            return config::validation_result::failure("tenures must be positive");
         return config::validation_result::success();
     }
 };

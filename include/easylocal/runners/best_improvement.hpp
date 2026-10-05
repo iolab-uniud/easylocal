@@ -38,9 +38,7 @@ struct BestImprovementParameters
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        return config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 
