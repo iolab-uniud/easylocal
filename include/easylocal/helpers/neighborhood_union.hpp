@@ -839,6 +839,12 @@ private:
     std::array<double, child_count> random_biases_;
 };
 
+template<std::size_t Count>
+struct random_biases_spec
+{
+    std::array<double, Count> values;
+};
+
 template<class... Specs>
 class neighborhood_union_spec
 {
@@ -875,6 +881,17 @@ public:
     const NeighborhoodUnionParameters<sizeof...(Specs)>& parameters() const noexcept
     {
         return parameters_;
+    }
+
+    // `neighborhood_union(a, b) | random_biases(2, 1)`: the union with one
+    // bias per child, finite and non-negative. A hidden friend, found by ADL
+    // whatever namespace the children's explorers are in.
+    [[nodiscard]]
+    friend neighborhood_union_spec operator|(
+        neighborhood_union_spec spec,
+        random_biases_spec<sizeof...(Specs)> biases)
+    {
+        return std::move(spec).with_random_biases(std::move(biases.values));
     }
 
     [[nodiscard]]
@@ -959,16 +976,12 @@ struct is_neighborhood_spec<neighborhood_union_spec<Specs...>>
 {
 };
 
-template<std::size_t Count>
-struct random_biases_spec
-{
-    std::array<double, Count> values;
-};
-
 } // namespace detail
 
 /// The random biases of a neighborhood union, one per child, as in
 /// `neighborhood_union(a, b) | random_biases(2, 1)`.
+///
+/// The biases are finite and non-negative, as many as the union's children.
 template<std::convertible_to<double>... Weights>
     requires (sizeof...(Weights) >= 2)
 [[nodiscard]]
@@ -977,19 +990,6 @@ auto random_biases(Weights&&... weights)
     return detail::random_biases_spec<sizeof...(Weights)>{
         .values = {static_cast<double>(std::forward<Weights>(weights))...},
     };
-}
-
-/// The neighborhood union `spec` with the random biases `biases`.
-///
-/// Requires one bias per child, finite and non-negative.
-template<class... Specs, std::size_t Count>
-    requires (sizeof...(Specs) == Count)
-[[nodiscard]]
-auto operator|(
-    detail::neighborhood_union_spec<Specs...> spec,
-    detail::random_biases_spec<Count> biases)
-{
-    return std::move(spec).with_random_biases(std::move(biases.values));
 }
 
 /// The recipe of the union of two or more neighborhoods, whose move is a

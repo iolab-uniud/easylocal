@@ -42,6 +42,9 @@ reviewed by hand before tagging.
 - `eltr.py` writes NaN and the infinities as `null`, as `jsonl_recorder` does,
   instead of `NaN` and `Infinity`, which are not JSON; a missing file or a
   string that is not UTF-8 is reported in one line, without a traceback.
+- `neighborhood_union(...) | random_biases(...)` compiles for explorers that
+  derive from no EasyLocal base, in a namespace that does not use `easylocal`:
+  the operator is a hidden friend of the union's recipe, found by ADL.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

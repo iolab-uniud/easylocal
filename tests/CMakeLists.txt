@@ -1182,6 +1182,14 @@ easylocal_add_test(
 )
 
 easylocal_add_test(
+    union-biases-lookup
+    SOURCES
+        union_biases_lookup.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
+
+easylocal_add_test(
     union-moves
     SOURCES
         union_moves.cpp
