@@ -7,6 +7,7 @@
 #include <ios>
 #include <iostream>
 #include <limits>
+#include <locale>
 #include <sstream>
 #include <stdexcept>
 #include <streambuf>
@@ -208,6 +209,20 @@ auto emit_throws(Tracer& tracer, const Event& value) -> bool
     }
     return false;
 }
+
+// A locale that groups the digits of numbers by three, with commas.
+struct comma_grouping : std::numpunct<char>
+{
+    char do_thousands_sep() const override
+    {
+        return ',';
+    }
+
+    std::string do_grouping() const override
+    {
+        return "\3";
+    }
+};
 
 // Emits one event of every kind, with routes, to a tracer.
 template<class Tracer>
@@ -436,6 +451,26 @@ int main()
             && precise_jsonl.find("\"active_bias_total\":0.30000000000000004")
                 != std::string::npos,
         "JSONL writes numbers that read back to the same value, and NaN as null");
+
+    // The stream's locale does not reach the numbers: grouped digits are not
+    // JSON.
+    std::ostringstream grouped_output;
+    grouped_output.imbue(std::locale(grouped_output.getloc(), new comma_grouping));
+    easylocal::trace::jsonl_recorder<long> grouped{grouped_output};
+    easylocal::trace::emit(
+        grouped,
+        easylocal::trace::event::run_finished<long>{
+            .evaluations = 1234567,
+            .iterations = 7654321,
+            .cost = 9876543,
+        });
+    const auto grouped_jsonl = grouped_output.str();
+    ok &= expect(
+        grouped_jsonl.find(
+            "\"evaluations\":1234567,\"iterations\":7654321,"
+            "\"cost\":9876543,")
+            != std::string::npos,
+        "JSONL numbers ignore a digit-grouping locale of the stream");
 
     sync_counting_streambuf buffered_storage;
     std::ostream buffered_output{&buffered_storage};

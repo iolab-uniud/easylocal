@@ -342,6 +342,9 @@ reviewed by hand before tagging.
 
 ### Fixed
 
+- `trace::jsonl_recorder` writes its numbers in the classic locale: a stream
+  imbued with a locale that groups digits wrote `"evaluations":1,234`, which
+  is not JSON. The line keeps the stream's flags and precision only.
 - A floating-point cost updated by deltas reaches its target: deltas that
   leave it a rounding error away (`0.1 + 0.2 - 0.1 - 0.2` is 2.8e-17) kept a
   run, and `until_feasible()` with its zero hard cost, from ever stopping. A

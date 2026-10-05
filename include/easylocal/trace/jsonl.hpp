@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <ios>
 #include <limits>
+#include <locale>
 #include <optional>
 #include <ostream>
 #include <sstream>
@@ -148,9 +149,15 @@ inline void write_route_json(
 }
 
 // The line a jsonl_recorder formats, one per thread, reused by every event.
+// It has the classic locale: a locale that groups digits (1,234) would make
+// the numbers invalid JSON.
 inline std::ostringstream& jsonl_line_buffer()
 {
-    thread_local std::ostringstream line;
+    thread_local std::ostringstream line = [] {
+        std::ostringstream buffer;
+        buffer.imbue(std::locale::classic());
+        return buffer;
+    }();
     return line;
 }
 
@@ -403,9 +410,10 @@ private:
             start_ = std::chrono::steady_clock::now();
     }
 
-    // Formats a line with the stream's format, then writes it at once: a
-    // cost writer that throws leaves no part of it in the stream. A stamped
-    // line gets the timestamp before its closing brace.
+    // Formats a line with the stream's flags and precision, but not its
+    // locale, then writes it at once: a cost writer that throws leaves no part
+    // of it in the stream. A stamped line gets the timestamp before its
+    // closing brace.
     template<class Format>
     void write_line(Format&& format, const bool stamped = true)
     {
@@ -415,8 +423,8 @@ private:
         auto& line = detail::jsonl_line_buffer();
         line.str({});
         line.clear();
-        line.copyfmt(out_);
-        line.tie(nullptr);
+        line.flags(out_.flags());
+        line.precision(out_.precision());
         std::forward<Format>(format)(static_cast<std::ostream&>(line));
         if (elapsed)
         {
