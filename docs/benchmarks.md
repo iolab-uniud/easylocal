@@ -1,7 +1,7 @@
 # Benchmarks
 
 EasyLocal 4 is measured at every release against EasyLocal 3 (the
-[v3.3.1 tag](https://github.com/iolab-uniud/easylocal-legacy/tree/v3.3.1)
+[v3.4.1 tag](https://github.com/iolab-uniud/easylocal-legacy/tree/v3.4.1)
 of `easylocal-legacy`) and on its own infrastructure. The numbers are produced
 in [easylocal-benchmarks](https://github.com/iolab-uniud/easylocal-benchmarks)
 on a GitHub-hosted runner (Ubuntu, GCC 16, Release); each EasyLocal release

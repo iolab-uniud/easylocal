@@ -39,8 +39,9 @@ the tutorial. Beyond the names:
 - EasyLocal needs a C++23 compiler (see the [quick start](quick-start.md))
   and no longer depends on Boost: the command line is parsed by the library.
 - Headers and names have changed: `#include <easylocal/easylocal.hpp>` and the
-  namespace `easylocal` replace `easylocal.hh` and `EasyLocal::Core`. The
-  CMake target is `EasyLocal::Core`, from
+  namespace `easylocal` replace `easylocal.hh` and the namespace
+  `EasyLocal::Core`. That name now belongs to the CMake target,
+  `EasyLocal::Core`, from
   `find_package(EasyLocal CONFIG REQUIRED COMPONENTS Core)`.
 - In place of `using namespace EasyLocal::Core;`, give the namespace a short
   alias, as the code of this page does:
@@ -365,7 +366,7 @@ public:
 };
 ```
 
-| EasyLocal 3 | EasyLocal |
+| EasyLocal 3 | EasyLocal 4 |
 | --- | --- |
 | constructor `(in, name)` | inherited: `using solution_manager_base::solution_manager_base;` |
 | `in` | `input()` |
@@ -638,7 +639,7 @@ public:
 };
 ```
 
-| EasyLocal 3 | EasyLocal |
+| EasyLocal 3 | EasyLocal 4 |
 | --- | --- |
 | base `NeighborhoodExplorer<Input, Solution, Move, CostStructure>`, constructor `(in, sm, name)` | `neighborhood_explorer_base<SolutionManager, Move>`, inherited constructor |
 | the name in the constructor | a static `name()`, used by the tester |
@@ -1093,7 +1094,7 @@ The moves of a union are a variant of the explorers' moves, so the
 
 ## Runners and solvers
 
-| EasyLocal 3 | EasyLocal |
+| EasyLocal 3 | EasyLocal 4 |
 | --- | --- |
 | `FirstDescent` | `runners::FirstImprovement` (the scan restarts from the first move) |
 | `SteepestDescent` | `runners::BestImprovement` (ties go to the first best move, not drawn at random) |
@@ -1113,11 +1114,9 @@ Annealing with learning, kicks, Iterated Local Search and VND are in the
 [roadmap](roadmap.md). A runner of your
 own is written once on `search_run` ([chapter 7](tutorial/07-custom-runner.md)).
 
-The EasyLocal 3 code compared here is the Bitbucket repository
-`satt/easylocal-3`, branch `no_output`, at commit `b40b14c`; the unfinished
-redesign in
-[iolab-uniud/easylocal-legacy](https://github.com/iolab-uniud/easylocal-legacy)
-was not the starting point of EasyLocal 4.
+The EasyLocal 3 code compared here is its last release,
+[easylocal-legacy v3.4.1](https://github.com/iolab-uniud/easylocal-legacy/tree/v3.4.1),
+which the [benchmarks](benchmarks.md) also run.
 
 ## Next steps
 
