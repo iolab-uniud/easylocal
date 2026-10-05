@@ -88,6 +88,17 @@ previews the site, `scripts/coverage.sh` measures the coverage of
   with an explicit object parameter (`template<class Self> auto& f(this Self&&
   self)`, which also takes a temporary, as the two overloads did), not as two
   overloads.
+- Names: PascalCase for the types users name in their code, the classes they
+  choose and hold: the algorithms and policies (`SimulatedAnnealing`,
+  `LocalSearch`, `Cyclic`), their parameter blocks
+  (`SimulatedAnnealingParameters`), the objects that run them (`Runner`,
+  `BoundRunner`, `App`, `BoundApp`, `Session`, `Pipeline`). snake_case for the
+  vocabulary and the infrastructure: functions and factories (`app()`,
+  `make_runner()`, `runner<A>()`), the cost vocabulary (`hierarchical`,
+  `limit`), results and events (`search_result`, `run_effort`), parameters and
+  tracing types (`parameter_set`, `memory_recorder`), and every name in
+  `detail`. What a factory returns to be added to something else (a recipe, a
+  registration) is infrastructure: its brief says "registration" or "recipe".
 - Prefer `struct` for transparent value types; prefer `class` for
   encapsulated abstractions. A type with an invariant (fields that must stay
   consistent, state changed only through its members) is a `class`, with its
