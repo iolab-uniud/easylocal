@@ -48,4 +48,5 @@ and, for the original design,
 > Experience 33(8):733–765, 2003.
 > [doi:10.1002/spe.524](https://doi.org/10.1002/spe.524)
 
-The repository's `CITATION.cff` and README have the BibTeX entries.
+The repository's `CITATION.cff` has them in the Citation File Format (GitHub's
+*Cite this repository*), and its README as BibTeX entries.

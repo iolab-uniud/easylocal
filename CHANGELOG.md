@@ -1028,7 +1028,8 @@ old concepts onto the new ones.
 - A [quick start](docs/quick-start.md), a 16-chapter
   [tutorial](docs/tutorial/README.md) built around a TSP, and
   [reference pages](docs/reference/README.md) per component (contract, API,
-  design choices). Their code is compiled and run as tests.
+  design choices). Their marked snippets are taken from programs that are
+  compiled and run as tests.
 - A [generated API reference](https://iolab-uniud.github.io/easylocal/api/)
   of every public class, function and concept, built by MrDocs from the `///`
   comments of the headers; every public declaration has its comment, and the
