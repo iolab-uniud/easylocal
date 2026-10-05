@@ -920,6 +920,13 @@ inline irace_stub_result write_irace_stub(const irace_stub& stub)
                     << '\n';
             }
         }
+        if (digits != detail::irace_default_digits)
+        {
+            out << "\n## The digits after the point of the real parameters, which their\n"
+                << "## bounds need.\n"
+                << "[global]\n"
+                << "digits = " << digits << '\n';
+        }
         out << "\n## Combinations that are not valid, as R expressions, after a line\n"
             << "## [forbidden]: the requirements of the program between tuned parameters.\n";
         if (!forbidden.empty())
@@ -985,8 +992,6 @@ inline irace_stub_result write_irace_stub(const irace_stub& stub)
         out << "configurationsFile = \"./configurations.txt\"\n"
             << "trainInstancesDir = \"\"\n"
             << "trainInstancesFile = \"./instances.txt\"\n"
-            << "## The digits after the point of the real parameters.\n"
-            << "digits = " << digits << "\n"
             << "## The budget: the number of runs of the program.\n"
             << "maxExperiments = 1000\n"
             << "## Runs in parallel.\n"

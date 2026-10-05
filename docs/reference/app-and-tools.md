@@ -162,7 +162,7 @@ lie within the declared domain and name a parameter of the app or of
   identifiers, and `configurations.txt` maps them back through the switch;
   with `r`, `i` (`,log` on a logarithmic range), `o` for a set of numbers and `c` for text and the runner; real values have irace's 4 digits
   after the point, or as many as a bound needs (at most 15, written as
-  `digits` in `scenario.txt`), and an open real bound moves inward by one such
+  `digits` in a `[global]` section), and an open real bound moves inward by one such
   step, an open integer bound to the nearest integer inside the range. With several runners a categorical `runner` is
   added and each `runners.<name>.*` gets the condition `| runner == "<name>"`;
   a runner chosen with `--runner` is the only one written. A field's

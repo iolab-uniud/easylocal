@@ -536,7 +536,8 @@ void bounds_keep_their_precision()
     assert(contains(parameters, "rate \"--rate=\" r (0.00001, 0.5)\n"));
     assert(contains(parameters, "share \"--share=\" r (0.00001, 0.99999)\n"));
     assert(contains(parameters, "count \"--count=\" i (1, 10)\n"));
-    assert(contains(read_file(directory / "scenario.txt"), "digits = 5\n"));
+    assert(contains(parameters, "[global]\ndigits = 5\n"));
+    assert(!contains(read_file(directory / "scenario.txt"), "digits"));
     std::filesystem::remove_all(directory);
 }
 
