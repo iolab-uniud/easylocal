@@ -909,21 +909,7 @@ private:
     // without it.
     void archive(const solution_type& solution, const cost_type& cost)
     {
-        archive_.offer(
-            solution,
-            cost,
-            [&](const solution_type& lhs, const solution_type& rhs) {
-                if constexpr (requires(const Context& context) {
-                                  requires has_solution_equality<std::remove_cvref_t<
-                                      decltype(context.solution_manager())>>;
-                              })
-                    return easylocal::solutions_equal(
-                        context_.solution_manager(),
-                        lhs,
-                        rhs);
-                else
-                    return true;
-            });
+        archive_.offer(solution, cost, detail::same_solution_of(context_));
     }
 
     // The solution_visited event, when the tracer observes it and the problem

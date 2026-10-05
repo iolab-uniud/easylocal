@@ -482,11 +482,11 @@ class Pipeline;
 /// the solution of the previous one, the first from an initial solution.
 ///
 /// A stage runs up to its attempts while it does not reach its target, keeping
-/// its best run; the first stage starts every attempt from a new initial
-/// solution, the others from the solution they received. The result is the last
-/// stage's, with the effort of every stage. Requires stages with the same Input
-/// and Solution, and a first stage whose SolutionManager builds an initial or a
-/// random solution.
+/// its best run (with a cost::pareto cost, the front of all its runs); the
+/// first stage starts every attempt from a new initial solution, the others
+/// from the solution they received. The result is the last stage's, with the
+/// effort of every stage. Requires stages with the same Input and Solution, and
+/// a first stage whose SolutionManager builds an initial or a random solution.
 template<std::uniform_random_bit_generator RNG, class... Stages>
 class Pipeline
     : public easylocal::detail::InitializationSupport<
@@ -833,6 +833,8 @@ private:
         easylocal::detail::search_effort stage_effort;
         auto best = run_once<Index>(bound_runner, start(), rng, stage_budget, options...);
         stage_effort.add(best);
+        easylocal::detail::merged_front<decltype(best)> front;
+        front.add(bound_runner, best);
         stage_budget.consume(best);
         budget.consume(best);
         bool ended = detail::ends_stage(bound_runner, best, stage.target());
@@ -844,12 +846,14 @@ private:
             auto candidate =
                 run_once<Index>(bound_runner, start(), rng, stage_budget, options...);
             stage_effort.add(candidate);
+            front.add(bound_runner, candidate);
             stage_budget.consume(candidate);
             budget.consume(candidate);
             ended = detail::ends_stage(bound_runner, candidate, stage.target());
             if (bound_runner.better(candidate.cost, best.cost))
                 best = std::move(candidate);
         }
+        front.assign_to(best);
 
         stage_report report{
             .name = stage.name(),

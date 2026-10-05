@@ -6,6 +6,7 @@
 /// A Solver orchestrates one or more Runners from an Input to a final solution;
 /// built-in solvers live in easylocal::solvers.
 
+#include <easylocal/runners/pareto_archive.hpp>
 #include <easylocal/runners/runner.hpp>
 
 #include <algorithm>
@@ -235,6 +236,50 @@ struct search_effort
             result.iterations = iterations;
         }
     }
+};
+
+// The front of several runs, for results that carry one (with a cost::pareto
+// cost): every run's front merged into one archive, which becomes the front of
+// the solver's result. Other results have nothing to merge.
+template<class Result>
+class merged_front
+{
+public:
+    template<class BoundRunner>
+    void add(const BoundRunner&, const Result&) noexcept
+    {
+    }
+
+    void assign_to(Result&) const noexcept {}
+};
+
+template<class Result>
+    requires requires(const Result& result) {
+        result.front.front().solution;
+        result.front.front().cost;
+    }
+class merged_front<Result>
+{
+    using point_type = typename decltype(Result::front)::value_type;
+
+public:
+    template<class BoundRunner>
+    void add(const BoundRunner& bound_runner, const Result& result)
+    {
+        for (const auto& point : result.front)
+            archive_.offer(point.solution, point.cost, same_solution_of(bound_runner));
+    }
+
+    void assign_to(Result& result) const
+    {
+        result.front = archive_.sorted();
+    }
+
+private:
+    pareto_archive<
+        decltype(std::declval<point_type&>().solution),
+        decltype(std::declval<point_type&>().cost)>
+        archive_;
 };
 
 template<class Result>

@@ -1,11 +1,14 @@
 // Pareto Late Acceptance Hill Climbing, and the front that search_run keeps
-// for any runner with a cost::pareto cost, on points of a 10 x 10 grid with
-// objectives x + y and (9 - x) + y: the front is the row y = 0.
+// for any runner with a cost::pareto cost (and the solvers merge across their
+// runs), on points of a 10 x 10 grid with objectives x + y and (9 - x) + y:
+// the front is the row y = 0.
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/runners/hill_climbing.hpp>
 #include <easylocal/runners/pareto_late_acceptance_hill_climbing.hpp>
 #include <easylocal/runners/runner.hpp>
+#include <easylocal/solvers/multi_start.hpp>
+#include <easylocal/solvers/pipeline.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -330,6 +333,28 @@ int main()
             !result.front.empty() && result.front.front().solution.y == 0
                 && result.solution.y == 0,
             "hill climbing with a pareto cost returns its front");
+    }
+
+    {
+        // Hill Climbing reaches one point of the row y = 0 from each start:
+        // MultiStart and the attempts of a stage merge the fronts of their
+        // runs.
+        solvers::MultiStart solver{
+            grid_runner<HillClimbing>({.max_idle_iterations = 50}),
+            solvers::MultiStartConfig{.parameters = {.starts = 10}, .seed = 3}};
+        const auto result = solver.solve(grid);
+        ok &= expect(
+            valid_front(result.front) && result.front.size() >= 3,
+            "MultiStart merges the fronts of its starts");
+
+        auto descent = grid_runner<HillClimbing>({.max_idle_iterations = 50});
+        auto pipeline =
+            solvers::pipeline(solvers::stage("hc", descent) & solvers::attempts(10))
+                .seed(3);
+        const auto staged = pipeline.solve(grid);
+        ok &= expect(
+            valid_front(staged.front) && staged.front.size() >= 3,
+            "the attempts of a stage merge their fronts");
     }
 
     return ok ? 0 : 1;

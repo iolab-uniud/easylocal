@@ -329,6 +329,13 @@ public:
         return input_;
     }
 
+    // The SolutionManager, for the solution identity of the solvers.
+    [[nodiscard]]
+    const solution_manager_type& solution_manager() const noexcept
+    {
+        return solution_manager_;
+    }
+
     [[nodiscard]]
     solution_type initial_solution() const
         requires has_initial_solution<solution_manager_type>

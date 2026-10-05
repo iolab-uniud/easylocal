@@ -135,7 +135,8 @@ public:
     }
 
     /// Runs up to `starts` times from fresh solutions and returns the best
-    /// result, with the effort of every start.
+    /// result, with the effort of every start and, with a cost::pareto cost,
+    /// the front merged from every start.
     ///
     /// The optional trailing run options go to every run; cancellation, or a
     /// run that reaches the target, ends the solve (termination cancelled /
@@ -171,6 +172,8 @@ public:
         auto termination = ended_by(best);
         easylocal::detail::search_effort effort;
         effort.add(best);
+        easylocal::detail::merged_front<decltype(best)> front;
+        front.add(bound_runner, best);
         for (std::size_t start = 1;
              start < parameters_.starts && !termination.has_value();
              ++start)
@@ -186,6 +189,7 @@ public:
             budget.consume(candidate);
             termination = ended_by(candidate);
             effort.add(candidate);
+            front.add(bound_runner, candidate);
             if (bound_runner.better(candidate.cost, best.cost))
             {
                 best = std::move(candidate);
@@ -197,6 +201,7 @@ public:
             termination = budget.spent();
 
         effort.assign_to(best);
+        front.assign_to(best);
         easylocal::detail::set_termination(
             best,
             termination.value_or(termination_reason::completed));

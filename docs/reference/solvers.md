@@ -30,7 +30,9 @@ directly: `solvers::X<Runner, RNG>{runner, ..., RNG{seed}}`.
 | `solvers::Pipeline` | built from stages with `\|` or `pipeline(...)` (below) | runners in sequence, each stage from the solution of the previous one |
 
 Results carry the effort of the whole solve: `evaluations` and `iterations`
-add up over MultiStart's starts and a pipeline's stages and attempts.
+add up over MultiStart's starts and a pipeline's stages and attempts. With a
+`cost::pareto` cost, the `front` of MultiStart's result merges the fronts of
+all its starts, and so does the front of a stage over its attempts.
 
 `MultiStart` ends early when a start is cancelled or reaches the target, or
 when the solve's time or evaluations are spent; its termination is then

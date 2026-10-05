@@ -141,6 +141,8 @@ reviewed by hand before tagging.
 - `with_hard_cost()`, `until_feasible()` and `two_stage()` compile with
   co-located deltas (`delta<C>()`): every SolutionManager layer, the hard-cost
   projection included, reaches the cost components.
+- With a `cost::pareto` cost, MultiStart and the attempts of a pipeline stage
+  return the front merged from all their runs, not the first run's front.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

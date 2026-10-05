@@ -6,9 +6,11 @@
 /// pareto_search_result.
 
 #include <easylocal/cost/pareto.hpp>
+#include <easylocal/helpers/solution_manager.hpp>
 
 #include <algorithm>
 #include <cstddef>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -117,5 +119,29 @@ private:
 
     std::vector<point_type> points_;
 };
+
+namespace detail
+{
+
+// Whether two solutions of equal cost are the same one, for
+// pareto_archive::offer: the SolutionManager's solution equality when owner
+// (a search context or a bound runner) exposes a solution_manager() that has
+// one, otherwise always (one point per cost).
+template<class Owner>
+[[nodiscard]]
+auto same_solution_of(const Owner& owner) noexcept
+{
+    return [&owner]<class Solution>(const Solution& lhs, const Solution& rhs) -> bool {
+        if constexpr (requires {
+                          requires has_solution_equality<
+                              std::remove_cvref_t<decltype(owner.solution_manager())>>;
+                      })
+            return easylocal::solutions_equal(owner.solution_manager(), lhs, rhs);
+        else
+            return true;
+    };
+}
+
+} // namespace detail
 
 } // namespace easylocal
