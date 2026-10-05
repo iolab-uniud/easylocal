@@ -669,7 +669,8 @@ private:
     }
 
     // The session's first current solution: the one in the request, decoded,
-    // or the initial solution of the SolutionManager.
+    // which must be valid for the Input, or the initial solution of the
+    // SolutionManager.
     void set_initial_solution(
         session_type& session,
         const crow::json::rvalue* payload) const
@@ -679,6 +680,11 @@ private:
             if constexpr (detail::decodes_initial_solution<Codec, App>)
             {
                 session.set_solution(decode_initial_solution(session.input(), *payload));
+                // Checked here: a runner's deltas may index out of bounds on a
+                // malformed solution.
+                if (!session.is_valid())
+                    throw std::invalid_argument{
+                        "'initial_solution' is not a valid solution for the input"};
             }
             else
             {

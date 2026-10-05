@@ -184,12 +184,16 @@ struct AssignmentCodec
         };
     }
 
+    // {"machine": m} assigns every job to machine m, which may not exist.
     [[nodiscard]] auto decode_initial_solution(
         const AssignmentInstance& input,
-        const crow::json::rvalue&) const -> solution_type
+        const crow::json::rvalue& payload) const -> solution_type
     {
+        const auto machine = payload.has("machine")
+            ? static_cast<machine_id>(payload["machine"].u())
+            : machine_id{0};
         return solution_type{
-            .assignment = std::vector<machine_id>(input.demand.size(), 0),
+            .assignment = std::vector<machine_id>(input.demand.size(), machine),
         };
     }
 
@@ -427,6 +431,15 @@ void a_run_starts_from_the_given_initial_solution(crow::SimpleApp& server)
     const auto status = wait_for(server, id, "succeeded");
     assert(text(status["solution_url"]) == "/assignment/runs/" + id + "/solution");
     assert(send(server, crow::HTTPMethod::GET, text(status["solution_url"])).code == 200);
+
+    // A solution not valid for the Input is rejected before the run starts.
+    const auto invalid =
+        submit(server, "fi", R"({"input": {}, "initial_solution": {"machine": 7}})");
+    assert(invalid.code == 422);
+    assert(text(invalid.body["error"]["code"]) == "invalid_run_request");
+    assert(
+        text(invalid.body["error"]["message"])
+        == "'initial_solution' is not a valid solution for the input");
 }
 
 void a_run_stops_at_its_target(crow::SimpleApp& server)

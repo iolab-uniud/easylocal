@@ -213,6 +213,9 @@ reviewed by hand before tagging.
 - REST: an arithmetic target outside the range of the cost type (`-1` for an
   unsigned cost) is rejected with `422` instead of wrapping, and so is an empty
   key among the `parameters`.
+- REST: an `initial_solution` that is not valid for the Input is rejected
+  with `422` when the run is submitted, instead of reaching the runner's
+  deltas, which could read out of bounds.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

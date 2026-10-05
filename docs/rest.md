@@ -84,8 +84,10 @@ The framework owns only the request envelope. `input` and `initial_solution` are
 otherwise opaque JSON values passed unchanged to the codec. A codec may therefore
 accept a structured JSON object/array, a JSON string containing an existing text
 file representation, or any other JSON representation appropriate to the
-problem. If `initial_solution` is omitted, the SolutionManager
-`initial_solution()` capability is used when available.
+problem. A decoded `initial_solution` must be valid for the Input (the
+SolutionManager's `is_valid`), or the request is rejected with `422`. If
+`initial_solution` is omitted, the SolutionManager `initial_solution()`
+capability is used when available.
 
 The generic Blueprint is mounted explicitly:
 
