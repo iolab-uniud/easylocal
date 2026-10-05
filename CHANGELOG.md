@@ -88,6 +88,9 @@ reviewed by hand before tagging.
   `equivalent()` instead of the cost's `<` and `==`: with a root `compare`
   that maximizes, Pareto Late Acceptance returned the worst point of its
   front.
+- `named_run_result` has the `front` of a run with a `cost::pareto` cost, so
+  `app.run("name", ...)` no longer drops it; the Session, `cli::run`, REST and
+  the TextUI do not show it yet.
 
 ### Changed
 

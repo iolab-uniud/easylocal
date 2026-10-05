@@ -30,6 +30,22 @@ frontend, or REST resources for interactive sessions (selecting and applying
 moves over HTTP). The TextUI would then move to the same mechanism, and the
 design would start from the needs of two real users.
 
+## The Pareto front in the frontends
+
+**Why.** A run with a `cost::pareto` cost returns the non-dominated solutions
+it reached, and `app.run("name", ...)` carries them in
+`named_run_result.front`. The Session, `cli::run`, the REST service and the
+TextUI still keep one solution, the first of the front, so a multi-objective
+app shows a single trade-off.
+
+**What.** The Session keeps the front of its last run; `cli::run` prints
+`front N` followed by the solutions and their costs; REST adds a `front` array
+to a finished run; the TextUI gets a page that lists the front and makes one of
+its solutions the current one.
+
+**When.** The Session, the command line and REST next, as one change; the
+TextUI page after them.
+
 ## Python and Julia bindings
 
 **Why.** The problem components are C++: the SolutionManager, the

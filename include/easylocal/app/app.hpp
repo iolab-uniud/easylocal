@@ -44,8 +44,8 @@ struct run_effort
 /// The result of a runner chosen by name.
 ///
 /// Each algorithm has its own result type; what every result provides
-/// (search_result_for) is the solution and its cost, and the effort when the
-/// result has it.
+/// (search_result_for) is the solution and its cost, and the effort and the
+/// front when the result has them.
 template<class Solution, class Cost>
 struct named_run_result
 {
@@ -55,6 +55,9 @@ struct named_run_result
     Cost cost;
     /// The effort of the run; empty when the result does not report it.
     std::optional<run_effort> effort;
+    /// The non-dominated solutions reached, ordered by their objectives, with
+    /// a cost::pareto cost; empty when the result has no front.
+    std::vector<pareto_point<Solution, Cost>> front{};
 };
 
 namespace detail
@@ -487,11 +490,21 @@ public:
                     .termination = result.termination,
                 };
             }
+            std::vector<pareto_point<solution_type, cost_type>> front;
+            if constexpr (requires {
+                              {
+                                  std::move(result.front)
+                              } -> std::convertible_to<decltype(front)>;
+                          })
+            {
+                front = std::move(result.front);
+            }
             outcome.emplace(
                 named_run_result<solution_type, cost_type>{
                     .solution = std::move(result.solution),
                     .cost = result.cost,
                     .effort = effort,
+                    .front = std::move(front),
                 });
         };
         [&]<std::size_t... Index>(std::index_sequence<Index...>) {

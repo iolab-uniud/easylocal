@@ -95,11 +95,15 @@ keep their state from one run to the next. `Runner::bind` returns a
 `BoundRunner`, with `input()`, `solution_manager()`, `initial_solution()`,
 `random_solution(rng)`, `better(a, b)` and `run(solution, args...)`.
 
-`named_run_result{solution, cost, effort}` keeps what every runner result
-provides (`search_result_for`): a runner chosen by name may be any algorithm,
-built-in or your own, each with its own result type. `effort` is a
+`named_run_result{solution, cost, effort, front}` keeps what every runner
+result provides (`search_result_for`): a runner chosen by name may be any
+algorithm, built-in or your own, each with its own result type. `effort` is a
 `run_effort{evaluations, iterations, termination}` when the result has those
-members, as `search_result` does, and empty otherwise.
+members, as `search_result` does, and empty otherwise. `front` holds the
+non-dominated solutions of a run with a `cost::pareto` cost, as
+`pareto_search_result` does (see [Runners](runners.md#results)), and is empty
+otherwise. The Session, `cli::run`, REST and the TextUI still keep one
+solution: they do not show the front yet.
 
 ## Tools
 

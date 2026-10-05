@@ -2,6 +2,7 @@
 // for any runner with a cost::pareto cost (and the solvers merge across their
 // runs), on points of a 10 x 10 grid with objectives x + y and (9 - x) + y:
 // the front is the row y = 0.
+#include <easylocal/app/app.hpp>
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/runners/hill_climbing.hpp>
@@ -439,6 +440,23 @@ int main()
                     kept.front,
                     [](const auto& point) { return point.solution.x == 4; }),
             "keep_equivalent keeps distinct solutions of a cost, up to the bound");
+    }
+
+    {
+        // An app carries the front of the runner chosen by name.
+        auto application =
+            easylocal::app("grid")
+                .with_solution_manager(
+                    solution_manager<PointManager>()
+                    | cost::objectives(component<Left>(), component<Right>()))
+                .with_neighborhood(neighborhood<StepNeighborhood>())
+                .with_runner<ParetoLateAcceptanceHillClimbing>("plahc");
+        std::mt19937 rng{11U};
+        const auto result = application.run("plahc", grid, Point{4, 9}, rng);
+        ok &= expect(
+            result.has_value() && valid_front(result->front) && result->front.size() >= 5
+                && result->solution == result->front.front().solution,
+            "a run by name returns the front");
     }
 
     return ok ? 0 : 1;
