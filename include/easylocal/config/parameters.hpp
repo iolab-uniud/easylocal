@@ -175,19 +175,13 @@ constexpr parameter_field<Name, Member, Domain> field(
 /// The descriptor of a field that takes any value of its type, e.g.
 /// `field<"seed", &P::seed>("Seed", easylocal::unlimited)`: a seed, free text,
 /// a number that may be negative.
-///
-/// Throws std::invalid_argument when the limit is a count rather than
-/// unlimited (a compilation error in a schema).
 template<fixed_string Name, auto Member>
     requires std::is_member_object_pointer_v<decltype(Member)>
 [[nodiscard]]
 constexpr parameter_field<Name, Member, unbounded_domain> field(
     const std::string_view description,
-    const easylocal::limit any_value)
+    easylocal::unlimited_t) noexcept
 {
-    if (!any_value.is_unlimited())
-        throw std::invalid_argument{
-            "the domain of a field is a range, one_of or unlimited"};
     return {.description = description, .domain = {}};
 }
 

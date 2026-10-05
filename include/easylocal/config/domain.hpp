@@ -114,15 +114,11 @@ constexpr range_domain<Number> range(const Number low, const Number high)
 /// included), `range(1, unlimited)` a count of at least one, or unlimited for
 /// a limit.
 ///
-/// Throws std::invalid_argument when high is a count rather than unlimited (a
-/// compilation error in a schema). Requires an integer or floating-point type,
-/// not bool.
+/// Requires an integer or floating-point type, not bool.
 template<easylocal::detail::number Number>
 [[nodiscard]]
-constexpr range_domain<Number> range(const Number low, const easylocal::limit high)
+constexpr range_domain<Number> range(const Number low, easylocal::unlimited_t)
 {
-    if (!high.is_unlimited())
-        throw std::invalid_argument{"a range's upper bound is a number or unlimited"};
     return {.low = low, .high = Number{}, .unbounded = true};
 }
 

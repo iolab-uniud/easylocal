@@ -871,6 +871,18 @@ easylocal_add_compile_failure_test(
     "NonConstructibleDeltaA"
 )
 easylocal_add_compile_failure_test(
+    range-of-mixed-numbers
+    range_of_mixed_numbers.cpp
+    "no matching function for call to"
+    "range"
+)
+easylocal_add_compile_failure_test(
+    field-with-a-count
+    field_with_a_count.cpp
+    "no matching function for call to"
+    "field"
+)
+easylocal_add_compile_failure_test(
     parameters-without-name
     parameters_without_name.cpp
     "is configured under cost.<name>"

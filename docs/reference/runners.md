@@ -59,8 +59,9 @@ asserts.
 The parameters follow one naming rule. A `max_<count>` of the run
 (`max_evaluations`, `max_iterations`, `max_idle_iterations`,
 `FixedTemperature`'s `max_accepted`) is a cap that ends the run when it is
-reached, of type `easylocal::limit`: a number, or `easylocal::unlimited`,
-written `unlimited` in a configuration file, on the command line and in the
+reached, of type `easylocal::limit`: a number, or `easylocal::unlimited` (a
+tag of type `unlimited_t`, which converts to the unlimited limit), written
+`unlimited` in a configuration file, on the command line and in the
 TextUI; 0 is a limit of zero, not "no limit". The size of a schedule, which
 shapes the search rather than stopping it, is `allowed_<x>`
 (`allowed_iterations` of the annealing schedules, `allowed_reheats`,

@@ -2,13 +2,25 @@
 
 /// \file
 /// limit: the bound of a search on a count (evaluations, iterations), a number
-/// or easylocal::unlimited; in text, the number or "unlimited".
+/// or easylocal::unlimited (a tag of type unlimited_t); in text, the number or
+/// "unlimited".
 
 #include <cstddef>
 #include <limits>
 
 namespace easylocal
 {
+
+/// The type of easylocal::unlimited: no limit for a count, and any value as
+/// the domain of a parameter.
+///
+/// It converts to a limit, the unlimited one; a number never converts to it,
+/// so `range(1, 1000)` and `range(1, unlimited)` cannot be confused.
+struct unlimited_t
+{
+    /// The tag; easylocal::unlimited is the one to use.
+    explicit constexpr unlimited_t() noexcept = default;
+};
 
 /// A count that may be unlimited.
 ///
@@ -22,6 +34,10 @@ public:
 
     // NOLINTNEXTLINE(google-explicit-constructor): a number is a limit
     constexpr limit(const std::size_t count) noexcept : count_{count} {}
+
+    /// No limit.
+    // NOLINTNEXTLINE(google-explicit-constructor): unlimited is a limit
+    constexpr limit(unlimited_t) noexcept {}
 
     // NOLINTNEXTLINE(google-explicit-constructor): a limit is compared as a count
     [[nodiscard]]
@@ -41,7 +57,8 @@ private:
     std::size_t count_{std::numeric_limits<std::size_t>::max()};
 };
 
-/// No limit: what a default-constructed limit is.
-inline constexpr limit unlimited{};
+/// No limit, what a default-constructed limit is, for a count; any value, as
+/// the domain of a parameter.
+inline constexpr unlimited_t unlimited{};
 
 } // namespace easylocal

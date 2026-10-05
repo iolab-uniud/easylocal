@@ -47,7 +47,7 @@ config::field<"policy", &P::policy>("Tabu list", config::one_of("fixed", "random
 
 | Domain | Values |
 | --- | --- |
-| `range(low, high)` | the numbers from `low` to `high`, both included; for a number or a `limit` (never `unlimited`) |
+| `range(low, high)` | the numbers from `low` to `high`, both included, of one type; for a number or a `limit` |
 | `range(low, easylocal::unlimited)` | the numbers from `low` up, with no upper bound: infinity for a floating-point field, `unlimited` for a `limit` |
 | `.open()`, `.open_low()`, `.open_high()` | the same range without both bounds, the lower or the upper one |
 | `.log()` | the same range, which a configurator samples on a logarithmic scale; `low` must be positive |
@@ -56,7 +56,10 @@ config::field<"policy", &P::policy>("Tabu list", config::one_of("fixed", "random
 
 For an array or a vector the domain applies to each element. A domain that
 does not fit the field's type, a range whose bounds are not in order or a
-logarithmic range from zero do not compile.
+logarithmic range from zero do not compile, and neither do a range of two
+types, `range(0.0, 1)`, or a count where a domain goes, `field<...>("...", 5)`:
+`easylocal::unlimited` is a tag of its own type, `unlimited_t`, which
+converts to the unlimited `limit` and which no number converts to.
 
 ### Conditions and requirements
 

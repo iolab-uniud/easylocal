@@ -45,6 +45,13 @@ reviewed by hand before tagging.
   parameter block is constructed from the Input and it,
   `solution_manager<SM>(parameters, args...)`, and its parameters are at the
   root of a runner and of an app, `solution_manager.*`, beside `cost.*`.
+- **Breaking:** `easylocal::unlimited` is a tag of its own type,
+  `unlimited_t`, which converts to the unlimited `limit`, rather than a
+  `limit`. `config::field` and `config::range` take the tag: a count where a
+  domain goes (`field<...>("...", 5)`) and a range of two types
+  (`range(0.0, 1)`, `range(1, std::size_t{1000})`), which compiled and threw
+  `std::invalid_argument`, or picked the unlimited overload, no longer
+  compile. `limit x = unlimited;` and `limit{unlimited}` are unchanged.
 - `check(app, ...)` reports, as `runner parameters`, a registered runner whose
   `parameters_type` is not a parameter block (and not empty): the app runs it,
   but no frontend can change its parameters. The tutorial's `RandomDescent`
