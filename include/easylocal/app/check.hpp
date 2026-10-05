@@ -124,6 +124,33 @@ inline constexpr std::size_t app_delta_binding_count_v = [] {
         return std::size_t{0};
 }();
 
+// With a compare at the root of the cost expression, that the sign of
+// cost::delta agrees with it, as the delta-based algorithms assume: a
+// candidate better than the current solution has a negative delta, a worse one
+// a positive delta.
+template<class Report, class SM, class Cost>
+void check_delta_sign(
+    Report& report,
+    const SM& solution_manager,
+    const Cost& candidate,
+    const Cost& current)
+{
+    if constexpr (cost::detail::custom_compare<SM> && cost::has_delta<Cost>)
+    {
+        using cost::delta;
+        const auto difference = static_cast<long double>(delta(candidate, current));
+        const bool agrees = cost::better(solution_manager, candidate, current)
+            ? difference < 0
+            : !cost::better(solution_manager, current, candidate) || difference > 0;
+        report.check(
+            agrees,
+            "delta sign",
+            "cost::delta(candidate, current) disagrees with the compare of the cost "
+            "expression: Simulated Annealing, Great Deluge and the aspiration levels "
+            "of Tabu Search take a negative delta as an improvement");
+    }
+}
+
 template<class Report, class SM, class NHE, class Solution, class Range>
 void check_app_moves(
     Report& report,
@@ -167,6 +194,7 @@ void check_app_moves(
         auto incremental_state = current;
         auto committed_solution = solution;
         auto candidate = evaluation.evaluate_move(solution, current, move);
+        check_delta_sign(report, solution_manager, candidate.cost(), current.cost());
         evaluation.commit(
             committed_solution,
             incremental_state,
@@ -298,7 +326,8 @@ bool check_runners(const App& application, app_check_report& report)
 /// evaluates twice to the same cost, that the first 128 enumerated moves and 16
 /// random moves of each neighborhood (the app's, and those of the runners that
 /// have their own) are valid and lead to valid solutions (with the incremental
-/// evaluation matching the full one, when the cost defines equivalence), and
+/// evaluation matching the full one, when the cost defines equivalence, and
+/// the sign of cost::delta agreeing with a root compare of the cost), and
 /// that each registered runner's parameters are valid and construct it. The
 /// runners are checked first: with invalid parameters the app is not bound,
 /// since binding it constructs them.

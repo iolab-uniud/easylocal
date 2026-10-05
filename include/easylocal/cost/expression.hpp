@@ -22,9 +22,8 @@
 ///                                until_feasible() evaluates only the
 ///                                components under `hard`;
 /// - cost::apply(f, children...)  f(costs...), any user function; f may also
-///                                define better / equivalent /
-///                                better_or_equivalent (at the root) and
-///                                configuration().
+///                                define compare(a, b), the order of the costs
+///                                (at the root), and configuration().
 ///
 /// The expression types below only record the structure; they are given meaning
 /// by the SolutionManager recipe, which knows the components' value types.
@@ -151,9 +150,10 @@ constexpr hard_soft_expression<Hard, Soft> hard_soft(Hard hard, Soft soft)
 
 /// The value of `function` called with the children's costs.
 ///
-/// At the root of the expression, the function may also define `better`,
-/// `equivalent` and `better_or_equivalent`; it may expose parameters with
-/// `configuration()`.
+/// At the root of the expression, the function may also define the order of
+/// its costs, `compare(a, b)` returning a `std::partial_ordering`, from which
+/// `better` (less), `equivalent` and `better_or_equivalent` follow; it may
+/// expose parameters with `configuration()`.
 template<class Function, class... Children>
     requires(sizeof...(Children) > 0)
 [[nodiscard]]

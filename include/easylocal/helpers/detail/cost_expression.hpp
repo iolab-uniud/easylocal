@@ -11,6 +11,7 @@
 #include <easylocal/utils/detail/attributes.hpp>
 
 #include <array>
+#include <compare>
 #include <concepts>
 #include <cstddef>
 #include <functional>
@@ -99,6 +100,37 @@ template<class T>
 inline constexpr bool is_cost_expression_v =
     is_component_spec<std::remove_cvref_t<T>>::value ||
     cost::is_expression_v<T>;
+
+// The function of a cost::apply that defines the order of its costs: a
+// compare(a, b) returning a std::partial_ordering.
+template<class Function, class Cost>
+concept apply_function_orders =
+    requires(const Function& function, const Cost& lhs, const Cost& rhs) {
+        { function.compare(lhs, rhs) } -> std::convertible_to<std::partial_ordering>;
+    };
+
+// The function of a cost::apply with one of the relations that compare(a, b)
+// replaced, which the cost layer no longer reads.
+template<class Function, class Cost>
+concept apply_function_has_relations =
+    requires(const Function& function, const Cost& cost) {
+        function.better(cost, cost);
+    } || requires(const Function& function, const Cost& cost) {
+        function.equivalent(cost, cost);
+    } || requires(const Function& function, const Cost& cost) {
+        function.better_or_equivalent(cost, cost);
+    };
+
+// A node that defines the order of its cost (compare(a, b)): it gives the cost
+// semantics of the whole expression, so it may only be the root.
+template<class Node>
+concept ordering_cost_node =
+    requires(const Node& node, const typename Node::cost_type& cost) {
+        node.compare(cost, cost);
+    };
+
+template<class... Nodes>
+inline constexpr bool no_ordering_child_v = !(ordering_cost_node<Nodes> || ...);
 
 template<class Component, class Solution>
 using component_value_t = std::remove_cvref_t<decltype(
@@ -302,6 +334,11 @@ class cost_node<cost::sum_expression<Terms...>, Solution>
         (cost::arithmetic<child_cost_t<Terms>> && ...),
         "cost::sum adds arithmetic costs; turn a domain value into a number "
         "with cost::apply(f, component<C>())");
+    static_assert(
+        no_ordering_child_v<cost_node<typename sum_term<Terms>::child_type, Solution>...>,
+        "the cost semantics are defined at the root of the cost expression: a "
+        "cost::apply whose function defines compare(a, b), or "
+        "cost::approximately, cannot be the child of another node");
 
 public:
     using cost_type = std::common_type_t<
@@ -396,6 +433,12 @@ private:
 template<class Solution, class... Children>
 class cost_children
 {
+    static_assert(
+        no_ordering_child_v<cost_node<Children, Solution>...>,
+        "the cost semantics are defined at the root of the cost expression: a "
+        "cost::apply whose function defines compare(a, b), or "
+        "cost::approximately, cannot be the child of another node");
+
 public:
     using children_type = std::tuple<cost_node<Children, Solution>...>;
     using leaf_specs = tuple_cat_t<
@@ -546,6 +589,12 @@ class cost_node<cost::hard_soft_expression<Hard, Soft>, Solution>
     using hard_node = cost_node<Hard, Solution>;
     using soft_node = cost_node<Soft, Solution>;
 
+    static_assert(
+        no_ordering_child_v<hard_node, soft_node>,
+        "the cost semantics are defined at the root of the cost expression: a "
+        "cost::apply whose function defines compare(a, b), or "
+        "cost::approximately, cannot be the child of another node");
+
 public:
     using hard_cost_type = typename hard_node::cost_type;
     using cost_type = cost::hierarchical<
@@ -646,6 +695,17 @@ public:
         "the function of cost::apply cannot return an unsigned integer, whose "
         "differences wrap around: return a signed integer (int, long long) "
         "or a floating-point value");
+    static_assert(
+        !apply_function_has_relations<Function, cost_type>,
+        "the function of cost::apply defines the cost semantics with one "
+        "compare(a, b) returning std::partial_ordering, not with better, "
+        "equivalent or better_or_equivalent");
+    static_assert(
+        !requires(const Function& function, const cost_type& cost) {
+            function.compare(cost, cost);
+        } || apply_function_orders<Function, cost_type>,
+        "compare(a, b) of the function of cost::apply must return "
+        "std::partial_ordering (or a comparison category that converts to it)");
 
     static constexpr std::size_t leaf_count = children_type::leaf_count;
     static constexpr bool configurable =
@@ -681,35 +741,13 @@ public:
             values);
     }
 
+    // The order of the costs, when the function defines it: at the root, it
+    // defines better, equivalent and better_or_equivalent.
     [[nodiscard]]
-    bool better(const cost_type& candidate, const cost_type& reference) const
-        requires requires(const Function& function) {
-            { function.better(candidate, reference) } -> std::convertible_to<bool>;
-        }
+    std::partial_ordering compare(const cost_type& lhs, const cost_type& rhs) const
+        requires apply_function_orders<Function, cost_type>
     {
-        return static_cast<bool>(function_.better(candidate, reference));
-    }
-
-    [[nodiscard]]
-    bool equivalent(const cost_type& lhs, const cost_type& rhs) const
-        requires requires(const Function& function) {
-            { function.equivalent(lhs, rhs) } -> std::convertible_to<bool>;
-        }
-    {
-        return static_cast<bool>(function_.equivalent(lhs, rhs));
-    }
-
-    [[nodiscard]]
-    bool better_or_equivalent(const cost_type& candidate, const cost_type& reference)
-        const
-        requires requires(const Function& function) {
-            {
-                function.better_or_equivalent(candidate, reference)
-            } -> std::convertible_to<bool>;
-        }
-    {
-        return static_cast<bool>(
-            function_.better_or_equivalent(candidate, reference));
+        return static_cast<std::partial_ordering>(function_.compare(lhs, rhs));
     }
 
     // The function's parameters, at the root, and the children's, under their

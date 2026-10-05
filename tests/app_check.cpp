@@ -12,7 +12,9 @@
 #include <easylocal/runners/simulated_annealing.hpp>
 
 #include <cassert>
+#include <compare>
 #include <cstddef>
+#include <cstdint>
 
 namespace
 {
@@ -348,6 +350,47 @@ void check_reports_an_invalid_nested_group()
     assert(reported);
 }
 
+// A cost expression whose compare finds a larger imbalance better, against
+// the sign of cost::delta.
+struct MaximizedImbalance
+{
+    [[nodiscard]] std::int64_t operator()(const std::int64_t imbalance) const
+    {
+        return imbalance;
+    }
+
+    [[nodiscard]] std::partial_ordering compare(
+        const std::int64_t lhs,
+        const std::int64_t rhs) const
+    {
+        return rhs <=> lhs;
+    }
+};
+
+void check_reports_a_compare_against_the_delta_sign()
+{
+    auto application =
+        easylocal::app("maximized-assignment")
+            .with_solution_manager(
+                easylocal::solution_manager<AssignmentSolutionManager>()
+                | easylocal::cost::apply(
+                    MaximizedImbalance{},
+                    easylocal::component<LoadImbalanceCostComponent>()))
+            .with_neighborhood(easylocal::neighborhood<ReassignJobNeighborhoodExplorer>())
+            .with_runner<easylocal::runners::FirstImprovement>("fi");
+
+    const AssignmentInstance instance{
+        .demand = {4, 4, 2},
+        .capacity = {5, 5},
+    };
+    const auto report = easylocal::check(application, instance);
+    assert(!report.passed());
+    bool reported = false;
+    for (const auto& failure : report.failures())
+        reported = reported || failure.check == "delta sign";
+    assert(reported);
+}
+
 } // namespace
 
 int main()
@@ -357,5 +400,6 @@ int main()
     check_fails_on_a_parameter_without_a_domain();
     check_names_the_runner_with_invalid_parameters();
     check_reports_an_invalid_nested_group();
+    check_reports_a_compare_against_the_delta_sign();
     return 0;
 }

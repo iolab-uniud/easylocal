@@ -115,6 +115,11 @@ public:
     [[nodiscard]]
     auto run(Run& run, typename Run::solution_type solution, RNG& rng) const
     {
+        static_assert(
+            detail::delta_agrees_with_better<typename Run::context_type>(),
+            "Great Deluge lowers a level on the cost, which"
+            " must agree with better(): the compare of the cost expression "
+            "finds a larger cost better");
         run.limit_evaluations(parameters_.max_evaluations);
         auto current = run.start(solution);
         best_so_far best{solution, current.cost()};

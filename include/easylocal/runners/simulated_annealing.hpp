@@ -1779,6 +1779,11 @@ public:
     [[nodiscard]]
     auto run(Run& run, typename Run::solution_type solution, RNG& rng) const
     {
+        static_assert(
+            detail::delta_agrees_with_better<typename Run::context_type>(),
+            "Simulated Annealing decides with the sign of cost::delta, which"
+            " must agree with better(): the compare of the cost expression "
+            "finds a larger cost better");
         run.limit_evaluations(max_evaluations_);
         auto temperature = temperature_policy_;
         auto current = run.start(solution);

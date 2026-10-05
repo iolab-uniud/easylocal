@@ -61,6 +61,18 @@ reviewed by hand before tagging.
   the same commands in order, a solver's stream across `solve()` calls, REST
   seeds, the same standard library).
 
+- **Breaking:** the cost semantics are defined with one hook: the function of
+  a root `cost::apply` defines `compare(a, b)`, returning a
+  `std::partial_ordering`, from which `better`, `equivalent` and
+  `better_or_equivalent` all follow. A function that defined only some of the
+  three mixed them silently with the defaults (a maximizing `better()` with the
+  default `<=` made Hill Climbing walk downhill while it recorded the bests
+  uphill); its `better`, `equivalent` or `better_or_equivalent` members now
+  fail to compile with a message, as does a `compare` below the root of the
+  expression. The sign of `cost::delta` must agree with `better()` for the
+  algorithms that read it (Simulated Annealing, Great Deluge, the aspiration
+  levels of Tabu Search): Simulated Annealing and Great Deluge reject a
+  `compare` that provably finds a larger cost better.
 ### Changed
 
 - **Breaking:** `search_run::with_context(ctx)` is replaced by

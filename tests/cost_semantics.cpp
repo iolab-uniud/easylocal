@@ -1,6 +1,6 @@
 #include <easylocal/runners/best_improvement.hpp>
 #include <easylocal/runners/first_improvement.hpp>
-
+#include <easylocal/runners/hill_climbing.hpp>
 #include <easylocal/runners/runner.hpp>
 
 #include <array>
@@ -8,6 +8,7 @@
 #include <concepts>
 #include <cstddef>
 #include <iostream>
+#include <optional>
 #include <random>
 #include <string_view>
 #include <utility>
@@ -100,28 +101,12 @@ struct MaximizingAggregator
         return OpaqueCost{.value = value.value};
     }
 
+    // Larger values are better: compare orders them first.
     [[nodiscard]]
-    static constexpr auto better(
-        const OpaqueCost& candidate,
-        const OpaqueCost& reference) noexcept -> bool
+    static constexpr auto compare(const OpaqueCost& lhs, const OpaqueCost& rhs) noexcept
+        -> std::partial_ordering
     {
-        return candidate.value > reference.value;
-    }
-
-    [[nodiscard]]
-    static constexpr auto equivalent(
-        const OpaqueCost& lhs,
-        const OpaqueCost& rhs) noexcept -> bool
-    {
-        return lhs.value == rhs.value;
-    }
-
-    [[nodiscard]]
-    static constexpr auto better_or_equivalent(
-        const OpaqueCost& candidate,
-        const OpaqueCost& reference) noexcept -> bool
-    {
-        return candidate.value >= reference.value;
+        return rhs.value <=> lhs.value;
     }
 };
 
@@ -220,6 +205,13 @@ public:
 
 
     [[nodiscard]] static constexpr auto is_valid(const Solution&, const Move&) noexcept -> bool { return true; }
+
+    template<class RNG>
+    [[nodiscard]]
+    static auto random_move(const Solution&, RNG& rng) -> std::optional<Move>
+    {
+        return Move{.delta = std::uniform_int_distribution<int>{0, 1}(rng) == 0 ? 1 : -1};
+    }
 
     static constexpr void make_move(
         Solution& solution,
@@ -388,6 +380,19 @@ int main()
         "Best Improvement selects the semantically best maximizing candidate");
     ok &= expect(best_result.cost.value == 2,
         "Best Improvement does not require an intrinsic order on cost_type");
+
+    // Hill Climbing accepts sideways moves with better_or_equivalent: derived
+    // from the same compare as better, it climbs towards larger values.
+    auto hill_climbing = easylocal::make_runner<easylocal::runners::HillClimbing>()
+        | maximizing_manager | neighborhood<NeighborhoodExplorer>();
+    std::mt19937 rng{7U};
+    const auto climbed = hill_climbing.bind(instance).run(
+        Solution{.score = 0},
+        rng,
+        easylocal::max_evaluations(200));
+    ok &= expect(
+        climbed.solution.score > 50 && climbed.cost.value == climbed.solution.score,
+        "Hill Climbing follows a maximizing compare, accepting no worse move");
 
     const auto minimizing_manager =
         solution_manager<IntegerSolutionManager>()

@@ -788,6 +788,18 @@ easylocal_add_compile_failure_test(
     "ComponentA"
 )
 easylocal_add_compile_failure_test(
+    apply-relations-without-compare
+    apply_relations_without_compare.cpp
+    "defines the cost semantics with one compare(a, b)"
+    "Maximize"
+)
+easylocal_add_compile_failure_test(
+    nested-cost-compare
+    nested_cost_compare.cpp
+    "the cost semantics are defined at the root of the cost expression"
+    "Maximize"
+)
+easylocal_add_compile_failure_test(
     duplicate-neighborhood-union-child
     duplicate_neighborhood_union_child.cpp
     "a neighborhood union cannot contain the same NeighborhoodExplorer type more than once"
@@ -839,6 +851,11 @@ easylocal_add_compile_failure_test(
     component_not_constructible.cpp
     "a cost component must be constructible either from the bound Instance followed by its recipe arguments or from its recipe arguments alone"
     "NonConstructibleComponent"
+)
+easylocal_add_compile_failure_test(
+    simulated-annealing-maximizing-compare
+    simulated_annealing_maximizing_compare.cpp
+    "Simulated Annealing decides with the sign of cost::delta"
 )
 easylocal_add_compile_failure_test(
     simulated-annealing-non-difference-cost

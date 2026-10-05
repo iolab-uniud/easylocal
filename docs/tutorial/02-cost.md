@@ -289,9 +289,12 @@ of length 26.
 
 Algorithms never compare costs with operators: they ask whether a cost is
 `better`, `equivalent` or `better_or_equivalent` than another. These default to
-`<`, `==` and `<=` of the cost type; the function of a `cost::apply` at the
-root of the expression may redefine them, for example to compare
-floating-point costs with a tolerance.
+`<`, `==` and `<=` of the cost type. The function of a `cost::apply` at the
+root of the expression may redefine all three at once with one member,
+`compare(a, b)`, which returns a `std::partial_ordering`: `less` means that `a`
+is better. A runner that reads `cost::delta`, such as Simulated Annealing,
+still takes a negative delta as an improvement, so a cost to maximize is
+better written as its negation.
 
 ## See also
 

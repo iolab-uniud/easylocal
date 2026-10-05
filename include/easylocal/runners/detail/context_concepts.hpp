@@ -4,6 +4,7 @@
 // evaluation and cost relations, plus the variants needed by each algorithm
 // (enumerable moves, random moves, strict improvement).
 
+#include <easylocal/cost/semantics.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 
 #include <concepts>
@@ -108,6 +109,19 @@ concept non_worsening_context = strict_improvement_context<Context>
                context.better_or_equivalent(candidate, reference)
            } -> std::convertible_to<bool>;
        };
+
+// Whether the cost semantics of Context agree with the sign of cost::delta,
+// as far as the compiler can tell: false only for a root compare that
+// provably finds a larger arithmetic cost better.
+template<class Context>
+consteval bool delta_agrees_with_better()
+{
+    if constexpr (requires { typename Context::solution_manager_type; })
+        return !easylocal::cost::detail::compare_contradicts_delta<
+            typename Context::solution_manager_type>();
+    else
+        return true;
+}
 
 template<class Context, class RNG>
 concept random_move_context =

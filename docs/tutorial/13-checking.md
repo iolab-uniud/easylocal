@@ -28,6 +28,7 @@ solution (or the one passed as third argument) and verifies:
 | repeat evaluation | evaluating the same solution twice gives non-equivalent values |
 | neighborhood move validity, move application | an enumerated move that is not valid, or that breaks the solution |
 | incremental evaluation | a delta disagreeing with the full re-evaluation |
+| delta sign | with a `compare` at the root of the cost expression, a `cost::delta` whose sign disagrees with it (chapter 2) |
 | random proposal, random proposal application | a sampled move that is not valid, or that breaks the solution |
 | runner configuration, runner construction | invalid registered parameters, or a runner that cannot be built |
 | app configuration | invalid parameters of the app, or pipeline stages without distinct names |

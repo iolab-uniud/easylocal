@@ -59,8 +59,8 @@ solution_manager<SM>()
 - The components of the `hard` branch of a `cost::hard_soft` at the root come
   first: a pipeline stage `until_feasible()` (the first stage of
   `two_stage()`) evaluates only them.
-- At the root, the function of a `cost::apply` may define `better`,
-  `equivalent` and `better_or_equivalent` (see Cost semantics).
+- At the root, the function of a `cost::apply` may define the order of its
+  costs, `compare(a, b)` (see Cost semantics).
 - Configuration: the expression is exposed under `cost`. A `sum` has its
   `weights` (one per term, finite: a negative weight is accepted, NaN and
   infinity are not), a `hard_soft` names its children `hard` and
@@ -187,9 +187,44 @@ through its Input, which the Session and the TextUI use instead.
 ## Cost semantics
 
 `cost::better(sm, a, b)`, `cost::equivalent(sm, a, b)` and
-`cost::better_or_equivalent(sm, a, b)` ask the function of a root
-`cost::apply` first and fall back to `<`, `==` and `<=`. Algorithms reach them through `run.better(...)`; the
-three relations are deliberately independent queries.
+`cost::better_or_equivalent(sm, a, b)` are the relations algorithms compare
+costs with, through `run.better(...)`. By default they are `<`, `==` and `<=`
+of the cost type, independent queries, so a cost type may answer `<=` in one
+pass.
+
+The root of the expression may define them all with one hook: the function of
+a root `cost::apply` defines `compare(a, b)`, returning a
+`std::partial_ordering`. Then `better(a, b)` is `compare(a, b) < 0`,
+`equivalent(a, b)` is `compare(a, b) == 0` and `better_or_equivalent(a, b)` is
+`compare(a, b) <= 0`; an `unordered` result is none of them, as for two points
+of a Pareto front. A function that maximizes:
+
+    struct Profit
+    {
+        int operator()(int value) const { return value; }
+        std::partial_ordering compare(int lhs, int rhs) const { return rhs <=> lhs; }
+    };
+
+    solution_manager<SM>() | cost::apply(Profit{}, component<Gain>())
+
+The rules, checked when the recipe is built:
+
+- `compare` is the only hook: a function that defines `better`, `equivalent`
+  or `better_or_equivalent` does not compile, since one relation of its own
+  next to the defaults of the others would order the costs two ways.
+- Only the root defines the semantics: a `cost::apply` with a `compare` below
+  another node does not compile.
+- A root `cost::apply` hides the structure below it: with a `cost::hard_soft`
+  under it, a pipeline stage `until_feasible()` evaluates every component, and
+  its hard stage compares the hard costs with their own operators.
+- The algorithms that read `cost::delta` (Simulated Annealing, Great Deluge,
+  the aspiration levels of Tabu Search) assume that a negative delta is an
+  improvement: the sign of `cost::delta(a, b)` must agree with `better(a, b)`.
+  A `compare` that finds a larger cost better breaks them; maximize with
+  `cost::apply` returning the negated value instead. Simulated Annealing and
+  Great Deluge reject such a `compare` when the compiler can evaluate it (a
+  `constexpr` member of a default-constructible function); `check(app)`
+  verifies the sign on the moves it tries.
 
 ## Delta cost components
 
@@ -221,8 +256,11 @@ three relations are deliberately independent queries.
   `cost::apply`, so domain types never carry arithmetic operators just to be
   summed.
 - **Semantics belong to the cost layer.** The root of the expression may
-  redefine ordering and equivalence (tolerances, lazy comparisons) without
-  touching the cost type.
+  redefine ordering and equivalence (tolerances, a maximized objective)
+  without touching the cost type.
+- **One hook for the order.** `compare` defines the three relations together,
+  so they cannot disagree, and a partial order (`unordered`) fits as Pareto
+  dominance does.
 - **Deltas never see weights or structure.** They are per component; the move
   cost is always recomputed by the expression, so a delta stays valid whatever
   the expression is.
