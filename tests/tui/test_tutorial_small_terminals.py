@@ -16,8 +16,8 @@ def test_the_input_output_page_shows_its_controls(terminal, columns, lines):
     tui.press("I", F3)
     tui.expect("Setup complete")
     assert_framed(tui)
-    shown_while_going_down(tui, ("> five.tsp", "L Load selected", "I Initial  R Random",
-                                 "Shift-L Load  W Save", "C Check"))
+    shown_while_going_down(tui, ("> five.tsp", "L Load input", "I Initial  R Random",
+                                 "Shift-L Load solution  W Save", "C Check"))
 
 
 @pytest.mark.parametrize("columns, lines", [small(80, 40), small(80, 24)])

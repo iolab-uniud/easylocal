@@ -587,6 +587,12 @@ reviewed by hand before tagging.
   twice (the run's session is configured before it gets the Input), and the
   target and the cost of a run are encoded once: status polls no longer wait
   for the codec.
+- TextUI: each page's actions are defined once, and its buttons, its
+  shortcut line, the help and the keys come from them: the labels agree
+  (`I First improving` was "I Improve" in the shortcut line, `U Distribution`
+  "U Dist", `L Load input` "L Load selected") and the help lists only the
+  actions the problem offers. Esc no longer stops a run from the progress
+  window, where it closes every other window: `X` stops it.
 - TextUI: the tester computes what it shows of the session (validity, cost,
   the selected move's costs and delta check) once after each change, not at
   every frame: on the Move page each redraw ran about five full evaluations

@@ -19,7 +19,9 @@
 #include <easylocal/utils/detail/number_text.hpp>
 
 #include <algorithm>
+#include <array>
 #include <atomic>
+#include <cassert>
 #include <chrono>
 #include <cmath>
 #include <concepts>
@@ -737,6 +739,22 @@ struct parameter_field
     return text;
 }
 
+// An action of a tester's page: its key as shown ("B", "Shift-L"), its name,
+// the events that run it and what it does.
+struct page_action
+{
+    std::string key;
+    std::string name;
+    std::vector<ftxui::Event> events;
+    std::function<void()> run;
+
+    // Its button's label and its entry in the shortcut line: "B Best".
+    [[nodiscard]] std::string label() const
+    {
+        return key + " " + name;
+    }
+};
+
 // What a tester remembers from one opening of the same session to the next:
 // its seed and the parameters it started with, which mark the changes.
 struct frontend_memory
@@ -821,6 +839,9 @@ public:
     {
         using namespace ftxui;
 
+        for (const auto page :
+            {tester_page::solution, tester_page::move, tester_page::run})
+            actions_[static_cast<std::size_t>(page_index(page))] = page_actions(page);
         auto app = ftxui::App::Fullscreen();
         auto input_viewer = viewer_component(
             input_viewer_,
@@ -916,16 +937,14 @@ private:
                 &known_input_selected_,
                 instance_menu_option);
             solution_controls->Add(instance_menu);
-            solution_controls->Add(Container::Horizontal({
-                Button(
-                    "L Load selected",
-                    [this] { load_input(); },
-                    ButtonOption::Ascii()),
-                Button(
-                    "Browse...",
-                    [this] { open_browser(file_target::input); },
-                    ButtonOption::Ascii()),
-            }));
+            solution_controls->Add(
+                Container::Horizontal({
+                    action_button(tester_page::solution, "L"),
+                    Button(
+                        "Browse...",
+                        [this] { open_browser(file_target::input); },
+                        ButtonOption::Ascii()),
+                }));
         }
 
         if constexpr (tester_type::supports_initial_solution ||
@@ -934,19 +953,9 @@ private:
             solution_controls->Add(section_label("Create solution"));
             std::vector<Component> source_actions;
             if constexpr (tester_type::supports_initial_solution)
-            {
-                source_actions.push_back(Button(
-                    "I Initial",
-                    [this] { use_initial_solution(); },
-                    ButtonOption::Ascii()));
-            }
+                source_actions.push_back(action_button(tester_page::solution, "I"));
             if constexpr (tester_type::supports_random_solution)
-            {
-                source_actions.push_back(Button(
-                    "R Random",
-                    [this] { use_random_solution(); },
-                    ButtonOption::Ascii()));
-            }
+                source_actions.push_back(action_button(tester_page::solution, "R"));
             solution_controls->Add(Container::Horizontal(std::move(source_actions)));
         }
 
@@ -972,27 +981,14 @@ private:
                 [this] { open_browser(file_target::solution); },
                 ButtonOption::Ascii()));
             if constexpr (tester_type::supports_solution_loading)
-            {
-                file_actions.push_back(Button(
-                    "Shift-L Load",
-                    [this] { load_solution(); },
-                    ButtonOption::Ascii()));
-            }
+                file_actions.push_back(action_button(tester_page::solution, "Shift-L"));
             if constexpr (tester_type::supports_solution_saving)
-            {
-                file_actions.push_back(Button(
-                    "W Save",
-                    [this] { save_solution(); },
-                    ButtonOption::Ascii()));
-            }
+                file_actions.push_back(action_button(tester_page::solution, "W"));
             solution_controls->Add(Container::Horizontal(std::move(file_actions)));
         }
 
         solution_controls->Add(section_label("Diagnostics"));
-        solution_controls->Add(Button(
-            "C Check",
-            [this] { check(); },
-            ButtonOption::Ascii()));
+        solution_controls->Add(action_button(tester_page::solution, "C"));
 
         return Renderer(solution_controls, [this, solution_controls] {
             return render_solution_page(solution_controls);
@@ -1006,75 +1002,16 @@ private:
         using namespace ftxui;
         auto move_controls = Container::Vertical({});
         move_controls->Add(section_label("Select move"));
-        if constexpr (tester_type::supports_improvement_selection)
-        {
-            move_controls->Add(Button(
-                "B Best",
-                [this] { best_move(); },
-                ButtonOption::Ascii()));
-            move_controls->Add(Button(
-                "I First improving",
-                [this] { first_improving_move(); },
-                ButtonOption::Ascii()));
-        }
-        if constexpr (tester_type::supports_deterministic_moves)
-        {
-            move_controls->Add(Button(
-                "F First",
-                [this] { first_move(); },
-                ButtonOption::Ascii()));
-            move_controls->Add(Button(
-                "N Next",
-                [this] { next_move(); },
-                ButtonOption::Ascii()));
-        }
-        if constexpr (tester_type::supports_random_moves)
-        {
-            move_controls->Add(Button(
-                "R Random",
-                [this] { random_move(); },
-                ButtonOption::Ascii()));
-        }
+        for (const auto* const key : {"B", "I", "F", "N", "R"})
+            if (has_action(tester_page::move, key))
+                move_controls->Add(action_button(tester_page::move, key));
         move_controls->Add(section_label("Commit"));
-        move_controls->Add(Button(
-            "A Apply",
-            [this] { apply_move(); },
-            ButtonOption::Ascii()));
+        move_controls->Add(action_button(tester_page::move, "A"));
 
         auto move_diagnostics = Container::Horizontal({});
-        if constexpr (tester_type::supports_deterministic_moves)
-        {
-            move_diagnostics->Add(
-                Button("P List", [this] { preview_neighbors(); }, ButtonOption::Ascii()));
-        }
-        if constexpr (tester_type::supports_improvement_selection)
-        {
-            move_diagnostics->Add(Button(
-                "T Stats",
-                [this] { neighborhood_statistics(); },
-                ButtonOption::Ascii()));
-        }
-        if constexpr (tester_type::supports_cost_consistency_check)
-        {
-            move_diagnostics->Add(Button(
-                "C Costs",
-                [this] { check_neighborhood_costs(); },
-                ButtonOption::Ascii()));
-        }
-        if constexpr (tester_type::supports_move_independence_check)
-        {
-            move_diagnostics->Add(Button(
-                "D Indep",
-                [this] { check_move_independence(); },
-                ButtonOption::Ascii()));
-        }
-        if constexpr (tester_type::supports_random_distribution_check)
-        {
-            move_diagnostics->Add(Button(
-                "U Distribution",
-                [this] { check_random_distribution(); },
-                ButtonOption::Ascii()));
-        }
+        for (const auto* const key : {"P", "T", "C", "D", "U"})
+            if (has_action(tester_page::move, key))
+                move_diagnostics->Add(action_button(tester_page::move, key));
 
         auto move_page_controls = Container::Vertical({move_controls, move_diagnostics});
         return Renderer(move_page_controls, [this, move_controls, move_diagnostics] {
@@ -1095,10 +1032,7 @@ private:
             menu_option.on_enter = [this] { run_runner(); };
             run_controls->Add(Menu(&runner_names_, &runner_selected_, menu_option));
             run_controls->Add(section_label("Execute"));
-            run_controls->Add(Button(
-                "G Run selected",
-                [this] { run_runner(); },
-                ButtonOption::Ascii()));
+            run_controls->Add(action_button(tester_page::run, "G"));
         }
         else
         {
@@ -1109,10 +1043,7 @@ private:
         if constexpr (supports_parameters)
         {
             run_controls->Add(section_label("Problem"));
-            run_controls->Add(Button(
-                "P Problem parameters",
-                [this] { open_problem_parameters(); },
-                ButtonOption::Ascii()));
+            run_controls->Add(action_button(tester_page::run, "P"));
         }
         // The seed restarts the RNG used for random solutions, random moves
         // and stochastic runners.
@@ -1324,7 +1255,7 @@ private:
                 return render_progress_modal(progress_stop);
             });
         progress_renderer = CatchEvent(progress_renderer, [this](Event event) {
-            if (event == Event::x || event == Event::X || event == Event::Escape)
+            if (event == Event::x || event == Event::X)
             {
                 stop_runner();
                 return true;
@@ -1501,227 +1432,143 @@ private:
         }
     }
 
-    [[nodiscard]] std::string current_page_shortcuts() const
+    // The actions of a page with a key, in the order of its buttons: the
+    // buttons, the page's shortcut line, the help and the keys all come from
+    // them, so they show the same labels and offer the same actions.
+    [[nodiscard]] std::vector<page_action> page_actions(const tester_page page)
     {
-        std::string result;
-        const auto append = [&result](std::string_view item) {
-            if (!result.empty())
-            {
-                result += "  ";
-            }
-            result += item;
-        };
-
-        switch (current_page())
+        using ftxui::Event;
+        std::vector<page_action> actions;
+        const auto add =
+            [&actions](
+                std::string key,
+                std::string name,
+                std::vector<Event> events,
+                std::function<void()> run) {
+                actions.push_back(
+                    page_action{
+                        .key = std::move(key),
+                        .name = std::move(name),
+                        .events = std::move(events),
+                        .run = std::move(run),
+                    });
+            };
+        switch (page)
         {
         case tester_page::solution:
             if constexpr (tester_type::supports_input_loading)
-                append("L Load input");
+                add("L", "Load input", {Event::l}, [this] { load_input(); });
             if constexpr (tester_type::supports_initial_solution)
-                append("I Initial");
+                add("I", "Initial", {Event::i, Event::I}, [this] {
+                    use_initial_solution();
+                });
             if constexpr (tester_type::supports_random_solution)
-                append("R Random");
+                add("R", "Random", {Event::r, Event::R}, [this] {
+                    use_random_solution();
+                });
             if constexpr (tester_type::supports_solution_loading)
-                append("Shift-L Load solution");
+                add("Shift-L", "Load solution", {Event::L}, [this] { load_solution(); });
             if constexpr (tester_type::supports_solution_saving)
-                append("W Save");
-            append("C Check");
+                add("W", "Save", {Event::w, Event::W}, [this] { save_solution(); });
+            add("C", "Check", {Event::c, Event::C}, [this] { check(); });
             break;
         case tester_page::move:
             if constexpr (tester_type::supports_improvement_selection)
             {
-                append("B Best");
-                append("I Improve");
+                add("B", "Best", {Event::b, Event::B}, [this] { best_move(); });
+                add("I", "First improving", {Event::i, Event::I}, [this] {
+                    first_improving_move();
+                });
             }
             if constexpr (tester_type::supports_deterministic_moves)
             {
-                append("F First");
-                append("N Next");
+                add("F", "First", {Event::f, Event::F}, [this] { first_move(); });
+                add("N", "Next", {Event::n, Event::N}, [this] { next_move(); });
             }
             if constexpr (tester_type::supports_random_moves)
-                append("R Random");
-            append("A Apply");
+                add("R", "Random", {Event::r, Event::R}, [this] { random_move(); });
+            add("A", "Apply", {Event::a, Event::A}, [this] { apply_move(); });
             if constexpr (tester_type::supports_deterministic_moves)
-                append("P List");
+                add("P", "List", {Event::p, Event::P}, [this] { preview_neighbors(); });
             if constexpr (tester_type::supports_improvement_selection)
-                append("T Stats");
+                add("T", "Stats", {Event::t, Event::T}, [this] {
+                    neighborhood_statistics();
+                });
             if constexpr (tester_type::supports_cost_consistency_check)
-                append("C Costs");
+                add("C", "Costs", {Event::c, Event::C}, [this] {
+                    check_neighborhood_costs();
+                });
             if constexpr (tester_type::supports_move_independence_check)
-                append("D Indep");
+                add("D", "Indep", {Event::d, Event::D}, [this] {
+                    check_move_independence();
+                });
             if constexpr (tester_type::supports_random_distribution_check)
-                append("U Dist");
+                add("U", "Distribution", {Event::u, Event::U}, [this] {
+                    check_random_distribution();
+                });
             break;
         case tester_page::run:
-            append("G Run selected");
-            append("Enter Run");
+            if (!runner_names_.empty())
+                add("G", "Run selected", {Event::g, Event::G}, [this] { run_runner(); });
             if constexpr (supports_parameters)
-                append("P Problem parameters");
+                add("P", "Problem parameters", {Event::p, Event::P}, [this] {
+                    open_problem_parameters();
+                });
             break;
+        }
+        return actions;
+    }
+
+    [[nodiscard]] const std::vector<page_action>& actions_of(const tester_page page) const
+    {
+        return actions_[static_cast<std::size_t>(page_index(page))];
+    }
+
+    // The button of the page's action with that key.
+    [[nodiscard]] ftxui::Component action_button(
+        const tester_page page,
+        const std::string_view key) const
+    {
+        const auto& actions = actions_of(page);
+        const auto found = std::ranges::find(actions, key, &page_action::key);
+        assert(found != actions.end());
+        return ftxui::Button(found->label(), found->run, ftxui::ButtonOption::Ascii());
+    }
+
+    [[nodiscard]] bool has_action(
+        const tester_page page,
+        const std::string_view key) const
+    {
+        return std::ranges::find(actions_of(page), key, &page_action::key)
+            != actions_of(page).end();
+    }
+
+    // The keys of a page's actions, as its shortcut line and the help show
+    // them: "B Best  I First improving  ...".
+    [[nodiscard]] std::string shortcut_line(const tester_page page) const
+    {
+        std::string result;
+        for (const auto& action : actions_of(page))
+        {
+            if (!result.empty())
+                result += "  ";
+            result += action.label();
         }
         return result;
     }
 
+    [[nodiscard]] std::string current_page_shortcuts() const
+    {
+        return shortcut_line(current_page());
+    }
+
     [[nodiscard]] bool handle_page_shortcut(const ftxui::Event& event)
     {
-        switch (current_page())
+        for (const auto& action : actions_of(current_page()))
         {
-        case tester_page::solution:
-            return handle_solution_shortcut(event);
-        case tester_page::move:
-            return handle_move_shortcut(event);
-        case tester_page::run:
-            return handle_run_shortcut(event);
-        }
-        return false;
-    }
-
-    [[nodiscard]] bool handle_solution_shortcut(const ftxui::Event& event)
-    {
-        if constexpr (tester_type::supports_input_loading)
-        {
-            if (event == ftxui::Event::l)
+            if (std::ranges::find(action.events, event) != action.events.end())
             {
-                load_input();
-                return true;
-            }
-        }
-        if constexpr (tester_type::supports_initial_solution)
-        {
-            if (event == ftxui::Event::i || event == ftxui::Event::I)
-            {
-                use_initial_solution();
-                return true;
-            }
-        }
-        if constexpr (tester_type::supports_random_solution)
-        {
-            if (event == ftxui::Event::r || event == ftxui::Event::R)
-            {
-                use_random_solution();
-                return true;
-            }
-        }
-        if constexpr (tester_type::supports_solution_loading)
-        {
-            if (event == ftxui::Event::L)
-            {
-                load_solution();
-                return true;
-            }
-        }
-        if constexpr (tester_type::supports_solution_saving)
-        {
-            if (event == ftxui::Event::w || event == ftxui::Event::W)
-            {
-                save_solution();
-                return true;
-            }
-        }
-        if (event == ftxui::Event::c || event == ftxui::Event::C)
-        {
-            check();
-            return true;
-        }
-        return false;
-    }
-
-    [[nodiscard]] bool handle_move_shortcut(const ftxui::Event& event)
-    {
-        if constexpr (tester_type::supports_improvement_selection)
-        {
-            if (event == ftxui::Event::b || event == ftxui::Event::B)
-            {
-                best_move();
-                return true;
-            }
-            if (event == ftxui::Event::i || event == ftxui::Event::I)
-            {
-                first_improving_move();
-                return true;
-            }
-        }
-        if constexpr (tester_type::supports_deterministic_moves)
-        {
-            if (event == ftxui::Event::f || event == ftxui::Event::F)
-            {
-                first_move();
-                return true;
-            }
-            if (event == ftxui::Event::n || event == ftxui::Event::N)
-            {
-                next_move();
-                return true;
-            }
-        }
-        if constexpr (tester_type::supports_random_moves)
-        {
-            if (event == ftxui::Event::r || event == ftxui::Event::R)
-            {
-                random_move();
-                return true;
-            }
-        }
-        if constexpr (tester_type::supports_deterministic_moves)
-        {
-            if (event == ftxui::Event::p || event == ftxui::Event::P)
-            {
-                preview_neighbors();
-                return true;
-            }
-        }
-        if constexpr (tester_type::supports_improvement_selection)
-        {
-            if (event == ftxui::Event::t || event == ftxui::Event::T)
-            {
-                neighborhood_statistics();
-                return true;
-            }
-        }
-        if constexpr (tester_type::supports_cost_consistency_check)
-        {
-            if (event == ftxui::Event::c || event == ftxui::Event::C)
-            {
-                check_neighborhood_costs();
-                return true;
-            }
-        }
-        if constexpr (tester_type::supports_move_independence_check)
-        {
-            if (event == ftxui::Event::d || event == ftxui::Event::D)
-            {
-                check_move_independence();
-                return true;
-            }
-        }
-        if constexpr (tester_type::supports_random_distribution_check)
-        {
-            if (event == ftxui::Event::u || event == ftxui::Event::U)
-            {
-                check_random_distribution();
-                return true;
-            }
-        }
-        if (event == ftxui::Event::a || event == ftxui::Event::A)
-        {
-            apply_move();
-            return true;
-        }
-        return false;
-    }
-
-    [[nodiscard]] bool handle_run_shortcut(const ftxui::Event& event)
-    {
-        if (event == ftxui::Event::g || event == ftxui::Event::G)
-        {
-            run_runner();
-            return true;
-        }
-        if constexpr (supports_parameters)
-        {
-            if (event == ftxui::Event::p || event == ftxui::Event::P)
-            {
-                open_problem_parameters();
+                action.run();
                 return true;
             }
         }
@@ -3431,14 +3278,14 @@ private:
             text("S   show Solution"),
             separator(),
             text("Input / Output page") | bold,
-            text(
-                "L load input   I initial   R random   Shift-L load solution   W save   C check"),
+            paragraph(shortcut_line(tester_page::solution)),
             text("Move page") | bold,
-            text("B best   I first improving   F first   N next   R random   A apply"),
-            text("P list   T stats   C costs   D independence   U distribution"),
+            paragraph(shortcut_line(tester_page::move)),
             text("Run page") | bold,
-            text("G run selected   Enter run selected   X stop the run in progress"),
-            text("Running asks for the runner's parameters first; P problem parameters"),
+            paragraph(shortcut_line(tester_page::run)),
+            text(
+                "Enter on a runner runs it too, after its parameters; X in the "
+                "progress window stops the run"),
             separator(),
             text("Q  " + options_.exit_label),
             text("? / H  help   Esc  close"),
@@ -3536,6 +3383,8 @@ private:
     bool solution_visible_{};
     detail::text_viewer solution_viewer_;
     mutable std::optional<view_state> view_;
+    // The actions of the three pages, by page_index.
+    std::array<std::vector<page_action>, 3> actions_;
 };
 
 } // namespace detail

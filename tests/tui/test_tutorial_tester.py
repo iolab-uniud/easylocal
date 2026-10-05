@@ -83,3 +83,14 @@ def test_help_toggles_and_q_quits(tui):
 
     tui.press("q")
     assert tui.wait_exit() == 0
+
+
+def test_buttons_shortcuts_and_help_name_an_action_alike(tui):
+    # The Move page's buttons, its shortcut line and the help: one label.
+    tui.press("I")
+    tui.expect("B Best  I First improving  F First")
+    tui.expect("U Distribution")
+    tui.press("?")
+    tui.expect("Keyboard help")
+    tui.expect("U Distribution")
+    tui.expect("X in the progress window stops the run")

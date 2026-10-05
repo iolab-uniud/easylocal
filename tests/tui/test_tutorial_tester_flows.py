@@ -148,7 +148,7 @@ def browsing(tui: Tui, directory: str) -> None:
 
 
 def test_an_input_is_browsed_and_loaded(tui):
-    tui.focus("L Load selected")
+    tui.focus("L Load input")
     tui.focus("Browse...", RIGHT)
     tui.press(ENTER)
     browsing(tui, "examples/tutorial")  # the instance's directory
@@ -179,7 +179,7 @@ def test_an_input_is_browsed_and_loaded(tui):
 def test_the_loaded_input_is_named_until_another_is_loaded(tui):
     # Another file selected, not loaded: the header and the Input viewer still
     # name five.tsp, the Input loaded.
-    tui.focus("L Load selected")
+    tui.focus("L Load input")
     tui.focus("Browse...", RIGHT)
     tui.press(ENTER)
     browsing(tui, "examples/tutorial")
