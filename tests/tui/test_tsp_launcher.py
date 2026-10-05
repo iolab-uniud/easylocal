@@ -4,7 +4,7 @@ current solution."""
 
 import re
 
-from tui_driver import DOWN, ENTER, ESCAPE, F3, F4, UP, Tui
+from tui_driver import DELETE, DOWN, ENTER, ESCAPE, F3, F4, F5, UP, Tui
 
 
 def launcher_shown(screen: str) -> bool:
@@ -84,6 +84,37 @@ def test_the_root_owns_the_input_and_the_solution(launcher):
         tui.expect("Input and solution shared with the launcher's applications")
         tui.expect("L Load input")
         tui.expect("Shift-L Load")
+        tui.press("q")
+
+        tui.wait_until(launcher_shown, what="the list of applications")
+        tui.press("q")
+        assert tui.wait_exit() == 0
+
+
+def test_an_app_keeps_its_session(launcher):
+    with Tui(launcher) as tui:
+        # A seed set on the Run page of tsp-swap...
+        open_app(tui, "tsp-swap", DOWN)
+        tui.press("I")
+        tui.expect("Initial solution selected")
+        tui.press(F5)
+        for _ in range(10):
+            if "[P Problem parameters]" in tui.text():
+                break
+            tui.press(DOWN)
+        tui.press(DOWN)
+        tui.keys(*[DELETE] * 24)
+        tui.type("77")
+        tui.press(ENTER)
+        tui.expect("Seed set to 77")
+        tui.press(F3, "q")  # off the seed field first
+
+        # ...stays when it is opened again, after another app.
+        open_app(tui, "tsp-two-opt", UP)
+        tui.expect("[seed=0]")
+        tui.press("q")
+        open_app(tui, "tsp-swap", DOWN)
+        tui.expect("[seed=77]")
         tui.press("q")
 
         tui.wait_until(launcher_shown, what="the list of applications")

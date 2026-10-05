@@ -753,6 +753,14 @@ struct parameter_field
     return text;
 }
 
+// What a tester remembers from one opening of the same session to the next:
+// its seed and the parameters it started with, which mark the changes.
+struct frontend_memory
+{
+    std::uint64_t seed{};
+    std::map<std::string, std::string> original_parameters;
+};
+
 template<class App>
 class tester_frontend
 {
@@ -769,7 +777,8 @@ public:
     tester_frontend(
         tester_type& tester,
         tui::options options,
-        const frontend_role role = frontend_role::standalone)
+        const frontend_role role = frontend_role::standalone,
+        const frontend_memory* memory = nullptr)
         : tester_{tester},
           options_{std::move(options)},
           role_{role},
@@ -799,8 +808,22 @@ public:
         {
             runner_names_.emplace_back(name);
         }
-        remember_original_parameters();
+        if (memory != nullptr)
+        {
+            original_parameters_ = memory->original_parameters;
+            refresh_changed_parameters();
+        }
+        else
+            remember_original_parameters();
         page_selected_ = page_index(page_after_solution_change());
+    }
+
+    // What the next opening of the same session starts from.
+    [[nodiscard]] frontend_memory memory() const
+    {
+        return frontend_memory{
+            .seed = seed_,
+            .original_parameters = original_parameters_};
     }
 
     // The file of the Input loaded, absolute; empty when the Input was not

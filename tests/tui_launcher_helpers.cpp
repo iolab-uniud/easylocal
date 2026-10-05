@@ -1,7 +1,6 @@
 #include <easylocal/adapters/tui/launcher.hpp>
 
 #include <cassert>
-#include <cstddef>
 #include <string_view>
 #include <tuple>
 
@@ -31,22 +30,6 @@ int main()
     assert(names.size() == 2);
     assert(names[0] == "first");
     assert(names[1] == "second");
-
-    std::string_view visited;
-    const bool found = easylocal::tui::detail::visit_application_at(
-        applications,
-        std::size_t{1},
-        [&](const auto& application) {
-            visited = application.name();
-        });
-    assert(found);
-    assert(visited == "second");
-
-    const bool missing = easylocal::tui::detail::visit_application_at(
-        applications,
-        std::size_t{2},
-        [](const auto&) {});
-    assert(!missing);
 
     return 0;
 }

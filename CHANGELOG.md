@@ -235,6 +235,8 @@ reviewed by hand before tagging.
 - TextUI: the header and the Input viewer name the Input file loaded, not the
   file selected on the Input/Output page, and the launcher's testers name the
   file of the shared Input, which one of them may have loaded.
+- TextUI: the launcher keeps one session per app, so leaving an app no
+  longer discards its runner and problem parameters and its seed.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

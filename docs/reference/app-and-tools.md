@@ -91,7 +91,9 @@ problem. The launcher owns the Input, read from `options.tester.input_path`
 when it is set, and the current solution: its first entry, *Input and
 solution*, is a tester with the Input/Output page only, which loads and saves
 them; each app opens on them in the complete tester, and what a tester leaves,
-loaded or computed, becomes the shared state. The apps must have the same SolutionManager
+loaded or computed, becomes the shared state. Each app keeps its own session
+while the launcher runs: its runner and problem parameters and its seed stay
+when it is left and opened again. The apps must have the same SolutionManager
 recipe, cost included, which a `static_assert` checks; they differ in the
 neighborhood and the runners.
 

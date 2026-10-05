@@ -8,7 +8,9 @@
 /// its first entry, "Input and solution", loads and saves them, and each app
 /// opens on them, creates solutions, moves and runs, but loads no files; what
 /// it leaves becomes the shared state, so a solution built with one
-/// neighborhood can be explored with another.
+/// neighborhood can be explored with another. Each app keeps its own session:
+/// its runner and problem parameters and its seed stay from one opening to
+/// the next.
 
 #include <easylocal/adapters/tui/tester.hpp>
 #include <easylocal/app/session.hpp>
@@ -57,29 +59,14 @@ template<class... Apps>
     return names;
 }
 
-template<std::size_t Index = 0, class Tuple, class Function>
-bool visit_application_at(
-    Tuple& applications,
-    const std::size_t selected,
-    Function&& function)
+// The session of an app in the launcher, created when the app is first
+// opened, and what its tester remembers from one opening to the next.
+template<class App>
+struct launched_app
 {
-    if constexpr (Index == std::tuple_size_v<std::remove_reference_t<Tuple>>)
-    {
-        return false;
-    }
-    else
-    {
-        if (selected == Index)
-        {
-            std::forward<Function>(function)(std::get<Index>(applications));
-            return true;
-        }
-        return visit_application_at<Index + 1>(
-            applications,
-            selected,
-            std::forward<Function>(function));
-    }
-}
+    std::optional<easylocal::Session<App>> session;
+    std::optional<frontend_memory> memory;
+};
 
 template<class FirstApp, class... Apps>
 class launcher_frontend
@@ -130,32 +117,42 @@ public:
             {
                 open_tester(
                     std::get<0>(applications_),
+                    root_,
                     std::string{root_entry},
                     detail::frontend_role::launcher_root);
                 continue;
             }
-            const bool dispatched = visit_application_at(
-                applications_,
-                *selected - 1,
-                [this](auto& application) {
-                    this->open_tester(
-                        application,
-                        std::string{application.name()},
-                        detail::frontend_role::launcher_child);
-                });
-            (void)dispatched;
+            open_application(*selected - 1, std::index_sequence_for<FirstApp, Apps...>{});
         }
     }
 
 private:
     static constexpr std::string_view root_entry{"Input and solution"};
 
+    // The tester of the app at index selected, with its own session.
+    template<std::size_t... Index>
+    void open_application(const std::size_t selected, std::index_sequence<Index...>)
+    {
+        (
+            [&] {
+                if (selected == Index)
+                    open_tester(
+                        std::get<Index>(applications_),
+                        std::get<Index>(launched_),
+                        std::string{std::get<Index>(applications_).name()},
+                        detail::frontend_role::launcher_child);
+            }(),
+            ...);
+    }
+
     // A tester on application, from the shared Input and solution, as the
-    // root (Input/Output only) or as a child (no file loading); what the
-    // tester leaves becomes the shared state for the next one.
+    // root (Input/Output only) or as a child (no file loading), on the
+    // session the app kept from its last opening; what the tester leaves
+    // becomes the shared state for the next one.
     template<class Selected>
     void open_tester(
         const Selected& application,
+        launched_app<Selected>& launched,
         const std::string& name,
         const detail::frontend_role role)
     {
@@ -164,15 +161,28 @@ private:
         settings.exit_label = "back to applications";
         // The file of the shared Input, which a tester may have loaded.
         settings.input_path = input_ ? input_file_.string() : std::string{};
+        if (launched.memory)
+            settings.seed = launched.memory->seed;
 
-        easylocal::Session<Selected> session{application, settings.seed};
-        if (input_)
+        if (!launched.session)
+            launched.session.emplace(application, settings.seed);
+        auto& session = *launched.session;
+        // The shared state: a new Input (or no solution) is bound again, which
+        // drops the session's solution.
+        if (input_
+            && (session.input_handle() != input_
+                || (!solution_ && session.has_solution())))
             session.set_input(input_);
         if (input_ && solution_)
             session.set_solution(*solution_);
 
-        detail::tester_frontend<Selected> frontend{session, std::move(settings), role};
+        detail::tester_frontend<Selected> frontend{
+            session,
+            std::move(settings),
+            role,
+            launched.memory ? &*launched.memory : nullptr};
         frontend.run();
+        launched.memory = frontend.memory();
 
         input_ = session.has_input() ? session.input_handle() : nullptr;
         input_file_ = frontend.loaded_input_path();
@@ -256,6 +266,8 @@ private:
 
     launcher_options options_;
     std::tuple<FirstApp, Apps...> applications_;
+    std::tuple<launched_app<FirstApp>, launched_app<Apps>...> launched_;
+    launched_app<FirstApp> root_;
     std::vector<std::string> names_;
     int selected_{0};
     std::shared_ptr<const input_type> input_;
