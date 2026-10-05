@@ -846,10 +846,11 @@ public:
             moves_.add(step.move(), iteration_);
             ++since_change_;
 
-            auto* visit = find_visit(step);
+            const std::uint64_t hash = step.solution_hash();
+            auto* visit = find_visit(step, hash);
             if (visit == nullptr)
             {
-                add_visit(step);
+                add_visit(step, hash);
             }
             else
             {
@@ -862,7 +863,8 @@ public:
                     escape_ = 1
                         + static_cast<std::size_t>(
                             (1.0 + draw(rng)) * average_cycle_ / 2.0);
-                    history_.clear();
+                    visits_.clear();
+                    verified_visits_.clear();
                     moves_.clear();
                     chaos_ = 0;
                     tenure_ = 1.0;
@@ -908,52 +910,60 @@ public:
         }
 
     private:
-        // The visits of a solution: the last one and their number. With
-        // verify_equality, the solution itself, among those with its hash.
+        // The visits of a solution: the last one and their number.
         struct visit_record
         {
-            std::optional<Solution> solution;
             std::size_t last;
             std::size_t count;
         };
 
-        template<class Step>
-        visit_record* find_visit(const Step& step)
+        // With verify_equality, the solution itself, among those with its
+        // hash.
+        struct verified_visit
         {
-            const auto found = history_.find(step.solution_hash());
-            if (found == history_.end())
-                return nullptr;
+            Solution solution;
+            visit_record visit;
+        };
+
+        template<class Step>
+        visit_record* find_visit(const Step& step, const std::uint64_t hash)
+        {
             if (!parameters_.verify_equality)
-                return &found->second.front();
+            {
+                const auto found = visits_.find(hash);
+                return found == visits_.end() ? nullptr : &found->second;
+            }
             if constexpr (requires(const Solution& solution) {
                               step.same_solution(solution);
                           })
             {
-                for (auto& visit : found->second)
-                    if (step.same_solution(*visit.solution))
-                        return &visit;
+                auto [first, last] = verified_visits_.equal_range(hash);
+                for (; first != last; ++first)
+                    if (step.same_solution(first->second.solution))
+                        return &first->second.visit;
             }
             return nullptr;
         }
 
         template<class Step>
-        void add_visit(const Step& step)
+        void add_visit(const Step& step, const std::uint64_t hash)
         {
-            auto& visits = history_[step.solution_hash()];
-            visits.push_back(
-                visit_record{
-                    .solution = parameters_.verify_equality
-                        ? std::optional<Solution>{step.solution()}
-                        : std::nullopt,
-                    .last = iteration_,
-                    .count = 1});
+            const visit_record visit{.last = iteration_, .count = 1};
+            if (parameters_.verify_equality)
+                verified_visits_.emplace(hash, verified_visit{step.solution(), visit});
+            else
+                visits_.emplace(hash, visit);
         }
 
         ReactiveParameters parameters_;
         // Newest first.
         detail::aging_moves<Move> moves_;
-        // The visits by solution hash; more than one only with verify_equality.
-        std::unordered_map<std::uint64_t, std::vector<visit_record>> history_;
+        // The visits by solution hash, without verify_equality: one node per
+        // solution, which keeps no copy of it.
+        std::unordered_map<std::uint64_t, visit_record> visits_;
+        // The visits by solution hash with their solutions, with
+        // verify_equality.
+        std::unordered_multimap<std::uint64_t, verified_visit> verified_visits_;
         double tenure_{1.0};
         double average_cycle_;
         std::size_t since_change_{};
