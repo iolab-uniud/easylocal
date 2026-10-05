@@ -25,6 +25,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <deque>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -110,7 +111,7 @@ concept decodes_cost = requires(const Codec& codec, const crow::json::rvalue& pa
 };
 
 // The target of a run with an arithmetic cost: a JSON number, an integer for
-// integral costs.
+// integral costs, which the cost type represents.
 template<cost::arithmetic Cost>
 [[nodiscard]] Cost decode_arithmetic_cost(const crow::json::rvalue& payload)
 {
@@ -118,19 +119,28 @@ template<cost::arithmetic Cost>
         throw std::invalid_argument{"'target' must be a number"};
     if constexpr (std::integral<Cost>)
     {
+        const auto in_range = [](const auto value) {
+            if (!std::in_range<Cost>(value))
+                throw std::invalid_argument{"'target' is out of the range of the cost"};
+            return static_cast<Cost>(value);
+        };
         switch (payload.nt())
         {
         case crow::json::num_type::Signed_integer:
-            return static_cast<Cost>(payload.i());
+            return in_range(payload.i());
         case crow::json::num_type::Unsigned_integer:
-            return static_cast<Cost>(payload.u());
+            return in_range(payload.u());
         default:
             throw std::invalid_argument{"'target' must be an integer"};
         }
     }
     else
     {
-        return static_cast<Cost>(payload.d());
+        const double value = payload.d();
+        if (!std::isfinite(value)
+            || std::abs(value) > static_cast<double>(std::numeric_limits<Cost>::max()))
+            throw std::invalid_argument{"'target' is out of the range of the cost"};
+        return static_cast<Cost>(value);
     }
 }
 
@@ -301,6 +311,10 @@ inline void collect_parameters(
     for (const auto& entry : value)
     {
         const std::string key{entry.key()};
+        if (key.empty())
+            throw std::invalid_argument{
+                path.empty() ? std::string{"'parameters': a key is empty"}
+                             : "parameter '" + path + "': a key is empty"};
         collect_parameters(entry, path.empty() ? key : path + "." + key, overrides);
     }
 }

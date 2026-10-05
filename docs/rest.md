@@ -167,8 +167,8 @@ the target, a lower bound for example (`stop_at` in C++; every runner honours
 it). A JSON string is a cost in the syntax of the command line and the
 TextUI: a number, `"[hard, soft]"`, or the problem's own notation when it
 provides `read_cost` ([Costs as text](reference/cost.md#costs-as-text)). Otherwise, for
-an arithmetic cost the target is a JSON number, an integer for integral costs;
-for other costs the codec decodes it with `decode_cost`, and without one a
+an arithmetic cost the target is a JSON number, an integer for integral costs,
+within the range of the cost type (`422` otherwise); for other costs the codec decodes it with `decode_cost`, and without one a
 request with a target is rejected with `422`. Run resources repeat the target,
 encoded by `encode_cost`.
 
