@@ -253,6 +253,9 @@ inline run_options<trace::null_tracer> with(const run_control& control) noexcept
     return {.control = &control, .tracer = nullptr};
 }
 
+/// Deleted: the options would refer to a temporary run_control.
+run_options<trace::null_tracer> with(const run_control&&) = delete;
+
 /// Run options with a tracer: run(solution, with(tracer)).
 template<class Tracer>
     requires(!std::same_as<std::remove_cvref_t<Tracer>, run_control>)
@@ -269,6 +272,10 @@ run_options<Tracer> with(const run_control& control, Tracer& tracer) noexcept
 {
     return {.control = &control, .tracer = &tracer};
 }
+
+/// Deleted: the options would refer to a temporary run_control.
+template<class Tracer>
+run_options<Tracer> with(const run_control&&, Tracer&) = delete;
 
 /// Run options with only a target cost: run(solution, easylocal::stop_at(0)).
 template<class Cost>
@@ -379,6 +386,15 @@ public:
           deadline_{deadline}
     {
     }
+
+    /// Deleted: the run would refer to a temporary context.
+    search_run(
+        const Context&&,
+        const run_control&,
+        Tracer&,
+        std::size_t = no_evaluation_limit,
+        const cost_type* = nullptr,
+        std::optional<std::chrono::steady_clock::time_point> = std::nullopt) = delete;
 
     search_run(const search_run&) = delete;
     search_run& operator=(const search_run&) = delete;
@@ -791,6 +807,10 @@ public:
             deadline_,
         };
     }
+
+    /// Deleted: the new run would refer to a temporary context.
+    template<class OtherContext>
+    search_run<OtherContext, Tracer> with_context(const OtherContext&&) = delete;
 
 private:
     // Whether the deadline has passed. The clock is read at the first check,

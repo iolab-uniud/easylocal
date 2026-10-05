@@ -7,6 +7,7 @@
 #include <easylocal/solvers.hpp>
 #include <easylocal/trace/events.hpp>
 
+#include <concepts>
 #include <cstddef>
 #include <iostream>
 #include <optional>
@@ -14,6 +15,7 @@
 #include <stop_token>
 #include <string_view>
 #include <type_traits>
+#include <utility>
 
 namespace
 {
@@ -110,6 +112,60 @@ struct RunCounter
     }
 };
 
+// Whether with(control) and with(control, tracer) take a control of this kind:
+// not a temporary, which the options would outlive.
+template<class Control>
+concept options_with_control = requires(Control&& control) {
+    easylocal::with(std::forward<Control>(control));
+};
+
+template<class Control>
+concept options_with_control_and_tracer =
+    requires(Control&& control, easylocal::trace::null_tracer& tracer) {
+        easylocal::with(std::forward<Control>(control), tracer);
+    };
+
+static_assert(options_with_control<const easylocal::run_control&>);
+static_assert(!options_with_control<easylocal::run_control>);
+static_assert(options_with_control_and_tracer<const easylocal::run_control&>);
+static_assert(!options_with_control_and_tracer<easylocal::run_control>);
+
+// Whether a run makes a run over a context of this kind: not a temporary,
+// which the new run would outlive.
+template<class Run, class Context>
+concept run_with_context = requires(Run& run, Context&& context) {
+    run.with_context(std::forward<Context>(context));
+};
+
+struct NoParameters
+{
+};
+
+// First Improvement, checking the lifetimes its run accepts.
+class LifetimeProbe
+{
+public:
+    using parameters_type = NoParameters;
+
+    explicit LifetimeProbe(NoParameters) {}
+
+    template<class Run>
+    auto run(Run& run, Run::solution_type solution) const
+    {
+        using context_type = typename Run::context_type;
+        static_assert(run_with_context<Run, const context_type&>);
+        static_assert(!run_with_context<Run, context_type>);
+        static_assert(!std::constructible_from<
+            Run,
+            context_type,
+            const easylocal::run_control&,
+            typename Run::tracer_type&>);
+        return easylocal::runners::FirstImprovement{
+            easylocal::runners::FirstImprovementParameters{}}
+            .run(run, std::move(solution));
+    }
+};
+
 auto expect(bool condition, std::string_view message) -> bool
 {
     if (!condition)
@@ -186,6 +242,9 @@ int main()
     ok &= expect(sa_result.cost == 0 && sa_result.termination == termination_reason::target_reached,
                  "Simulated Annealing stops at the target");
     ok &= expect(sa_result.evaluations < 100, "... instead of spending its whole schedule");
+
+    auto probe = make_runner<LifetimeProbe>(NoParameters{}) | sm | nhe;
+    ok &= expect(probe.bind(ten).run(Value{3}).cost == 0, "a delegating runner runs");
 
     // Solvers.
     auto local_search = make_solver<solvers::LocalSearch>(

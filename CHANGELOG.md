@@ -82,6 +82,10 @@ reviewed by hand before tagging.
 - `timeout(d)` with a floating-point `std::chrono` duration that is NaN throws
   `std::invalid_argument`, as `timeout(seconds)` does, instead of converting
   NaN to the clock's integer ticks (undefined behaviour).
+- `with(control)` and `with(control, tracer)` with a temporary `run_control`,
+  `search_run::with_context` with a temporary context, and a `search_run` built
+  over a temporary context no longer compile: each kept a reference that
+  dangled once the expression ended.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 
