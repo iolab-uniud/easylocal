@@ -38,8 +38,12 @@ foreach(_header IN LISTS _core_headers)
     endif()
 endforeach()
 
+# An adapter may include its own detail headers (easylocal/adapters/<name>/detail/),
+# not those of the core.
 foreach(_header IN LISTS _adapter_headers)
     file(READ "${_header}" _contents)
+    string(REGEX REPLACE "#[ \t]*include[ \t]*[<\"]easylocal/adapters/[^\n]*" ""
+        _contents "${_contents}")
 
     if(_contents MATCHES "#[ \t]*include[ \t]*[<\"]easylocal/([a-z_]+/)*detail/")
         message(FATAL_ERROR

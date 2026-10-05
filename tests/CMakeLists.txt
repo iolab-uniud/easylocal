@@ -126,7 +126,7 @@ endif()
 
 if(TARGET EasyLocal::TUI)
     file(
-        GLOB EASYLOCAL_TUI_HEADERS
+        GLOB_RECURSE EASYLOCAL_TUI_HEADERS
         CONFIGURE_DEPENDS
         RELATIVE "${PROJECT_SOURCE_DIR}/include"
         "${PROJECT_SOURCE_DIR}/include/easylocal/adapters/tui/*.hpp"
