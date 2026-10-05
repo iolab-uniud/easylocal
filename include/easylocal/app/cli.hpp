@@ -118,25 +118,19 @@ struct parameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
-        if (!timeout_seconds())
-        {
-            return config::validation_result::failure(
-                "timeout must be a non-negative number of seconds");
-        }
-        return config::validation_result::success();
+        return run_parameters().validate();
     }
 
-    /// The time limit in seconds: empty without one, std::nullopt inside when
-    /// the text is not a non-negative number.
+    /// The limits of the run, target, timeout and max_evaluations, as the block
+    /// a program reads under a prefix of its own.
     [[nodiscard]]
-    std::optional<std::optional<double>> timeout_seconds() const
+    RunParameters run_parameters() const
     {
-        if (easylocal::detail::trim_space(timeout).empty())
-            return std::optional<double>{};
-        const auto seconds = easylocal::detail::parse_number<double>(timeout);
-        if (!seconds || !(*seconds >= 0.0) || !std::isfinite(*seconds))
-            return std::nullopt;
-        return std::optional<double>{*seconds};
+        return {
+            .target = target,
+            .timeout = timeout,
+            .max_evaluations = max_evaluations,
+        };
     }
 };
 
@@ -394,13 +388,13 @@ int run(App application, const int argc, char* argv[], options settings = {})
     {
         session.load_input(command_line.instance);
 
-        std::optional<typename session_type::cost_type> target;
+        // The run's limits; blank text is no target and no time limit.
+        run_options<trace::null_tracer, typename session_type::cost_type> limits{};
         try
         {
-            target =
-                RunParameters{command_line.target}
-                    .template target_cost<typename session_type::cost_type>(
-                        session.input());
+            limits =
+                command_line.run_parameters()
+                    .template options<typename session_type::cost_type>(session.input());
         }
         catch (const std::invalid_argument& error)
         {
@@ -449,15 +443,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
         }
 
         const auto begin = std::chrono::steady_clock::now();
-        // The run's limits; blank text is no time limit.
-        run_options<trace::null_tracer> limits{};
-        if (const auto seconds = *command_line.timeout_seconds())
-            limits = limits.timeout(*seconds);
-        if (!command_line.max_evaluations.is_unlimited())
-            limits = limits.max_evaluations(command_line.max_evaluations);
-        const bool ran = target
-            ? session.run(runner, limits.stop_at(std::move(*target)))
-            : session.run(runner, limits);
+        const bool ran = session.run(runner, limits);
         const std::chrono::duration<double> elapsed =
             std::chrono::steady_clock::now() - begin;
         if (!ran)

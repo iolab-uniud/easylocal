@@ -46,6 +46,12 @@ reviewed by hand before tagging.
   it), and `check(app, ...)` checks it. Runners on different neighborhoods
   no longer need two apps: the TSP example's `two_apps.cpp` becomes
   `two_neighborhoods.cpp`, the runners of one app.
+- **Breaking:** `RunParameters` is the block of a run's limits: `target`,
+  `timeout` (seconds, as text) and `max_evaluations`, with
+  `options<Cost>(input[, base])`, which gives their run options. `cli::run`
+  reads its `--target`, `--timeout` and `--max_evaluations` through it
+  (`cli::parameters::run_parameters()`), and `cli::parameters::timeout_seconds()`
+  moves to `RunParameters`.
 - **Breaking:** `Session::run` gives each run a generator of its own, seeded
   with one draw of the session's RNG, as the TextUI already did: the same seed
   and the same commands now give the same runs in `Session`, `cli::run`, the

@@ -245,19 +245,22 @@ tells whether either applies; without it, `--tuning.print` and
 `--tuning.irace` fail with status 2.
 
 A program that reads its configuration from the command line itself adds
-`easylocal::RunParameters` for the target, under a prefix of its choice:
+`easylocal::RunParameters`, the limits of a run (`target`, `timeout` in
+seconds, `max_evaluations`, the switches `cli::run` has at its root), under a
+prefix of its choice:
 
 ```cpp
 easylocal::RunParameters run;
-configuration.add("run", run);                       // --run.target=0
+configuration.add("run", run);    // --run.target=0 --run.timeout=10
 // ... once the Input is loaded:
-if (!run.target.empty())
-    session.run("sa", easylocal::stop_at(session.read_cost(run.target)));
+session.run("sa", run.options<Cost>(session.input()));
 ```
 
-`run.target_cost<Cost>(input)` gives the target as a `std::optional<Cost>`,
-empty when none is set, for programs that run a runner or a solver directly;
-its errors name the field.
+`run.options<Cost>(input[, base])` gives the run options of the limits that
+are set, added to `base` (such as `with(control)`); `run.target_cost<Cost>(input)`
+gives the target alone as a `std::optional<Cost>`, empty when none is set, for
+programs that run a runner or a solver directly. Their errors name the field.
+`cli::parameters::run_parameters()` gives the block of `cli::run`'s switches.
 
 The target stays text until the Input is known, because a problem may read
 its costs with its own `read_cost`. A program that runs a runner without a

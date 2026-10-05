@@ -114,6 +114,33 @@ void a_target_from_the_configuration_stops_a_run()
     assert(session.evaluate() == 29.0);
     assert(session.run("fi", el::stop_at(session.read_cost(run.target))));
     assert(session.evaluate() == 29.0);
+
+    // options() gives the run options of every limit set.
+    const auto options = run.options<double>(session.input());
+    assert(options.target && *options.target == 29.0);
+    assert(!options.time_limit && !options.evaluation_budget);
+    const el::RunParameters limits{.timeout = "2.5", .max_evaluations = 7};
+    const auto bounded = limits.options<double>(session.input());
+    assert(!bounded.target && bounded.time_limit && *bounded.evaluation_budget == 7);
+    session.use_initial_solution();
+    assert(session.run(
+        "fi",
+        el::RunParameters{.max_evaluations = 1}.options<double>(session.input())));
+    assert(session.last_run_effort()->evaluations == 1);
+
+    // Text that is not a number of seconds is rejected, naming the field.
+    const el::RunParameters invalid{.timeout = "soon"};
+    assert(!invalid.validate());
+    bool rejected = false;
+    try
+    {
+        static_cast<void>(invalid.options<double>(session.input()));
+    }
+    catch (const std::invalid_argument& error)
+    {
+        rejected = std::string_view{error.what()}.starts_with("timeout");
+    }
+    assert(rejected);
 }
 
 } // namespace
