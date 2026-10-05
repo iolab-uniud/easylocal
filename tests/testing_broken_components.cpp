@@ -5,6 +5,7 @@
 
 #include <easylocal/app/app.hpp>
 #include <easylocal/app/check.hpp>
+#include <easylocal/app/session.hpp>
 #include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/testing.hpp>
 
@@ -59,6 +60,22 @@ bool failed(
     return std::ranges::any_of(report.failures(), [&](const elt::check_failure& failure) {
         return failure.check == check && failure.message.find(text) != std::string::npos;
     });
+}
+
+// A Session on the tutorial's TSP with the explorer NHE and the 2-opt delta
+// Delta, at the tour order.
+template<class NHE, class Delta>
+auto session_on(const broken::Tsp& tsp, std::vector<std::size_t> order)
+{
+    auto application = el::app("broken-tsp")
+        | (el::solution_manager<broken::TourManager>()
+            | el::component<tutorial::TourLength>())
+        | (el::neighborhood<NHE>() | el::delta<tutorial::TourLength, Delta>())
+        | el::runner<el::runners::FirstImprovement>("fi");
+    el::Session session{std::move(application)};
+    session.set_input(tsp);
+    session.set_solution(broken::Tour{std::move(order)});
+    return session;
 }
 
 } // namespace
@@ -165,6 +182,48 @@ int main()
         elt::run_checks(run_output, app_report, correct) != 0
             && run_output.str().find("composition: ") != std::string::npos,
         "run_checks takes the report of check(app)");
+
+    // The Session's diagnostics count the same mistakes over the whole
+    // neighborhood of its solution: 8 cities have 20 2-opt moves
+    // (6 + 5 + 4 + 3 + 2 + 1, but for the pair 0, 7).
+    const auto tsp8 = cities(8);
+    const std::vector<std::size_t> shuffled{3, 0, 6, 1, 7, 2, 5, 4};
+    auto faulty =
+        session_on<TwoOptExplorer, broken::PositionsAsCitiesDelta>(tsp8, shuffled);
+    const auto mismatched = faulty.check_neighborhood_costs();
+    ok &= expect(
+        mismatched.moves == 20 && mismatched.mismatches > 0 && mismatched.invalid == 0,
+        "check_neighborhood_costs counts the moves a faulty delta gets wrong");
+    auto at_identity = session_on<TwoOptExplorer, broken::PositionsAsCitiesDelta>(
+        tsp8,
+        identity(8).order);
+    ok &= expect(
+        at_identity.check_neighborhood_costs().mismatches == 0,
+        "on the identity tour the faulty delta agrees with the full evaluation");
+
+    auto by_value_session =
+        session_on<broken::ByValueTwoOpt, TwoOptLengthDelta>(tsp8, shuffled);
+    const auto independence = by_value_session.check_move_independence();
+    ok &= expect(
+        independence.moves == 20 && independence.null_moves == 20
+            && independence.repeated_states == 0,
+        "check_move_independence counts the moves that change nothing");
+
+    auto outside_session =
+        session_on<broken::OutsideTwoOpt, TwoOptLengthDelta>(tsp8, shuffled);
+    const auto outside_draws =
+        outside_session.check_random_move_distribution(outside_session.rng(), 2);
+    ok &= expect(
+        outside_draws.neighborhood_size == 20 && outside_draws.samples == 40
+            && outside_draws.out_of_neighborhood == 40 && outside_draws.unseen == 20,
+        "check_random_move_distribution counts the draws outside the neighborhood");
+    auto empty_session =
+        session_on<broken::EmptyRandomTwoOpt, TwoOptLengthDelta>(tsp8, shuffled);
+    const auto empty_draws =
+        empty_session.check_random_move_distribution(empty_session.rng(), 1);
+    ok &= expect(
+        empty_draws.out_of_neighborhood == 20 && empty_draws.unseen == 20,
+        "check_random_move_distribution counts the draws that find no move");
 
     return ok ? 0 : 1;
 }
