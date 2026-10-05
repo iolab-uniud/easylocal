@@ -649,6 +649,10 @@ reviewed by hand before tagging.
   yielded rvalue, as `std::generator` does. Best Improvement over a 2-opt
   `moves()` generator with an O(1) delta runs about 2.5 times faster
   (15 to 6 ns per evaluation).
+- A run without a tracer builds no `move_evaluated`, `move_accepted` or
+  `incumbent_updated` event, no route of a union's move (a `std::visit` per
+  evaluation) and no copy of the cost before each move: Best Improvement over
+  a union of two 2-opt explorers runs about 20% faster.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

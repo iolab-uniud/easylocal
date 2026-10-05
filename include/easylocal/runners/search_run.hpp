@@ -739,15 +739,21 @@ public:
         auto candidate = evaluation_.evaluate_move(solution, current, move);
         ++evaluations_;
 
-        trace::with_move_route(move, [&](const auto* route) {
-            emit(trace::event::move_evaluated<cost_type>{
-                .evaluations = evaluations_,
-                .iterations = iterations_,
-                .current_cost = current.cost(),
-                .candidate_cost = candidate.cost(),
-                .neighborhood = route,
+        // Without a tracer of the event, no route is built (a std::visit for
+        // a union's move) and no event.
+        if constexpr (trace::observes<Tracer, trace::event::move_evaluated<cost_type>>)
+        {
+            trace::with_move_route(move, [&](const auto* route) {
+                emit(
+                    trace::event::move_evaluated<cost_type>{
+                        .evaluations = evaluations_,
+                        .iterations = iterations_,
+                        .current_cost = current.cost(),
+                        .candidate_cost = candidate.cost(),
+                        .neighborhood = route,
+                    });
             });
-        });
+        }
         report();
         return candidate;
     }
@@ -759,20 +765,29 @@ public:
         candidate_type&& candidate,
         const move_type& move)
     {
-        const auto previous_cost = current.cost();
+        constexpr bool traced =
+            trace::observes<Tracer, trace::event::move_accepted<cost_type>>;
+        // The cost before the move is copied only for a tracer of the event.
+        std::optional<cost_type> previous_cost;
+        if constexpr (traced)
+            previous_cost.emplace(current.cost());
         evaluation_.commit(solution, current, std::move(candidate));
         evaluate_near_target(solution, current);
         observe_cost(current.cost());
 
-        trace::with_move_route(move, [&](const auto* route) {
-            emit(trace::event::move_accepted<cost_type>{
-                .evaluations = evaluations_,
-                .iterations = iterations_,
-                .previous_cost = previous_cost,
-                .cost = current.cost(),
-                .neighborhood = route,
+        if constexpr (traced)
+        {
+            trace::with_move_route(move, [&](const auto* route) {
+                emit(
+                    trace::event::move_accepted<cost_type>{
+                        .evaluations = evaluations_,
+                        .iterations = iterations_,
+                        .previous_cost = *previous_cost,
+                        .cost = current.cost(),
+                        .neighborhood = route,
+                    });
             });
-        });
+        }
         visited(solution, current.cost());
         if constexpr (archives_front)
             archive(solution, current.cost());
@@ -785,12 +800,16 @@ public:
         const cost_type& cost)
     {
         observe_cost(cost);
-        emit(trace::event::incumbent_updated<cost_type>{
-            .evaluations = evaluations_,
-            .iterations = iterations_,
-            .previous_cost = previous_cost,
-            .cost = cost,
-        });
+        if constexpr (trace::observes<Tracer, trace::event::incumbent_updated<cost_type>>)
+        {
+            emit(
+                trace::event::incumbent_updated<cost_type>{
+                    .evaluations = evaluations_,
+                    .iterations = iterations_,
+                    .previous_cost = previous_cost,
+                    .cost = cost,
+                });
+        }
     }
 
     /// Ends the run.

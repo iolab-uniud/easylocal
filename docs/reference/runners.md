@@ -413,7 +413,7 @@ the deltas left at 1e-17. The same options are accepted by every solver's
   `should_stop()` is the whole contract. The cost of an inactive control is a
   null check.
 - **Tracing is compile-time.** Without a tracer, events are not even
-  constructed.
+  constructed, nor the routes of the moves of a neighborhood union.
 - **Per-run state is local.** `run` is `const`; algorithms are reusable values.
 - **The algorithm class is its own key.** No tag types: the class names the
   algorithm in `make_runner` and in app registrations.
