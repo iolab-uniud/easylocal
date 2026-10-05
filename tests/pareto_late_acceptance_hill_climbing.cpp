@@ -250,6 +250,75 @@ int main()
     }
 
     {
+        // The target (6, 5) is met only around (5, 0), while the first point of
+        // the front is (0, 9): the run returns a point of its front that meets
+        // the target it reports as reached.
+        const cost::pareto<int, int> target{6, 5};
+        std::mt19937 rng{11U};
+        const auto result =
+            grid_runner<ParetoLateAcceptanceHillClimbing>(
+                {.history_length = 10, .max_iterations = 2000})
+                .bind(grid)
+                .run(Point{4, 9}, rng, stop_at(target));
+        ok &= expect(
+            result.termination == termination_reason::target_reached
+                && result.cost.get<0>() <= 6 && result.cost.get<1>() <= 5,
+            "a run that reaches a pareto target returns a solution that meets it");
+    }
+
+    {
+        // A cost that meets the target is kept by best_so_far even when it does
+        // not dominate the best one.
+        struct TargetRun
+        {
+            cost::pareto<int, int> goal{6, 5};
+
+            [[nodiscard]] static auto better(
+                const cost::pareto<int, int>& lhs,
+                const cost::pareto<int, int>& rhs) -> bool
+            {
+                return lhs < rhs;
+            }
+
+            [[nodiscard]] static auto better_or_equivalent(
+                const cost::pareto<int, int>& lhs,
+                const cost::pareto<int, int>& rhs) -> bool
+            {
+                return lhs <= rhs;
+            }
+
+            [[nodiscard]] auto target() const -> const cost::pareto<int, int>*
+            {
+                return &goal;
+            }
+
+            static void incumbent_updated(
+                const cost::pareto<int, int>&,
+                const cost::pareto<int, int>&)
+            {
+            }
+        };
+        struct Evaluated
+        {
+            cost::pareto<int, int> value;
+
+            [[nodiscard]] auto cost() const -> const cost::pareto<int, int>&
+            {
+                return value;
+            }
+        };
+        TargetRun run;
+        best_so_far best{Point{0, 0}, cost::pareto<int, int>{0, 9}};
+        const auto kept =
+            best.update(run, Point{5, 0}, Evaluated{cost::pareto<int, int>{5, 4}});
+        const auto ignored =
+            best.update(run, Point{6, 0}, Evaluated{cost::pareto<int, int>{6, 3}});
+        ok &= expect(
+            kept && !ignored && best.solution == Point{5, 0},
+            "best_so_far keeps the first cost that meets the target");
+    }
+
+    {
         // Any runner with a pareto cost gets the front of the solutions it
         // reaches: Hill Climbing goes down to the row y = 0 from (4, 9).
         std::mt19937 rng{11U};

@@ -96,6 +96,11 @@ reviewed by hand before tagging.
 - `with(control)` and `with(control, tracer)` with a temporary `run_control`,
   and a `search_run` built over a temporary context, no longer compile: each
   kept a reference that dangled once the expression ended.
+- A run with a `cost::pareto` cost that reached its target returned the first
+  point of its front, which need not meet the target, and reported
+  `target_reached`: it returns a point of the front that meets it, and
+  `best_so_far` keeps the first cost that meets the target even when it does
+  not dominate the best one.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

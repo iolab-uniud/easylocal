@@ -320,8 +320,12 @@ per long iteration reads it every time. There is no timer thread.
 The target converts to the runner's cost type and is compared with its cost
 semantics (`better_or_equivalent`). `search_run` checks the costs reached in
 `start`, `commit` and `incumbent_updated`, so every algorithm that checks
-`should_stop()` honours a target without further code. The same options are
-accepted by every solver's `solve(input, options)`.
+`should_stop()` honours a target without further code. A run that ends with
+`target_reached` returns a solution that meets the target: with a partial
+order, such as a `cost::pareto` cost, the reaching cost need not dominate the
+best one, so `best_so_far` keeps the first cost that meets the target, and a
+run with a front returns a point of the front that meets it. The same options
+are accepted by every solver's `solve(input, options)`.
 
 ## Design choices
 

@@ -783,6 +783,25 @@ public:
                 .cost = cost,
             });
         }
+        // With a partial order the solution returned (the first of a front)
+        // may not meet a target that another one reached: the front holds a
+        // solution that does, which the run returns instead.
+        if constexpr (archives_front)
+        {
+            if (reason != termination_reason::cancelled && target_reached()
+                && !meets_target(cost))
+            {
+                for (auto& point : archive_.sorted())
+                {
+                    if (meets_target(point.cost))
+                    {
+                        solution = std::move(point.solution);
+                        cost = std::move(point.cost);
+                        break;
+                    }
+                }
+            }
+        }
         // A reached target is the reason a run ends, unless it was cancelled,
         // also when it coincides with a local optimum or the end of the
         // algorithm.
@@ -934,6 +953,20 @@ private:
         return target_reached_;
     }
 
+    // Whether cost is at least as good as the target.
+    [[nodiscard]]
+    bool meets_target(const cost_type& cost) const
+    {
+        if constexpr (requires(const Context& context, const cost_type& value) {
+                          {
+                              context.better_or_equivalent(value, value)
+                          } -> std::convertible_to<bool>;
+                      })
+            return target_ != nullptr && context_.better_or_equivalent(cost, *target_);
+        else
+            return false;
+    }
+
     // The best cost of a run is at least as good as every cost it reaches, so
     // the target is reached once any of them is at least as good as it.
     void observe_cost(const cost_type& cost)
@@ -996,6 +1029,33 @@ private:
         archive_{};
 };
 
+namespace detail
+{
+
+// Whether candidate meets the target of run and best does not.
+template<class Run, class Cost>
+[[nodiscard]]
+bool reaches_target(const Run& run, const Cost& candidate, const Cost& best)
+{
+    if constexpr (requires {
+                      { run.target() } -> std::convertible_to<const Cost*>;
+                      {
+                          run.better_or_equivalent(candidate, candidate)
+                      } -> std::convertible_to<bool>;
+                  })
+    {
+        const Cost* target = run.target();
+        return target != nullptr && run.better_or_equivalent(candidate, *target)
+            && !run.better_or_equivalent(best, *target);
+    }
+    else
+    {
+        return false;
+    }
+}
+
+} // namespace detail
+
 /// The best solution of a run and its cost, for the algorithms that return the
 /// best solution they visited rather than the last one:
 ///
@@ -1016,10 +1076,15 @@ struct best_so_far
     /// Keeps candidate when current, its evaluation, is better than the best,
     /// and reports the new best to the run (incumbent_updated); true when it
     /// does.
+    ///
+    /// It also keeps the first candidate that meets the run's target when the
+    /// best does not: with a partial order (a cost::pareto cost) it may not be
+    /// better, and the run ends at the target with it.
     template<class Run, class Evaluation>
     bool update(Run& run, const Solution& candidate, const Evaluation& current)
     {
-        if (!run.better(current.cost(), cost))
+        if (!run.better(current.cost(), cost)
+            && !detail::reaches_target(run, current.cost(), cost))
             return false;
         const auto previous = cost;
         solution = candidate;
