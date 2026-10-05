@@ -210,33 +210,46 @@ bool check_field_domains(
     return valid;
 }
 
-// The diagnostics of a block: the fields outside their domains and the
-// requirements that do not hold, or else its validate(), which should check
-// them too; then the same for its nested groups.
+// The diagnostics of a block and of its nested groups, each under its own
+// path: the fields outside their domains and the requirements that do not
+// hold; then the groups; then, when all of these pass, the block's validate(),
+// which checks them again (check_schema) and would repeat a group's diagnostic
+// under the block's path. Whether the block is valid.
 template<class Block>
-void validate_one_block(
+bool validate_block(
     const Block& block,
     const std::string& prefix,
     std::vector<configuration_validation_diagnostic>& diagnostics)
 {
-    if (!check_field_domains(block, prefix, diagnostics))
-        return;
-    if (const auto validation = block.validate(); !validation)
-        diagnostics.push_back({prefix, std::string{validation.message}});
-}
-
-template<class Block>
-void validate_block(
-    const Block& block,
-    const std::string& prefix,
-    std::vector<configuration_validation_diagnostic>& diagnostics)
-{
-    validate_one_block(block, prefix, diagnostics);
-    auto leaf = [](const std::string&, const auto&, const auto&, const auto&) {};
-    auto group = [&diagnostics](const std::string& path, const auto& nested) {
-        validate_one_block(nested, path, diagnostics);
-    };
-    walk_schema(block, prefix, leaf, group);
+    bool valid = check_field_domains(block, prefix, diagnostics);
+    std::apply(
+        [&](const auto&... descriptors) {
+            (
+                [&] {
+                    using descriptor_type = std::remove_cvref_t<decltype(descriptors)>;
+                    if constexpr (is_parameter_group_v<descriptor_type>)
+                    {
+                        if (!validate_block(
+                                block.*descriptor_type::member,
+                                join_path(prefix, descriptor_type::name()),
+                                diagnostics))
+                            valid = false;
+                    }
+                }(),
+                ...);
+        },
+        std::remove_cvref_t<Block>::parameter_schema());
+    if (!valid)
+        return false;
+    if constexpr (requires { block.validate(); })
+    {
+        if (const auto validation = block.validate(); !validation)
+        {
+            diagnostics.push_back({prefix, std::string{validation.message}});
+            return false;
+        }
+    }
+    return true;
 }
 
 } // namespace detail

@@ -49,6 +49,12 @@ reviewed by hand before tagging.
   temporary Input or SolutionManager, which dangled: their constructors from
   an rvalue are deleted.
 
+- `config::check_schema`, and so the `validate()` of a parameter block, checks
+  the block's nested groups: an invalid temperature schedule of Simulated
+  Annealing or tabu list of Tabu Search is rejected by the runner's
+  parameters, so `check(app)` reports it as "runner configuration" instead of
+  aborting. A parameter set reports such a group once, under its own path.
+
 ## [4.0.0-alpha.1] — 2026-10-04
 
 A pre-release: the API, header paths included, may still change before 4.0.0

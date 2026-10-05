@@ -30,8 +30,9 @@ struct MyParameters
 Fields may be integral and floating-point types, `bool`, `std::string`,
 `std::filesystem::path`, and `std::array`s and `std::vector`s of those
 (written `[a, b, c]`; `[]` is an empty vector). A `group` nests another
-block: its fields are under `schedule.`, and its `validate()` runs with the
-enclosing block's.
+block: its fields are under `schedule.`, and `config::check_schema` of the
+enclosing block runs its `validate()` once the enclosing block's own fields
+pass, so that the enclosing block's `validate()` checks it too.
 
 ### Domains
 
@@ -86,8 +87,8 @@ with the full paths of its references (`text_with`, `references`).
 The validation of a parameter set checks each block against its schema before
 its `validate()`: the fields that matter outside their domains, with the
 field's path (`expected a value in (0, 1), got 1.5`), and the requirements
-that do not hold, with the block's path and their message; the block's
-`validate()` runs only when they pass. A `validate()` checks the same with
+that do not hold, with the block's path and their message; then each nested
+group, under its own path; the block's `validate()` runs only when they pass. A `validate()` checks the same with
 `config::check_schema`, so that a block made in the code is checked too:
 
 ```cpp

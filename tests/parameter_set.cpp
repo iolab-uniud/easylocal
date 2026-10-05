@@ -78,7 +78,7 @@ struct Search
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        return config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 
@@ -165,6 +165,29 @@ void nested_groups_have_paths_and_are_validated()
     assert(set.apply(valid));
     assert(search.budget == 7);
     assert(search.schedule.rate == 0.25);
+}
+
+void a_block_validates_its_nested_groups()
+{
+    // The block's own validate() checks its groups, so that a block made in
+    // the code is checked whole.
+    const Search search{.schedule = {.rate = 2.0}};
+    const auto validation = search.validate();
+    assert(!validation);
+    assert(validation.message == "rate must be in (0, 1)");
+
+    const easylocal::runners::SimulatedAnnealingParameters<FixedLengthParameters>
+        annealing{.temperature = {.cooling_rate = 2.0}};
+    assert(!annealing.validate());
+
+    // A parameter_set names the group once, not the enclosing block again.
+    Search held = search;
+    config::parameter_set set;
+    set.add("search", held);
+    const auto diagnostics = set.validate();
+    assert(!diagnostics);
+    assert(diagnostics.diagnostics.size() == 1);
+    assert(diagnostics.diagnostics[0].path == "search.schedule");
 }
 
 void changes_to_several_blocks_are_all_or_none()
@@ -322,6 +345,7 @@ int main()
 {
     same_typed_blocks_are_told_apart_by_their_prefixes();
     nested_groups_have_paths_and_are_validated();
+    a_block_validates_its_nested_groups();
     changes_to_several_blocks_are_all_or_none();
     configurable_objects_rebuild_through_configure();
     const_objects_are_read_only();

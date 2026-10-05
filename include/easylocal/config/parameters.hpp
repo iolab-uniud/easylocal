@@ -192,7 +192,8 @@ constexpr parameter_field<Name, Member, unbounded_domain> field(
 }
 
 /// A member that is itself a parameter block, nested in the schema: its fields
-/// are under "Name.", and its validate() runs with the enclosing block's, as in
+/// are under "Name.", and check_schema of the enclosing block runs its
+/// validate(), as in
 /// `group<"temperature", &Parameters::temperature>("Temperature schedule")`.
 template<fixed_string Name, auto Member>
     requires std::is_member_object_pointer_v<decltype(Member)>
@@ -515,10 +516,12 @@ struct out_of_domain_message
 } // namespace detail
 
 /// Whether a block meets its schema, and the first reason it does not: each
-/// field that matters lies in its domain, and each requirement holds. It is
-/// the check a validate() makes for what its schema declares.
+/// field that matters lies in its domain, each requirement holds, and then each
+/// nested group is valid. It is the check a validate() makes for what its
+/// schema declares.
 ///
-/// The fields of nested groups are left to the groups' own validate().
+/// A group is checked with its own validate(), or with check_schema when it
+/// has none, so that a block made in the code is checked whole.
 template<class Block>
 [[nodiscard]]
 constexpr validation_result check_schema(const Block& block) noexcept
@@ -547,6 +550,27 @@ constexpr validation_result check_schema(const Block& block) noexcept
                             result = validation_result::failure(
                                 detail::out_of_domain_message<descriptor_type>::value);
                         }
+                    }
+                }(),
+                ...);
+        },
+        schema);
+    if (!result)
+        return result;
+    std::apply(
+        [&](const auto&... descriptors) {
+            (
+                [&] {
+                    using descriptor_type = std::remove_cvref_t<decltype(descriptors)>;
+                    if constexpr (is_parameter_group_v<descriptor_type>)
+                    {
+                        if (!result)
+                            return;
+                        const auto& nested = block.*descriptor_type::member;
+                        if constexpr (requires { nested.validate(); })
+                            result = nested.validate();
+                        else
+                            result = check_schema(nested);
                     }
                 }(),
                 ...);

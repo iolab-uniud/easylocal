@@ -9,6 +9,7 @@
 #include <easylocal/runners/best_improvement.hpp>
 #include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/runners/hill_climbing.hpp>
+#include <easylocal/runners/simulated_annealing.hpp>
 
 #include <cassert>
 #include <cstddef>
@@ -315,6 +316,40 @@ void check_names_the_runner_with_invalid_parameters()
     assert(reported);
 }
 
+void check_reports_an_invalid_nested_group()
+{
+    using Annealing = easylocal::runners::SimulatedAnnealing<
+        easylocal::runners::temperature::FixedLength>;
+    auto application =
+        easylocal::app("assignment")
+            .with_solution_manager(
+                easylocal::solution_manager<AssignmentSolutionManager>()
+                | assignment::assignment_cost())
+            .with_neighborhood(
+                easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
+                | easylocal::delta<
+                    CapacityCostComponent,
+                    ReassignCapacityDeltaEvaluator>())
+            .with_runner<Annealing>("anneal");
+    // An invalid temperature schedule, a group of the runner's parameters.
+    application.runner_config<Annealing>().temperature.cooling_rate = 2.0;
+
+    const AssignmentInstance instance{
+        .demand = {4, 4, 2},
+        .capacity = {5, 5},
+    };
+    const auto report = easylocal::check(application, instance);
+    assert(!report.passed());
+    bool reported = false;
+    for (const auto& failure : report.failures())
+    {
+        reported = reported
+            || (failure.check == "runner configuration"
+                && failure.message.starts_with("runner anneal: "));
+    }
+    assert(reported);
+}
+
 } // namespace
 
 int main()
@@ -323,5 +358,6 @@ int main()
     check_fails_on_a_broken_realized_graph();
     check_fails_on_a_parameter_without_a_domain();
     check_names_the_runner_with_invalid_parameters();
+    check_reports_an_invalid_nested_group();
     return 0;
 }
