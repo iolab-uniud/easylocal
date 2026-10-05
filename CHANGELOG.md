@@ -83,6 +83,15 @@ reviewed by hand before tagging.
   (`range(0.0, 1)`, `range(1, std::size_t{1000})`), which compiled and threw
   `std::invalid_argument`, or picked the unlimited overload, no longer
   compile. `limit x = unlimited;` and `limit{unlimited}` are unchanged.
+- A schema is computed once, at compile time: a mistake in it, such as an
+  inverted range, is reported where the schema is first read, naming
+  `parameter_schema()`, rather than in a `validate()` or at run time. The
+  name of a field or group must be a segment of a path (a letter or `_`, then
+  letters, digits and `_`): `"cooling rate"` or `"a.b"` no longer compiles.
+- `parameter_set::apply` validates the blocks the batch does not touch too,
+  and `load_and_apply` relies on it: its heuristic over the paths of the
+  batch rejected an override of a nested field that repaired a requirement
+  of the enclosing block, which `apply` accepted.
 - A range with no upper bound honours `open_high()`: `range(0.0,
   unlimited).open_high()` leaves out infinity, and `range(1,
   unlimited).open_high()` leaves out `unlimited` for a limit, where both were

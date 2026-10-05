@@ -72,6 +72,24 @@ struct member_pointer_traits<Value Owner::*>
     using value_type = Value;
 };
 
+// A name of a field or group: a segment of a path, [A-Za-z_][A-Za-z0-9_]*.
+[[nodiscard]]
+consteval bool valid_parameter_name(const std::string_view name) noexcept
+{
+    if (name.empty())
+        return false;
+    const auto letter = [](const char character) {
+        return (character >= 'a' && character <= 'z')
+            || (character >= 'A' && character <= 'Z') || character == '_';
+    };
+    if (!letter(name.front()))
+        return false;
+    for (const auto character : name)
+        if (!letter(character) && !(character >= '0' && character <= '9'))
+            return false;
+    return true;
+}
+
 template<class... Fields>
 [[nodiscard]]
 consteval bool unique_field_names() noexcept
@@ -109,8 +127,9 @@ template<
 struct parameter_field
 {
     static_assert(
-        !Name.view().empty(),
-        "parameter field name must not be empty");
+        detail::valid_parameter_name(Name.view()),
+        "the name of a parameter field is a segment of its path: a letter or '_', "
+        "then letters, digits and '_'");
 
     /// The type of the member pointer.
     using member_pointer_type = decltype(Member);
@@ -194,7 +213,10 @@ template<fixed_string Name, auto Member>
     requires std::is_member_object_pointer_v<decltype(Member)>
 struct parameter_group
 {
-    static_assert(!Name.view().empty(), "parameter group name must not be empty");
+    static_assert(
+        detail::valid_parameter_name(Name.view()),
+        "the name of a parameter group is a segment of its paths: a letter or '_', "
+        "then letters, digits and '_'");
 
     /// The type of the member pointer.
     using member_pointer_type = decltype(Member);
@@ -341,6 +363,17 @@ concept configurable_endpoint =
 
 } // namespace detail
 
+namespace detail
+{
+
+// The schema of a block, computed once, at compile time: a schema that is not
+// a constant expression, such as one with an inverted range, fails here, with
+// the reason, wherever the schema is first read.
+template<class Block>
+inline constexpr auto schema_v = std::remove_cvref_t<Block>::parameter_schema();
+
+} // namespace detail
+
 /// Calls `function(descriptor, value)` on each field of a block, without its
 /// nested groups.
 template<parameter_block Parameters, class Function>
@@ -348,8 +381,6 @@ constexpr void for_each_parameter(
     Parameters& parameters,
     Function&& function)
 {
-    auto schema = Parameters::parameter_schema();
-
     std::apply(
         [&parameters, &function](auto... descriptors) {
             (
@@ -367,7 +398,7 @@ constexpr void for_each_parameter(
                 }(),
                 ...);
         },
-        std::move(schema));
+        detail::schema_v<Parameters>);
 }
 
 /// The same, on a const block.
@@ -376,8 +407,6 @@ constexpr void for_each_parameter(
     const Parameters& parameters,
     Function&& function)
 {
-    auto schema = Parameters::parameter_schema();
-
     std::apply(
         [&parameters, &function](auto... descriptors) {
             (
@@ -395,7 +424,7 @@ constexpr void for_each_parameter(
                 }(),
                 ...);
         },
-        std::move(schema));
+        detail::schema_v<Parameters>);
 }
 
 namespace detail
@@ -425,7 +454,7 @@ constexpr const auto& field_at(const Block& block) noexcept
     constexpr auto name = path.substr(
         Begin,
         dot == std::string_view::npos ? std::string_view::npos : dot - Begin);
-    using schema_type = std::remove_cvref_t<decltype(Block::parameter_schema())>;
+    using schema_type = std::remove_cvref_t<decltype(schema_v<Block>)>;
     constexpr auto size = std::tuple_size_v<schema_type>;
     constexpr auto index =
         descriptor_index<schema_type>(name, std::make_index_sequence<size>{});
@@ -527,7 +556,7 @@ template<class Block>
 constexpr validation_result check_schema(const Block& block) noexcept
 {
     validation_result result;
-    const auto schema = Block::parameter_schema();
+    const auto& schema = detail::schema_v<Block>;
     std::apply(
         [&](const auto&... descriptors) {
             (

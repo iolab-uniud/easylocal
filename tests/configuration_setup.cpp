@@ -36,6 +36,53 @@ struct AppParameters
     }
 };
 
+// A requirement of the enclosing block over the fields of its group.
+struct WindowParameters
+{
+    double low{2.0};
+    double high{1.0};
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return easylocal::config::fields(
+            easylocal::config::field<"low", &WindowParameters::low>(
+                "Low",
+                easylocal::unlimited),
+            easylocal::config::field<"high", &WindowParameters::high>(
+                "High",
+                easylocal::unlimited));
+    }
+
+    [[nodiscard]]
+    auto validate() const noexcept -> easylocal::config::validation_result
+    {
+        return easylocal::config::check_schema(*this);
+    }
+};
+
+struct OuterParameters
+{
+    WindowParameters window{};
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return easylocal::config::fields(
+            easylocal::config::group<"window", &OuterParameters::window>("Window"),
+            easylocal::config::require(
+                easylocal::config::value<"window.low">
+                    < easylocal::config::value<"window.high">,
+                "window.low must be below window.high"));
+    }
+
+    [[nodiscard]]
+    auto validate() const noexcept -> easylocal::config::validation_result
+    {
+        return easylocal::config::check_schema(*this);
+    }
+};
+
 struct SolverParameters
 {
     double cooling_rate{0.75};
@@ -199,6 +246,21 @@ void invalid_untouched_baseline_preserves_transactionality()
     assert(result.diagnostics[0].subject == "application");
 }
 
+void a_nested_override_repairs_a_requirement_of_its_enclosing_block()
+{
+    OuterParameters outer;
+    easylocal::config::parameter_set tree;
+    tree.add("outer", outer);
+
+    char program[] = "solver";
+    char high[] = "--outer.window.high=3";
+    char* argv[]{program, high};
+
+    const auto result = easylocal::config::load_and_apply(2, argv, tree);
+    assert(result);
+    assert(outer.window.high == 3.0);
+}
+
 void help_remains_frontend_policy()
 {
     AppParameters app{.instance_file = {}, .seed = 17U};
@@ -331,6 +393,7 @@ int main()
     invalid_batch_is_transactional();
     invalid_baseline_can_be_repaired_by_overrides();
     invalid_untouched_baseline_preserves_transactionality();
+    a_nested_override_repairs_a_requirement_of_its_enclosing_block();
     help_remains_frontend_policy();
     diagnostics_have_a_uniform_rendering_surface();
     every_diagnostic_source_is_rendered();

@@ -72,22 +72,6 @@ namespace detail
 
 inline void append_diagnostics(
     setup_result& result,
-    const configuration_validation_result& validation)
-{
-    for (const auto& diagnostic : validation.diagnostics)
-    {
-        result.diagnostics.push_back({
-            .source = setup_diagnostic_source::validation,
-            .subject = diagnostic.path,
-            .value = {},
-            .line = 0,
-            .message = diagnostic.message,
-        });
-    }
-}
-
-inline void append_diagnostics(
-    setup_result& result,
     const cli_parse_result& cli)
 {
     for (const auto& diagnostic : cli.diagnostics)
@@ -118,48 +102,18 @@ inline void append_diagnostics(
     }
 }
 
-inline bool block_has_direct_override(
-    const std::string_view block_path,
-    const std::span<const owned_text_override> overrides)
-{
-    for (const auto& candidate : overrides)
-    {
-        const std::string_view path{candidate.path};
-        // A field outside its domain, which the batch overrides.
-        if (path == block_path)
-            return true;
-        // A block at the root of the set: its fields are the paths without a dot.
-        if (block_path.empty())
-        {
-            if (path.find('.') == std::string_view::npos)
-                return true;
-            continue;
-        }
-        if (!path.starts_with(block_path) ||
-            path.size() <= block_path.size() + 1 ||
-            path[block_path.size()] != '.')
-        {
-            continue;
-        }
-
-        const auto field = path.substr(block_path.size() + 1);
-        if (field.find('.') == std::string_view::npos)
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 inline void append_diagnostics(
     setup_result& result,
     const override_result& overrides)
 {
     for (const auto& diagnostic : overrides.diagnostics)
     {
+        // A block that is not valid, with the batch applied, is a validation
+        // error; the others are about one override.
         result.diagnostics.push_back({
-            .source = setup_diagnostic_source::override,
+            .source = diagnostic.error == override_error::validation_error
+                ? setup_diagnostic_source::validation
+                : setup_diagnostic_source::override,
             .subject = diagnostic.path,
             .value = diagnostic.value,
             .line = 0,
@@ -211,38 +165,12 @@ inline setup_result load_and_apply(
         std::span<const owned_text_override>{file_configuration.overrides},
         std::span<const text_override>{cli.overrides});
 
-    // Invalid defaults are allowed when this batch directly overrides that
-    // parameter block: apply() will validate the staged candidate
-    // before committing anything. Invalid untouched blocks, however, make the
-    // whole transaction fail before any mutation can occur.
-    const auto baseline_validation = parameters.validate();
-    for (const auto& diagnostic : baseline_validation.diagnostics)
-    {
-        if (!detail::block_has_direct_override(
-                diagnostic.path,
-                std::span<const owned_text_override>{effective_overrides}))
-        {
-            result.diagnostics.push_back({
-                .source = setup_diagnostic_source::validation,
-                .subject = diagnostic.path,
-                .value = {},
-                .line = 0,
-                .message = diagnostic.message,
-            });
-        }
-    }
-
-    if (!result)
-    {
-        return result;
-    }
-
     const auto effective_views = override_views(
         std::span<const owned_text_override>{effective_overrides});
     const auto overrides =
         parameters.apply(std::span<const text_override>{effective_views});
-    // Every untouched block was valid at baseline, and apply() validated every
-    // touched one before committing it.
+    // apply() validates every block, the touched ones on their copies, before
+    // committing anything: invalid defaults pass when the batch fixes them.
     detail::append_diagnostics(result, overrides);
     return result;
 }

@@ -16,6 +16,7 @@
 #include <cstddef>
 #include <exception>
 #include <functional>
+#include <numeric>
 #include <optional>
 #include <span>
 #include <stdexcept>
@@ -138,7 +139,7 @@ void walk_schema(Block& block, const std::string& prefix, Leaf& leaf, Group& gro
                 }(),
                 ...);
         },
-        std::remove_cvref_t<Block>::parameter_schema());
+        schema_v<Block>);
 }
 
 // The requirements of a block and of its nested groups:
@@ -163,7 +164,7 @@ void walk_requirements(const Block& block, const std::string& prefix, Visit& vis
                 }(),
                 ...);
         },
-        Block::parameter_schema());
+        schema_v<Block>);
 }
 
 // The fields of a block that matter, not of its nested groups, that lie
@@ -207,7 +208,7 @@ bool check_field_domains(
                 }(),
                 ...);
         },
-        std::remove_cvref_t<Block>::parameter_schema());
+        schema_v<Block>);
     return valid;
 }
 
@@ -239,7 +240,7 @@ bool validate_block(
                 }(),
                 ...);
         },
-        std::remove_cvref_t<Block>::parameter_schema());
+        schema_v<Block>);
     if (!valid)
         return false;
     if constexpr (requires { block.validate(); })
@@ -377,10 +378,10 @@ public:
 
     /// Applies textual overrides: all of them, or none.
     ///
-    /// Every block they touch is changed on a copy, parsed and validated first;
-    /// only when every override names a parameter and every touched block is
-    /// valid are the copies committed. The set itself does not change, only the
-    /// objects it refers to.
+    /// Every block they touch is changed on a copy, parsed and validated first,
+    /// and every other block is validated as it is; only when every override
+    /// names a parameter and every block is valid are the copies committed. The
+    /// set itself does not change, only the objects it refers to.
     override_result apply(const std::span<const text_override> overrides) const
     {
         override_result result;
@@ -405,10 +406,29 @@ public:
         std::vector<std::function<void()>> commits;
         for (const auto& entry : entries_)
         {
+            const auto matched_before =
+                std::accumulate(matches.begin(), matches.end(), std::size_t{0});
             if (auto commit =
                     entry.stage(entry.prefix, overrides, matches, result.diagnostics))
             {
                 commits.push_back(std::move(commit));
+            }
+            else if (std::accumulate(matches.begin(), matches.end(), std::size_t{0})
+                == matched_before)
+            {
+                // An untouched block must be valid as it is: the batch would
+                // otherwise commit into an invalid set.
+                std::vector<configuration_validation_diagnostic> invalid;
+                entry.validate(entry.prefix, invalid);
+                for (auto& diagnostic : invalid)
+                {
+                    result.diagnostics.push_back({
+                        .error = override_error::validation_error,
+                        .path = std::move(diagnostic.path),
+                        .value = {},
+                        .message = std::move(diagnostic.message),
+                    });
+                }
             }
         }
         for (std::size_t index = 0; index < overrides.size(); ++index)

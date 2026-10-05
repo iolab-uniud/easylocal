@@ -54,6 +54,10 @@ config::field<"policy", &P::policy>("Tabu list", config::one_of("fixed", "random
 | `one_of(a, b, ...)` | the values given: text for a `std::string`, numbers for a number (numbers of different types are held as their common type: `one_of(1, 1.5, 2)` holds 1.0, 1.5 and 2.0) |
 | `easylocal::unlimited` | any value of the field's type: a seed, free text, a path, a number that may be negative |
 
+The name of a field or group is a segment of its paths: a letter or `_`,
+then letters, digits and `_`. The schema is computed once at compile time, so
+a mistake in it does not compile, and the error names `parameter_schema()`.
+
 For an array or a vector the domain applies to each element. A domain that
 does not fit the field's type, a range whose bounds are not in order or a
 logarithmic range from zero do not compile, and neither do a range of two
@@ -146,9 +150,11 @@ A set refers to the objects it was built from: they must outlive it and stay
 in place. Adding a path that is already in the set throws
 `std::invalid_argument`.
 
-`apply` parses each override into a copy of its block and validates the copy;
-only when every override names a parameter and every touched block is valid
-are the copies committed. Errors: `unknown_parameter`, `duplicate_path`,
+`apply` parses each override into a copy of its block and validates the copy,
+and validates every other block as it is; only when every override names a
+parameter and every block is valid are the copies committed, so a batch may
+repair invalid defaults, a requirement of an enclosing block included.
+`load_and_apply` applies the file and the command line in one such batch. Errors: `unknown_parameter`, `duplicate_path`,
 `parse_error`, `validation_error` (with the path of the invalid block),
 `read_only_parameter`.
 

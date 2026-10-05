@@ -993,6 +993,17 @@ easylocal_add_compile_failure_test(
     "BaseSolutionManager"
 )
 easylocal_add_compile_failure_test(
+    inverted-range-schema
+    inverted_range_schema.cpp
+    "parameter_schema"
+    "range"
+)
+easylocal_add_compile_failure_test(
+    invalid-field-name
+    invalid_field_name.cpp
+    "the name of a parameter field is a segment of its path"
+)
+easylocal_add_compile_failure_test(
     range-of-mixed-numbers
     range_of_mixed_numbers.cpp
     "no matching function for call to"
