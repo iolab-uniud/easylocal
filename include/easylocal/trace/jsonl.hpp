@@ -412,6 +412,20 @@ public:
     }
 
     /// Writes the event as a JSON line.
+    void emit(const event::temperature_changed& value)
+    {
+        write_line([&](std::ostream& out) {
+            out << "{\"event\":\"temperature_changed\",\"evaluations\":"
+                << value.evaluations << ",\"iterations\":" << value.iterations
+                << ",\"previous_temperature\":";
+            detail::write_json_number(out, value.previous_temperature);
+            out << ",\"temperature\":";
+            detail::write_json_number(out, value.temperature);
+            out << "}\n";
+        });
+    }
+
+    /// Writes the event as a JSON line.
     void emit(const event::run_finished<Cost>& value)
     {
         write_line([&](std::ostream& out) {

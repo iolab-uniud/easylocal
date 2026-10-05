@@ -9,6 +9,8 @@
 #include <easylocal/runners/detail/context_concepts.hpp>
 #include <easylocal/runners/detail/throttled_clock.hpp>
 #include <easylocal/runners/search_run.hpp>
+#include <easylocal/trace/events.hpp>
+#include <easylocal/trace/tracer.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
 #include <easylocal/utils/limit.hpp>
 
@@ -1738,6 +1740,13 @@ public:
         if constexpr (calibrating_temperature_policy<TemperaturePolicy>)
             calibrate(run, temperature, solution, current, rng);
         temperature.reset();
+        // The temperature as the trace last saw it, for a tracer that
+        // observes its changes.
+        constexpr bool traces_temperature =
+            trace::observes<typename Run::tracer_type, trace::event::temperature_changed>;
+        [[maybe_unused]] double traced_temperature = 0.0;
+        if constexpr (traces_temperature)
+            traced_temperature = report_temperature(run, 0.0, temperature.temperature());
 
         best_so_far best{solution, current.cost()};
 
@@ -1770,12 +1779,36 @@ public:
             }
 
             temperature.on_iteration(accepted);
+            if constexpr (traces_temperature)
+            {
+                if (temperature.temperature() != traced_temperature)
+                {
+                    traced_temperature = report_temperature(
+                        run,
+                        traced_temperature,
+                        temperature.temperature());
+                }
+            }
         }
 
         return run.finish(std::move(best.solution), std::move(best.cost));
     }
 
 private:
+    // Sends the change of temperature to the trace; the new temperature.
+    template<class Run>
+    static double report_temperature(Run& run, const double previous, const double now)
+    {
+        run.emit(
+            trace::event::temperature_changed{
+                .evaluations = run.evaluations(),
+                .iterations = run.iterations(),
+                .previous_temperature = previous,
+                .temperature = now,
+            });
+        return now;
+    }
+
     // The sampled moves count as evaluations, not as iterations.
     template<class Run, class Policy, class RNG>
     static void calibrate(

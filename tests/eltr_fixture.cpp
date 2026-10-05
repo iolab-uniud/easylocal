@@ -49,30 +49,30 @@ struct structured_binary_writer
     }
 };
 
-struct temperature_changed
+struct weight_changed
 {
     std::uint64_t iteration{};
-    double temperature{};
+    double weight{};
 };
 
-constexpr auto binary_event_tag(const temperature_changed&) noexcept -> std::uint8_t
+constexpr auto binary_event_tag(const weight_changed&) noexcept -> std::uint8_t
 {
     return easylocal::trace::user_binary_event_tag<3>();
 }
 
 void encode_binary_event(
     easylocal::trace::binary_record_writer& out,
-    const temperature_changed& value)
+    const weight_changed& value)
 {
     out.u64(value.iteration);
-    out.f64(value.temperature);
+    out.f64(value.weight);
 }
 
-auto describe_binary_event(std::type_identity<temperature_changed>)
+auto describe_binary_event(std::type_identity<weight_changed>)
     -> easylocal::trace::binary_event_schema
 {
     using enum easylocal::trace::binary_type;
-    return {"temperature_changed", {{"iteration", u64}, {"temperature", f64}}};
+    return {"weight_changed", {{"iteration", u64}, {"weight", f64}}};
 }
 
 // An application event without a schema.
@@ -158,12 +158,13 @@ void write_integral(const std::filesystem::path& directory)
         emit_all(event::aspiration_applied<long>{2, 2, -7}, binary, json);
         emit_all(event::tabu_escape{3, 3, 5}, binary, json);
         emit_all(event::tabu_tenure_changed{3, 3, 1, 2}, binary, json);
+        emit_all(event::temperature_changed{3, 3, 1.5, 0.75}, binary, json);
         emit_all(event::local_optimum<long>{4, 3, -7}, binary, json);
         emit_all(
             event::solution_visited<long>{4, 3, 0xfeedfacecafebeefULL, 40, 7},
             binary,
             json);
-        easylocal::trace::emit(binary, temperature_changed{3, 0.5});
+        easylocal::trace::emit(binary, weight_changed{3, 0.5});
         easylocal::trace::emit(binary, opaque_event{0x0102});
         emit_all(event::run_finished<long>{4, 3, -7}, binary, json);
     }
@@ -221,7 +222,7 @@ void write_timed(const std::filesystem::path& directory)
         binary,
         json);
     emit_all(event::run_started<long>{3}, binary, json);
-    easylocal::trace::emit(binary, temperature_changed{1, 0.25});
+    easylocal::trace::emit(binary, weight_changed{1, 0.25});
     emit_all(event::run_finished<long>{1, 1, 3}, binary, json);
     binary.flush();
 }

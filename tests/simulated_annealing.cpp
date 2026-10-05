@@ -27,6 +27,7 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace
@@ -915,6 +916,21 @@ int main()
         ok &= expect(
             traced.solution.value == result.solution.value && saw_incumbent && saw_accepted,
             "SA tracing records accepted moves and best-so-far updates without changing semantics");
+
+        // The temperature at the start, then at each cooling: 4, then 2 after
+        // the first of the two proposals (the schedule ends at the second).
+        std::vector<std::pair<double, double>> temperatures;
+        for (const auto& record : trace.records())
+            if (const auto* change = std::get_if<
+                    easylocal::trace::memory_recorder<int>::temperature_changed_record>(
+                    &record))
+                temperatures.emplace_back(
+                    change->previous_temperature,
+                    change->temperature);
+        ok &= expect(
+            temperatures
+                == std::vector<std::pair<double, double>>{{0.0, 4.0}, {4.0, 2.0}},
+            "SA traces its temperature at the start and at each cooling");
 
         std::stop_source stop;
         std::size_t observations = 0;

@@ -37,6 +37,7 @@ CORE_EVENTS = {
     "tabu_escape",
     "tabu_tenure_changed",
     "run_context",
+    "temperature_changed",
 }
 
 
@@ -115,9 +116,9 @@ class FixtureTraces(unittest.TestCase):
 
     def test_application_events_by_their_schema_or_raw(self):
         decoded = decode(self.path / "integral.eltr")
-        described = [r for r in decoded if r["event"] == "temperature_changed"]
+        described = [r for r in decoded if r["event"] == "weight_changed"]
         self.assertEqual(
-            described, 2 * [{"event": "temperature_changed", "iteration": 3, "temperature": 0.5}]
+            described, 2 * [{"event": "weight_changed", "iteration": 3, "weight": 0.5}]
         )
         raw = [r for r in decoded if r["event"] == "user"]
         self.assertEqual(raw, 2 * [{"event": "user", "tag": 132, "payload": "0201"}])
@@ -146,7 +147,7 @@ class FixtureTraces(unittest.TestCase):
             records = list(timed)
         self.assertEqual(
             [record["event"] for record in records],
-            ["run_context", "run_started", "temperature_changed", "run_finished"],
+            ["run_context", "run_started", "weight_changed", "run_finished"],
         )
         self.assertNotIn("elapsed_ns", records[2])
         core = [records[index]["elapsed_ns"] for index in (0, 1, 3)]

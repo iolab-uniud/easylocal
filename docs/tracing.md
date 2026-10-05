@@ -42,7 +42,7 @@ number, JavaScript and jq would round it to a double.
 
 A recorder has a cost type, its `cost_type`: it observes the core events of
 that cost and those without a cost (`run_context`, `neighborhood_selection`,
-the tabu events), not the events of a run on another cost, which it would
+the tabu events, `temperature_changed`), not the events of a run on another cost, which it would
 otherwise drop or convert. A tracer of your own says with `observes<Event>`
 which events it receives: `trace::emit` rejects at compile time a tracer
 whose `observes<Event>` is true but whose `emit()` does not take the event,
@@ -87,6 +87,11 @@ after the random moves of a reactive list's escape, with the number applied
 previous and the new tenure of a list with one tenure for all its moves, at the
 start of the run (previous tenure 0) and at each change; `RandomFoo` draws its
 first tenure at the first move, and traces it then.
+
+Simulated Annealing adds `temperature_changed`, with the previous and the new
+temperature, at the start of the run (previous temperature 0, after a
+calibration) and whenever the schedule's temperature changes: a cooling or a
+reheat. It reads the temperature only for a tracer that observes the event.
 
 ## Composite-neighborhood provenance
 
@@ -270,6 +275,7 @@ application event that describes itself. The core events are:
 | 10 | `tabu_escape` | evaluations, iterations, moves |
 | 11 | `tabu_tenure_changed` | evaluations, iterations, previous_tenure, tenure |
 | 12 | `run_context` | stage (string), stage_index, attempt |
+| 13 | `temperature_changed` | evaluations, iterations, previous_temperature (`f64`), temperature (`f64`) |
 | 128–255 | application events | as their schema says, if they have one |
 
 With `timestamps`, every core event ends with `elapsed_ns` (`u64`).
@@ -353,37 +359,37 @@ indices 0..127 onto tags 128..255:
 ```cpp
 namespace my_problem
 {
-struct temperature_changed
+struct weight_changed
 {
     std::uint64_t iteration;
-    double temperature;
+    double weight;
 };
 
-constexpr std::uint8_t binary_event_tag(const temperature_changed&)
+constexpr std::uint8_t binary_event_tag(const weight_changed&)
 {
     return easylocal::trace::user_binary_event_tag<0>();
 }
 
 void encode_binary_event(
     easylocal::trace::binary_record_writer& out,
-    const temperature_changed& value)
+    const weight_changed& value)
 {
     out.u64(value.iteration);
-    out.f64(value.temperature);
+    out.f64(value.weight);
 }
 
 // Optional: the schema, written before the first record of the tag.
 easylocal::trace::binary_event_schema describe_binary_event(
-    std::type_identity<temperature_changed>)
+    std::type_identity<weight_changed>)
 {
     using enum easylocal::trace::binary_type;
-    return {"temperature_changed", {{"iteration", u64}, {"temperature", f64}}};
+    return {"weight_changed", {{"iteration", u64}, {"weight", f64}}};
 }
 } // namespace my_problem
 ```
 
 No EasyLocal specialization is required.  A binary recorder automatically
-advertises `observes<my_problem::temperature_changed>` and the ordinary
+advertises `observes<my_problem::weight_changed>` and the ordinary
 `trace::emit(...)` path can emit it. Application events are ELTR records
 only: the memory and JSONL recorders, which have no encoding for them, do not
 observe them.  This keeps problem-specific instrumentation

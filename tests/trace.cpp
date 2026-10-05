@@ -76,30 +76,30 @@ auto records_offset(const std::string& data) -> std::size_t
 namespace polli_extension
 {
 
-struct temperature_changed
+struct weight_changed
 {
     std::uint64_t iteration{};
-    double temperature{};
+    double weight{};
 };
 
-constexpr auto binary_event_tag(const temperature_changed&) noexcept -> std::uint8_t
+constexpr auto binary_event_tag(const weight_changed&) noexcept -> std::uint8_t
 {
     return easylocal::trace::user_binary_event_tag<0>();
 }
 
 inline void encode_binary_event(
     easylocal::trace::binary_record_writer& out,
-    const temperature_changed& value)
+    const weight_changed& value)
 {
     out.u64(value.iteration);
-    out.f64(value.temperature);
+    out.f64(value.weight);
 }
 
-inline auto describe_binary_event(std::type_identity<temperature_changed>)
+inline auto describe_binary_event(std::type_identity<weight_changed>)
     -> easylocal::trace::binary_event_schema
 {
     using enum easylocal::trace::binary_type;
-    return {"temperature_changed", {{"iteration", u64}, {"temperature", f64}}};
+    return {"weight_changed", {{"iteration", u64}, {"weight", f64}}};
 }
 
 } // namespace polli_extension
@@ -703,14 +703,14 @@ int main()
     easylocal::trace::binary_recorder<int> custom_event_recorder{custom_event_stream};
     easylocal::trace::emit(
         custom_event_recorder,
-        polli_extension::temperature_changed{.iteration = 42, .temperature = 0.75});
+        polli_extension::weight_changed{.iteration = 42, .weight = 0.75});
     custom_event_recorder.flush();
     const auto custom_event_data = custom_event_stream.str();
     const auto custom_records = records_offset(custom_event_data);
     ok &= expect(
         custom_event_data.size() > custom_records
             && static_cast<unsigned char>(custom_event_data[custom_records]) == 0
-            && custom_event_data.find("temperature_changed") > custom_records
+            && custom_event_data.find("weight_changed") > custom_records
             && static_cast<unsigned char>(
                    custom_event_data[custom_event_data.size() - 21])
                 == easylocal::trace::user_binary_event_tag<0>(),

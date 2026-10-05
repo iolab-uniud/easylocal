@@ -478,6 +478,7 @@ enum class core_binary_event_tag : std::uint8_t
     tabu_escape = 10,
     tabu_tenure_changed = 11,
     run_context = 12,
+    temperature_changed = 13,
 };
 
 inline void finish_record(std::vector<char>& buffer, std::size_t payload_offset);
@@ -548,6 +549,12 @@ inline std::vector<std::pair<std::uint8_t, binary_event_schema>> core_event_sche
                 {evaluations, iterations, {"previous_tenure", u64}, {"tenure", u64}}}},
         {tag(run_context),
             {"run_context", {{"stage", string}, {"stage_index", u64}, {"attempt", u64}}}},
+        {tag(temperature_changed),
+            {"temperature_changed",
+                {evaluations,
+                    iterations,
+                    {"previous_temperature", f64},
+                    {"temperature", f64}}}},
     };
     if (timestamps)
         for (auto& [_, schema] : schemas)
@@ -721,6 +728,23 @@ void encode_core_event(
     out.u64(value.iterations);
     out.u64(value.previous_tenure);
     out.u64(value.tenure);
+}
+
+constexpr std::uint8_t core_event_tag(const event::temperature_changed&) noexcept
+{
+    return static_cast<std::uint8_t>(core_binary_event_tag::temperature_changed);
+}
+
+template<class CostWriter>
+void encode_core_event(
+    binary_record_writer& out,
+    const event::temperature_changed& value,
+    CostWriter&)
+{
+    out.u64(value.evaluations);
+    out.u64(value.iterations);
+    out.f64(value.previous_temperature);
+    out.f64(value.temperature);
 }
 
 constexpr std::uint8_t core_event_tag(const event::run_context&) noexcept

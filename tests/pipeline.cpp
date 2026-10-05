@@ -771,8 +771,11 @@ bool run()
                 contexts.push_back(context->stage);
                 second_stage = context->stage == "second";
             }
-            else
+            else if (!std::holds_alternative<recorder_type::temperature_changed_record>(
+                         record))
             {
+                // The temperature changes have no cost: those of the first
+                // stage come too.
                 events_in_order = events_in_order && second_stage;
                 started +=
                     std::holds_alternative<recorder_type::run_started_record>(record);

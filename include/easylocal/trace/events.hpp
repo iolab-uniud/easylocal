@@ -214,6 +214,20 @@ struct tabu_tenure_changed
     std::size_t tenure{};
 };
 
+/// The temperature of Simulated Annealing changed, from previous_temperature
+/// (0 at the start of a run) to temperature.
+struct temperature_changed
+{
+    /// Evaluations so far.
+    std::size_t evaluations{};
+    /// Iterations so far.
+    std::size_t iterations{};
+    /// The temperature before the change, 0 at the start of a run.
+    double previous_temperature{};
+    /// The new temperature.
+    double temperature{};
+};
+
 /// The end of a run, emitted by `search_run::finish()`.
 template<class Cost>
 struct run_finished
@@ -238,7 +252,8 @@ template<class Event>
 inline constexpr bool core_event = std::same_as<Event, event::run_context>
     || std::same_as<Event, event::neighborhood_selection>
     || std::same_as<Event, event::tabu_escape>
-    || std::same_as<Event, event::tabu_tenure_changed>;
+    || std::same_as<Event, event::tabu_tenure_changed>
+    || std::same_as<Event, event::temperature_changed>;
 
 template<class Cost>
 inline constexpr bool core_event<event::run_started<Cost>> = true;
@@ -265,6 +280,7 @@ inline constexpr bool core_event_of = std::same_as<Event, event::run_context>
     || std::same_as<Event, event::neighborhood_selection>
     || std::same_as<Event, event::tabu_escape>
     || std::same_as<Event, event::tabu_tenure_changed>
+    || std::same_as<Event, event::temperature_changed>
     || std::same_as<Event, event::run_started<Cost>>
     || std::same_as<Event, event::move_evaluated<Cost>>
     || std::same_as<Event, event::move_accepted<Cost>>

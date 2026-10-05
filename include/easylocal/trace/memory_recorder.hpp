@@ -36,6 +36,7 @@ class memory_recorder
         || std::same_as<Event, event::aspiration_applied<Cost>>
         || std::same_as<Event, event::tabu_escape>
         || std::same_as<Event, event::tabu_tenure_changed>
+        || std::same_as<Event, event::temperature_changed>
         || std::same_as<Event, event::run_finished<Cost>>;
 
 public:
@@ -125,6 +126,9 @@ public:
     /// A recorded `event::tabu_tenure_changed`, as it is.
     using tabu_tenure_changed_record = event::tabu_tenure_changed;
 
+    /// A recorded `event::temperature_changed`, as it is.
+    using temperature_changed_record = event::temperature_changed;
+
     /// A recorded `event::run_finished`, as it is.
     using run_finished_record = event::run_finished<Cost>;
 
@@ -141,7 +145,8 @@ public:
         tabu_escape_record,
         tabu_tenure_changed_record,
         run_finished_record,
-        run_context_record>;
+        run_context_record,
+        temperature_changed_record>;
 
     /// Whether the recorder receives Event: a core event without a cost or of
     /// its cost type.

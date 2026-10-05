@@ -384,6 +384,11 @@ reviewed by hand before tagging.
   `incumbent_updated` at each improving move, as the other runners do, through
   the new `search_run::commit_improvement()`: every built-in runner reports
   its new best costs.
+- Simulated Annealing traces its temperature: `trace::event::temperature_changed`,
+  a core event without a cost (ELTR tag 13, JSONL, memory record
+  `temperature_changed_record`), at the start of a run and at each change of
+  the schedule's temperature, only for a tracer that observes it. The
+  tracing guide's example of an application event is now `weight_changed`.
 
 ### Added
 
