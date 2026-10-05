@@ -148,8 +148,16 @@ int main()
     assert(saved.out.starts_with("cost 26\ntime "));
     assert(saved.out.find("0 1 3 4 2") == std::string::npos); // in the file
     assert(std::filesystem::exists(output_file));
-    std::filesystem::remove(start_file);
     std::filesystem::remove(output_file);
+
+    // A starting solution that is not valid for the Input does not run.
+    std::ofstream{start_file} << "0 1 7 4 2\n";
+    const auto invalid_start =
+        run({"--instance", instance, "--solution", start_file.string()});
+    assert(invalid_start.status == 2);
+    assert(invalid_start.err.starts_with("error: solution: "));
+    assert(invalid_start.err.find("not valid") != std::string::npos);
+    std::filesystem::remove(start_file);
 
     // Invalid command lines: exit status 2, with a message.
     const auto missing = run({});

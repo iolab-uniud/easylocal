@@ -154,6 +154,10 @@ reviewed by hand before tagging.
 - `configuration()` does not compile on a temporary (a runner, an app, a
   pipeline, a recipe, a solver or a Session), whose parameter set would refer
   to an object already gone.
+- `Session::run` throws `std::invalid_argument`, and changes nothing, when the
+  current solution is not valid for the Input, and `cli::run` rejects such a
+  `--solution` with `error: solution: ...` and status 2, instead of running
+  deltas that may index out of bounds.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

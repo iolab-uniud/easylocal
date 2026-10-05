@@ -595,14 +595,20 @@ public:
     /// The options are run options, such as with(control, tracer), stop_at,
     /// timeout and max_evaluations. Like every app run, it uses freshly bound
     /// services and the current runner parameters, not this session's bound
-    /// app.
+    /// app. Throws `std::invalid_argument`, and changes nothing, when the
+    /// current solution is not valid for the Input (set_solution and
+    /// load_solution accept one, to inspect it).
     template<class... Options>
     [[nodiscard]]
     bool run(const std::string_view name, Options&&... options)
     {
         assert(bound_);
         assert(solution_);
-        assert(is_valid());
+        if (!is_valid())
+        {
+            throw std::invalid_argument{
+                "run: the current solution is not valid for the Input"};
+        }
 
         auto result =
             app_.run(name, *input_, *solution_, rng_, std::forward<Options>(options)...);

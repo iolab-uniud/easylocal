@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <memory>
 #include <random>
+#include <stdexcept>
 #include <stop_token>
 #include <string_view>
 #include <type_traits>
@@ -697,6 +698,31 @@ void session_reports_unknown_runner_without_changing_solution()
     assert(session.evaluate().soft() == 7);
 }
 
+// An outside solution may be invalid (the session lets one inspect it), but a
+// run does not start from it: it throws and changes nothing.
+void session_rejects_a_run_from_an_invalid_solution()
+{
+    easylocal::Session session{make_multi_runner_application()};
+    session.set_input(make_input(3));
+    session.set_solution(AssignmentSolution{.assignment = {0, 2}});
+
+    bool rejected = false;
+    try
+    {
+        static_cast<void>(session.run("deep"));
+    }
+    catch (const std::invalid_argument& error)
+    {
+        rejected =
+            std::string_view{error.what()}.find("not valid") != std::string_view::npos;
+    }
+
+    assert(rejected);
+    assert(session.has_solution());
+    assert(session.solution().assignment[1] == 2);
+    assert(!session.last_run_effort());
+}
+
 void app_copy_preserves_graph_configuration()
 {
     auto application = make_application();
@@ -819,4 +845,5 @@ int main()
     session_runs_a_named_runner_on_the_current_solution();
     session_distinguishes_same_tag_runners_by_name();
     session_reports_unknown_runner_without_changing_solution();
+    session_rejects_a_run_from_an_invalid_solution();
 }

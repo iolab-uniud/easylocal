@@ -124,7 +124,8 @@ has `random_solution`, `initial` otherwise), runs the runner by name, with
 the session's `cost_report()` (a line `component <name> <value>` for each
 component, followed by its description, indented), and the solution
 (or saves it to `--output`) to `options.out`; errors go to `options.err`. It
-returns 0, 2 for an invalid command line or an unknown runner, 1 when the run
+returns 0, 2 for an invalid command line, an unknown runner or a `--solution`
+that is not valid for the Input (`error: solution: ...`), 1 when the run
 throws. It requires the `read_input` hook, and the solution hooks only when the
 corresponding switches are used.
 
@@ -298,7 +299,10 @@ stateDiagram-v2
 ```
 
 The selections and `run` return `false` when there is nothing to select or no
-runner with that name, and are `[[nodiscard]]`. `run` uses fresh services and
+runner with that name, and are `[[nodiscard]]`. `set_solution` and
+`load_solution` accept a solution that is not valid for the Input, to inspect
+it; `run` does not start from one: it throws `std::invalid_argument` and
+changes nothing. `run` uses fresh services and
 the current runner parameters, like `app.run`, and executes on the calling
 thread. The REST service gives every run a Session of its own and calls `run`
 on a worker thread, with `with(control)` for progress and cancellation. The
