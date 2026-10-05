@@ -5,15 +5,19 @@
 /// the same value every time.
 
 #include <easylocal/testing/check.hpp>
+#include <easylocal/testing/detail/support.hpp>
 #include <easylocal/testing/fixture.hpp>
 
 #include <concepts>
+#include <type_traits>
 
 namespace easylocal::testing
 {
 
 /// A cost component evaluates the fixture Solution, and evaluating it twice
-/// gives equivalent values.
+/// gives equivalent values; an exception of evaluate() is a failure.
+///
+/// Values the fixture's Equivalent cannot compare are a compile error.
 template<check_fixture Fixture, class Component>
 [[nodiscard]] check_report check_cost_component(
     const Fixture& fixture,
@@ -34,20 +38,22 @@ template<check_fixture Fixture, class Component>
         return report;
     }
 
-    const auto first = component.evaluate(fixture.solution());
-    report.check(
-        true,
-        "evaluation",
-        "evaluate(const Solution&) completed for the fixture Solution");
+    using value_type =
+        std::remove_cvref_t<decltype(component.evaluate(fixture.solution()))>;
+    static_assert(
+        requires(const value_type& value) { fixture.equivalent(value, value); },
+        "the fixture's Equivalent cannot compare the values of the component: give "
+        "the value operator==, or the fixture another Equivalent");
 
-    if constexpr (requires { fixture.equivalent(first, first); })
-    {
+    detail::guarded(report, "repeat evaluation", "evaluating the fixture Solution", [&] {
+        const auto first = component.evaluate(fixture.solution());
         const auto second = component.evaluate(fixture.solution());
         report.check(
             fixture.equivalent(first, second),
             "repeat evaluation",
-            "evaluating the same Solution twice produced non-equivalent component values");
-    }
+            "evaluating the same Solution twice gave " + detail::value_text(first)
+                + " and then " + detail::value_text(second));
+    });
 
     return report;
 }

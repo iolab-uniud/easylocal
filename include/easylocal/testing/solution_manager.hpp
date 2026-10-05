@@ -6,11 +6,13 @@
 
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/testing/check.hpp>
+#include <easylocal/testing/detail/support.hpp>
 #include <easylocal/testing/fixture.hpp>
 
 #include <cstddef>
 #include <memory>
 #include <random>
+#include <string>
 
 namespace easylocal::testing
 {
@@ -34,11 +36,13 @@ template<check_fixture Fixture>
 
     if constexpr (easylocal::has_initial_solution<solution_manager_type>)
     {
-        const auto initial = solution_manager.initial_solution();
-        report.check(
-            static_cast<bool>(solution_manager.is_valid(initial)),
-            "initial solution",
-            "initial_solution() returned an invalid Solution");
+        detail::guarded(report, "initial solution", "initial_solution()", [&] {
+            const auto initial = solution_manager.initial_solution();
+            report.check(
+                static_cast<bool>(solution_manager.is_valid(initial)),
+                "initial solution",
+                "initial_solution() returned an invalid Solution");
+        });
     }
 
     if constexpr (easylocal::has_random_solution<solution_manager_type, std::mt19937_64>)
@@ -46,11 +50,15 @@ template<check_fixture Fixture>
         std::mt19937_64 rng{fixture.options().seed};
         for (std::size_t sample = 0; sample < fixture.options().random_samples; ++sample)
         {
-            const auto random = solution_manager.random_solution(rng);
-            report.check(
-                static_cast<bool>(solution_manager.is_valid(random)),
-                "random solution",
-                "random_solution(rng) returned an invalid Solution");
+            const auto label = "random solution " + std::to_string(sample);
+            if (!detail::guarded(report, "random solution", label, [&] {
+                    const auto random = solution_manager.random_solution(rng);
+                    report.check(
+                        static_cast<bool>(solution_manager.is_valid(random)),
+                        "random solution",
+                        label + ": random_solution(rng) returned an invalid Solution");
+                }))
+                break;
         }
     }
 

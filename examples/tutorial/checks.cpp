@@ -7,9 +7,11 @@ int main()
 {
     // [fixture]
     namespace elt = easylocal::testing;
+    // Not the identity tour: on 0, 1, 2, 3, 4 position k holds city k, and a
+    // delta that mixes up positions and cities would still be right.
     const elt::fixture<tutorial::TourManager> tsp{
         tutorial::five_cities(),
-        tutorial::Tour{{0, 1, 2, 3, 4}},
+        tutorial::Tour{{0, 2, 4, 1, 3}},
     };
     // [fixture]
 

@@ -225,7 +225,7 @@ public:
     }
 };
 
-void real_app_graph_is_checked_with_full_coverage()
+void real_app_graph_is_checked_with_its_composition()
 {
     const AssignmentInstance instance{
         .demand = {4, 4, 2},
@@ -237,11 +237,11 @@ void real_app_graph_is_checked_with_full_coverage()
 
     assert(report.passed());
     assert(report.checks() > 0);
-    assert(report.coverage().solution_managers == 1);
-    assert(report.coverage().cost_components == 2);
-    assert(report.coverage().neighborhood_graphs == 1);
-    assert(report.coverage().delta_bindings == 1);
-    assert(report.coverage().runner_registrations == 2);
+    assert(report.composition().solution_managers == 1);
+    assert(report.composition().cost_components == 2);
+    assert(report.composition().neighborhoods == 1);
+    assert(report.composition().delta_bindings == 1);
+    assert(report.composition().runner_registrations == 2);
 }
 
 void check_fails_on_a_broken_realized_graph()
@@ -445,7 +445,7 @@ void check_reports_a_compare_against_the_delta_sign()
 
 int main()
 {
-    real_app_graph_is_checked_with_full_coverage();
+    real_app_graph_is_checked_with_its_composition();
     check_fails_on_a_broken_realized_graph();
     check_fails_on_a_parameter_without_a_domain();
     check_names_the_runner_with_invalid_parameters();

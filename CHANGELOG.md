@@ -148,6 +148,38 @@ reviewed by hand before tagging.
   hard components and compares the hard costs within the same tolerance; the
   tolerance is configurable as `cost.tolerance.relative` and
   `cost.tolerance.absolute`.
+- The move checks (`check_neighborhood`, `check_delta_evaluator` and
+  `check(app)`) start from the fixture's Solution and from random solutions,
+  the new `check_options::random_solutions` (default 4) drawn with
+  `random_solution()` and walked by `check_options::walk_length` (default 8)
+  random moves: a delta that mixes up positions and cities, right on the
+  identity tour, passed every check. Beyond `max_enumerated_moves` they visit
+  a uniform sample of the enumerated moves instead of the first ones, and
+  `check(app)` takes its limits from the options instead of 128 and 16 moves.
+  The tutorial's fixture is no longer the identity tour.
+- A failed check names the move (with its `describe` hook or `operator<<`),
+  the solution it starts from and the values that disagree, and
+  `print_report` groups the failures of a check: their number and the first
+  three, instead of one line per failure. A hook that throws fails its check,
+  with what the exception says, instead of leaving the checks without a
+  report.
+- `check_neighborhood` reports a neighborhood whose moves all leave the
+  Solution unchanged, as a `make_move` taking it by value does, when
+  solutions compare; with moves that compare, it reports random moves the
+  enumeration does not contain, a `random_move` that finds no move while the
+  neighborhood has valid ones, and one that draws from another source than
+  its generator. `check(app)` reports the same about its neighborhoods, and
+  random solutions that are not valid.
+- **Breaking:** `check(app)`'s `app_check_coverage` and `coverage()` are
+  `app_check_composition` and `composition()`, its `neighborhood_graphs`
+  `neighborhoods`, and `print_report` writes `composition:`: they count what
+  the app composes, which both forms of `check` now fill. The form without a
+  solution binds the app once, and checks the runners once. `check(app)`
+  compares the repeated evaluation with the cost's equivalence, and reports
+  each invalid parameter block of the app with its path.
+- `testing::run_checks` takes the report of `check(app)` with the component
+  reports; `check_cost_component` no longer counts a check that cannot fail,
+  and values its comparison cannot compare are a compile error.
 
 ### Runners and solvers
 

@@ -14,33 +14,39 @@ if (!report)
 ```
 
 ```text
-EasyLocal tsp check: 56 checks passed
-coverage: solution_managers=1, cost_components=1, neighborhood_graphs=1, delta_bindings=1, runner_registrations=2
+EasyLocal tsp check: 503 checks passed
+composition: solution_managers=1, cost_components=1, neighborhoods=1, delta_bindings=1, runner_registrations=2
 ```
 
 `easylocal::check(app, input)` builds the app for the Input, takes the initial
-solution (or the one passed as third argument) and verifies the following;
-a last argument, `testing::check_options`, sets the seed of its random draws and
-the tolerance of its cost comparisons (chapter 10), which forgives the rounding
-errors of a floating-point cost updated by deltas:
+solution (or the one passed as third argument) and verifies the following,
+from that solution and from random ones, as the checks of chapter 10 do; a
+last argument, `testing::check_options`, sets the samples, the random
+solutions, the seed of its random draws and the tolerance of its cost
+comparisons (chapter 10), which forgives the rounding errors of a
+floating-point cost updated by deltas:
 
 | Check | What fails it |
 | --- | --- |
 | input binding | a service bound to a different Input |
 | check solution | the solution is not valid for the SolutionManager |
 | repeat evaluation | evaluating the same solution twice gives non-equivalent values |
+| random solution | `random_solution` returns an invalid solution |
 | neighborhood move validity, move application | an enumerated move that is not valid, or that breaks the solution |
 | incremental evaluation | a delta disagreeing with the full re-evaluation |
 | delta sign | with a `compare` at the root of the cost expression, a `cost::delta` whose sign disagrees with it (chapter 2) |
 | random proposal, random proposal application | a sampled move that is not valid, or that breaks the solution |
+| random move in the neighborhood, availability, reproducibility | with moves that compare, a sampled move that the enumeration does not contain, a `random_move` that finds nothing while the neighborhood has moves, or one that does not draw from the generator given |
 | runner parameters | a registered runner whose `parameters_type` is not a parameter block (chapter 7), so no frontend can change it; an empty one has nothing to configure |
 | runner configuration, runner construction | invalid registered parameters, or a runner that cannot be built |
 | app configuration | invalid parameters of the app, or pipeline stages without distinct names |
 | parameter domain | a parameter of the app that declares no domain (chapter 9): give it a range, `one_of`, or `easylocal::unlimited` for any value |
 
-The report converts to `bool`, lists the failures (`failures()`), and its
-`coverage()` says how many components, delta bindings and registrations were
-exercised. `print_report` prints both.
+The report converts to `bool`, lists the failures (`failures()`), which name
+the move and the solution it starts from, and its `composition()` says how many
+components, neighborhoods, delta bindings and registrations the app composes.
+`print_report` prints both, and `testing::run_checks` takes the report with
+those of chapter 10. A hook that throws fails its check.
 
 ## Session checks: the neighborhood of a solution
 

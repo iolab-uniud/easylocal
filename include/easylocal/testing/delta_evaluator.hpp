@@ -1,18 +1,22 @@
 #pragma once
 
 /// \file
-/// check_delta_evaluator: for the moves of the fixture Solution, value + delta
-/// equals the component's value after the move, for separate and co-located
-/// delta cost components.
+/// check_delta_evaluator: for the moves of the fixture Solution and of random
+/// solutions, value + delta equals the component's value after the move, for
+/// separate and co-located delta cost components.
 
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/testing/check.hpp>
+#include <easylocal/testing/detail/support.hpp>
 #include <easylocal/testing/fixture.hpp>
 
 #include <concepts>
 #include <cstddef>
+#include <optional>
 #include <random>
+#include <string>
 #include <type_traits>
+#include <vector>
 
 namespace easylocal::testing
 {
@@ -47,7 +51,6 @@ template<class Fixture, class NHE, class Component, class Delta>
         "the cost component must provide evaluate(const Solution&) const");
 
     const auto& solution_manager = fixture.solution_manager();
-    const auto& solution = fixture.solution();
 
     check_report report{"delta cost component"};
 
@@ -56,16 +59,16 @@ template<class Fixture, class NHE, class Component, class Delta>
         return report;
     }
 
-    const auto current = component.evaluate(solution);
-    using value_type = std::remove_cvref_t<decltype(current)>;
+    using value_type =
+        std::remove_cvref_t<decltype(component.evaluate(fixture.solution()))>;
 
-    const auto delta_of = [&](const move_type& move) {
+    const auto delta_of = [&](const solution_type& solution, const move_type& move) {
         if constexpr (std::same_as<Delta, colocated_delta>)
         {
             static_assert(
-                requires {
+                requires(const value_type& value) {
                     {
-                        current + component.delta_evaluate(solution, move)
+                        value + component.delta_evaluate(solution, move)
                     } -> std::same_as<value_type>;
                 },
                 "co-located delta evaluation must satisfy Value + "
@@ -75,9 +78,9 @@ template<class Fixture, class NHE, class Component, class Delta>
         else
         {
             static_assert(
-                requires {
+                requires(const value_type& value) {
                     {
-                        current + delta.delta_evaluate(solution, move)
+                        value + delta.delta_evaluate(solution, move)
                     } -> std::same_as<value_type>;
                 },
                 "delta evaluation must satisfy Value + "
@@ -86,54 +89,100 @@ template<class Fixture, class NHE, class Component, class Delta>
         }
     };
 
+    // The delta law for one move of solution, valid or not.
     std::size_t checked = 0;
-    const auto check_move = [&](const move_type& move) {
-        if (!static_cast<bool>(neighborhood.is_valid(solution, move)))
-            return;
-        ++checked;
+    const auto check_move =
+        [&](const solution_type& solution,
+            const value_type& current,
+            const std::string& from,
+            const std::size_t index,
+            const move_type& move) {
+            const auto label = move_label(index, move) + " from " + from;
+            guarded(report, "delta law", label, [&] {
+                if (!static_cast<bool>(neighborhood.is_valid(solution, move)))
+                    return;
+                ++checked;
 
-        const value_type incremental = current + delta_of(move);
+                const value_type incremental = current + delta_of(solution, move);
 
-        auto candidate = solution;
-        neighborhood.make_move(candidate, move);
-        report.check(
-            static_cast<bool>(solution_manager.is_valid(candidate)),
-            "move application",
-            "make_move produced an invalid Solution while checking the delta");
+                auto candidate = solution;
+                neighborhood.make_move(candidate, move);
+                const auto valid =
+                    static_cast<bool>(solution_manager.is_valid(candidate));
+                report.check(
+                    valid,
+                    "move application",
+                    label + ": make_move produced an invalid Solution");
+                if (!valid)
+                    return;
 
-        report.check(
-            fixture.equivalent(incremental, component.evaluate(candidate)),
-            "delta law",
-            "incremental evaluation does not match full component evaluation after make_move");
-    };
+                const auto full = component.evaluate(candidate);
+                report.check(
+                    fixture.equivalent(incremental, full),
+                    "delta law",
+                    label + ": value + delta is " + value_text(incremental)
+                        + ", the component after the move " + value_text(full)
+                        + " (value before the move " + value_text(current) + ")");
+            });
+        };
 
-    if constexpr (deterministic_neighborhood_for<NHE, solution_type>)
-    {
-        std::size_t seen = 0;
-        for (auto&& raw_move : easylocal::moves(neighborhood, solution))
-        {
-            if (seen++ == fixture.options().max_enumerated_moves)
+    std::mt19937_64 rng{fixture.options().seed};
+    for_each_start(
+        solution_manager,
+        neighborhood,
+        fixture.solution(),
+        "the fixture Solution",
+        fixture.options(),
+        rng,
+        [&](const solution_type& solution, const std::string& from) {
+            std::optional<value_type> current;
+            if (!guarded(report, "evaluation", "evaluating " + from, [&] {
+                    current.emplace(component.evaluate(solution));
+                }))
+                return;
+
+            if constexpr (deterministic_neighborhood_for<NHE, solution_type>)
             {
-                break;
+                std::vector<move_type> moves;
+                if (!guarded(
+                        report,
+                        "move enumeration",
+                        "enumerating the moves of " + from,
+                        [&] {
+                            moves = sample_moves(
+                                neighborhood,
+                                solution,
+                                fixture.options().max_enumerated_moves,
+                                rng);
+                        }))
+                    return;
+                for (std::size_t index = 0; index < moves.size(); ++index)
+                    check_move(solution, *current, from, index, moves[index]);
             }
-            check_move(move_type{raw_move});
-        }
-    }
-    else
-    {
-        static_assert(
-            random_neighborhood_for<NHE, solution_type, std::mt19937_64>,
-            "the delta check needs moves: the NeighborhoodExplorer must enumerate "
-            "or sample them");
-        std::mt19937_64 rng{fixture.options().seed};
-        for (std::size_t sample = 0; sample < fixture.options().random_samples; ++sample)
-        {
-            if (auto move = easylocal::random_move(neighborhood, solution, rng))
+            else
             {
-                check_move(*move);
+                static_assert(
+                    random_neighborhood_for<NHE, solution_type, std::mt19937_64>,
+                    "the delta check needs moves: the NeighborhoodExplorer must "
+                    "enumerate or sample them");
+                for (std::size_t sample = 0; sample < fixture.options().random_samples;
+                    ++sample)
+                {
+                    std::optional<move_type> move;
+                    if (!guarded(
+                            report,
+                            "random proposal",
+                            "drawing a move of " + from,
+                            [&] {
+                                move =
+                                    easylocal::random_move(neighborhood, solution, rng);
+                            }))
+                        break;
+                    if (move)
+                        check_move(solution, *current, from, sample, *move);
+                }
             }
-        }
-    }
+        });
 
     report.check(
         checked != 0,
@@ -146,8 +195,12 @@ template<class Fixture, class NHE, class Component, class Delta>
 } // namespace detail
 
 /// Checks a separate delta cost component: for the valid moves of the fixture
-/// Solution (enumerated, or sampled when the neighborhood cannot enumerate),
-/// value + delta equals the component's value after the move.
+/// Solution and of the random solutions of the options (enumerated, or sampled
+/// when the neighborhood cannot enumerate), value + delta equals the
+/// component's value after the move.
+///
+/// A failure names the move, the solution it starts from, value + delta and
+/// the component's value; an exception of a hook is a failure too.
 template<check_fixture Fixture, class NHE, class Component, class DeltaEvaluator>
 [[nodiscard]] check_report check_delta_evaluator(
     const Fixture& fixture,
@@ -159,8 +212,8 @@ template<check_fixture Fixture, class NHE, class Component, class DeltaEvaluator
 }
 
 /// Checks the component's own delta_evaluate (co-located): for the valid moves
-/// of the fixture Solution, value + delta equals the component's value after
-/// the move.
+/// of the fixture Solution and of the random solutions of the options, value +
+/// delta equals the component's value after the move.
 template<check_fixture Fixture, class NHE, class Component>
 [[nodiscard]] check_report check_delta_evaluator(
     const Fixture& fixture,

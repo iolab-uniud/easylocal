@@ -35,13 +35,24 @@ using approximately = cost::tolerance;
 ///
 /// The randomized checks draw from a `std::mt19937_64` seeded with `seed`: the
 /// same seed repeats the same draws, another seed tries other moves and
-/// solutions.
+/// solutions. The move checks start from the fixture Solution and from
+/// `random_solutions` others, each a random solution (or the fixture's, when
+/// the SolutionManager draws none) walked by `walk_length` random moves: a
+/// delta that is right on one solution only, such as an identity tour, fails
+/// on them.
 struct check_options
 {
     /// The random moves and solutions drawn per check (default 32).
     std::size_t random_samples{32};
-    /// The enumerated moves visited per traversal (default 1024).
+    /// The enumerated moves visited from each solution (default 1024): all of
+    /// them when there are no more, otherwise a uniform sample.
     std::size_t max_enumerated_moves{1024};
+    /// The solutions the move checks start from besides the fixture's
+    /// (default 4; 0: the fixture's only).
+    std::size_t random_solutions{4};
+    /// The random moves applied to each of those solutions before the check
+    /// (default 8; 0: none).
+    std::size_t walk_length{8};
     /// The seed of the random draws (default the generator's default seed).
     std::uint64_t seed{std::mt19937_64::default_seed};
     /// The tolerance of the comparisons of floating-point values (default

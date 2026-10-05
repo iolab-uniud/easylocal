@@ -1,15 +1,17 @@
 #pragma once
 
-/// \file check(app, instance, solution): the contract checks of
-/// easylocal::testing run on every component an app composes (SolutionManager,
-/// cost components, neighborhood, delta cost components, runners), with a
-/// report of what they cover.
+/// \file
+/// check(app, input, solution): the contract checks of easylocal::testing run
+/// on every component an app composes (SolutionManager, cost components,
+/// neighborhoods, delta cost components, runners), with the composition they
+/// ran on.
 
 #include <easylocal/app/app.hpp>
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost/semantics.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/testing/check.hpp>
+#include <easylocal/testing/detail/support.hpp>
 #include <easylocal/testing/fixture.hpp>
 #include <easylocal/utils/detail/meta.hpp>
 
@@ -17,6 +19,7 @@
 #include <cstddef>
 #include <exception>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <random>
 #include <stdexcept>
@@ -25,29 +28,35 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace easylocal
 {
 
-/// How many parts of an app check(app, input, solution) covered.
-struct app_check_coverage
+/// The composition of an app that check(app, input, solution) ran on: how
+/// many parts of each kind it composes.
+///
+/// It counts the parts the app declares, whether or not a check failed
+/// before reaching them.
+struct app_check_composition
 {
-    /// SolutionManagers checked.
+    /// SolutionManagers.
     std::size_t solution_managers{};
     /// Cost components of the SolutionManager.
     std::size_t cost_components{};
-    /// Neighborhoods checked.
-    std::size_t neighborhood_graphs{};
-    /// Delta cost bindings of the neighborhood.
+    /// Neighborhoods: the app's, and those of the runners that have their own.
+    std::size_t neighborhoods{};
+    /// Delta cost bindings of the neighborhoods.
     std::size_t delta_bindings{};
-    /// Runner registrations checked.
+    /// Runner registrations.
     std::size_t runner_registrations{};
 };
 
 /// The report of check(app, input, solution): the checks that passed and
-/// failed, and what they covered.
+/// failed, and the composition they ran on.
 ///
-/// It converts to true when every check passed; print_report writes it.
+/// It converts to true when every check passed; print_report writes it, and
+/// testing::run_checks takes it with the reports of the component checks.
 class app_check_report
 {
 public:
@@ -71,15 +80,11 @@ public:
     }
     /// The checks that failed.
     [[nodiscard]] auto failures() const noexcept { return report_.failures(); }
-    /// What the checks covered.
-    [[nodiscard]] app_check_coverage& coverage() noexcept
+    /// The composition of the app the checks ran on.
+    template<class Self>
+    [[nodiscard]] auto& composition(this Self&& self) noexcept
     {
-        return coverage_;
-    }
-    /// What the checks covered.
-    [[nodiscard]] const app_check_coverage& coverage() const noexcept
-    {
-        return coverage_;
+        return self.composition_;
     }
 
     /// Records a check named name, failed with message when condition is false.
@@ -91,20 +96,27 @@ public:
 private:
     friend void print_report(std::ostream&, const app_check_report&);
 
+    // The checks of components, as the component checks of testing record
+    // them.
+    friend testing::check_report& checks_of(app_check_report& report) noexcept
+    {
+        return report.report_;
+    }
+
     testing::check_report report_;
-    app_check_coverage coverage_{};
+    app_check_composition composition_{};
 };
 
-/// Writes the checks of a report to out, then a line with its coverage.
+/// Writes the checks of a report to out, then a line with the composition
+/// they ran on.
 inline void print_report(std::ostream& out, const app_check_report& report)
 {
     testing::print_report(out, report.report_);
-    const auto& coverage = report.coverage_;
-    out << "coverage: solution_managers=" << coverage.solution_managers
-        << ", cost_components=" << coverage.cost_components
-        << ", neighborhood_graphs=" << coverage.neighborhood_graphs
-        << ", delta_bindings=" << coverage.delta_bindings
-        << ", runner_registrations=" << coverage.runner_registrations << '\n';
+    const auto& composition = report.composition_;
+    out << "composition: solution_managers=" << composition.solution_managers
+        << ", cost_components=" << composition.cost_components << ", neighborhoods="
+        << composition.neighborhoods << ", delta_bindings=" << composition.delta_bindings
+        << ", runner_registrations=" << composition.runner_registrations << '\n';
 }
 
 namespace detail
@@ -173,35 +185,32 @@ bool within_tolerance(
         return false;
 }
 
-template<class Report, class SM, class NHE, class Solution, class Range>
-void check_app_moves(
-    Report& report,
+// The checks of one move of solution, whose evaluation is current: valid, it
+// leads to a valid solution, and its incremental evaluation agrees with the
+// full one, as the search compares costs (with the cost expression's
+// equivalence when it defines one, or within the tolerance, which forgives
+// the rounding errors of a floating-point cost updated by deltas, as the
+// Session does), with a delta whose sign agrees with a root compare.
+template<class SM, class NHE, class Evaluation, class Solution, class Current>
+void check_app_move(
+    testing::check_report& report,
     const SM& solution_manager,
     const NHE& neighborhood,
+    const Evaluation& evaluation,
     const Solution& solution,
-    Range&& moves,
-    std::size_t limit,
+    const Current& current,
+    const std::string& label,
+    const typename NHE::move_type& move,
     const testing::approximately& tolerance)
 {
-    using move_type = typename NHE::move_type;
-    const runner_context<SM, NHE> context{solution_manager, neighborhood};
-    const auto evaluation = context.evaluation();
-    const auto current = evaluation.evaluate(solution);
-
-    std::size_t seen = 0;
-    for (auto&& raw_move : moves)
-    {
-        if (seen++ == limit)
-            break;
-
-        move_type move{raw_move};
+    testing::detail::guarded(report, "incremental evaluation", label, [&] {
         const auto valid = static_cast<bool>(neighborhood.is_valid(solution, move));
         report.check(
             valid,
             "neighborhood move validity",
-            "an enumerated move does not satisfy NeighborhoodExplorer::is_valid");
+            label + ": an enumerated move does not satisfy is_valid");
         if (!valid)
-            continue;
+            return;
 
         auto candidate_solution = solution;
         neighborhood.make_move(candidate_solution, move);
@@ -210,24 +219,17 @@ void check_app_moves(
         report.check(
             valid_candidate,
             "neighborhood move application",
-            "make_move produced an invalid Solution");
+            label + ": make_move produced an invalid Solution");
         if (!valid_candidate)
-            continue;
+            return;
 
         auto incremental_state = current;
         auto committed_solution = solution;
         auto candidate = evaluation.evaluate_move(solution, current, move);
         check_delta_sign(report, solution_manager, candidate.cost(), current.cost());
-        evaluation.commit(
-            committed_solution,
-            incremental_state,
-            std::move(candidate));
+        evaluation.commit(committed_solution, incremental_state, std::move(candidate));
         const auto full = evaluation.evaluate(committed_solution);
 
-        // The costs agree as the search compares them, with the cost
-        // expression's equivalence when it defines one, or within the
-        // tolerance, which forgives the rounding errors of a floating-point
-        // cost updated by deltas (as the Session does).
         if constexpr (cost::has_equivalent<SM>)
         {
             const auto& incremental = incremental_state.cost();
@@ -235,59 +237,124 @@ void check_app_moves(
                 cost::equivalent(solution_manager, incremental, full.cost())
                     || detail::within_tolerance(tolerance, incremental, full.cost()),
                 "incremental evaluation",
-                "incremental move evaluation does not match full recomputation");
+                label + ": the incremental evaluation is "
+                    + testing::detail::value_text(incremental)
+                    + ", the full evaluation after the move "
+                    + testing::detail::value_text(full.cost()));
         }
-    }
+    });
 }
 
-// The checks of a neighborhood from solution: its first enumerated moves and
-// some random ones are valid and lead to valid solutions.
-template<class Report, class SM, class NHE, class Solution>
+// The checks of a neighborhood from solution and from the random solutions of
+// options: its enumerated moves (a sample of max_enumerated_moves) and
+// random_samples random moves are valid, lead to valid solutions and are
+// evaluated incrementally as in full; the random moves are moves of the
+// enumeration.
+template<class SM, class NHE, class Solution>
 void check_app_neighborhood(
-    Report& report,
+    testing::check_report& report,
     const SM& solution_manager,
     const NHE& neighborhood,
     const Solution& solution,
     const testing::check_options& options)
 {
-    constexpr std::size_t max_moves = 128;
-    if constexpr (deterministic_neighborhood_for<NHE, Solution>)
-    {
-        check_app_moves(
-            report,
-            solution_manager,
-            neighborhood,
-            solution,
-            easylocal::moves(neighborhood, solution),
-            max_moves,
-            options.tolerance);
-    }
+    using move_type = typename NHE::move_type;
+    const runner_context<SM, NHE> context{solution_manager, neighborhood};
+    const auto evaluation = context.evaluation();
+    std::mt19937_64 rng{options.seed};
 
-    if constexpr (random_neighborhood_for<NHE, Solution, std::mt19937_64>)
-    {
-        std::mt19937_64 rng{options.seed};
-        for (std::size_t sample = 0; sample < 16; ++sample)
-        {
-            auto move = easylocal::random_move(neighborhood, solution, rng);
-            if (!move)
-                continue;
+    testing::detail::for_each_start(
+        solution_manager,
+        neighborhood,
+        solution,
+        "the Solution",
+        options,
+        rng,
+        [&](const Solution& start, const std::string& from) {
+            using evaluation_type =
+                std::remove_cvref_t<decltype(evaluation.evaluate(start))>;
+            std::optional<evaluation_type> current;
+            if (!testing::detail::guarded(
+                    report,
+                    "evaluation",
+                    "evaluating " + from,
+                    [&] { current.emplace(evaluation.evaluate(start)); }))
+                return;
 
-            const auto valid = static_cast<bool>(neighborhood.is_valid(solution, *move));
-            report.check(
-                valid,
-                "random proposal",
-                "random_move produced a move that does not satisfy is_valid");
-            if (!valid)
-                continue;
+            if constexpr (deterministic_neighborhood_for<NHE, Solution>)
+            {
+                std::vector<move_type> moves;
+                if (testing::detail::guarded(
+                        report,
+                        "neighborhood move validity",
+                        "enumerating the moves of " + from,
+                        [&] {
+                            moves = testing::detail::sample_moves(
+                                neighborhood,
+                                start,
+                                options.max_enumerated_moves,
+                                rng);
+                        }))
+                {
+                    for (std::size_t index = 0; index < moves.size(); ++index)
+                        check_app_move(
+                            report,
+                            solution_manager,
+                            neighborhood,
+                            evaluation,
+                            start,
+                            *current,
+                            testing::detail::move_label(index, moves[index]) + " from "
+                                + from,
+                            moves[index],
+                            options.tolerance);
+                }
+            }
 
-            auto candidate = solution;
-            neighborhood.make_move(candidate, *move);
-            report.check(
-                static_cast<bool>(solution_manager.is_valid(candidate)),
-                "random proposal application",
-                "random_move followed by make_move produced an invalid Solution");
-        }
-    }
+            if constexpr (random_neighborhood_for<NHE, Solution, std::mt19937_64>)
+            {
+                for (std::size_t sample = 0; sample < options.random_samples; ++sample)
+                {
+                    std::optional<move_type> move;
+                    if (!testing::detail::guarded(
+                            report,
+                            "random proposal",
+                            "draw " + std::to_string(sample) + " from " + from,
+                            [&] {
+                                move = easylocal::random_move(neighborhood, start, rng);
+                            }))
+                        break;
+                    if (!move)
+                        continue;
+                    const auto label = testing::detail::move_label(sample, *move)
+                        + " drawn from " + from;
+                    testing::detail::guarded(report, "random proposal", label, [&] {
+                        const auto valid =
+                            static_cast<bool>(neighborhood.is_valid(start, *move));
+                        report.check(
+                            valid,
+                            "random proposal",
+                            label
+                                + ": random_move produced a move that does not satisfy "
+                                  "is_valid");
+                        if (!valid)
+                            return;
+                        auto candidate = start;
+                        neighborhood.make_move(candidate, *move);
+                        report.check(
+                            static_cast<bool>(solution_manager.is_valid(candidate)),
+                            "random proposal application",
+                            label + ": make_move produced an invalid Solution");
+                    });
+                }
+            }
+        });
+
+    testing::detail::check_random_moves_against_enumeration(
+        report,
+        neighborhood,
+        solution,
+        options);
 }
 
 // The check of the registration names, which binding the app requires: false
@@ -360,13 +427,23 @@ bool check_runners(const App& application, app_check_report& report)
 }
 
 // The check of the parameters of the whole app, among them those of its
-// pipelines' stages: their values, and stage names that are distinct and
-// non-empty. False when some are invalid, which binding the app rejects.
+// pipelines' stages: their values, one failed check per invalid block with
+// its path, and stage names that are distinct and non-empty. False when some
+// are invalid, which binding the app rejects.
 template<class App>
 bool check_configuration(const App& application, app_check_report& report)
 {
     try
     {
+        const auto validation = config::validate(application.configuration());
+        for (const auto& diagnostic : validation.diagnostics)
+            report.check(
+                false,
+                "app configuration",
+                (diagnostic.path.empty() ? std::string{} : diagnostic.path + ": ")
+                    + diagnostic.message);
+        if (!validation)
+            return false;
         application.check_configuration();
     }
     catch (const std::invalid_argument& error)
@@ -378,53 +455,42 @@ bool check_configuration(const App& application, app_check_report& report)
     return true;
 }
 
-} // namespace detail
-
-/// Runs the contract checks of easylocal::testing on the components of an app
-/// bound to instance, from solution, with the seed and the tolerance of
-/// options, and returns their report.
-///
-/// It checks that the services refer to instance, that solution is valid and
-/// evaluates twice to the same cost, that the first 128 enumerated moves and 16
-/// random moves of each neighborhood (the app's, and those of the runners that
-/// have their own) are valid and lead to valid solutions (with the incremental
-/// evaluation matching the full one, by the cost's equivalence or within the
-/// tolerance of the options, when the cost defines equivalence, and
-/// the sign of cost::delta agreeing with a root compare of the cost), and
-/// that each registered runner's parameters are a parameter block (unless it
-/// has none), are valid and construct it. The
-/// runners and the app's parameters are checked first: with invalid ones the
-/// app is not bound, since binding it rejects them.
-template<class App, class Instance, class Solution>
-[[nodiscard]] app_check_report check(
-    const App& application,
-    const Instance& instance,
-    Solution solution,
-    const testing::check_options& options = {})
-    requires requires {
-        application.bind(instance).solution_manager().is_valid(solution);
-    }
+// The composition an app declares, the neighborhoods of its runners left to
+// the checks that bind it.
+template<class App>
+void count_composition(app_check_report& report)
 {
-    using bound_type = decltype(application.bind(instance));
-    using solution_manager_type = typename bound_type::solution_manager_type;
-    using neighborhood_type = typename bound_type::neighborhood_explorer_type;
+    report.composition().runner_registrations = App::runner_count;
+}
 
-    app_check_report report{application.name()};
-    report.coverage().solution_managers = 1;
-    report.coverage().cost_components =
-        detail::app_cost_component_count_v<solution_manager_type>;
-    report.coverage().neighborhood_graphs = 1;
-    report.coverage().delta_bindings =
-        detail::app_delta_binding_count_v<neighborhood_type>;
-    report.coverage().runner_registrations = App::runner_count;
+// The checks that do not need the app bound: the registration names, the
+// runners and the parameters of the app; false when the app cannot be bound.
+template<class App>
+bool check_unbound(const App& application, app_check_report& report)
+{
+    count_composition<App>(report);
+    return check_registration_names(application, report)
+        && check_runners(application, report) && check_configuration(application, report);
+}
 
-    // Binding the app requires valid registration names and valid parameters,
-    // and constructs its runners.
-    if (!detail::check_registration_names(application, report)
-        || !detail::check_runners(application, report)
-        || !detail::check_configuration(application, report))
-        return report;
-    auto bound = application.bind(instance);
+// The checks of the bound app from solution.
+template<class Bound, class Instance, class Solution>
+void check_bound(
+    const Bound& bound,
+    const Instance& instance,
+    const Solution& solution,
+    const testing::check_options& options,
+    app_check_report& report)
+{
+    using solution_manager_type = typename Bound::solution_manager_type;
+    using neighborhood_type = typename Bound::neighborhood_explorer_type;
+    auto& checks = checks_of(report);
+
+    auto& composition = report.composition();
+    composition.solution_managers = 1;
+    composition.cost_components = app_cost_component_count_v<solution_manager_type>;
+    composition.neighborhoods = 1;
+    composition.delta_bindings = app_delta_binding_count_v<neighborhood_type>;
 
     const auto& solution_manager = bound.solution_manager();
     const auto& neighborhood = bound.neighborhood();
@@ -442,52 +508,77 @@ template<class App, class Instance, class Solution>
         "neighborhood input binding",
         "NeighborhoodExplorer::input() does not refer to the app Input");
 
-    const auto valid_solution = static_cast<bool>(solution_manager.is_valid(solution));
+    bool valid_solution = false;
+    testing::detail::guarded(checks, "check solution", "is_valid(solution)", [&] {
+        valid_solution = static_cast<bool>(solution_manager.is_valid(solution));
+    });
     report.check(
         valid_solution,
         "check solution",
         "the Solution supplied to check(app, input, solution) is invalid");
     if (!valid_solution)
-        return report;
+        return;
 
     if constexpr (requires { solution_manager.evaluate(solution); })
     {
-        const auto first = solution_manager.evaluate(solution);
-        const auto second = solution_manager.evaluate(solution);
-        if constexpr (requires {
-                          { first == second } -> std::convertible_to<bool>;
-                      })
-        {
+        testing::detail::guarded(checks, "repeat evaluation", "evaluate(solution)", [&] {
+            const auto first = solution_manager.evaluate(solution);
+            const auto second = solution_manager.evaluate(solution);
+            bool same = true;
+            if constexpr (cost::has_equivalent<solution_manager_type>)
+                same = cost::equivalent(solution_manager, first, second);
+            else if constexpr (requires {
+                                   { first == second } -> std::convertible_to<bool>;
+                               })
+                same = static_cast<bool>(first == second);
             report.check(
-                static_cast<bool>(first == second),
+                same,
                 "repeat evaluation",
-                "evaluating the same Solution twice produced different costs");
+                "evaluating the same Solution twice gave "
+                    + testing::detail::value_text(first) + " and then "
+                    + testing::detail::value_text(second));
+        });
+    }
+
+    if constexpr (has_random_solution<solution_manager_type, std::mt19937_64>)
+    {
+        std::mt19937_64 rng{options.seed};
+        for (std::size_t sample = 0; sample < options.random_samples; ++sample)
+        {
+            const auto label = "random solution " + std::to_string(sample);
+            if (!testing::detail::guarded(checks, "random solution", label, [&] {
+                    const auto random = solution_manager.random_solution(rng);
+                    report.check(
+                        static_cast<bool>(solution_manager.is_valid(random)),
+                        "random solution",
+                        label + ": random_solution(rng) returned an invalid Solution");
+                }))
+                break;
         }
     }
 
     // The app's neighborhood, then those the runners have of their own.
-    detail::check_app_neighborhood(
-        report,
-        solution_manager,
-        neighborhood,
-        solution,
-        options);
-    detail::app_access::for_each_own_neighborhood(
+    check_app_neighborhood(checks, solution_manager, neighborhood, solution, options);
+    app_access::for_each_own_neighborhood(
         bound,
         [&](std::string_view, const auto& own_neighborhood) {
-            ++report.coverage().neighborhood_graphs;
-            report.coverage().delta_bindings += detail::app_delta_binding_count_v<
+            ++composition.neighborhoods;
+            composition.delta_bindings += app_delta_binding_count_v<
                 std::remove_cvref_t<decltype(own_neighborhood)>>;
-            detail::check_app_neighborhood(
-                report,
+            check_app_neighborhood(
+                checks,
                 solution_manager,
                 own_neighborhood,
                 solution,
                 options);
         });
+}
 
-    // Every parameter declares its domain, for validation and tuning: a
-    // range, one_of, or easylocal::unlimited for any value.
+// Every parameter declares its domain, for validation and tuning: a range,
+// one_of, or easylocal::unlimited for any value.
+template<class App>
+void check_domains(const App& application, app_check_report& report)
+{
     try
     {
         const auto undeclared = config::undeclared_domains(application.configuration());
@@ -505,16 +596,55 @@ template<class App, class Instance, class Solution>
     }
     catch (const std::invalid_argument&)
     {
-        // Reported above, as an invalid app configuration.
+        // Reported as an invalid app configuration.
     }
+}
 
+} // namespace detail
+
+/// Runs the contract checks of easylocal::testing on the components of an app
+/// bound to instance, from solution and from random solutions, with the
+/// options of the checks, and returns their report.
+///
+/// It checks that the services refer to instance, that solution is valid and
+/// evaluates twice to an equivalent cost, that random solutions are valid,
+/// and that the moves of each neighborhood (the app's, and those of the
+/// runners that have their own) from solution and from the random solutions
+/// of the options (`random_solutions` solutions walked by `walk_length` random
+/// moves) are valid and lead to valid solutions: a sample of
+/// `max_enumerated_moves` enumerated moves and `random_samples` random ones,
+/// whose incremental evaluation matches the full one (by the cost's
+/// equivalence or within the tolerance of the options, when the cost defines
+/// equivalence), with the sign of cost::delta agreeing with a root compare of
+/// the cost, and random moves among the enumerated ones. It checks that each
+/// registered runner's parameters are a parameter block (unless it has
+/// none), are valid and construct it. The runners and the app's parameters
+/// are checked first: with invalid ones the app is not bound, since binding it
+/// rejects them. A failure names the move and the solution it starts from; an
+/// exception of a hook is a failure.
+template<class App, class Instance, class Solution>
+[[nodiscard]] app_check_report check(
+    const App& application,
+    const Instance& instance,
+    Solution solution,
+    const testing::check_options& options = {})
+    requires requires {
+        application.bind(instance).solution_manager().is_valid(solution);
+    }
+{
+    app_check_report report{application.name()};
+    if (!detail::check_unbound(application, report))
+        return report;
+    auto bound = application.bind(instance);
+    detail::check_bound(bound, instance, solution, options, report);
+    detail::check_domains(application, report);
     return report;
 }
 
 /// Runs check(app, instance, solution, options) from the SolutionManager's
-/// initial_solution().
+/// initial_solution(), binding the app once.
 template<class App, class Instance>
-[[nodiscard]] auto check(
+[[nodiscard]] app_check_report check(
     const App& application,
     const Instance& instance,
     const testing::check_options& options = {})
@@ -522,20 +652,22 @@ template<class App, class Instance>
         application.bind(instance).solution_manager().initial_solution();
     }
 {
-    // Binding the app requires valid registration names and valid parameters,
-    // and constructs its runners.
     app_check_report report{application.name()};
-    report.coverage().runner_registrations = App::runner_count;
-    if (!detail::check_registration_names(application, report)
-        || !detail::check_runners(application, report)
-        || !detail::check_configuration(application, report))
+    if (!detail::check_unbound(application, report))
         return report;
     auto bound = application.bind(instance);
-    return check(
-        application,
-        instance,
-        bound.solution_manager().initial_solution(),
-        options);
+    std::optional<
+        std::remove_cvref_t<decltype(bound.solution_manager().initial_solution())>>
+        initial;
+    if (!testing::detail::guarded(
+            checks_of(report),
+            "check solution",
+            "initial_solution()",
+            [&] { initial.emplace(bound.solution_manager().initial_solution()); }))
+        return report;
+    detail::check_bound(bound, instance, *initial, options, report);
+    detail::check_domains(application, report);
+    return report;
 }
 
 } // namespace easylocal

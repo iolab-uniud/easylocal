@@ -719,9 +719,9 @@ void session_runs_app_check_on_the_current_solution()
 
     assert(report.passed());
     assert(report.checks() > 0);
-    assert(report.coverage().solution_managers == 1);
-    assert(report.coverage().neighborhood_graphs == 1);
-    assert(report.coverage().runner_registrations == 1);
+    assert(report.composition().solution_managers == 1);
+    assert(report.composition().neighborhoods == 1);
+    assert(report.composition().runner_registrations == 1);
 }
 
 void session_check_reports_an_invalid_current_solution()

@@ -8,13 +8,14 @@
 /// Session and the TextUI use the same functions; a program without them calls
 /// them directly.
 
+#include <easylocal/utils/detail/describe.hpp>
+
 #include <concepts>
 #include <exception>
 #include <filesystem>
 #include <fstream>
 #include <istream>
 #include <ostream>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -32,7 +33,6 @@ namespace adl
 void read_input() = delete;
 void read_solution() = delete;
 void write_solution() = delete;
-void describe() = delete;
 
 template<class Input>
 concept has_read_input = requires(std::istream& in) {
@@ -73,19 +73,6 @@ void call_write_solution(const Input& input, const Solution& solution, std::ostr
     write_solution(input, solution, out);
 }
 
-template<class T>
-concept has_describe = requires(const T& value) {
-    { describe(value) } -> std::convertible_to<std::string>;
-};
-
-template<class T>
-    requires has_describe<T>
-[[nodiscard]]
-std::string call_describe(const T& value)
-{
-    return describe(value);
-}
-
 } // namespace adl
 
 template<class Input>
@@ -111,16 +98,6 @@ concept has_member_solution_write =
     requires(const Input& input, const Solution& solution, std::ostream& out) {
         solution.write(input, out);
     };
-
-template<class T>
-concept ostream_insertable = requires(std::ostream& out, const T& value) {
-    out << value;
-};
-
-template<class T>
-concept member_describable = requires(const T& value) {
-    { value.describe() } -> std::convertible_to<std::string>;
-};
 
 inline void require_read_success(const std::istream& in, const std::string_view what)
 {
@@ -305,20 +282,7 @@ struct describe_fn
     [[nodiscard]]
     std::string operator()(const T& value) const
     {
-        if constexpr (member_describable<T>)
-        {
-            return std::string{value.describe()};
-        }
-        else if constexpr (adl::has_describe<T>)
-        {
-            return std::string{adl::call_describe(value)};
-        }
-        else
-        {
-            std::ostringstream out;
-            out << value;
-            return out.str();
-        }
+        return describe_text(value);
     }
 };
 

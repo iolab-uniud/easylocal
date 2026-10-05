@@ -92,8 +92,9 @@ private:
     std::vector<check_failure> failures_;
 };
 
-/// Prints `report` to `out`: the number of checks passed, or each failure with
-/// its message.
+/// Prints `report` to `out`: the number of checks passed, or the failures
+/// grouped by check, in the order of their first failure, each with its count
+/// and the messages of its first three.
 inline void print_report(
     std::ostream& out,
     const check_report& report)
@@ -109,10 +110,30 @@ inline void print_report(
         << report.failures().size() << " failure(s) in "
         << report.checks() << " checks\n";
 
-    for (const auto& failure : report.failures())
+    constexpr std::size_t shown = 3;
+    const auto failures = report.failures();
+    std::vector<bool> printed(failures.size());
+    for (std::size_t first = 0; first < failures.size(); ++first)
     {
-        out << "[fail] " << failure.check << "\n"
-            << "       " << failure.message << "\n";
+        if (printed[first])
+            continue;
+        std::vector<std::size_t> group;
+        for (std::size_t index = first; index < failures.size(); ++index)
+        {
+            if (!printed[index] && failures[index].check == failures[first].check)
+            {
+                printed[index] = true;
+                group.push_back(index);
+            }
+        }
+        out << "[fail] " << failures[first].check;
+        if (group.size() > 1)
+            out << " (" << group.size() << " failures)";
+        out << "\n";
+        for (std::size_t index = 0; index < group.size() && index < shown; ++index)
+            out << "       " << failures[group[index]].message << "\n";
+        if (group.size() > shown)
+            out << "       ... and " << group.size() - shown << " more\n";
     }
 }
 
@@ -182,16 +203,27 @@ private:
 
 static_assert(std::uniform_random_bit_generator<deterministic_rng>);
 
+/// A report of checks: a check_report, or the report of check(app) (an
+/// `app_check_report`), which print_report() writes and passed() sums up.
+template<class Report>
+concept printable_report = requires(std::ostream& out, const Report& report) {
+    print_report(out, report);
+    { report.passed() } -> std::convertible_to<bool>;
+};
+
 /// Prints the reports to `out`, separated by blank lines, and returns
 /// `EXIT_SUCCESS` when all passed, `EXIT_FAILURE` otherwise.
+///
+/// Requires reports that print_report() writes: check_report, and the report
+/// of check(app).
 template<class... Reports>
-    requires(std::same_as<std::remove_cvref_t<Reports>, check_report> && ...)
+    requires(printable_report<std::remove_cvref_t<Reports>> && ...)
 int run_checks(std::ostream& out, Reports&&... reports)
 {
     bool passed = true;
     bool first = true;
 
-    auto print_one = [&](const check_report& report) {
+    auto print_one = [&](const auto& report) {
         if (!first)
         {
             out << '\n';
@@ -207,8 +239,11 @@ int run_checks(std::ostream& out, Reports&&... reports)
 
 /// Prints the reports to `std::cerr` and returns `EXIT_SUCCESS` when all
 /// passed, `EXIT_FAILURE` otherwise.
+///
+/// Requires reports that print_report() writes: check_report, and the report
+/// of check(app).
 template<class... Reports>
-    requires(std::same_as<std::remove_cvref_t<Reports>, check_report> && ...)
+    requires(printable_report<std::remove_cvref_t<Reports>> && ...)
 int run_checks(Reports&&... reports)
 {
     return run_checks(std::cerr, std::forward<Reports>(reports)...);

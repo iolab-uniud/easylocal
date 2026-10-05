@@ -164,7 +164,7 @@ int main()
     // check(app) checks both neighborhoods.
     const auto report = el::check(application, input);
     assert(report.passed());
-    assert(report.coverage().neighborhood_graphs == 2);
+    assert(report.composition().neighborhoods == 2);
 
     // A session runs it like any runner; its moves are the app's.
     el::Session session{application, input, 1};

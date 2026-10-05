@@ -352,6 +352,14 @@ easylocal_add_test(
 )
 
 easylocal_add_test(
+    testing-broken-components
+    SOURCES
+        testing_broken_components.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
+
+easylocal_add_test(
     assignment-model
     SOURCES
         assignment_model.cpp

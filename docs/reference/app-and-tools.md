@@ -128,7 +128,7 @@ solution; the TextUI does not show it yet.
 
 | Tool | Purpose |
 | --- | --- |
-| `check(app, input[, solution][, options]) -> app_check_report` | contract checks of the composed problem, with the seed and the cost tolerance of `testing::check_options`; `print_report` |
+| `check(app, input[, solution][, options]) -> app_check_report` | contract checks of the composed problem, with `testing::check_options` (samples, random solutions, seed, cost tolerance); `print_report`, `composition()` |
 | `cli::run(app, argc, argv[, options]) -> int` | the app as a command-line program (`<easylocal/app/cli.hpp>`): see below |
 | `tui::run(app, options)`, `tui::run_launcher(options, apps...)` | interactive terminal tester (TUI component, FTXUI); `tui::options` |
 | `rest::blueprint(prefix, app, codec, options)` | Crow blueprint: asynchronous runs, status, cancellation, solutions (REST component); see [REST](../rest.md) |

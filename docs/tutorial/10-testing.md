@@ -7,9 +7,11 @@ SolutionManager built on them.
 <!-- snippet: tutorial/checks.cpp:fixture -->
 ```cpp
 namespace elt = easylocal::testing;
+// Not the identity tour: on 0, 1, 2, 3, 4 position k holds city k, and a
+// delta that mixes up positions and cities would still be right.
 const elt::fixture<tutorial::TourManager> tsp{
     tutorial::five_cities(),
-    tutorial::Tour{{0, 1, 2, 3, 4}},
+    tutorial::Tour{{0, 2, 4, 1, 3}},
 };
 ```
 
@@ -34,17 +36,28 @@ return elt::run_checks(
 | --- | --- |
 | `check_solution_manager(f)` | the fixture, initial and random solutions are valid |
 | `check_cost_component<Component>(f)` | evaluating the same solution twice gives equivalent values |
-| `check_neighborhood<NHE>(f)` | enumerated and sampled moves are valid and keep the solution valid |
+| `check_neighborhood<NHE>(f)` | enumerated and sampled moves are valid, keep the solution valid and change it; random moves are enumerated ones, drawn from the generator given |
 | `check_delta_evaluator<NHE, Component, Delta>(f)` | `value + delta` equals the full re-evaluation after each valid move |
+
+The move checks start from the fixture's Solution and from a few random
+solutions (`random_solution`, then some random moves): a delta can be right on
+one solution and wrong on the others. The fixture above is not the identity
+tour for the same reason: on `0, 1, 2, 3, 4` position `k` holds city `k`, so a
+delta that reads `distance[i][j]` where it should read
+`distance[order[i]][order[j]]` would pass. A failure names the move, the
+solution it starts from and the two values that disagree; the failures of one
+check are printed together, three of them, and a hook that throws fails the
+check instead of stopping the program.
 
 For a co-located delta (chapter 4) omit the third type, as for
 `TourLengthWithDelta` above: the check then uses the component's own
 `delta_evaluate`.
 
 Without a Solution, `fixture<SM>{input}` uses the SolutionManager's initial
-solution. A third argument sets the sampling limits and the seed of the random
-draws (`{.random_samples = 16, .max_enumerated_moves = 256, .seed = 7}`) and
-the tolerance of the comparisons. Values are compared with
+solution. A third argument sets the sampling limits, the random solutions and
+the seed of the random draws (`{.random_samples = 16, .max_enumerated_moves =
+256, .random_solutions = 4, .walk_length = 8, .seed = 7}`) and the tolerance of
+the comparisons. Values are compared with
 `testing::approximately`: floating-point values within a relative and an
 absolute tolerance (1e-9 by default), since a length updated by deltas differs
 from the full one in the last bits, and the others exactly;
