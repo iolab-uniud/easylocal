@@ -547,7 +547,8 @@ public:
     }
 
     /// The same pipeline, with its RNG seeded with `seed`: this pipeline on an
-    /// lvalue, the moved pipeline on a temporary.
+    /// lvalue, the moved pipeline on a temporary. Each solve() continues the
+    /// stream, so the seed reproduces the sequence of solves.
     template<class Self>
         requires std::constructible_from<RNG, std::uint64_t>
     builder_result<Self> seed(this Self&& self, const std::uint64_t seed)

@@ -1089,6 +1089,16 @@ easylocal_add_test(
 )
 
 easylocal_add_test(
+    reproducibility
+    SOURCES
+        reproducibility.cpp
+    LIBRARIES
+        EasyLocal::Core
+    DEFINITIONS
+        EASYLOCAL_TUTORIAL_INSTANCE="${PROJECT_SOURCE_DIR}/examples/tutorial/five.tsp"
+)
+
+easylocal_add_test(
     tuning
     SOURCES
         tuning.cpp

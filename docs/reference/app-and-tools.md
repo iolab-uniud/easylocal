@@ -105,8 +105,12 @@ neighborhood and the runners.
 
 Tools give stochastic runners an RNG they own, from a configurable seed: the
 TextUI `seed` option (also editable on its Run page) and REST's per-run `seed`
-(default `blueprint_options::seed + run id`). `run("name", ...)` passes the RNG
-to the algorithm only if it takes one, so deterministic runners ignore it.
+(default `blueprint_options::seed + run id`). Each run of a `Session`, and so
+of every tool, gets a generator of its own, seeded with one draw of the
+session's RNG: the same seed and the same commands give the same runs in every
+frontend (the conditions are in [Stability](../stability.md#reproducibility)).
+`run("name", ...)` passes the RNG to the algorithm only if it takes one, so
+deterministic runners ignore it.
 
 The TextUI edits the app's parameters in modal windows: `G` on the Run page
 opens the selected runner's (`runners.<name>.*`) before running it, `P` the

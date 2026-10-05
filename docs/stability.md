@@ -32,10 +32,30 @@ should keep a default branch.
 
 ## Reproducibility
 
-A seed reproduces a run or a solve on the same platform and standard library.
-Results are not reproducible across standard libraries (libstdc++, libc++):
-`std` distributions such as `std::uniform_int_distribution` are
-implementation-defined.
+A seed reproduces a run or a solve on the same platform and standard library,
+under these conditions:
+
+- **No time limit.** A run bounded by evaluations, iterations or a target is
+  reproduced; one ended by a time limit (`timeout`, `--timeout`, the TextUI's
+  *seconds*, REST's `timeout`) stops after however many evaluations the
+  machine makes in that time.
+- **The same commands, in the same order.** A session (`Session`,
+  `cli::run`, the TextUI, each REST run) seeds its RNG once. A random solution
+  draws from it, and each run gets a generator of its own, seeded with one
+  draw of it: the same seed and the same sequence of commands (random
+  solutions, runs, random moves) give the same runs in every frontend, and
+  the second run of a session differs from the first.
+- **A solver's stream.** A solver (`LocalSearch`, `MultiStart`, a pipeline)
+  seeds its RNG once, at construction or with `.seed(...)`; each `solve()`
+  continues the stream, so its seed reproduces the sequence of solves, not
+  each solve on its own.
+- **REST seeds.** A REST run is reproduced by its seed: the request's `seed`,
+  or `blueprint_options::seed` plus the run id, which depends on the runs the
+  service started before it.
+- **The same standard library.** Results are not reproducible across standard
+  libraries (libstdc++, libc++, Microsoft's): `std` distributions such as
+  `std::uniform_int_distribution`, `std::shuffle` and `std::hash` (which the
+  helpers of `utils/hash.hpp` combine) are implementation-defined.
 
 ## Supported toolchains
 

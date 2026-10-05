@@ -137,7 +137,10 @@ There is never an implicit fallback from one mode to the other.
 ## Design choices
 
 - **The solver owns randomness.** One RNG feeds random initialization and
-  random-aware runners, so a seed reproduces the whole solve.
+  random-aware runners, so a seed reproduces the whole solve. The RNG is
+  seeded once, at construction or with `.seed(...)`: each `solve()`
+  continues its stream, so a seed reproduces the sequence of solves, and a
+  second `solve()` differs from the first. Seed again to repeat one.
 - **Runners stay solution-to-solution.** Construction belongs to solvers, which
   keeps runners composable.
 - **One way to chain runners.** The hierarchical hard/soft model is a pipeline

@@ -261,7 +261,8 @@ public:
     /// A session without an Input yet: set_input or load_input provides it, as
     /// in an interactive frontend.
     ///
-    /// The seed initializes the RNG the session gives to stochastic runners.
+    /// The seed initializes the RNG of the session, which draws random
+    /// solutions and seeds the generator of each run.
     explicit Session(App application, const std::uint64_t seed = 0)
         : app_{std::move(application)}, rng_{seed}
     {
@@ -590,7 +591,10 @@ public:
     /// solution, which it replaces with the result; false when nothing has
     /// that name.
     ///
-    /// The options are run options, such as with(control, tracer), stop_at,
+    /// The run gets a generator of its own, seeded with one draw of the
+    /// session's RNG (`rng_type{rng()()}`), so successive runs differ and a
+    /// seed reproduces them in order. The options are run options, such as
+    /// with(control, tracer), stop_at,
     /// timeout and max_evaluations. Like every app run, it uses freshly bound
     /// services and the current runner parameters, not this session's bound
     /// app. Throws `std::invalid_argument`, and changes nothing, when the
@@ -609,9 +613,20 @@ public:
         }
         // The effort is the last run's: none until this one completes.
         last_run_effort_.reset();
+        const auto names = app_.runner_names();
+        if (std::ranges::find(names, name) == names.end())
+            return false;
 
-        auto result =
-            app_.run(name, *input_, *solution_, rng_, std::forward<Options>(options)...);
+        // Each run draws its own generator from the session's, as the TextUI
+        // does for its background runs: the same seed and the same commands
+        // give the same runs in every frontend.
+        rng_type run_rng{rng_()};
+        auto result = app_.run(
+            name,
+            *input_,
+            *solution_,
+            run_rng,
+            std::forward<Options>(options)...);
         if (!result)
             return false;
 

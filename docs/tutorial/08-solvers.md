@@ -32,7 +32,8 @@ Tour random_solution(RNG& rng) const
 ```
 
 The RNG is passed in, never created inside: the solver owns it, so its `seed`
-reproduces every start.
+reproduces every start. It is seeded once: a second `solve()` continues the
+stream and finds other starts.
 
 The built-in solvers live in `easylocal::solvers`:
 

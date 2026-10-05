@@ -22,7 +22,8 @@ struct LocalSearchConfig
 {
     /// How the initial solution is built: a tag or an initialization::Mode.
     Initialization initialization{initialization::random};
-    /// The seed of the solver's RNG.
+    /// The seed of the solver's RNG, seeded once: each solve() continues its
+    /// stream, so the seed reproduces the sequence of solves.
     std::uint64_t seed{0};
 };
 

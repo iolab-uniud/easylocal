@@ -37,6 +37,14 @@ reviewed by hand before tagging.
   `for_each_runner_registration`) are no longer public: an algorithm
   registered twice (`"sa-fast"`, `"sa-slow"`) had no single runner. A solver
   is `make_solver<Solver>(application.make_runner<A>("name"), config)`.
+- **Breaking:** `Session::run` gives each run a generator of its own, seeded
+  with one draw of the session's RNG, as the TextUI already did: the same seed
+  and the same commands now give the same runs in `Session`, `cli::run`, the
+  TextUI and REST, where the TextUI's runs differed from the others'. Runs of
+  stochastic runners differ from those of alpha.1 with the same seed.
+  `docs/stability.md` lists the conditions of reproducibility (no time limit,
+  the same commands in order, a solver's stream across `solve()` calls, REST
+  seeds, the same standard library).
 
 ### Changed
 
