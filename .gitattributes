@@ -1,0 +1,7 @@
+# Text files are normalized to LF in the repository and checked out with the
+# platform's line endings; the scripts and hooks keep LF everywhere, as bash
+# and the shebang need it.
+* text=auto
+*.sh text eol=lf
+*.py text eol=lf
+.githooks/* text eol=lf
