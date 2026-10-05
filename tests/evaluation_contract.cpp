@@ -226,13 +226,6 @@ concept move_backed_candidate =
         candidate.move();
     };
 
-template<class Candidate>
-concept solution_backed_candidate =
-    requires(Candidate& candidate)
-    {
-        candidate.solution();
-    };
-
 template<bool Materialized>
 class ProbeOneMove
 {
@@ -251,10 +244,12 @@ public:
         const auto evaluation = context.evaluation();
         using candidate_type = typename decltype(evaluation)::candidate_type;
 
+        // Every candidate keeps its move; a cost without a delta for every
+        // component evaluates it on a scratch solution with the move made.
+        static_assert(move_backed_candidate<candidate_type>);
         static_assert(
-            move_backed_candidate<candidate_type> == !Materialized);
-        static_assert(
-            solution_backed_candidate<candidate_type> == Materialized);
+            std::remove_cvref_t<decltype(evaluation)>::materializes_candidates
+            == Materialized);
 
         auto current = evaluation.evaluate(solution);
         const auto initial_cost = current.cost();

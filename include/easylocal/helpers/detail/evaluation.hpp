@@ -11,6 +11,7 @@
 #include <cassert>
 #include <concepts>
 #include <cstddef>
+#include <optional>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -93,17 +94,22 @@ private:
     Cost cost_;
 };
 
-template<class Solution, class Move, class Evaluation, bool Materialized>
-class candidate_evaluation;
-
-template<class Solution, class Move, class Evaluation>
-class candidate_evaluation<Solution, Move, Evaluation, false>
+// The evaluation of a move: its cost (with the component values), the move,
+// which commit() applies to the solution, and the number of the scratch
+// solution it was evaluated on (0: none).
+template<class Move, class Evaluation>
+class candidate_evaluation
 {
 public:
-    candidate_evaluation(Evaluation evaluation, Move move)
-        : evaluation_{std::move(evaluation)},
-          move_{std::move(move)}
+    candidate_evaluation(Evaluation evaluation, Move move, const std::size_t scratch = 0)
+        : evaluation_{std::move(evaluation)}, move_{std::move(move)}, scratch_{scratch}
     {
+    }
+
+    [[nodiscard]]
+    std::size_t scratch() const noexcept
+    {
+        return scratch_;
     }
 
     [[nodiscard]]
@@ -127,39 +133,7 @@ public:
 private:
     Evaluation evaluation_;
     Move move_;
-};
-
-template<class Solution, class Move, class Evaluation>
-class candidate_evaluation<Solution, Move, Evaluation, true>
-{
-public:
-    candidate_evaluation(Evaluation evaluation, Solution solution)
-        : evaluation_{std::move(evaluation)},
-          solution_{std::move(solution)}
-    {
-    }
-
-    [[nodiscard]]
-    decltype(auto) cost() const noexcept
-    {
-        return evaluation_.cost();
-    }
-
-    [[nodiscard]]
-    Evaluation& evaluation() & noexcept
-    {
-        return evaluation_;
-    }
-
-    [[nodiscard]]
-    Solution& solution() & noexcept
-    {
-        return solution_;
-    }
-
-private:
-    Evaluation evaluation_;
-    Solution solution_;
+    std::size_t scratch_;
 };
 
 template<class NHE, class = void>
@@ -458,11 +432,10 @@ public:
         materialized_evaluation<cost_type, component_values_type>;
 
     using move_type = typename NHE::move_type;
-    using candidate_type = candidate_evaluation<
-        solution_type,
-        move_type,
-        evaluation_type,
-        needs_materialized_candidate()>;
+    using candidate_type = candidate_evaluation<move_type, evaluation_type>;
+    // Whether a move is evaluated on a copy of the solution with the move
+    // made: when a component has no delta.
+    static constexpr bool materializes_candidates = needs_materialized_candidate();
 
     evaluation_facility(
         const SM& solution_manager,
@@ -504,12 +477,18 @@ public:
         const evaluation_type& current,
         const move_type& move) const
     {
-        assert(solution_manager_.is_valid(current_solution));
         assert(neighborhood_.is_valid(current_solution, move));
 
         if constexpr (needs_materialized_candidate())
         {
-            auto candidate_solution = current_solution;
+            // The solution with the move made, in a scratch solution reused
+            // from one move to the next: a copy assignment keeps its storage.
+            if (scratch_.has_value())
+                *scratch_ = current_solution;
+            else
+                scratch_.emplace(current_solution);
+            scratch_number_ = ++scratches_;
+            auto& candidate_solution = *scratch_;
             neighborhood_.make_move(candidate_solution, move);
             assert(solution_manager_.is_valid(candidate_solution));
 
@@ -529,7 +508,8 @@ public:
                         std::move(component_values),
                         std::move(cost),
                     },
-                    std::move(candidate_solution),
+                    move,
+                    scratch_number_,
                 };
             }
             else
@@ -539,7 +519,8 @@ public:
                         {},
                         solution_manager_.evaluate(candidate_solution),
                     },
-                    std::move(candidate_solution),
+                    move,
+                    scratch_number_,
                 };
             }
         }
@@ -574,17 +555,23 @@ public:
         evaluation_type& current,
         candidate_type&& candidate) const
     {
+        // The candidate of the last move evaluated on the scratch solution is
+        // swapped in; another one (kept while others were evaluated) has its
+        // move made again, which keeps no solution per candidate.
         if constexpr (needs_materialized_candidate())
         {
-            solution = std::move(candidate.solution());
+            if (scratch_.has_value() && candidate.scratch() != 0
+                && candidate.scratch() == scratch_number_)
+            {
+                using std::swap;
+                swap(solution, *scratch_);
+                scratch_number_ = 0;
+                current = std::move(candidate.evaluation());
+                return;
+            }
         }
-        else
-        {
-            assert(solution_manager_.is_valid(solution));
-            assert(neighborhood_.is_valid(solution, candidate.move()));
-            neighborhood_.make_move(solution, candidate.move());
-        }
-
+        assert(neighborhood_.is_valid(solution, candidate.move()));
+        neighborhood_.make_move(solution, candidate.move());
         assert(solution_manager_.is_valid(solution));
         current = std::move(candidate.evaluation());
     }
@@ -592,6 +579,11 @@ public:
 private:
     const SM& solution_manager_;
     const NHE& neighborhood_;
+    // The candidate solution of the last move evaluated on one, its number
+    // (0 once committed) and the count of the moves evaluated on it.
+    mutable std::optional<solution_type> scratch_;
+    mutable std::size_t scratch_number_{};
+    mutable std::size_t scratches_{};
 };
 
 } // namespace easylocal::detail

@@ -250,6 +250,12 @@ reviewed by hand before tagging.
 - The TimeBased annealing schedule reads its clock as a run checks its time
   limit, at an interval of proposals that adapts to about a millisecond
   between readings, and at each early cooling, instead of at every proposal.
+- A move whose cost needs the candidate solution (a component without a
+  delta) is evaluated on a scratch solution reused from one move to the next,
+  instead of a new copy per move; a candidate keeps its move, and its commit
+  swaps the scratch solution in when it is the last one evaluated, or makes
+  the move again otherwise (Best Improvement, Tabu Search). Debug builds no
+  longer check the whole current solution at every evaluation.
 
 ### Added
 

@@ -338,11 +338,6 @@ concept StoresMove = requires(const Candidate& candidate) {
     candidate.move();
 };
 
-template<class Candidate>
-concept StoresSolution = requires(Candidate& candidate) {
-    candidate.solution();
-};
-
 class SampleNeighborhoodIndex
 {
 public:
@@ -498,17 +493,19 @@ int main()
 
     using ConfiguredSolutionManager =
         typename decltype(default_solution_manager_recipe())::service_type;
-    using AllDeltaCandidate = typename easylocal::detail::evaluation_facility<
+    using AllDeltaEvaluation = easylocal::detail::evaluation_facility<
         ConfiguredSolutionManager,
-        AllDeltaUnionExplorer>::candidate_type;
-    using PartialDeltaCandidate = typename easylocal::detail::evaluation_facility<
+        AllDeltaUnionExplorer>;
+    using PartialDeltaEvaluation = easylocal::detail::evaluation_facility<
         ConfiguredSolutionManager,
-        PartialDeltaUnionExplorer>::candidate_type;
+        PartialDeltaUnionExplorer>;
 
-    static_assert(StoresMove<AllDeltaCandidate>);
-    static_assert(!StoresSolution<AllDeltaCandidate>);
-    static_assert(!StoresMove<PartialDeltaCandidate>);
-    static_assert(StoresSolution<PartialDeltaCandidate>);
+    // Every candidate keeps its move; without a delta for every component, the
+    // move is evaluated on a scratch solution.
+    static_assert(StoresMove<typename AllDeltaEvaluation::candidate_type>);
+    static_assert(StoresMove<typename PartialDeltaEvaluation::candidate_type>);
+    static_assert(!AllDeltaEvaluation::materializes_candidates);
+    static_assert(PartialDeltaEvaluation::materializes_candidates);
 
     using FluentRunner = decltype(easylocal::make_runner<FirstImprovement>(
         {.max_evaluations = 32})
