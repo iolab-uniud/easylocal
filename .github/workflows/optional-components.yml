@@ -64,6 +64,7 @@ jobs:
           mkdir -p build
           cmake -S . -B "$build_dir" -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_EXTENSIONS=OFF \
             -DCMAKE_CXX_COMPILER="$CXX" \
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             -DEASYLOCAL_BUILD_EXAMPLES=ON \
@@ -150,6 +151,7 @@ jobs:
           mkdir -p build
           cmake -S . -B "$build_dir" -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_EXTENSIONS=OFF \
             -DCMAKE_CXX_COMPILER="$CXX" \
             -DCMAKE_OSX_SYSROOT="$SDKROOT" \
             -DEASYLOCAL_BUILD_EXAMPLES=ON \
@@ -230,6 +232,7 @@ jobs:
           mkdir -p build
           cmake -S . -B "$build_dir" -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_EXTENSIONS=OFF \
             -DCMAKE_CXX_COMPILER="$CXX" \
             -DEASYLOCAL_BUILD_EXAMPLES=ON \
             -DEASYLOCAL_BUILD_TESTS=ON \
