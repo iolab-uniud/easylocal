@@ -88,7 +88,9 @@ its Move page: `C`, `D` and `U`.
 
 The last two compare values: `check_move_independence` compares the solution
 after each move with the others, `check_random_move_distribution` compares
-sampled moves with enumerated ones. So far the tutorial's types had no
+sampled moves with enumerated ones, each only with those of the same cost
+when the costs are ordered, as the tour lengths are. So far the tutorial's
+types had no
 equality: to use these two checks, add it. Without it, everything else works:
 calling one of the two does not compile, and the interactive tester does not
 offer them (`D` and `U`), while its other neighborhood diagnostics stay.

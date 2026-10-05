@@ -26,6 +26,7 @@
 #include <filesystem>
 #include <fstream>
 #include <istream>
+#include <map>
 #include <memory>
 #include <optional>
 #include <ostream>
@@ -984,6 +985,11 @@ public:
 
     /// Counts the enumerated moves that leave the current solution unchanged,
     /// and those that lead to a solution an earlier move led to.
+    ///
+    /// With a totally ordered cost each solution reached is evaluated and
+    /// compared only with those of the same cost, so the check is about linear
+    /// in the moves; otherwise each is compared with every earlier one, in
+    /// time quadratic in the size of the neighborhood.
     [[nodiscard]]
     move_independence_result check_move_independence() const
         requires supports_move_independence_check
@@ -994,6 +1000,10 @@ public:
         move_independence_result result;
         const auto& neighborhood = bound_->neighborhood();
         std::vector<solution_type> reached;
+        // With totally ordered costs, a state is compared only with those of
+        // the same cost: linear in the moves, not quadratic.
+        constexpr bool by_cost = std::totally_ordered<cost_type>;
+        std::map<cost_type, std::vector<std::size_t>> same_cost;
 
         for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
         {
@@ -1014,13 +1024,18 @@ public:
             }
 
             bool repeated = false;
-            for (const auto& previous : reached)
+            if constexpr (by_cost)
             {
-                if (candidate == previous)
-                {
-                    repeated = true;
-                    break;
-                }
+                auto& bucket = same_cost[bound_->solution_manager().evaluate(candidate)];
+                repeated = std::ranges::any_of(bucket, [&](const std::size_t index) {
+                    return candidate == reached[index];
+                });
+                if (!repeated)
+                    bucket.push_back(reached.size());
+            }
+            else
+            {
+                repeated = std::ranges::find(reached, candidate) != reached.end();
             }
             if (repeated)
                 ++result.repeated_states;
@@ -1032,6 +1047,10 @@ public:
 
     /// Draws rounds_per_move random moves per valid enumerated move and counts
     /// how often each is drawn, and the draws outside the enumerated moves.
+    ///
+    /// With a totally ordered cost a drawn move is compared only with the
+    /// enumerated moves of the same cost, by delta; otherwise with each of
+    /// them, in time quadratic in the size of the neighborhood.
     [[nodiscard]]
     random_distribution_result check_random_move_distribution(
         rng_type& rng,
@@ -1055,6 +1074,19 @@ public:
         if (moves_list.empty() || rounds_per_move == 0)
             return result;
 
+        // With totally ordered costs, a drawn move is compared only with the
+        // moves of the same cost: linear in the samples, not quadratic.
+        constexpr bool by_cost = std::totally_ordered<cost_type>;
+        std::map<cost_type, std::vector<std::size_t>> same_cost;
+        const auto evaluation = this->evaluation();
+        const auto current = evaluation.evaluate(*solution_);
+        const auto move_cost = [&](const move_type& move) {
+            return evaluation.evaluate_move(*solution_, current, move).cost();
+        };
+        if constexpr (by_cost)
+            for (std::size_t index = 0; index < moves_list.size(); ++index)
+                same_cost[move_cost(moves_list[index])].push_back(index);
+
         std::vector<std::size_t> frequencies(moves_list.size());
         result.samples = moves_list.size() * rounds_per_move;
         for (std::size_t sample = 0; sample < result.samples; ++sample)
@@ -1065,17 +1097,37 @@ public:
                 ++result.out_of_neighborhood;
                 continue;
             }
-            bool matched = false;
-            for (std::size_t index = 0; index < moves_list.size(); ++index)
+            const auto matches = [&](const std::size_t index) {
+                return *selected == moves_list[index];
+            };
+            std::optional<std::size_t> matched;
+            if constexpr (by_cost)
             {
-                if (*selected == moves_list[index])
+                // A drawn move outside the neighborhood may be invalid, and
+                // have no cost.
+                if (static_cast<bool>(neighborhood.is_valid(*solution_, *selected)))
                 {
-                    ++frequencies[index];
-                    matched = true;
-                    break;
+                    const auto bucket = same_cost.find(move_cost(*selected));
+                    if (bucket != same_cost.end())
+                    {
+                        const auto found = std::ranges::find_if(bucket->second, matches);
+                        if (found != bucket->second.end())
+                            matched = *found;
+                    }
                 }
             }
-            if (!matched)
+            else
+            {
+                for (std::size_t index = 0; index < moves_list.size(); ++index)
+                    if (matches(index))
+                    {
+                        matched = index;
+                        break;
+                    }
+            }
+            if (matched)
+                ++frequencies[*matched];
+            else
                 ++result.out_of_neighborhood;
         }
 

@@ -595,6 +595,11 @@ reviewed by hand before tagging.
   quits a tester, and leads back to the list from a launcher's. The fields
   say their units and what 0 means (`max_render_chars` in bytes, 0 for no
   limit), and the tutorial's chapter 12 lists them.
+- `Session::check_move_independence` and `check_random_move_distribution`
+  (the Move page's `D` and `U`) compare a state or a drawn move only with
+  those of the same cost when the cost is totally ordered: on a 400-city
+  2-opt neighborhood they take 0.1 s and 0.6 s, where the independence check
+  took 254 s. Their briefs give the complexity.
 - TextUI: values are shown as the Session's cost report writes them, a cost
   in the syntax the target field reads even when it also has a `describe`
   hook; only composites of printable parts, such as tuples, are the

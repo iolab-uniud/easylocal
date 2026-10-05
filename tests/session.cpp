@@ -18,6 +18,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <random>
 #include <stdexcept>
 #include <stop_token>
@@ -160,6 +161,82 @@ public:
     static void make_move(CountedSolution& solution, const CountedStep& move) noexcept
     {
         solution.value -= move.step;
+    }
+};
+
+// A value lowered by four moves, two by 1 and two by 2: the second of each
+// pair reaches a state the first reached, under the same cost.
+struct RepeatedSolution
+{
+    std::int64_t value{};
+
+    bool operator==(const RepeatedSolution&) const = default;
+};
+
+struct RepeatedMove
+{
+    std::int64_t id{};
+
+    bool operator==(const RepeatedMove&) const = default;
+};
+
+struct RepeatedValue
+{
+    [[nodiscard]]
+    static std::int64_t evaluate(const RepeatedSolution& solution) noexcept
+    {
+        return solution.value;
+    }
+};
+
+class RepeatedSolutionManager
+    : public easylocal::solution_manager_base<CountedInput, RepeatedSolution>
+{
+public:
+    using solution_manager_base::solution_manager_base;
+
+    [[nodiscard]]
+    static bool is_valid(const RepeatedSolution&) noexcept
+    {
+        return true;
+    }
+
+    [[nodiscard]]
+    static RepeatedSolution initial_solution() noexcept
+    {
+        return {.value = 10};
+    }
+};
+
+class RepeatedNeighborhood
+    : public easylocal::neighborhood_explorer_base<RepeatedSolutionManager, RepeatedMove>
+{
+public:
+    using neighborhood_explorer_base::neighborhood_explorer_base;
+
+    [[nodiscard]]
+    static easylocal::generator<RepeatedMove> moves(const RepeatedSolution&)
+    {
+        for (std::int64_t id = 0; id < 4; ++id)
+            co_yield RepeatedMove{.id = id};
+    }
+
+    template<class RNG>
+    [[nodiscard]]
+    static std::optional<RepeatedMove> random_move(const RepeatedSolution&, RNG& rng)
+    {
+        return RepeatedMove{.id = std::uniform_int_distribution<std::int64_t>{0, 3}(rng)};
+    }
+
+    [[nodiscard]]
+    static bool is_valid(const RepeatedSolution&, const RepeatedMove& move) noexcept
+    {
+        return move.id >= 0 && move.id < 4;
+    }
+
+    static void make_move(RepeatedSolution& solution, const RepeatedMove& move) noexcept
+    {
+        solution.value -= move.id < 2 ? 1 : 2;
     }
 };
 
@@ -871,6 +948,33 @@ void session_can_take_ownership_of_an_rvalue_app()
 
 } // namespace
 
+// Repeated states and drawn moves are found among those of the same cost, as
+// they were among all of them.
+void the_neighborhood_checks_group_by_cost()
+{
+    easylocal::Session session{
+        easylocal::app("repeated")
+            .with_solution_manager(
+                easylocal::solution_manager<RepeatedSolutionManager>()
+                | easylocal::component<RepeatedValue>())
+            .with_neighborhood(easylocal::neighborhood<RepeatedNeighborhood>())
+            .with_runner<easylocal::runners::FirstImprovement>("fi"),
+        CountedInput{},
+        7};
+    session.use_initial_solution();
+
+    const auto independence = session.check_move_independence();
+    assert(independence.moves == 4);
+    assert(independence.null_moves == 0);
+    assert(independence.repeated_states == 2);
+
+    const auto distribution = session.check_random_move_distribution(session.rng(), 50);
+    assert(distribution.neighborhood_size == 4);
+    assert(distribution.samples == 200);
+    assert(distribution.out_of_neighborhood == 0);
+    assert(distribution.unseen == 0);
+}
+
 void session_reports_neighborhood_diagnostics()
 {
     easylocal::Session session{make_application()};
@@ -913,6 +1017,7 @@ void session_reports_neighborhood_diagnostics()
 
 int main()
 {
+    the_neighborhood_checks_group_by_cost();
     app_copy_preserves_graph_configuration();
     session_can_copy_an_lvalue_app();
     session_can_take_ownership_of_an_rvalue_app();
