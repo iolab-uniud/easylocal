@@ -850,6 +850,10 @@ public:
         root = Modal(root, solution_viewer, &solution_visible_);
         root = Modal(root, parameters_window(), &parameters_visible_);
         root = CatchEvent(root, [this, &app](const Event& event) {
+            // Any event but a run's progress may change the session: the
+            // next frame computes what it shows again.
+            if (event != Event::Custom)
+                invalidate_view();
             return handle_key(app, event);
         });
 
@@ -1138,12 +1142,8 @@ private:
             if constexpr (easylocal::cost::text_readable<typename tester_type::cost_type>)
             {
                 run_controls->Add(Renderer([this] {
-                    if (!tester_.has_solution() || !tester_.is_valid())
-                        return text("");
-                    return text(
-                               "current cost: "
-                               + easylocal::cost::to_text(tester_.evaluate()))
-                        | dim;
+                    const auto& cost = view().cost_text;
+                    return cost.empty() ? text("") : text("current cost: " + cost) | dim;
                 }));
             }
         }
@@ -1767,7 +1767,7 @@ private:
         return false;
     }
 
-    [[nodiscard]] bool context_pages_available() const noexcept
+    [[nodiscard]] bool context_pages_available() const
     {
         return role_ != frontend_role::launcher_root
             && detail::context_pages_available(tester_);
@@ -2759,6 +2759,7 @@ private:
         }
 
         tester_.set_solution(std::move(*completion.solution));
+        invalidate_view();
         refresh_page_labels();
         if (!tester_.is_valid())
         {
@@ -2838,17 +2839,71 @@ private:
             options_.max_render_chars);
     }
 
-    [[nodiscard]] std::string current_cost_text() const
+    // What the frames show of the session, computed once after each change
+    // rather than at every frame: the user's hooks (is_valid, the costs, the
+    // deltas) run once per change.
+    struct view_state
     {
-        if (!tester_.has_solution())
+        solution_stage stage{solution_stage::needs_input};
+        std::string cost;      // the header's: "-", "<invalid solution>" or the cost
+        std::string cost_text; // the cost as a target reads it; empty when none
+        bool move_valid{};
+        std::string move;
+        std::string incremental; // the candidate's cost, by delta
+        std::string full;        // the candidate's cost, by full evaluation
+        std::optional<bool> delta_matches;
+    };
+
+    [[nodiscard]] view_state compute_view() const
+    {
+        view_state state;
+        state.stage = detail::solution_stage_of(tester_);
+        if (state.stage == solution_stage::needs_input
+            || state.stage == solution_stage::needs_solution)
         {
-            return "-";
+            state.cost = "-";
+            return state;
         }
-        if (!tester_.is_valid())
+        if (state.stage == solution_stage::invalid_solution)
         {
-            return "<invalid solution>";
+            state.cost = "<invalid solution>";
+            return state;
         }
-        return value_text(tester_.evaluate());
+        const auto cost = tester_.evaluate();
+        state.cost = value_text(cost);
+        if constexpr (easylocal::cost::text_readable<typename tester_type::cost_type>)
+            state.cost_text = easylocal::cost::to_text(cost);
+        if (!tester_.has_move())
+            return state;
+        state.move = move_text();
+        state.move_valid = tester_.move_is_valid();
+        if (!state.move_valid)
+            return state;
+        state.incremental = value_text(tester_.evaluate_move());
+        state.full = value_text(tester_.evaluate_move_fully());
+        if constexpr (requires(const tester_type& tester) {
+                          { tester.move_evaluation_matches_full() } -> std::same_as<bool>;
+                      })
+            state.delta_matches = tester_.move_evaluation_matches_full();
+        return state;
+    }
+
+    // The view of the session, computed when a change made it stale.
+    [[nodiscard]] const view_state& view() const
+    {
+        if (!view_)
+            view_ = compute_view();
+        return *view_;
+    }
+
+    void invalidate_view() noexcept
+    {
+        view_.reset();
+    }
+
+    [[nodiscard]] const std::string& current_cost_text() const
+    {
+        return view().cost;
     }
 
     [[nodiscard]] std::string move_text() const
@@ -2899,24 +2954,19 @@ private:
             return vbox(std::move(lines));
         }
 
-        const bool valid = tester_.move_is_valid();
-        lines.push_back(text(std::string{"Valid: "} + (valid ? "yes" : "NO")));
+        const auto& state = view();
+        lines.push_back(text(std::string{"Valid: "} + (state.move_valid ? "yes" : "NO")));
         lines.push_back(separator());
-        lines.push_back(text_lines(move_text()));
-        if (valid)
+        lines.push_back(text_lines(state.move));
+        if (state.move_valid)
         {
             lines.push_back(separator());
-            lines.push_back(text("Candidate (incremental): " + value_text(tester_.evaluate_move())));
-            lines.push_back(text("Candidate (full):        " + value_text(tester_.evaluate_move_fully())));
-            if constexpr (requires(const tester_type& tester) {
-                              { tester.move_evaluation_matches_full() }
-                                  -> std::same_as<bool>;
-                          })
-            {
+            lines.push_back(text("Candidate (incremental): " + state.incremental));
+            lines.push_back(text("Candidate (full):        " + state.full));
+            if (state.delta_matches)
                 lines.push_back(text(
-                    std::string{"Delta check: "} +
-                    (tester_.move_evaluation_matches_full() ? "OK" : "FAILED")));
-            }
+                    std::string{"Delta check: "}
+                    + (*state.delta_matches ? "OK" : "FAILED")));
         }
         if (!last_move_result_.empty())
         {
@@ -2975,7 +3025,7 @@ private:
             summary.push_back(
                 text("Input and solution for all the applications of the launcher")
                 | dim);
-        switch (detail::solution_stage_of(tester_))
+        switch (view().stage)
         {
         case solution_stage::needs_input:
             summary.push_back(text("Load an input to begin") | bold);
@@ -3183,15 +3233,14 @@ private:
         Elements body;
         if (tester_.has_solution())
         {
-            body.push_back(text(
-                std::string{"Valid: "} + (tester_.is_valid() ? "yes" : "NO")) |
-                           bold);
+            const bool valid = view().stage == solution_stage::ready;
+            body.push_back(text(std::string{"Valid: "} + (valid ? "yes" : "NO")) | bold);
             body.push_back(text("Cost: " + current_cost_text()) | bold);
             if constexpr (requires { tester_.cost_report(); })
             {
                 // Each cost component's value, and its describe(solution)
                 // text when it has one.
-                if (tester_.is_valid())
+                if (valid)
                 {
                     for (const auto& component : tester_.cost_report())
                     {
@@ -3486,6 +3535,7 @@ private:
     detail::text_viewer input_viewer_;
     bool solution_visible_{};
     detail::text_viewer solution_viewer_;
+    mutable std::optional<view_state> view_;
 };
 
 } // namespace detail
