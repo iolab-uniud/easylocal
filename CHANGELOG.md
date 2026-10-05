@@ -137,6 +137,11 @@ reviewed by hand before tagging.
 
 ### Changed
 
+- The stability levels no longer contradict each other (`docs/stability.md`):
+  the Stable level excludes what the Experimental one lists, which now names
+  the adapters' headers, tracing beyond the tracer protocol, `tuning_range`
+  and `cli::options::tuning`, logging and the `with_*` spellings of the
+  composition.
 - The logging API (`<easylocal/utils/logging.hpp>`) is Experimental, since the
   library emits no records yet; the documentation no longer presents it as
   framework diagnostics. `stderr_sink` writes a record in one write (up to 1
