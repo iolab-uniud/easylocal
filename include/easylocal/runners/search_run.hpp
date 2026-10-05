@@ -699,7 +699,7 @@ public:
     /// The moves of the neighborhood of solution, for the algorithms that
     /// enumerate them.
     [[nodiscard]]
-    auto moves(const solution_type& solution) const
+    decltype(auto) moves(const solution_type& solution) const
     {
         return easylocal::moves(context_.neighborhood_explorer(), solution);
     }

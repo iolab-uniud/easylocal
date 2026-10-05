@@ -1,11 +1,13 @@
-#include <easylocal/runners/runner.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
+#include <easylocal/runners/runner.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
 
 #include <optional>
 #include <random>
 #include <ranges>
+#include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace
 {
@@ -88,6 +90,20 @@ public:
 
 private:
     Instance instance_;
+};
+
+// Moves computed once and kept: moves() returns a reference to them.
+class PrecomputedNeighborhood : public GoodNeighborhood
+{
+public:
+    [[nodiscard]]
+    auto moves(const Solution&) const noexcept -> const std::vector<Move>&
+    {
+        return moves_;
+    }
+
+private:
+    std::vector<Move> moves_{Move{}, Move{}};
 };
 
 class WrongMoveNeighborhood
@@ -249,6 +265,10 @@ private:
 
 int main()
 {
+    // The moves an explorer keeps are not copied at each iteration.
+    static_assert(std::is_lvalue_reference_v<decltype(easylocal::moves(
+            std::declval<const PrecomputedNeighborhood&>(),
+            std::declval<const Solution&>()))>);
     static_assert(easylocal::detail::evaluable_solution_manager<ComposedSolutionManager>);
     static_assert(easylocal::detail::runner_neighborhood_explorer<
                   GoodNeighborhood,

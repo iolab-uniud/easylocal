@@ -256,6 +256,9 @@ reviewed by hand before tagging.
   swaps the scratch solution in when it is the last one evaluated, or makes
   the move again otherwise (Best Improvement, Tabu Search). Debug builds no
   longer check the whole current solution at every evaluation.
+- `easylocal::moves()` and a run's `moves()` keep the reference an explorer's
+  `moves()` returns to moves it keeps, which they copied at every call, and
+  `random_move()` moves the move it gets instead of copying it.
 
 ### Added
 

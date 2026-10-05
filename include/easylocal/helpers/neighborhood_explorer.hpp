@@ -263,13 +263,12 @@ inline detail::cursor_moves_view<Explorer, Solution> cursor_moves(
 /// Unified deterministic-neighborhood customization point.
 ///
 /// The EL3 cursor protocol wins when both cursor and native range protocols are
-/// present.
+/// present. A reference that the explorer's moves() returns, to moves it keeps,
+/// stays a reference: they are not copied.
 template<class Explorer, class Solution>
     requires deterministic_neighborhood_for<Explorer, Solution>
 [[nodiscard]]
-inline auto moves(
-    const Explorer& explorer,
-    const Solution& solution)
+inline decltype(auto) moves(const Explorer& explorer, const Solution& solution)
 {
     if constexpr (cursor_neighborhood_for<Explorer, Solution>)
     {
@@ -299,7 +298,7 @@ inline std::optional<typename Explorer::move_type> random_move(
         return std::nullopt;
     }
 
-    return std::optional<typename Explorer::move_type>(std::in_place, *result);
+    return std::optional<typename Explorer::move_type>(std::in_place, std::move(*result));
 }
 
 /// Optional tabu customization points, used by tabu search.
