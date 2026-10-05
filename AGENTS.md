@@ -12,6 +12,11 @@ repository is maintained.
   `solvers` < `app` < `adapters`. The test `easylocal.architecture-boundary`
   enforces it, and core headers never include an adapter (TUI, REST, TOML).
 - `examples/` are complete programs read by students: keep them simple.
+  `examples/quickstart` and `examples/tutorial` are the code of the quick
+  start and of the tutorial, which take their snippets from them;
+  `examples/tsp` models the same TSP as a complete example under its own
+  names (only the tutorial's irace section quotes it), and `assignment`,
+  `exam_timetabling` and `pfsp` are the other problems.
 - `tests/` are the test programs, registered in `tests/CMakeLists.txt`.
 - `docs/` is the documentation site (MkDocs): tutorial, reference, and
   `docs/roadmap.md` for planned evolutions not yet scheduled.

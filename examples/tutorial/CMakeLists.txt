@@ -30,6 +30,12 @@ if(EASYLOCAL_BUILD_EXAMPLES AND TARGET EasyLocal::TUI)
     target_compile_definitions(
         easylocal_tutorial_tui
         PRIVATE EASYLOCAL_TUTORIAL_INSTANCE="${CMAKE_CURRENT_SOURCE_DIR}/five.tsp")
+
+    add_executable(easylocal_tutorial_launcher launcher_main.cpp)
+    target_link_libraries(easylocal_tutorial_launcher PRIVATE EasyLocal::TUI)
+    target_compile_definitions(
+        easylocal_tutorial_launcher
+        PRIVATE EASYLOCAL_TUTORIAL_INSTANCE="${CMAKE_CURRENT_SOURCE_DIR}/five.tsp")
 endif()
 
 if(EASYLOCAL_BUILD_EXAMPLES AND TARGET EasyLocal::REST)

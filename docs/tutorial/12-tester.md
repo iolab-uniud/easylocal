@@ -122,57 +122,50 @@ static std::string_view name()
 The moves the tester shows are those of the app's neighborhood. To explore
 several neighborhoods, one per app, open them from a **launcher**: a list of
 apps that share the Input and the current solution.
-The TSP example (`examples/tsp`) has one app for the 2-opt moves and one for
+The tutorial's `launcher_main.cpp` has one app for the 2-opt moves and one for
 the swaps, over the same SolutionManager recipe:
 
-<!-- snippet: tsp/apps.hpp:apps -->
+<!-- snippet: tutorial/launcher_main.cpp:apps -->
 ```cpp
-// The SolutionManager recipe of both apps: the launcher of tui_main.cpp
-// passes the Input and the solution from one app to the other, so they must
-// have the same one.
-inline auto tsp_solution_manager()
+// The SolutionManager recipe of both apps: the launcher passes the Input and
+// the solution from one app to the other, so they must have the same one.
+auto tour_manager()
 {
-    return easylocal::solution_manager<TspSolutionManager>()
-        | easylocal::component<TourLengthComponent>();
+    return el::solution_manager<tutorial::TourManager>()
+        | el::component<tutorial::TourLength>();
 }
 
-// Two apps over the same SolutionManager, one per neighborhood. The type of an
-// app spells out all its recipes, so the functions let auto deduce it.
-inline auto two_opt_app()
+// One app per neighborhood. The type of an app spells out all its recipes, so
+// the functions let auto deduce it.
+auto two_opt_app()
 {
-    return easylocal::app("tsp-two-opt") | tsp_solution_manager()
-        | (easylocal::neighborhood<TwoOptNeighborhoodExplorer>()
-            | easylocal::delta<TourLengthComponent, TwoOptTourLengthDelta>())
-        | easylocal::runner<easylocal::runners::FirstImprovement>(
-            "fi",
-            {.max_evaluations = 100});
+    return el::app("tsp-two-opt") | tour_manager()
+        | (el::neighborhood<tutorial::TwoOptExplorer>()
+            | el::delta<tutorial::TourLength, tutorial::TwoOptLengthDelta>())
+        | el::runner<el::runners::FirstImprovement>("fi");
 }
 
-inline auto swap_app()
+auto swap_app()
 {
-    return easylocal::app("tsp-swap") | tsp_solution_manager()
-        | (easylocal::neighborhood<SwapCitiesNeighborhoodExplorer>()
-            | easylocal::delta<TourLengthComponent, SwapTourLengthDelta>())
-        | easylocal::runner<easylocal::runners::FirstImprovement>(
-            "fi",
-            {.max_evaluations = 100});
+    return el::app("tsp-swap") | tour_manager()
+        | el::neighborhood<tutorial::SwapExplorer>()
+        | el::runner<el::runners::FirstImprovement>("fi");
 }
 ```
 
-<!-- snippet: tsp/tui_main.cpp:launcher -->
+<!-- snippet: tutorial/launcher_main.cpp:launcher -->
 ```cpp
-easylocal::tui::run_launcher(
+el::tui::run_launcher(
     {
-        .title = "EasyLocal TSP Tester",
+        .title = "TSP launcher",
         .tester =
             {
-                .seed = 0,
-                .input_path = EASYLOCAL_TSP_INSTANCE_FILE,
-                .solution_path = EASYLOCAL_TSP_SOLUTION_FILE,
+                .seed = 2026,
+                .input_path = EASYLOCAL_TUTORIAL_INSTANCE,
             },
     },
-    tsp::two_opt_app(),
-    tsp::swap_app());
+    two_opt_app(),
+    swap_app());
 ```
 
 - The launcher owns the Input, read from `tester.input_path` when it is set,

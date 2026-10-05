@@ -160,6 +160,12 @@ reviewed by hand before tagging.
   project and `find_package(EasyLocal)`) stops with a message that says how to
   fix it, instead of failing on every number parsed.
 
+### Documentation and examples
+
+- The tutorial no longer takes the launcher of chapter 12 from `examples/tsp`:
+  `examples/tutorial/launcher_main.cpp` opens a 2-opt and a swap app of the
+  tutorial's own TSP. `AGENTS.md` says what each example directory is.
+
 ### Changed
 
 - The stability levels no longer contradict each other (`docs/stability.md`):
