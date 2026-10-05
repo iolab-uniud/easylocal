@@ -22,8 +22,10 @@ with Simulated Annealing and with First Improvement.
 
 The programs put the components together:
 
-- `apps.hpp`: two apps over the same solution manager and cost, one for each
-  neighborhood, with a First Improvement runner `fi`, and `tsp_app()`, one
+- `apps.hpp`: three apps over the same solution manager and cost, one for
+  each neighborhood and one for their union, whose random biases are a
+  problem parameter (`neighborhood.random_biases`), each with a First
+  Improvement runner `fi`, and `tsp_app()`, one
   app whose runner `fi` uses 2-opt, the app's neighborhood, and `fi-swap`
   swaps, a neighborhood of its own;
 - `sa_main.cpp` (`easylocal_tsp_sa`): Simulated Annealing on the union of the
@@ -32,8 +34,9 @@ The programs put the components together:
 - `two_neighborhoods.cpp` (`easylocal_tsp_two_neighborhoods`): the runners of
   `tsp_app()` in a row, First Improvement with 2-opt moves from the initial
   tour, then with swaps from the tour it found;
-- `tui_main.cpp` (`easylocal_tsp_tui`): the two apps in the interactive
-  terminal tester, built only with the TUI component
+- `tui_main.cpp` (`easylocal_tsp_tui`): the three apps in a launcher of the
+  interactive terminal tester, where `P` on the Run page of `tsp-union` edits
+  the biases; built only with the TUI component
   (`-DEASYLOCAL_ENABLE_TUI=ON`).
 
 ## What to look at first

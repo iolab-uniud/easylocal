@@ -382,6 +382,9 @@ reviewed by hand before tagging.
 - The tutorial no longer takes the launcher of chapter 12 from `examples/tsp`:
   `examples/tutorial/launcher_main.cpp` opens a 2-opt and a swap app of the
   tutorial's own TSP. `AGENTS.md` says what each example directory is.
+- The TSP example's launcher has a third app, `tsp-union`, on the union of
+  2-opt and swap, whose biases the problem parameters window edits; an
+  end-to-end test drives that window.
 - The TSP example's TextUI saves its solution (`W`) to a copy of
   `instances/small.sol` in the build directory, no longer over the
   checked-in file.

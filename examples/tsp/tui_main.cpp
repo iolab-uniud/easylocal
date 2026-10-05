@@ -1,5 +1,5 @@
-// The TSP in the interactive terminal tester: a launcher with the 2-opt and
-// the swap app, which share the instance and the current solution.
+// The TSP in the interactive terminal tester: a launcher with the 2-opt, the
+// swap and the union app, which share the instance and the current solution.
 #include "apps.hpp"
 
 #include <easylocal/adapters/tui/launcher.hpp>
@@ -26,6 +26,7 @@ int main()
                 },
         },
         tsp::two_opt_app(),
-        tsp::swap_app());
+        tsp::swap_app(),
+        tsp::union_app());
     // [launcher] -----------------------------------------------------------
 }

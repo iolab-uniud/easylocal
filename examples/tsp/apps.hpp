@@ -1,8 +1,8 @@
 #pragma once
 
 // The apps of the TSP example over the same SolutionManager and cost: one per
-// neighborhood (2-opt and swap), for the launcher of tui_main.cpp, and one
-// whose runners use both.
+// neighborhood (2-opt and swap) and one on their union, for the launcher of
+// tui_main.cpp, and one whose runners use both.
 
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
@@ -12,6 +12,7 @@
 #include "tour_length_delta.hpp"
 
 #include <easylocal/app/app.hpp>
+#include <easylocal/helpers/neighborhood_union.hpp>
 #include <easylocal/helpers/recipes.hpp>
 #include <easylocal/runners/first_improvement.hpp>
 
@@ -50,6 +51,22 @@ inline auto swap_app()
             {.max_evaluations = 100});
 }
 // [apps] -------------------------------------------------------------------
+
+// The union of the two neighborhoods, whose random biases are a parameter of
+// the problem (neighborhood.*), which the tester's P window edits.
+inline auto union_app()
+{
+    return easylocal::app("tsp-union") | tsp_solution_manager()
+        | (easylocal::neighborhood_union(
+               easylocal::neighborhood<TwoOptNeighborhoodExplorer>()
+                   | easylocal::delta<TourLengthComponent, TwoOptTourLengthDelta>(),
+               easylocal::neighborhood<SwapCitiesNeighborhoodExplorer>()
+                   | easylocal::delta<TourLengthComponent, SwapTourLengthDelta>())
+            | easylocal::random_biases(1.0, 1.0))
+        | easylocal::runner<easylocal::runners::FirstImprovement>(
+            "fi",
+            {.max_evaluations = 100});
+}
 
 // [runner-neighborhood] ----------------------------------------------------
 // One app with both neighborhoods: its own is 2-opt, the runner "fi" uses it,

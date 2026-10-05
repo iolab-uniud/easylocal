@@ -889,7 +889,8 @@ easylocal::tui::run_launcher(
             },
     },
     tsp::two_opt_app(),
-    tsp::swap_app());
+    tsp::swap_app(),
+    tsp::union_app());
 ```
 
 There `two_opt_app()` and `swap_app()` are two apps of the TSP example

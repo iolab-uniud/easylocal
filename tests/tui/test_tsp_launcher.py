@@ -4,7 +4,7 @@ current solution."""
 
 import re
 
-from tui_driver import DELETE, DOWN, ENTER, ESCAPE, F3, F4, F5, UP, Tui
+from tui_driver import BACKSPACE, DELETE, DOWN, ENTER, ESCAPE, F3, F4, F5, UP, Tui
 
 
 def launcher_shown(screen: str) -> bool:
@@ -126,4 +126,29 @@ def test_escape_quits_the_launcher(launcher):
     with Tui(launcher) as tui:
         tui.wait_until(launcher_shown, what="the list of applications")
         tui.press(ESCAPE)
+        assert tui.wait_exit() == 0
+
+
+def test_the_problem_parameters_window_edits_the_biases(launcher):
+    with Tui(launcher) as tui:
+        open_app(tui, "tsp-union", DOWN)
+        tui.press("I")
+        tui.expect("Initial solution selected")
+        tui.press(F5, "P")
+        tui.expect("Problem parameters")
+        tui.expect(re.compile(r"neighborhood\.\S*biases"))
+        # An invalid value keeps the window open with the error; a valid one
+        # is applied and listed among the changed parameters.
+        tui.keys(*[BACKSPACE] * 12)
+        tui.type("[1]")
+        tui.press(ENTER)
+        tui.expect("biases: ")
+        tui.keys(*[BACKSPACE] * 12)
+        tui.type("[3, 1]")
+        tui.press(ENTER)
+        tui.expect("Problem parameters applied")
+        tui.expect(re.compile(r"biases = \[3, 1\] \(was \[1, 1\]\)"))
+        tui.press("q")
+        tui.wait_until(launcher_shown, what="the list of applications")
+        tui.press("q")
         assert tui.wait_exit() == 0
