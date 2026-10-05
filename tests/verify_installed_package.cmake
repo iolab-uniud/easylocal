@@ -250,7 +250,7 @@ else()
     endif()
 endif()
 
-easylocal_configure_build_test_consumer(legacy OFF OFF OFF OFF)
+easylocal_configure_build_test_consumer(no-components OFF OFF OFF OFF)
 easylocal_configure_build_test_consumer(core-component ON OFF OFF OFF)
 
 if(EASYLOCAL_CONFIG_TOML_ENABLED)
@@ -284,7 +284,7 @@ execute_process(
 )
 if(_missing_component_result EQUAL 0)
     message(FATAL_ERROR
-        "requesting unavailable EasyLocal::ConfigTOML unexpectedly succeeded")
+        "requesting unavailable EasyLocal::ConfigYAML unexpectedly succeeded")
 endif()
 string(CONCAT _missing_component_output
     "${_missing_component_stdout}" "${_missing_component_stderr}")
