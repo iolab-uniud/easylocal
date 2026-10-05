@@ -54,6 +54,8 @@ reviewed by hand before tagging.
   Annealing or tabu list of Tabu Search is rejected by the runner's
   parameters, so `check(app)` reports it as "runner configuration" instead of
   aborting. A parameter set reports such a group once, under its own path.
+- `config::one_of` holds numbers of different types as their common type:
+  `one_of(1, 1.5, 2)` holds 1.5, where it narrowed it to 1.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

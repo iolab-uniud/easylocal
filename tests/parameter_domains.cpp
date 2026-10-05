@@ -9,6 +9,7 @@
 
 #include <array>
 #include <cassert>
+#include <concepts>
 #include <cstddef>
 #include <limits>
 #include <string>
@@ -69,6 +70,10 @@ static_assert(config::domain_contains(config::range(0.0, 1.0), 0.0));
 static_assert(config::domain_contains(config::range(1, 10), std::size_t{10}));
 static_assert(!config::domain_contains(config::range(1, 10), std::size_t{0}));
 static_assert(config::domain_contains(config::one_of(10, 100), 100));
+// Numbers of different types share their common type: 1.5 stays 1.5.
+static_assert(std::same_as<decltype(config::one_of(1, 1.5, 2))::value_type, double>);
+static_assert(config::domain_contains(config::one_of(1, 1.5, 2), 1.5));
+static_assert(!config::domain_contains(config::one_of(1, 1.5, 2), 1.0 + 0.25));
 
 void check_domains_names_the_first_field_outside()
 {

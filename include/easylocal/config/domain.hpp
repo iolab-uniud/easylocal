@@ -150,21 +150,39 @@ struct choice_domain
 namespace detail
 {
 
-template<class Value>
-using choice_value_t = std::conditional_t<
-    std::convertible_to<Value, std::string_view>,
-    std::string_view,
-    std::remove_cvref_t<Value>>;
+// The type of the values of a choice: text as std::string_view, numbers as
+// their common type (one_of(1, 1.5) holds doubles), anything else as the type
+// of the first value.
+template<class First, class... Rest>
+struct choice_value
+{
+    using type = std::conditional_t<
+        std::convertible_to<First, std::string_view>,
+        std::string_view,
+        std::remove_cvref_t<First>>;
+};
+
+template<easylocal::detail::number First, easylocal::detail::number... Rest>
+struct choice_value<First, Rest...>
+{
+    using type = std::common_type_t<First, Rest...>;
+};
+
+template<class First, class... Rest>
+using choice_value_t = typename choice_value<First, Rest...>::type;
 
 } // namespace detail
 
 /// The values given, as the domain of a field: `config::one_of("tabu",
 /// "random")` for text, `config::one_of(10, 100, 1000)` for numbers.
+///
+/// Numbers of different types are held as their common type, as
+/// `one_of(1, 1.5, 2)` holds 1.0, 1.5 and 2.0.
 template<class First, class... Rest>
 [[nodiscard]]
 constexpr auto one_of(const First& first, const Rest&... rest)
 {
-    using value_type = detail::choice_value_t<First>;
+    using value_type = detail::choice_value_t<First, Rest...>;
     return choice_domain<value_type, 1 + sizeof...(Rest)>{
         .values = {value_type(first), value_type(rest)...}};
 }

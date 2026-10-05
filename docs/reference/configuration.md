@@ -51,7 +51,7 @@ config::field<"policy", &P::policy>("Tabu list", config::one_of("fixed", "random
 | `range(low, easylocal::unlimited)` | the numbers from `low` up, with no upper bound: infinity for a floating-point field, `unlimited` for a `limit` |
 | `.open()`, `.open_low()`, `.open_high()` | the same range without both bounds, the lower or the upper one |
 | `.log()` | the same range, which a configurator samples on a logarithmic scale; `low` must be positive |
-| `one_of(a, b, ...)` | the values given: text for a `std::string`, numbers for a number |
+| `one_of(a, b, ...)` | the values given: text for a `std::string`, numbers for a number (numbers of different types are held as their common type: `one_of(1, 1.5, 2)` holds 1.0, 1.5 and 2.0) |
 | `easylocal::unlimited` | any value of the field's type: a seed, free text, a path, a number that may be negative |
 
 For an array or a vector the domain applies to each element. A domain that
