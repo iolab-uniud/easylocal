@@ -6,6 +6,7 @@
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/runners/pareto_late_acceptance_hill_climbing.hpp>
+#include <easylocal/runners/simulated_annealing.hpp>
 #include <easylocal/solvers/pipeline.hpp>
 
 #include <cassert>
@@ -87,6 +88,48 @@ auto tsp_app()
             "cascade",
             solvers::stage("first", descent),
             solvers::stage("second", descent));
+}
+
+// The tutorial's TSP with Simulated Annealing, whose runs depend on the seed.
+auto annealing_app()
+{
+    using namespace tutorial;
+    return easylocal::app("tsp")
+        | (easylocal::solution_manager<TourManager>()
+            | easylocal::component<TourLength>())
+        | (easylocal::neighborhood<TwoOptExplorer>()
+            | easylocal::delta<TourLength, TwoOptLengthDelta>())
+        | easylocal::runner<easylocal::runners::SimulatedAnnealing<
+            easylocal::runners::temperature::Classic>>("sa");
+}
+
+// A symmetric instance of 30 cities, written where the test runs: five.tsp is
+// too small for runs from different seeds to differ.
+std::string thirty_cities()
+{
+    const auto path =
+        (std::filesystem::current_path() / "cli-run-thirty-cities.tsp").string();
+    std::ofstream file{path};
+    const std::size_t n = 30;
+    file << n << '\n';
+    for (std::size_t i = 0; i < n; ++i)
+    {
+        for (std::size_t j = 0; j < n; ++j)
+            file << (i == j ? 0 : 1 + (i * 7 + j * 7 + i * j * 13) % 97) << ' ';
+        file << '\n';
+    }
+    return path;
+}
+
+// The output of a run without its time line, which differs from run to run.
+std::string without_time(const std::string& out)
+{
+    std::istringstream in{out};
+    std::string result;
+    for (std::string line; std::getline(in, line);)
+        if (!line.starts_with("time "))
+            result += line + '\n';
+    return result;
 }
 
 // Points of a grid with two objectives: a run has a front.
@@ -434,6 +477,39 @@ int main()
         own);
     assert(configured.status == 0);
     assert(extra.level == 3);
+
+    // A seed reproduces a stochastic run, its random start included, and a
+    // Session with the same seed and the same commands reaches the same tour:
+    // the command line, the Session, the TextUI and REST draw alike.
+    {
+        const auto cities = thirty_cities();
+        const auto annealed = [&](const std::string& seed) {
+            return run_app(
+                annealing_app(),
+                {"--instance",
+                    cities,
+                    "--seed",
+                    seed,
+                    "--runner",
+                    "sa",
+                    "--max_evaluations",
+                    "300"});
+        };
+        const auto first = annealed("11");
+        assert(first.status == 0);
+        assert(without_time(annealed("11").out) == without_time(first.out));
+
+        easylocal::Session session{annealing_app(), 11};
+        session.load_input(cities);
+        session.use_random_solution(session.rng());
+        assert(session.run("sa", easylocal::max_evaluations(300)));
+        std::ostringstream tour;
+        session.save_solution(tour);
+        assert(first.out.starts_with(
+            "cost " + easylocal::detail::report_text(session.evaluate()) + "\n"));
+        assert(first.out.find(tour.str()) != std::string::npos);
+        std::filesystem::remove(cities);
+    }
 
     const auto help = run({"--help"});
     assert(help.status == 0);

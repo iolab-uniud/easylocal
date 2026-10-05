@@ -2,7 +2,7 @@
 
 import re
 
-from tui_driver import DELETE, DOWN, ENTER, F3, F4, F5, Tui
+from tui_driver import DELETE, DOWN, ENTER, F3, F4, F5, RIGHT, UP, Tui
 
 INITIAL_COST = 29  # the initial tour 0-1-2-3-4 of five.tsp
 
@@ -66,6 +66,30 @@ def test_seed_from_the_interface_is_reproducible(binary):
             return tui.cost()
 
     assert random_cost_with_seed("42") == random_cost_with_seed("42")
+
+
+def test_seed_reproduces_a_stochastic_run(binary):
+    # From a random tour, a short Simulated Annealing run: the same seed (the
+    # options' 2026) gives the same start and the same run, as on the command
+    # line, in a Session and in REST.
+    def annealed() -> str:
+        with Tui(binary) as tui:
+            tui.press("R")
+            tui.expect("Random solution selected")
+            tui.press(F5)
+            tui.select("sa")
+            tui.focus("P Problem parameters")
+            tui.press(*[DOWN] * 10, RIGHT)  # the last row, then to evaluations
+            tui.type("40")
+            tui.focus("G Run selected", key=UP)  # out of the fields
+            tui.press("G")
+            tui.expect("Parameters of sa")
+            tui.press(ENTER)
+            result = tui.expect(re.compile(r"Runner completed: (sa: \d+ -> \d+)")).group(1)
+            tui.press(F3, "q")
+            return result
+
+    assert annealed() == annealed()
 
 
 def test_an_invalid_seed_is_rejected(tui):
