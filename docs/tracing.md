@@ -11,7 +11,7 @@ removed with `if constexpr`. Applications that need data pass a tracer explicitl
 as the trailing run option:
 
 ```cpp
-using cost_type = /* runner cost type */;
+using cost_type = decltype(search)::cost_type; // as a Runner, LocalSearch or Pipeline has
 easylocal::trace::memory_recorder<cost_type> trace;
 auto result = search.run(initial_solution, easylocal::with(trace));
 ```

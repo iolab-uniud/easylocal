@@ -237,6 +237,11 @@ reviewed by hand before tagging.
   new solution rather than from the one the stage received, so a pipeline
   registered in an app, which runs from the current solution, can
   multi-start.
+- A complete `Runner` and `LocalSearch` name their `cost_type`, the Cost of a
+  recorder for their runs; a const `Runner` of a parameterized algorithm that
+  cannot be copied binds, since it holds only the parameters.
+  **Breaking:** `run_control::stop_possible()`, which nothing used, is
+  removed.
 
 ### Added
 

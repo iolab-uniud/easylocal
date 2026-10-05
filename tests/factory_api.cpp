@@ -122,6 +122,28 @@ private:
     int token_{};
 };
 
+// A parameterized algorithm that cannot be copied: a Runner holds its
+// parameters, so a const runner still binds.
+struct MoveOnlyAlgorithm
+{
+    using parameters_type = easylocal::runners::FirstImprovementParameters;
+
+    explicit MoveOnlyAlgorithm(const parameters_type&) {}
+    MoveOnlyAlgorithm(const MoveOnlyAlgorithm&) = delete;
+    MoveOnlyAlgorithm(MoveOnlyAlgorithm&&) = default;
+    MoveOnlyAlgorithm& operator=(const MoveOnlyAlgorithm&) = delete;
+    MoveOnlyAlgorithm& operator=(MoveOnlyAlgorithm&&) = default;
+    ~MoveOnlyAlgorithm() = default;
+
+    template<class Context>
+    [[nodiscard]] auto run(
+        const Context& context,
+        typename Context::solution_type solution) const
+    {
+        return IdentityAlgorithm{}.run(context, std::move(solution));
+    }
+};
+
 // Components whose recipe arguments are doubles, given as ints: the recipes
 // construct with parentheses, as std::constructible_from checks, so an int
 // converts to a double instead of being rejected as narrowing.
@@ -323,6 +345,15 @@ int main()
             .seed(17);
 
     const Instance instance{};
+    const auto move_only = make_runner<MoveOnlyAlgorithm>()
+        | (solution_manager<SolutionManager>() | component<CostComponent>())
+        | neighborhood<NeighborhoodExplorer>();
+    static_assert(std::same_as<
+        typename std::remove_cvref_t<decltype(move_only)>::cost_type,
+        typename decltype(configured_runner)::cost_type>);
+    auto move_only_bound = move_only.bind(instance);
+    assert(move_only_bound.run(Solution{}).cost == 0);
+
     const auto local_result = local_solver.solve(instance);
     assert(local_result.solution.value == 0);
     assert(local_result.cost == 0);

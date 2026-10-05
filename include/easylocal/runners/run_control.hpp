@@ -65,12 +65,6 @@ public:
         return stop_token_.stop_requested();
     }
 
-    /// Whether the caller can ask the run to stop.
-    [[nodiscard]] bool stop_possible() const noexcept
-    {
-        return stop_token_.stop_possible();
-    }
-
     /// Whether an observer receives the progress.
     [[nodiscard]] bool observes_progress() const noexcept
     {

@@ -45,6 +45,8 @@ public:
     using bound_runner_type = easylocal::detail::bound_runner_t<RunnerType>;
     /// The solution of the runner.
     using solution_type = typename bound_runner_type::solution_type;
+    /// The cost of the runner, the cost of the result.
+    using cost_type = typename bound_runner_type::cost_type;
 
     /// Whether the runner can build an initial solution (`initial_solution()`).
     using start_type::supports_initial;

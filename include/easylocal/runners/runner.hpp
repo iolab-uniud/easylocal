@@ -211,60 +211,40 @@ auto run_algorithm(
     const run_control default_control{};
     trace::null_tracer null_tracer;
 
+    // What the trailing run options give, if any: the control, the tracer,
+    // the target, the time limit (which starts now, with the run), the
+    // caller's evaluation budget (which the runner's own may tighten) and what
+    // the archive keeps.
+    using cost_type = typename Context::cost_type;
     const run_control* control = &default_control;
     tracer_type* tracer = nullptr;
-    if constexpr (arguments::has_options)
-    {
-        const auto& options = std::get<sizeof...(Args) - 1>(forwarded);
-        if (options.control != nullptr)
-        {
-            control = options.control;
-        }
-        tracer = options.tracer;
-    }
-    if constexpr (std::same_as<tracer_type, trace::null_tracer>)
-    {
-        tracer = &null_tracer;
-    }
-    assert(tracer != nullptr);
-
-    using cost_type = typename Context::cost_type;
     std::optional<cost_type> target;
+    std::optional<std::chrono::steady_clock::time_point> deadline;
+    limit evaluation_limit = unlimited;
+    pareto_archive_parameters front;
     if constexpr (arguments::has_options)
     {
         const auto& options = std::get<sizeof...(Args) - 1>(forwarded);
         using options_type = std::remove_cvref_t<decltype(options)>;
+        if (options.control != nullptr)
+            control = options.control;
+        tracer = options.tracer;
         if constexpr (!std::same_as<typename options_type::target_type, no_target>)
         {
             static_assert(
                 std::constructible_from<cost_type, const typename options_type::target_type&>,
                 "the target cost of the run options must convert to the runner's cost type");
             if (options.target)
-            {
                 target.emplace(*options.target);
-            }
         }
-    }
-
-    // The time limit starts now, with the run.
-    std::optional<std::chrono::steady_clock::time_point> deadline;
-    if constexpr (arguments::has_options)
-    {
-        const auto& options = std::get<sizeof...(Args) - 1>(forwarded);
         if (options.time_limit)
             deadline = detail::deadline_after(*options.time_limit);
-    }
-
-    // The caller's evaluation budget, which the runner's own may tighten, and
-    // what the archive keeps.
-    limit evaluation_limit = unlimited;
-    pareto_archive_parameters front;
-    if constexpr (arguments::has_options)
-    {
-        const auto& options = std::get<sizeof...(Args) - 1>(forwarded);
         evaluation_limit = options.evaluation_limit;
         front = options.front;
     }
+    if constexpr (std::same_as<tracer_type, trace::null_tracer>)
+        tracer = &null_tracer;
+    assert(tracer != nullptr);
 
     // The run refers to the target, which outlives it.
     search_run<Context, tracer_type> run{
@@ -558,13 +538,11 @@ public:
 
     /// The runner with the SolutionManager recipe spec, as `runner | spec`.
     template<class SMSpec>
-        requires detail::is_solution_manager_spec_v<std::remove_cvref_t<SMSpec>> &&
-                 std::copy_constructible<Algorithm> &&
-                 std::constructible_from<
-                     std::remove_cvref_t<SMSpec>,
-                     SMSpec&&>
+        requires detail::is_solution_manager_spec_v<std::remove_cvref_t<SMSpec>>
+        && std::copy_constructible<detail::algorithm_source<Algorithm>>
+        && std::constructible_from<std::remove_cvref_t<SMSpec>, SMSpec&&>
     [[nodiscard]]
-    auto with_solution_manager(SMSpec&& spec) const &
+    auto with_solution_manager(SMSpec&& spec) const&
     {
         using spec_type = std::remove_cvref_t<SMSpec>;
         static_assert(detail::validate_solution_manager_spec<spec_type>());
@@ -615,17 +593,15 @@ public:
 
     /// The runner with the neighborhood recipe spec, as `runner | spec`.
     template<class NHESpec>
-        requires detail::is_neighborhood_spec_v<std::remove_cvref_t<NHESpec>> &&
-                 detail::runner_neighborhood_explorer<
-                     detail::service_t<std::remove_cvref_t<NHESpec>>,
-                     solution_manager_type> &&
-                 std::copy_constructible<Algorithm> &&
-                 std::copy_constructible<SMSpec> &&
-                 std::constructible_from<
-                     std::remove_cvref_t<NHESpec>,
-                     NHESpec&&>
+        requires detail::is_neighborhood_spec_v<std::remove_cvref_t<NHESpec>>
+        && detail::runner_neighborhood_explorer<
+            detail::service_t<std::remove_cvref_t<NHESpec>>,
+            solution_manager_type>
+        && std::copy_constructible<detail::algorithm_source<Algorithm>>
+        && std::copy_constructible<SMSpec>
+        && std::constructible_from<std::remove_cvref_t<NHESpec>, NHESpec&&>
     [[nodiscard]]
-    auto with_neighborhood(NHESpec&& spec) const &
+    auto with_neighborhood(NHESpec&& spec) const&
     {
         using spec_type = std::remove_cvref_t<NHESpec>;
 
@@ -678,6 +654,8 @@ public:
     using neighborhood_explorer_type = detail::service_t<NHESpec>;
     /// The Input of the problem.
     using input_type = typename solution_manager_type::input_type;
+    /// The cost of a solution, the cost of its results: a recorder's Cost.
+    using cost_type = typename solution_manager_type::cost_type;
 
     /// From its algorithm and recipes, as with_neighborhood() creates it.
     Runner(
@@ -690,22 +668,14 @@ public:
     {
     }
 
-    /// The algorithm's parameters, to read or change from code; the algorithm
-    /// is built from them when the runner is bound.
+    /// The algorithm's parameters, to read or change from code, const when the
+    /// runner is; the algorithm is built from them when the runner is bound.
+    template<class Self>
     [[nodiscard]]
-    auto& parameters() noexcept
+    auto& parameters(this Self&& self) noexcept
         requires detail::parameterized_algorithm<Algorithm>
     {
-        return algorithm_.parameters();
-    }
-
-    /// The algorithm's parameters, to read or change from code; the algorithm
-    /// is built from them when the runner is bound.
-    [[nodiscard]]
-    const auto& parameters() const noexcept
-        requires detail::parameterized_algorithm<Algorithm>
-    {
-        return algorithm_.parameters();
+        return self.algorithm_.parameters();
     }
 
     /// The parameters of the algorithm ("search"), of the cost expression
@@ -728,11 +698,10 @@ public:
 
     /// The same runner on the hard branch of a hierarchical cost.
     [[nodiscard]]
-    auto with_hard_cost() const &
-        requires detail::hierarchical_solution_manager<solution_manager_type> &&
-                 std::copy_constructible<Algorithm> &&
-                 std::copy_constructible<SMSpec> &&
-                 std::copy_constructible<NHESpec>
+    auto with_hard_cost() const&
+        requires detail::hierarchical_solution_manager<solution_manager_type>
+        && std::copy_constructible<detail::algorithm_source<Algorithm>>
+        && std::copy_constructible<SMSpec> && std::copy_constructible<NHESpec>
     {
         using hard_sm_spec_type =
             detail::hard_cost_layer_spec<SMSpec>;
@@ -761,10 +730,10 @@ public:
 
     /// The runner bound to input, which must outlive the BoundRunner.
     [[nodiscard]]
-    auto bind(const input_type& input) const &
-        requires std::copy_constructible<Algorithm> &&
-                 (SMSpec::template constructible_from<const input_type>) &&
-                 (NHESpec::template constructible_from<solution_manager_type>)
+    auto bind(const input_type& input) const&
+        requires std::copy_constructible<detail::algorithm_source<Algorithm>>
+        && (SMSpec::template constructible_from<const input_type>)
+        && (NHESpec::template constructible_from<solution_manager_type>)
     {
         return BoundRunner<Algorithm, SMSpec, NHESpec>{
             algorithm_.make(),
