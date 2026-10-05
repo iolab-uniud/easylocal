@@ -429,6 +429,59 @@ std::optional<termination_reason> termination_of(const Result& result) noexcept
     }
 }
 
+// A tracer seen by a run on another cost than its own (a pipeline stage on the
+// hard cost): it forwards what the tracer observes, which for a recorder are
+// the events without a cost, and declares no cost_type.
+template<class Tracer>
+class foreign_cost_tracer
+{
+public:
+    explicit foreign_cost_tracer(Tracer& tracer) noexcept : tracer_{tracer} {}
+
+    template<class Event>
+    static constexpr bool observes = trace::observes<Tracer, Event>;
+
+    template<class Event>
+        requires observes<Event>
+    void emit(const Event& value)
+    {
+        trace::emit(tracer_, value);
+    }
+
+private:
+    Tracer& tracer_;
+};
+
+// Runs run(options) with options whose tracer suits a run of Cost: the
+// options themselves, or, for a tracer whose cost_type is another, the same
+// options with a foreign_cost_tracer over it.
+template<class Cost, class Tracer, class Target, class Run>
+decltype(auto) with_tracer_of_cost(const run_options<Tracer, Target>& options, Run&& run)
+{
+    if constexpr (requires { typename Tracer::cost_type; })
+    {
+        if constexpr (!std::same_as<typename Tracer::cost_type, Cost>)
+        {
+            using foreign_type = foreign_cost_tracer<Tracer>;
+            std::optional<foreign_type> foreign;
+            if (options.tracer != nullptr)
+                foreign.emplace(*options.tracer);
+            return std::forward<Run>(run)(run_options<foreign_type, Target>{
+                .control = options.control,
+                .tracer = foreign ? &*foreign : nullptr,
+                .target = options.target,
+                .time_limit = options.time_limit,
+                .evaluation_limit = options.evaluation_limit,
+                .front = options.front,
+            });
+        }
+        else
+            return std::forward<Run>(run)(options);
+    }
+    else
+        return std::forward<Run>(run)(options);
+}
+
 // Why a run ends the runs that would follow it (MultiStart's starts, the
 // attempts of a pipeline stage), if it does: it was cancelled, reached the
 // target or ran out of time.

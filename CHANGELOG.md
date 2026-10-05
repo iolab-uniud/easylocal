@@ -389,6 +389,10 @@ reviewed by hand before tagging.
   `temperature_changed_record`), at the start of a run and at each change of
   the schedule's temperature, only for a tracer that observes it. The
   tracing guide's example of an application event is now `weight_changed`.
+- **Breaking:** a run rejects at compile time a recorder whose `cost_type` is
+  not the runner's cost, which recorded nothing of the run; a pipeline gives a
+  stage on another cost (`until_feasible()`) the caller's recorder through a
+  tracer that forwards only the events without a cost.
 
 ### Added
 

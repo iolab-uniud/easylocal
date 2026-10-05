@@ -206,6 +206,14 @@ auto run_algorithm(
 {
     using arguments = run_arguments<Args...>;
     using tracer_type = typename arguments::tracer_type;
+    if constexpr (requires { typename tracer_type::cost_type; })
+    {
+        static_assert(
+            std::same_as<typename tracer_type::cost_type, typename Context::cost_type>,
+            "the recorder records the events of another cost than the runner's: "
+            "give it the runner's cost_type (a pipeline stage on another cost, "
+            "such as until_feasible(), gets the recorder's events without a cost)");
+    }
 
     auto forwarded = std::forward_as_tuple(std::forward<Args>(args)...);
     const run_control default_control{};

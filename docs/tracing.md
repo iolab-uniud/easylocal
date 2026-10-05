@@ -43,7 +43,10 @@ number, JavaScript and jq would round it to a double.
 A recorder has a cost type, its `cost_type`: it observes the core events of
 that cost and those without a cost (`run_context`, `neighborhood_selection`,
 the tabu events, `temperature_changed`), not the events of a run on another cost, which it would
-otherwise drop or convert. A tracer of your own says with `observes<Event>`
+otherwise drop or convert. A run rejects at compile time a recorder whose
+`cost_type` is not its own; a pipeline gives a stage on another cost (an
+`until_feasible()` stage on the hard cost) the recorder's events without a
+cost only. A tracer of your own says with `observes<Event>`
 which events it receives: `trace::emit` rejects at compile time a tracer
 whose `observes<Event>` is true but whose `emit()` does not take the event,
 such as an `emit` for another cost type.

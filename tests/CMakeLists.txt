@@ -849,6 +849,11 @@ easylocal_add_compile_failure_test(
     "the stages of a pipeline must have the same Solution"
 )
 easylocal_add_compile_failure_test(
+    recorder-of-another-cost
+    recorder_of_another_cost.cpp
+    "the recorder records the events of another cost than the runner's"
+)
+easylocal_add_compile_failure_test(
     make-move-by-value
     make_move_by_value.cpp
     "make_move must change the Solution it is given"

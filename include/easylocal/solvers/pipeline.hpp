@@ -1274,30 +1274,26 @@ private:
         const auto& stage = std::get<Index>(stages_);
         easylocal::detail::emit_run_context(stage.name(), Index, attempt, options...);
         const auto timed = budget.options_for_run(options...);
+        // A stage on another cost than the caller's recorder (until_feasible())
+        // gives it only its events without a cost.
+        const auto run = [&](const auto& stage_options) {
+            return easylocal::detail::with_tracer_of_cost<
+                typename BoundRunner::cost_type>(
+                stage_options,
+                [&](const auto& run_options) {
+                    return easylocal::detail::run_with_solver_rng(
+                        bound_runner,
+                        std::move(solution),
+                        rng,
+                        run_options);
+                });
+        };
         if (stage.target().has_value())
-        {
-            return easylocal::detail::run_with_solver_rng(
-                bound_runner,
-                std::move(solution),
-                rng,
-                timed.stop_at(*stage.target()));
-        }
+            return run(timed.stop_at(*stage.target()));
         if constexpr (Index + 1 == stage_count)
-        {
-            return easylocal::detail::run_with_solver_rng(
-                bound_runner,
-                std::move(solution),
-                rng,
-                timed);
-        }
+            return run(timed);
         else
-        {
-            return easylocal::detail::run_with_solver_rng(
-                bound_runner,
-                std::move(solution),
-                rng,
-                timed.without_target());
-        }
+            return run(timed.without_target());
     }
 
     std::tuple<Stages...> stages_;
