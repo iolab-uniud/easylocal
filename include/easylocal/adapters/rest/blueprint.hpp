@@ -125,6 +125,11 @@ concept application_codec =
         || writable_solution<typename App::input_type, app_solution_t<App>>)
     && (codec_encodes_cost<Codec, App> || cost::text_readable<app_cost_t<App>>);
 
+// A codec an app_blueprint can hold for an app; a named concept, used as a
+// type-constraint, since MrDocs lists a class with a requires-clause twice.
+template<class Codec, class App>
+concept blueprint_codec = std::move_constructible<Codec> && application_codec<Codec, App>;
+
 template<class Codec, class App>
 concept codec_decodes_initial_solution = requires(
     const Codec& codec,
@@ -411,10 +416,7 @@ inline void collect_parameters(
 /// `decode_initial_solution(input, json)` or read_solution, a target by
 /// `decode_cost(json)` or the text of read_cost. Requires a copyable app and,
 /// for the Input, the solution and the cost, a codec member or a text hook.
-template<class App, class Codec>
-    requires std::copy_constructible<App> &&
-             std::move_constructible<Codec> &&
-             detail::application_codec<Codec, App>
+template<std::copy_constructible App, detail::blueprint_codec<App> Codec>
 class app_blueprint
 {
 public:

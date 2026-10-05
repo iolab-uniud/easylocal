@@ -85,8 +85,9 @@ std::string report_text(const Value& value)
 }
 
 // An app a Session can hold: movable, with the Input type of its problem. A
-// named concept, not an inline requires-expression, which MrDocs would separate
-// from the class and its comment.
+// named concept, used as a type-constraint: MrDocs lists a class with a
+// requires-clause twice, and separates an inline requires-expression from the
+// class and its comment.
 template<class App>
 concept session_app = std::move_constructible<App> && requires {
     typename App::input_type;
@@ -101,8 +102,7 @@ concept session_app = std::move_constructible<App> && requires {
 /// It has no user interface of its own: interactive frontends, such as the
 /// TextUI, are views on it. Requires a movable app, such as the one
 /// easylocal::app() builds.
-template<class App>
-    requires detail::session_app<App>
+template<detail::session_app App>
 class Session
 {
 public:

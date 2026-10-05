@@ -282,6 +282,8 @@ reviewed by hand before tagging.
 - The tutorial no longer takes the launcher of chapter 12 from `examples/tsp`:
   `examples/tutorial/launcher_main.cpp` opens a 2-opt and a swap app of the
   tutorial's own TSP. `AGENTS.md` says what each example directory is.
+- The API reference lists `Session` and `rest::app_blueprint` once each:
+  constrained by requires-clauses, they appeared twice.
 - The REST examples check what clients send: the assignment codec rejects a
   fractional or quoted quantity (`2.5` was read as 2, `"2"` as 2), any error
   of a textual instance is a `422` (a negative count in its header was a

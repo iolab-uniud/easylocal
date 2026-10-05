@@ -143,6 +143,10 @@ The generated API reference (`scripts/api-docs.py`, MrDocs) is made of the
   are not in the reference, so their names alone tell the reader nothing.
 - An algorithm's `run(run, solution, ...)` says that the bound runner calls it;
   a member of a policy interface is described once, on its concept.
+- A public class template is constrained by type-constraints, with a named
+  concept when it needs one (`template<detail::session_app App> class
+  Session`), not by a requires-clause: MrDocs listed `Session` and
+  `rest::app_blueprint`, constrained that way, twice.
 - Code and paths with angle brackets go in backticks (`` `runners.<name>.*` ``),
   or MrDocs reads them as HTML; a code example goes between `/// \code` and
   `/// \endcode` (an indented paragraph becomes one run-on line).
