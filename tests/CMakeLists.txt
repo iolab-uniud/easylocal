@@ -849,6 +849,21 @@ easylocal_add_compile_failure_test(
     "the stages of a pipeline must have the same Solution"
 )
 easylocal_add_compile_failure_test(
+    runner-of-parameterized-algorithm
+    runner_of_parameterized_algorithm.cpp
+    "a Runner holds the parameters of this algorithm"
+)
+easylocal_add_compile_failure_test(
+    parameter-block-without-constructor
+    parameter_block_without_constructor.cpp
+    "give it a constructor from `const parameters_type&`"
+)
+easylocal_add_compile_failure_test(
+    target-of-another-type
+    target_of_another_type.cpp
+    "the target cost of the run options must convert to the runner"
+)
+easylocal_add_compile_failure_test(
     recorder-of-another-cost
     recorder_of_another_cost.cpp
     "the recorder records the events of another cost than the runner's"

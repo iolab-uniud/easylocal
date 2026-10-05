@@ -239,11 +239,17 @@ auto run_algorithm(
         tracer = options.tracer;
         if constexpr (!std::same_as<typename options_type::target_type, no_target>)
         {
+            constexpr bool convertible = std::constructible_from<
+                cost_type,
+                const typename options_type::target_type&>;
             static_assert(
-                std::constructible_from<cost_type, const typename options_type::target_type&>,
+                convertible,
                 "the target cost of the run options must convert to the runner's cost type");
-            if (options.target)
-                target.emplace(*options.target);
+            if constexpr (convertible)
+            {
+                if (options.target)
+                    target.emplace(*options.target);
+            }
         }
         if (options.time_limit)
             deadline = detail::deadline_after(*options.time_limit);
