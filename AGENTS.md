@@ -61,9 +61,10 @@ A dispatch, like a pull request, is a quick run: the local check (format and
 lint, AppleClang, GCC 15 Release, the optional components on Linux) and
 Windows clang-cl. `-f level=full` runs everything, as a release tag does:
 Linux GCC 15 and 16, Clang 22 and 23 with libstdc++ and with libc++, macOS
-AppleClang and GCC 16, the optional components on the three systems, a GCC
-16 Debug build with AddressSanitizer and UBSan (the `asan` preset, also usable
-locally) and coverage. Every job builds with warnings as errors. Code that
+AppleClang and GCC 16, the optional components on the three systems (and on
+macOS with Homebrew's packages), a GCC 16 Debug build with AddressSanitizer,
+UBSan and the expensive asserts (the `asan` preset, also usable locally) and
+coverage. Every job builds with warnings as errors. Code that
 builds with one compiler may not build with another: when CI fails, reproduce
 it with that compiler locally (for example a GCC 15 Release build), or run a
 Linux job in Docker with `scripts/act-ci.sh <toolchain>`.

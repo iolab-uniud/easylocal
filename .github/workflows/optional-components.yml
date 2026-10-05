@@ -16,8 +16,9 @@ on:
         options: [quick, full]
         default: quick
 
-# A release tag, or a dispatch with level full, runs Linux, macOS and Windows;
-# a pull request or a quick dispatch runs Linux.
+# A release tag, or a dispatch with level full, runs Linux, macOS and Windows
+# with fetched dependencies, and macOS with Homebrew's packages; a pull request
+# or a quick dispatch runs Linux.
 permissions:
   contents: read
 
@@ -189,6 +190,87 @@ jobs:
             build/optional-fetch/CMakeCache.txt
             build/optional-fetch/CMakeFiles/CMakeConfigureLog.yaml
             build/optional-fetch/Testing/Temporary/LastTest.log
+
+  macos-system-packages:
+    if: github.ref_type == 'tag' || inputs.level == 'full'
+    name: macOS ARM64 / all optional components / Homebrew packages
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+      HOMEBREW_NO_INSTALL_CLEANUP: '1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The dependencies as a user installs them: toml++, FTXUI and Crow
+      # (with Asio) from Homebrew, nothing fetched.
+      - name: Install build tools and the dependencies
+        run: |
+          if [ "$(uname -m)" != arm64 ]; then
+            echo 'This job requires a native ARM64 macOS runner.' >&2
+            exit 1
+          fi
+          command -v cmake >/dev/null || brew install cmake
+          command -v ninja >/dev/null || brew install ninja
+          command -v uv >/dev/null || brew install uv  # TUI end-to-end tests
+          brew install tomlplusplus ftxui crow
+          brew list --versions tomlplusplus ftxui crow asio
+          xcode="$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+          sudo xcode-select --switch "$xcode/Contents/Developer"
+          xcodebuild -version
+          {
+            echo "SDKROOT=$(xcrun --sdk macosx --show-sdk-path)"
+            echo "CXX=$(xcrun --find clang++)"
+            echo "BREW_PREFIX=$(brew --prefix)"
+          } >> "$GITHUB_ENV"
+
+      # Its ctest runs the installed-package consumers, which find the same
+      # packages through CMAKE_PREFIX_PATH.
+      - name: Configure with the system packages
+        run: |
+          build_dir="build/optional-system"
+          mkdir -p build
+          cmake -S . -B "$build_dir" -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_EXTENSIONS=OFF \
+            -DCMAKE_CXX_COMPILER="$CXX" \
+            -DCMAKE_OSX_SYSROOT="$SDKROOT" \
+            -DCMAKE_PREFIX_PATH="$BREW_PREFIX" \
+            -DEASYLOCAL_BUILD_EXAMPLES=ON \
+            -DEASYLOCAL_BUILD_TESTS=ON \
+            -DEASYLOCAL_WARNINGS_AS_ERRORS=ON \
+            -DEASYLOCAL_ENABLE_CONFIG_TOML=ON \
+            -DEASYLOCAL_ENABLE_TUI=ON \
+            -DEASYLOCAL_ENABLE_REST=ON \
+            -DEASYLOCAL_FETCH_DEPENDENCIES=OFF \
+            2>&1 | tee "${build_dir}.configure.log"
+          test ! -d "$build_dir/_deps"
+
+      - name: Build and test everything
+        run: |
+          build_dir="build/optional-system"
+          cmake --build "$build_dir" --parallel 3 \
+            2>&1 | tee "${build_dir}.build.log"
+          ctest --test-dir "$build_dir" --output-on-failure -j 3 \
+            --output-junit "$PWD/${build_dir}.junit.xml" \
+            2>&1 | tee "${build_dir}.ctest.log"
+
+      - name: Upload diagnostics
+        if: ${{ always() && !env.ACT }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: optional-components-macos-system-packages
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            build/optional-system*.log
+            build/optional-system*.junit.xml
+            build/optional-system/CMakeCache.txt
+            build/optional-system/CMakeFiles/CMakeConfigureLog.yaml
+            build/optional-system/Testing/Temporary/LastTest.log
 
   windows-fetchcontent:
     if: github.ref_type == 'tag' || inputs.level == 'full'
