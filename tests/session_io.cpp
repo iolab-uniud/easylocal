@@ -4,6 +4,7 @@
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/utils/limit.hpp>
 
 #include <cassert>
 #include <filesystem>
@@ -274,6 +275,26 @@ inline auto operator<<(std::ostream& out, const Solution&) -> std::ostream&
 }
 
 } // namespace failing_io
+
+namespace associated_io
+{
+
+// A type with easylocal among its associated namespaces (a template argument):
+// the argument-dependent lookup of its hooks also searches easylocal.
+template<class Tag>
+struct Tagged
+{
+    int value{};
+};
+
+template<class Tag>
+auto operator<<(std::ostream& out, const Tagged<Tag>& tagged) -> std::ostream&
+{
+    out << "tagged:" << tagged.value;
+    return out;
+}
+
+} // namespace associated_io
 
 namespace describe_io
 {
@@ -599,6 +620,15 @@ void free_file_write_errors_name_the_file()
     std::filesystem::remove(output_path);
 }
 
+void hooks_of_types_associated_with_easylocal()
+{
+    using tagged = associated_io::Tagged<easylocal::limit>;
+    assert(easylocal::describe(tagged{.value = 4}) == "tagged:4");
+    std::ostringstream out;
+    easylocal::write_solution(stream_io::Input{}, tagged{.value = 5}, out);
+    assert(out.str() == "tagged:5");
+}
+
 void describe_prefers_the_value_hooks()
 {
     assert(easylocal::describe(describe_io::Member{}) == "member");
@@ -621,4 +651,5 @@ int main()
     free_file_errors_name_the_file();
     free_file_write_errors_name_the_file();
     describe_prefers_the_value_hooks();
+    hooks_of_types_associated_with_easylocal();
 }

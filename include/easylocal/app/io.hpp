@@ -275,22 +275,76 @@ Solution load_solution(const Input& input, const std::filesystem::path& path)
     });
 }
 
-/// Writes a Solution of input to a stream with the first hook of
-/// writable_solution.
-///
-/// Throws std::runtime_error when the stream fails.
-template<class Input, class Solution>
-    requires writable_solution<Input, Solution>
-void write_solution(const Input& input, const Solution& solution, std::ostream& out)
+namespace detail::io
 {
-    if constexpr (detail::io::has_member_solution_write<Input, Solution>)
-        solution.write(input, out);
-    else if constexpr (detail::io::adl::has_write_solution<Input, Solution>)
-        detail::io::adl::call_write_solution(input, solution, out);
-    else
-        out << solution;
-    detail::io::require_write_success(out, "Solution");
-}
+
+// easylocal::write_solution: a function object, so that the argument-dependent
+// lookup of a problem's write_solution hook never finds it, even for types
+// with easylocal among their associated namespaces.
+struct write_solution_fn
+{
+    template<class Input, class Solution>
+        requires writable_solution<Input, Solution>
+    void operator()(const Input& input, const Solution& solution, std::ostream& out) const
+    {
+        if constexpr (has_member_solution_write<Input, Solution>)
+            solution.write(input, out);
+        else if constexpr (adl::has_write_solution<Input, Solution>)
+            adl::call_write_solution(input, solution, out);
+        else
+            out << solution;
+        require_write_success(out, "Solution");
+    }
+};
+
+// easylocal::describe: a function object, for the same reason.
+struct describe_fn
+{
+    template<class T>
+        requires describable<T>
+    [[nodiscard]]
+    std::string operator()(const T& value) const
+    {
+        if constexpr (member_describable<T>)
+        {
+            return std::string{value.describe()};
+        }
+        else if constexpr (adl::has_describe<T>)
+        {
+            return std::string{adl::call_describe(value)};
+        }
+        else
+        {
+            std::ostringstream out;
+            out << value;
+            return out.str();
+        }
+    }
+};
+
+} // namespace detail::io
+
+/// The function objects of the I/O hooks, easylocal::write_solution and
+/// easylocal::describe: an inline namespace keeps them apart from functions of
+/// the same name declared as friends in easylocal.
+inline namespace io_functions
+{
+
+/// Writes a Solution of input to a stream with the first hook of
+/// writable_solution: `write_solution(input, solution, out)`.
+///
+/// Throws std::runtime_error when the stream fails. It is a function object,
+/// which the lookup of a problem's own write_solution hook does not find.
+inline constexpr detail::io::write_solution_fn write_solution{};
+
+/// The text of a value for people, with the first hook of describable:
+/// `describe(value)`.
+///
+/// It is a function object, which the lookup of a problem's own describe hook
+/// does not find.
+inline constexpr detail::io::describe_fn describe{};
+
+} // namespace io_functions
 
 /// Writes a Solution of input to a file, as write_solution does to a stream.
 ///
@@ -318,28 +372,6 @@ void save_solution(
     out.close();
     if (out.fail())
         throw std::runtime_error{"failed to write Solution file: " + path.string()};
-}
-
-/// The text of a value for people, with the first hook of describable.
-template<class T>
-    requires describable<T>
-[[nodiscard]]
-std::string describe(const T& value)
-{
-    if constexpr (detail::io::member_describable<T>)
-    {
-        return std::string{value.describe()};
-    }
-    else if constexpr (detail::io::adl::has_describe<T>)
-    {
-        return std::string{detail::io::adl::call_describe(value)};
-    }
-    else
-    {
-        std::ostringstream out;
-        out << value;
-        return out.str();
-    }
 }
 
 } // namespace easylocal
