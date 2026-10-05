@@ -79,6 +79,10 @@ reviewed by hand before tagging.
   read as empty, and a UTF-8 byte order mark at its start is skipped instead
   of becoming part of the first path.
 
+- `timeout(d)` with a floating-point `std::chrono` duration that is NaN throws
+  `std::invalid_argument`, as `timeout(seconds)` does, instead of converting
+  NaN to the clock's integer ticks (undefined behaviour).
+
 ## [4.0.0-alpha.1] — 2026-10-04
 
 A pre-release: the API, header paths included, may still change before 4.0.0

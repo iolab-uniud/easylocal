@@ -213,6 +213,17 @@ int main()
         rejected = true;
     }
     ok &= expect(rejected, "a time limit that is not a number is rejected");
+    rejected = false;
+    try
+    {
+        static_cast<void>(el::timeout(
+            std::chrono::duration<double>{std::numeric_limits<double>::quiet_NaN()}));
+    }
+    catch (const std::invalid_argument&)
+    {
+        rejected = true;
+    }
+    ok &= expect(rejected, "a duration that is not a number is rejected");
 
     // A LocalSearch gives its time limit to its one run.
     namespace solvers = el::solvers;

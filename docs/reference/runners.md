@@ -309,7 +309,9 @@ observer and loads a copy when it draws, as the TextUI and the REST server do.
 
 The options combine in any order:
 `with(control).timeout(30s).max_evaluations(100000).stop_at(0)`. A
-negative or non-finite time limit throws `std::invalid_argument`. `search_run`
+negative time limit, a NaN one (a number of seconds or a floating-point
+duration) and an infinite number of seconds throw `std::invalid_argument`; a
+duration beyond what the clock counts is the longest it can. `search_run`
 checks the deadline with the other stopping conditions, reading the clock at
 an interval of checks that adapts so that readings come about a millisecond
 apart: a loop that checks at every move reads it rarely, one that checks once

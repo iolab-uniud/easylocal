@@ -105,13 +105,19 @@ namespace detail
 {
 
 // A time limit as the steady clock counts it; a limit beyond what it can count
-// is the largest it can. Throws std::invalid_argument for a negative limit.
+// is the largest it can. Throws std::invalid_argument for a negative limit, or
+// a floating-point one that is not a number.
 template<class Rep, class Period>
 [[nodiscard]]
 std::chrono::steady_clock::duration steady_time_limit(
     const std::chrono::duration<Rep, Period> limit)
 {
     using steady_duration = std::chrono::steady_clock::duration;
+    if constexpr (std::is_floating_point_v<Rep>)
+    {
+        if (std::isnan(limit.count()))
+            throw std::invalid_argument{"a time limit must be a number"};
+    }
     if (limit < std::chrono::duration<Rep, Period>::zero())
         throw std::invalid_argument{"a time limit cannot be negative"};
     if (std::chrono::duration<double>{limit}
@@ -202,7 +208,8 @@ struct run_options
 
     /// The same options with a time limit: with(control).timeout(5s).
     ///
-    /// Throws `std::invalid_argument` when the limit is negative.
+    /// Throws `std::invalid_argument` when the limit is negative or not a
+    /// number.
     template<class Rep, class Period>
     [[nodiscard]]
     run_options timeout(const std::chrono::duration<Rep, Period> limit) const
@@ -275,7 +282,7 @@ run_options<trace::null_tracer, Cost> stop_at(Cost cost)
 ///
 /// The run stops, with termination_reason::time_limit_reached, once `limit`
 /// has passed since it started. Throws `std::invalid_argument` when the limit
-/// is negative.
+/// is negative or not a number.
 template<class Rep, class Period>
 [[nodiscard]]
 run_options<trace::null_tracer> timeout(const std::chrono::duration<Rep, Period> limit)
