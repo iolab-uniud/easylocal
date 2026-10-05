@@ -147,6 +147,24 @@ class FixtureTraces(unittest.TestCase):
                 list(decoded), [{"event": "run_started", "cost": {"hard": [1, 2], "soft": 0.5}}]
             )
 
+    def test_timestamps_end_the_core_events(self):
+        with open(self.path / "timed.eltr", "rb") as stream:
+            timed = eltr.Trace(stream)
+            for name, fields in timed.schemas.values():
+                self.assertEqual(fields[-1], ("elapsed_ns", 7), name)
+            records = list(timed)
+        self.assertEqual(
+            [record["event"] for record in records],
+            ["run_context", "run_started", "temperature_changed", "run_finished"],
+        )
+        self.assertNotIn("elapsed_ns", records[2])
+        core = [records[index]["elapsed_ns"] for index in (0, 1, 3)]
+        self.assertEqual(core, sorted(core))
+        json_lines = self.expected("timed.jsonl")
+        self.assertEqual(
+            [list(line)[-1] for line in json_lines], 3 * ["elapsed_ns"]
+        )
+
     def test_a_truncated_trace_fails_unless_allowed(self):
         data = (self.path / "integral.eltr").read_bytes()
         truncated = self.path / "truncated.eltr"

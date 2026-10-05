@@ -9,12 +9,14 @@
 #include <easylocal/utils/detail/attributes.hpp>
 #include <easylocal/utils/detail/number_text.hpp>
 
+#include <chrono>
 #include <cmath>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <ios>
 #include <limits>
+#include <optional>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -154,12 +156,20 @@ inline std::ostringstream& jsonl_line_buffer()
 
 } // namespace detail
 
-/// The options of a jsonl_recorder: the metadata of its header line.
+/// The options of a jsonl_recorder: the metadata of its header line, and
+/// whether its events carry a timestamp.
 struct jsonl_options
 {
     /// Key-value pairs written in the header line: the instance, the runner,
     /// the seed, the parameters, whatever tells the run apart.
     std::vector<std::pair<std::string, std::string>> metadata{};
+    /// Whether each event line ends with `"elapsed_ns"`, the nanoseconds of
+    /// the steady clock since the recorder was constructed (false by default:
+    /// the clock is not read).
+    ///
+    /// For a streaming recorder: `write_jsonl` replays a memory_recorder after
+    /// the run, so its timestamps would be those of the replay.
+    bool timestamps{false};
 };
 
 /// A tracer that writes each event to a stream as it is emitted, one JSON
@@ -187,7 +197,7 @@ public:
         requires std::default_initializable<CostWriter>
         : out_{out}
     {
-        write_header(options);
+        start(options);
     }
 
     /// Writes to out, costs with cost_writer, after the header line.
@@ -197,7 +207,7 @@ public:
         const jsonl_options& options = {})
         : out_{out}, cost_writer_{std::move(cost_writer)}
     {
-        write_header(options);
+        start(options);
     }
 
     /// Whether the recorder receives Event: always.
@@ -369,42 +379,63 @@ public:
     }
 
 private:
-    void write_header(const jsonl_options& options)
+    // Writes the header line, then starts the clock of the timestamps.
+    void start(const jsonl_options& options)
     {
-        write_line([&](std::ostream& out) {
-            out << "{\"event\":\"trace\",\"version\":" << format_version
-                << ",\"metadata\":{";
-            bool first = true;
-            for (const auto& [key, value] : options.metadata)
-            {
-                if (!first)
-                    out << ',';
-                first = false;
-                detail::write_json_string(out, key);
-                out << ':';
-                detail::write_json_string(out, value);
-            }
-            out << "}}\n";
-        });
+        write_line(
+            [&](std::ostream& out) {
+                out << "{\"event\":\"trace\",\"version\":" << format_version
+                    << ",\"metadata\":{";
+                bool first = true;
+                for (const auto& [key, value] : options.metadata)
+                {
+                    if (!first)
+                        out << ',';
+                    first = false;
+                    detail::write_json_string(out, key);
+                    out << ':';
+                    detail::write_json_string(out, value);
+                }
+                out << "}}\n";
+            },
+            false);
+        if (options.timestamps)
+            start_ = std::chrono::steady_clock::now();
     }
 
     // Formats a line with the stream's format, then writes it at once: a
-    // cost writer that throws leaves no part of it in the stream.
+    // cost writer that throws leaves no part of it in the stream. A stamped
+    // line gets the timestamp before its closing brace.
     template<class Format>
-    void write_line(Format&& format)
+    void write_line(Format&& format, const bool stamped = true)
     {
+        std::optional<std::chrono::steady_clock::duration> elapsed;
+        if (stamped && start_)
+            elapsed = std::chrono::steady_clock::now() - *start_;
         auto& line = detail::jsonl_line_buffer();
         line.str({});
         line.clear();
         line.copyfmt(out_);
         line.tie(nullptr);
         std::forward<Format>(format)(static_cast<std::ostream&>(line));
+        if (elapsed)
+        {
+            // The line ends with "}\n": the field goes before them.
+            line.seekp(-2, std::ios_base::end);
+            line << ",\"elapsed_ns\":"
+                 << easylocal::detail::number_text(
+                        std::chrono::duration_cast<std::chrono::nanoseconds>(*elapsed)
+                            .count())
+                 << "}\n";
+        }
         const auto text = line.view();
         out_.write(text.data(), static_cast<std::streamsize>(text.size()));
     }
 
     std::ostream& out_;
     EASYLOCAL_NO_UNIQUE_ADDRESS CostWriter cost_writer_{};
+    // When the recorder started, with timestamps.
+    std::optional<std::chrono::steady_clock::time_point> start_;
 };
 
 /// Writes the events of a memory_recorder as JSONL, after the header line,

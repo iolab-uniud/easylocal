@@ -488,6 +488,19 @@ int main()
                "\"a\\\"b\",\"seed\":\"7\"}}\n",
         "the JSONL recorder starts with a header line with its metadata");
 
+    // With timestamps, each event line, not the header, ends with elapsed_ns.
+    std::ostringstream timed_output;
+    easylocal::trace::jsonl_recorder<int> timed{timed_output, {.timestamps = true}};
+    easylocal::trace::emit(timed, easylocal::trace::event::run_started<int>{4});
+    const auto timed_jsonl = timed_output.str();
+    const auto header_end = timed_jsonl.find('\n');
+    ok &= expect(
+        timed_jsonl.rfind("\"elapsed_ns\":", header_end) == std::string::npos
+            && timed_jsonl.find("{\"event\":\"run_started\",\"cost\":4,\"elapsed_ns\":")
+                == header_end + 1
+            && timed_jsonl.ends_with("}\n"),
+        "a JSONL recorder with timestamps ends each event with elapsed_ns");
+
     std::ostringstream structured_stream;
     easylocal::trace::jsonl_recorder<structured_cost, structured_cost_writer>
         structured_recorder{structured_stream, structured_cost_writer{}};

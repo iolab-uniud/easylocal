@@ -107,6 +107,21 @@ easylocal::trace::jsonl_recorder<cost_type> trace{
 ```
 
 `write_jsonl(out, recorder, options)` takes the same options.
+
+No event carries a time: a run that does not ask for it reads no clock. For
+anytime and time-to-target analyses, a streaming recorder writes timestamps
+when its options set `timestamps`: each core event then ends with
+`elapsed_ns`, the nanoseconds of the steady clock since the recorder was
+constructed, a field of the JSONL line or, in ELTR, a `u64` field the header
+adds to every core event schema. The time of an event within its run is its
+`elapsed_ns` minus that of the run's `run_started`. Application events carry
+no timestamp, and neither does the memory recorder, whose replay happens after
+the run.
+
+```cpp
+easylocal::trace::binary_recorder<cost_type> trace{out, {.timestamps = true}};
+easylocal::trace::jsonl_recorder<cost_type> lines{json_out, {.timestamps = true}};
+```
 The canonical experimental format is the versioned `ELTR` binary stream.  It
 describes itself: a header gives the metadata of the run, the layout of the
 costs and the fields of every event, so a reader needs nothing but the file.
@@ -212,6 +227,7 @@ application event that describes itself. The core events are:
 | 12 | `run_context` | stage (string), stage_index, attempt |
 | 128–255 | application events | as their schema says, if they have one |
 
+With `timestamps`, every core event ends with `elapsed_ns` (`u64`).
 The counters, the stage index and the attempt are `u64`, the biases and the probability `f64`, `produced_move` a
 `bool`, the neighborhoods routes; the header has the authoritative list.
 

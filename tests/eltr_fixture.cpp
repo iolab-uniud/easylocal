@@ -197,6 +197,24 @@ void write_hierarchical(const std::filesystem::path& directory)
     binary.flush();
 }
 
+// Core events with timestamps, and an application event, which has none.
+void write_timed(const std::filesystem::path& directory)
+{
+    namespace event = easylocal::trace::event;
+    std::ofstream binary_file{directory / "timed.eltr", std::ios::binary};
+    std::ofstream json_file{directory / "timed.jsonl"};
+    easylocal::trace::binary_recorder<long> binary{binary_file, {.timestamps = true}};
+    easylocal::trace::jsonl_recorder<long> json{json_file, {.timestamps = true}};
+    emit_all(
+        event::run_context{.stage = "", .stage_index = 0, .attempt = 0},
+        binary,
+        json);
+    emit_all(event::run_started<long>{3}, binary, json);
+    easylocal::trace::emit(binary, temperature_changed{1, 0.25});
+    emit_all(event::run_finished<long>{1, 1, 3}, binary, json);
+    binary.flush();
+}
+
 } // namespace
 
 int main(int argc, char** argv)
@@ -210,5 +228,6 @@ int main(int argc, char** argv)
     write_integral(directory);
     write_structured(directory);
     write_hierarchical(directory);
+    write_timed(directory);
     return 0;
 }

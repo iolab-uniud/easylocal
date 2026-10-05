@@ -15,6 +15,7 @@
 #include <atomic>
 #include <bit>
 #include <cassert>
+#include <chrono>
 #include <concepts>
 #include <condition_variable>
 #include <cstddef>
@@ -24,6 +25,7 @@
 #include <iterator>
 #include <limits>
 #include <mutex>
+#include <optional>
 #include <ostream>
 #include <ranges>
 #include <span>
@@ -463,6 +465,11 @@ struct binary_buffer_options
     /// Key-value pairs written in the header: the instance, the runner, the
     /// seed, the parameters, whatever tells the run apart.
     std::vector<std::pair<std::string, std::string>> metadata{};
+    /// Whether each core event ends with an `elapsed_ns` field (`u64`), the
+    /// nanoseconds of the steady clock since the recorder was constructed
+    /// (false by default: the clock is not read). Application events carry
+    /// none.
+    bool timestamps{false};
 };
 
 namespace detail
@@ -494,8 +501,10 @@ inline void append_u32_le(std::vector<char>& buffer, const std::uint32_t value)
     out.u32(value);
 }
 
-// The schemas of the core events, by tag; each matches its encode_core_event.
-inline std::vector<std::pair<std::uint8_t, binary_event_schema>> core_event_schemas()
+// The schemas of the core events, by tag; each matches its encode_core_event,
+// followed by elapsed_ns with timestamps.
+inline std::vector<std::pair<std::uint8_t, binary_event_schema>> core_event_schemas(
+    const bool timestamps)
 {
     using enum binary_type;
     const binary_field evaluations{"evaluations", u64};
@@ -504,7 +513,7 @@ inline std::vector<std::pair<std::uint8_t, binary_event_schema>> core_event_sche
         return static_cast<std::uint8_t>(value);
     };
     using enum core_binary_event_tag;
-    return {
+    std::vector<std::pair<std::uint8_t, binary_event_schema>> schemas{
         {tag(run_started), {"run_started", {{"cost", cost}}}},
         {tag(move_evaluated),
             {"move_evaluated",
@@ -549,6 +558,10 @@ inline std::vector<std::pair<std::uint8_t, binary_event_schema>> core_event_sche
         {tag(run_context),
             {"run_context", {{"stage", string}, {"stage_index", u64}, {"attempt", u64}}}},
     };
+    if (timestamps)
+        for (auto& [_, schema] : schemas)
+            schema.fields.push_back({"elapsed_ns", u64});
+    return schemas;
 }
 
 // The version of the ELTR format, in the header after the magic.
@@ -560,7 +573,8 @@ inline constexpr std::uint32_t eltr_format_version = 1;
 inline void append_trace_header(
     std::vector<char>& buffer,
     const std::span<const binary_field> cost_fields,
-    const std::span<const std::pair<std::string, std::string>> metadata)
+    const std::span<const std::pair<std::string, std::string>> metadata,
+    const bool timestamps)
 {
     static constexpr char magic[] = {'E', 'L', 'T', 'R'};
     buffer.insert(buffer.end(), std::begin(magic), std::end(magic));
@@ -576,7 +590,7 @@ inline void append_trace_header(
         out.string(value);
     }
     out.fields(cost_fields);
-    const auto schemas = core_event_schemas();
+    const auto schemas = core_event_schemas(timestamps);
     out.u32(static_cast<std::uint32_t>(schemas.size()));
     for (const auto& [tag, schema] : schemas)
         out.schema(tag, schema);
@@ -896,15 +910,17 @@ public:
     template<class Event>
     static constexpr bool observes = binary_event_encodable_v<Event, CostWriter>;
 
-    void append_header(
-        std::vector<char>& buffer,
-        const std::span<const std::pair<std::string, std::string>> metadata) const
+    // Appends the header of the trace; with timestamps, the core events end
+    // with the time since now.
+    void append_header(std::vector<char>& buffer, const binary_buffer_options& options)
     {
         const auto fields = cost_writer_.fields();
         const std::vector<binary_field> cost_fields(
             std::ranges::begin(fields),
             std::ranges::end(fields));
-        append_trace_header(buffer, cost_fields, metadata);
+        append_trace_header(buffer, cost_fields, options.metadata, options.timestamps);
+        if (options.timestamps)
+            start_ = std::chrono::steady_clock::now();
     }
 
     // Appends the record of value, after the schema of its tag the first
@@ -915,6 +931,12 @@ public:
     void append(std::vector<char>& buffer, const Event& value)
     {
         const auto tag = event_tag(value, cost_writer_);
+        std::optional<std::chrono::steady_clock::duration> elapsed;
+        if constexpr (core_binary_event_for<Event, CostWriter>)
+        {
+            if (start_)
+                elapsed = std::chrono::steady_clock::now() - *start_;
+        }
         const auto mark = buffer.size();
         bool* newly_described = nullptr;
         try
@@ -939,6 +961,13 @@ public:
             const auto payload_offset = begin_record(buffer, tag);
             binary_record_writer out{buffer};
             encode_event(out, value, cost_writer_);
+            if (elapsed)
+            {
+                out.u64(
+                    static_cast<std::uint64_t>(
+                        std::chrono::duration_cast<std::chrono::nanoseconds>(*elapsed)
+                            .count()));
+            }
             finish_record(buffer, payload_offset);
         }
         catch (...)
@@ -954,6 +983,8 @@ private:
     EASYLOCAL_NO_UNIQUE_ADDRESS CostWriter cost_writer_{};
     // The application tags whose schema is written.
     std::array<bool, 128> described_{};
+    // When the recorder started, with timestamps.
+    std::optional<std::chrono::steady_clock::time_point> start_;
 };
 
 class async_ostream_block_sink
@@ -1178,7 +1209,7 @@ public:
           block_size_{std::max<std::size_t>(options.block_size, 1U)}
     {
         buffer_.reserve(block_size_);
-        encoder_.append_header(buffer_, options.metadata);
+        encoder_.append_header(buffer_, options);
         flush();
     }
 
@@ -1192,7 +1223,7 @@ public:
           block_size_{std::max<std::size_t>(options.block_size, 1U)}
     {
         buffer_.reserve(block_size_);
-        encoder_.append_header(buffer_, options.metadata);
+        encoder_.append_header(buffer_, options);
         flush();
     }
 
@@ -1305,7 +1336,7 @@ public:
     {
         current_ = sink_.acquire();
         current_.reserve(block_size_);
-        encoder_.append_header(current_, options.metadata);
+        encoder_.append_header(current_, options);
         submit_current();
         static_cast<void>(sink_.flush_output());
     }
@@ -1323,7 +1354,7 @@ public:
     {
         current_ = sink_.acquire();
         current_.reserve(block_size_);
-        encoder_.append_header(current_, options.metadata);
+        encoder_.append_header(current_, options);
         submit_current();
         static_cast<void>(sink_.flush_output());
     }

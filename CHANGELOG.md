@@ -122,6 +122,11 @@ reviewed by hand before tagging.
   apart in a trace, the stages on the hard cost included. The memory and JSONL
   recorders keep it, and `eltr.py --format summary` gives each run its stage
   and attempt.
+- Timestamps in traces, as a recorder option: with `timestamps` in
+  `binary_buffer_options` or `jsonl_options`, each core event ends with
+  `elapsed_ns`, the nanoseconds since the recorder was constructed (a `u64`
+  field of the ELTR schemas, a field of the JSONL line), for anytime and
+  time-to-target analyses. Without it, no clock is read.
 
 ### Changed
 
