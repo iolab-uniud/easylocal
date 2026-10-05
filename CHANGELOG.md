@@ -126,6 +126,11 @@ reviewed by hand before tagging.
 - A Tabu Search whose list cannot run (`Reactive` with `verify_equality`
   and no solution equality) throws before the run starts, instead of after
   `run_started`, which left a trace without `run_finished`.
+- `RandomFoo` traced a start tenure of 1 that no move got: its tenure is 0
+  until the first move draws it, and the first `tabu_tenure_changed` is that
+  draw. `tabu_escape` is emitted after the escape's random moves, with the
+  number applied, instead of before them with the number asked, which the
+  run's limits could cut short.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

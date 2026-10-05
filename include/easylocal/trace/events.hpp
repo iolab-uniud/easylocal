@@ -165,14 +165,15 @@ struct aspiration_applied
     Cost cost;
 };
 
-/// A reactive tabu list's escape: `moves` random moves follow.
+/// A reactive tabu list's escape, after its random moves: `moves` were
+/// applied, fewer than asked when the run had to stop.
 struct tabu_escape
 {
     /// Evaluations so far.
     std::size_t evaluations{};
     /// Iterations so far.
     std::size_t iterations{};
-    /// The number of random moves of the escape.
+    /// The number of random moves the escape applied.
     std::size_t moves{};
 };
 

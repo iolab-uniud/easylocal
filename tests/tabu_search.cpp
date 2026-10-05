@@ -532,10 +532,18 @@ int main()
         using recorder = easylocal::trace::memory_recorder<int>;
         std::size_t accepted = 0;
         std::size_t escapes = 0;
+        // An escape is traced after its moves, with those applied: a scan
+        // came first, and the iteration limit may cut the last one short.
+        bool escapes_applied = true;
         for (const auto& record : trace.records())
         {
             accepted += std::holds_alternative<recorder::move_accepted_record>(record);
-            escapes += std::holds_alternative<recorder::tabu_escape_record>(record);
+            if (const auto* escape = std::get_if<recorder::tabu_escape_record>(&record))
+            {
+                ++escapes;
+                escapes_applied = escapes_applied && escape->moves > 0
+                    && escape->iterations > escape->moves && escape->iterations <= 40;
+            }
         }
         auto calm = line_runner<TabuSearch<tabu::Reactive>, Bowl>(
             {.max_idle_iterations = 100,
@@ -563,6 +571,28 @@ int main()
             result.iterations == 40 && accepted == 40 && escapes > 0
                 && result.evaluations < without_escape.evaluations && result.cost == 0,
             "the reactive list escapes with random moves, counted as iterations");
+        ok &= expect(escapes_applied, "an escape is traced with the moves it applied");
+    }
+
+    {
+        // RandomFoo draws its first tenure at the first move: no tenure is
+        // traced before it.
+        auto runner = line_runner<TabuSearch<tabu::RandomFoo>, Valley>(
+            {.max_idle_iterations = 3,
+                .tabu_list = {.min_increment = 3, .max_increment = 3}});
+        std::mt19937 rng{7U};
+        easylocal::trace::memory_recorder<int> trace;
+        (void)runner.bind(instance).run(Position{1}, rng, easylocal::with(trace));
+        using recorder = easylocal::trace::memory_recorder<int>;
+        std::vector<recorder::tabu_tenure_changed_record> tenures;
+        for (const auto& record : trace.records())
+            if (const auto* change =
+                    std::get_if<recorder::tabu_tenure_changed_record>(&record))
+                tenures.push_back(*change);
+        ok &= expect(
+            !tenures.empty() && tenures.front().previous_tenure == 0
+                && tenures.front().tenure == 3 && tenures.front().iterations == 1,
+            "random foo traces its first tenure when it draws it");
     }
 
     {

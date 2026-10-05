@@ -42,9 +42,11 @@ runner.run(solution, rng, easylocal::with(trace));
 
 Tabu search adds `aspiration_applied`, when the move just
 applied was tabu and admitted by the aspiration criterion, `tabu_escape`,
-before the random moves of a reactive list's escape, and `tabu_tenure_changed`,
-with the previous and the new tenure of a list with one tenure for all its
-moves, at the start of the run (previous tenure 0) and at each change.
+after the random moves of a reactive list's escape, with the number applied
+(the run may stop before the escape ends), and `tabu_tenure_changed`, with the
+previous and the new tenure of a list with one tenure for all its moves, at the
+start of the run (previous tenure 0) and at each change; `RandomFoo` draws its
+first tenure at the first move, and traces it then.
 
 ## Composite-neighborhood provenance
 

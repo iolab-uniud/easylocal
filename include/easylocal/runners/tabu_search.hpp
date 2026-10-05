@@ -1341,7 +1341,8 @@ private:
     aging_moves<Move> moves_;
     std::optional<Cost> lowest_;
     std::optional<Cost> highest_;
-    std::size_t tenure_{1};
+    // 0 until set: no move is tabu.
+    std::size_t tenure_{};
     std::size_t in_window_{};
     std::size_t iteration_{};
 };
@@ -1582,7 +1583,8 @@ public:
             tenure_.trim(window_, increment_);
         }
 
-        /// The iterations a move applied now stays tabu.
+        /// The iterations a move applied now stays tabu; 0 before the first
+        /// move, which draws it.
         [[nodiscard]]
         std::size_t current_tenure() const noexcept
         {
@@ -1825,8 +1827,13 @@ public:
             .best = std::move(best),
             .list = std::move(list),
         };
+        // The tenure at the start, unless the list sets it at the first move
+        // (RandomFoo draws it).
         if constexpr (requires { state.list.current_tenure(); })
-            tenure_changed(run, 0, state.list.current_tenure());
+        {
+            if (const auto tenure = state.list.current_tenure(); tenure != 0)
+                tenure_changed(run, 0, tenure);
+        }
         return state;
     }
 
@@ -1973,20 +1980,13 @@ public:
         update_list(run, state, *scan.chosen_move, rng);
 
         // The reactive list's escape: random moves, applied whatever their
-        // cost and recorded in the list like the others.
+        // cost and recorded in the list like the others, then traced with the
+        // number applied (the run may stop first).
         if constexpr (requires { state.list.escape_moves(); })
         {
             const auto escape_moves = state.list.escape_moves();
-            if (escape_moves > 0)
-            {
-                run.emit(
-                    trace::event::tabu_escape{
-                        .evaluations = run.evaluations(),
-                        .iterations = run.iterations(),
-                        .moves = escape_moves,
-                    });
-            }
-            for (auto escape = escape_moves; escape > 0; --escape)
+            std::size_t applied = 0;
+            for (; applied < escape_moves; ++applied)
             {
                 if (run.should_stop() || run.iterations() >= max_iterations_)
                 {
@@ -1998,6 +1998,15 @@ public:
                 auto candidate = run.evaluate_move(state.solution, state.current, *move);
                 commit(run, state, std::move(candidate), *move);
                 update_list(run, state, *move, rng);
+            }
+            if (applied > 0)
+            {
+                run.emit(
+                    trace::event::tabu_escape{
+                        .evaluations = run.evaluations(),
+                        .iterations = run.iterations(),
+                        .moves = applied,
+                    });
             }
         }
         return true;
