@@ -13,6 +13,7 @@
 #include <iostream>
 #include <optional>
 #include <random>
+#include <stdexcept>
 #include <string_view>
 #include <variant>
 #include <vector>
@@ -562,6 +563,27 @@ int main()
             result.iterations == 40 && accepted == 40 && escapes > 0
                 && result.evaluations < without_escape.evaluations && result.cost == 0,
             "the reactive list escapes with random moves, counted as iterations");
+    }
+
+    {
+        // The line has a hash but no equality: verify_equality cannot work,
+        // and the run throws before it starts, leaving no unfinished trace.
+        auto runner = line_runner<TabuSearch<tabu::Reactive>, Valley>(
+            {.max_idle_iterations = 3, .tabu_list = {.verify_equality = true}});
+        std::mt19937 rng{7U};
+        easylocal::trace::memory_recorder<int> trace;
+        bool rejected = false;
+        try
+        {
+            (void)runner.bind(instance).run(Position{1}, rng, easylocal::with(trace));
+        }
+        catch (const std::invalid_argument&)
+        {
+            rejected = true;
+        }
+        ok &= expect(
+            rejected && trace.records().empty(),
+            "a list that cannot run throws before the run starts");
     }
 
     return ok ? 0 : 1;

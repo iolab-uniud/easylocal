@@ -1814,14 +1814,16 @@ public:
     auto start(Run& run, typename Run::solution_type solution) const
     {
         run.limit_evaluations(max_evaluations_);
+        // Before the run starts: making the list may throw (Reactive's
+        // verify_equality without solution equality).
+        auto list = tabu_list_.template make_state<Run>();
         auto current = run.start(solution);
         auto best = best_so_far{solution, current.cost()};
-        using list_type = decltype(tabu_list_.template make_state<Run>());
-        tabu_run<Run, list_type> state{
+        tabu_run<Run, decltype(list)> state{
             .solution = std::move(solution),
             .current = std::move(current),
             .best = std::move(best),
-            .list = tabu_list_.template make_state<Run>(),
+            .list = std::move(list),
         };
         if constexpr (requires { state.list.current_tenure(); })
             tenure_changed(run, 0, state.list.current_tenure());

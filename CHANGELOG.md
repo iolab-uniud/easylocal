@@ -123,6 +123,9 @@ reviewed by hand before tagging.
   `equivalent()` of the cost: it uses the cost semantics, through
   `tabu_candidate::equivalent_cost(other)`, and no longer requires `==` on
   the cost.
+- A Tabu Search whose list cannot run (`Reactive` with `verify_equality`
+  and no solution equality) throws before the run starts, instead of after
+  `run_started`, which left a trace without `run_finished`.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 
