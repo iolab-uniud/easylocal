@@ -490,10 +490,10 @@ bool check_unbound(const App& application, app_check_report& report)
 }
 
 // The checks of the bound app from solution.
-template<class Bound, class Instance, class Solution>
+template<class Bound, class Input, class Solution>
 void check_bound(
     const Bound& bound,
-    const Instance& instance,
+    const Input& input,
     const Solution& solution,
     const testing::check_options& options,
     app_check_report& report)
@@ -512,15 +512,15 @@ void check_bound(
     const auto& neighborhood = bound.neighborhood();
 
     report.check(
-        std::addressof(bound.input()) == std::addressof(instance),
+        std::addressof(bound.input()) == std::addressof(input),
         "app input binding",
         "the materialized app does not refer to the supplied Input");
     report.check(
-        std::addressof(solution_manager.input()) == std::addressof(instance),
+        std::addressof(solution_manager.input()) == std::addressof(input),
         "solution manager input binding",
         "SolutionManager::input() does not refer to the app Input");
     report.check(
-        std::addressof(neighborhood.input()) == std::addressof(instance),
+        std::addressof(neighborhood.input()) == std::addressof(input),
         "neighborhood input binding",
         "NeighborhoodExplorer::input() does not refer to the app Input");
 
@@ -619,10 +619,10 @@ void check_domains(const App& application, app_check_report& report)
 } // namespace detail
 
 /// Runs the contract checks of easylocal::testing on the components of an app
-/// bound to instance, from solution and from random solutions, with the
+/// bound to input, from solution and from random solutions, with the
 /// options of the checks, and returns their report.
 ///
-/// It checks that the services refer to instance, that solution is valid and
+/// It checks that the services refer to input, that solution is valid and
 /// evaluates twice to an equivalent cost, that random solutions are valid,
 /// and that the moves of each neighborhood (the app's, and those of the
 /// runners that have their own) from solution and from the random solutions
@@ -638,40 +638,36 @@ void check_domains(const App& application, app_check_report& report)
 /// are checked first: with invalid ones the app is not bound, since binding it
 /// rejects them. A failure names the move and the solution it starts from; an
 /// exception of a hook is a failure.
-template<class App, class Instance, class Solution>
+template<class App, class Input, class Solution>
 [[nodiscard]] app_check_report check(
     const App& application,
-    const Instance& instance,
+    const Input& input,
     Solution solution,
     const testing::check_options& options = {})
-    requires requires {
-        application.bind(instance).solution_manager().is_valid(solution);
-    }
+    requires requires { application.bind(input).solution_manager().is_valid(solution); }
 {
     app_check_report report{application.name()};
     if (!detail::check_unbound(application, report))
         return report;
-    auto bound = application.bind(instance);
-    detail::check_bound(bound, instance, solution, options, report);
+    auto bound = application.bind(input);
+    detail::check_bound(bound, input, solution, options, report);
     detail::check_domains(application, report);
     return report;
 }
 
-/// Runs check(app, instance, solution, options) from the SolutionManager's
+/// Runs check(app, input, solution, options) from the SolutionManager's
 /// initial_solution(), binding the app once.
-template<class App, class Instance>
+template<class App, class Input>
 [[nodiscard]] app_check_report check(
     const App& application,
-    const Instance& instance,
+    const Input& input,
     const testing::check_options& options = {})
-    requires requires {
-        application.bind(instance).solution_manager().initial_solution();
-    }
+    requires requires { application.bind(input).solution_manager().initial_solution(); }
 {
     app_check_report report{application.name()};
     if (!detail::check_unbound(application, report))
         return report;
-    auto bound = application.bind(instance);
+    auto bound = application.bind(input);
     std::optional<
         std::remove_cvref_t<decltype(bound.solution_manager().initial_solution())>>
         initial;
@@ -681,7 +677,7 @@ template<class App, class Instance>
             "initial_solution()",
             [&] { initial.emplace(bound.solution_manager().initial_solution()); }))
         return report;
-    detail::check_bound(bound, instance, *initial, options, report);
+    detail::check_bound(bound, input, *initial, options, report);
     detail::check_domains(application, report);
     return report;
 }
