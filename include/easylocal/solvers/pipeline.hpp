@@ -428,7 +428,9 @@ struct stage_report
     std::size_t evaluations{};
     /// Iterations of all its runs.
     std::size_t iterations{};
-    /// Why its best run ended, when the result reports it.
+    /// Why the stage stopped, when its results report it: a run cancelled,
+    /// out of time or at the target, the budget spent, or else the end of its
+    /// last attempt.
     std::optional<termination_reason> termination;
     /// The cost of its best run, as cost::to_text writes it, or empty when the
     /// cost cannot be written as text.
@@ -453,24 +455,21 @@ inline constexpr bool is_pipeline_stage_v = false;
 template<class Runner>
 inline constexpr bool is_pipeline_stage_v<pipeline_stage<Runner>> = true;
 
-// Whether a run ends the attempts of its stage: it reached the stage's target
-// (by its termination, or by its cost for results that do not report one) or
-// was cancelled.
+// Why a run ends the attempts of its stage, if it does: it was cancelled, ran
+// out of time or reached the target (by its termination, or by its cost for
+// results that do not report one).
 template<class BoundRunner, class Result, class Target>
 [[nodiscard]]
-bool ends_stage(
+std::optional<termination_reason> ends_stage(
     const BoundRunner& bound_runner,
     const Result& result,
     const std::optional<Target>& target)
 {
-    const auto termination = easylocal::detail::termination_of(result);
-    if (termination == termination_reason::target_reached
-        || termination == termination_reason::cancelled
-        || termination == termination_reason::time_limit_reached)
-    {
-        return true;
-    }
-    return target.has_value() && !bound_runner.better(*target, result.cost);
+    if (const auto termination = easylocal::detail::ends_runs(result))
+        return termination;
+    if (target.has_value() && !bound_runner.better(*target, result.cost))
+        return termination_reason::target_reached;
+    return std::nullopt;
 }
 
 } // namespace detail
@@ -837,22 +836,38 @@ private:
         front.add(bound_runner, best);
         stage_budget.consume(best);
         budget.consume(best);
-        bool ended = detail::ends_stage(bound_runner, best, stage.target());
+        auto termination = detail::ends_stage(bound_runner, best, stage.target());
+        auto last_termination = easylocal::detail::termination_of(best);
         std::size_t attempts = 1;
-        for (; attempts < stage.parameters().attempts && !ended
-            && !easylocal::detail::stop_requested(options...) && !stage_budget.spent();
-            ++attempts)
+        for (; attempts < stage.parameters().attempts && !termination; ++attempts)
         {
+            if (easylocal::detail::stop_requested(options...))
+            {
+                termination = termination_reason::cancelled;
+                break;
+            }
+            if (stage_budget.spent())
+                break;
             auto candidate =
                 run_once<Index>(bound_runner, start(), rng, stage_budget, options...);
             stage_effort.add(candidate);
             front.add(bound_runner, candidate);
             stage_budget.consume(candidate);
             budget.consume(candidate);
-            ended = detail::ends_stage(bound_runner, candidate, stage.target());
+            termination = detail::ends_stage(bound_runner, candidate, stage.target());
+            last_termination = easylocal::detail::termination_of(candidate);
             if (bound_runner.better(candidate.cost, best.cost))
                 best = std::move(candidate);
         }
+        // Why the stage stopped: a run that ended it, the time or the
+        // evaluations running out, before an attempt or during the last one,
+        // or else the end of its last attempt.
+        if (!termination)
+            termination = stage_budget.spent();
+        if (!termination)
+            termination = last_termination;
+        if (termination)
+            easylocal::detail::set_termination(best, *termination);
         front.assign_to(best);
 
         stage_report report{
@@ -860,7 +875,7 @@ private:
             .attempts = attempts,
             .evaluations = stage_effort.evaluations,
             .iterations = stage_effort.iterations,
-            .termination = easylocal::detail::termination_of(best),
+            .termination = termination,
             .cost = {},
         };
         if constexpr (cost::text_readable<typename BoundRunner::cost_type>)

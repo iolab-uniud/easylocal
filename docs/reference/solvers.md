@@ -100,7 +100,10 @@ solution. It is how an app runs a pipeline registered by name.
 
 The result is the last stage's, with the effort of every stage and attempt,
 and `result.stages`: per stage its name, attempts, evaluations, iterations,
-termination and cost (as `cost::to_text` writes it).
+termination and cost (as `cost::to_text` writes it). A stage's termination is
+why it stopped, not why its best attempt did: a run cancelled, out of time or
+at the target, the stage's or the solve's budget spent, or else the end of its
+last attempt; the result's termination is the last stage's.
 
 The parameters (`configuration()`) are each stage's under its name: its
 runner's (`<name>.search.*`, `<name>.cost.*`, ...), `<name>.attempts` and

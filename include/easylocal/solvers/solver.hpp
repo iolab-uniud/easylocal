@@ -305,6 +305,23 @@ std::optional<termination_reason> termination_of(const Result& result) noexcept
     }
 }
 
+// Why a run ends the runs that would follow it (MultiStart's starts, the
+// attempts of a pipeline stage), if it does: it was cancelled, reached the
+// target or ran out of time.
+template<class Result>
+[[nodiscard]]
+std::optional<termination_reason> ends_runs(const Result& result) noexcept
+{
+    const auto termination = termination_of(result);
+    if (termination == termination_reason::cancelled
+        || termination == termination_reason::target_reached
+        || termination == termination_reason::time_limit_reached)
+    {
+        return termination;
+    }
+    return std::nullopt;
+}
+
 } // namespace detail
 
 /// Constructs a Solver from its arguments, e.g.

@@ -169,7 +169,7 @@ public:
 
         auto best = run_once(bound_runner, budget, options...);
         budget.consume(best);
-        auto termination = ended_by(best);
+        auto termination = easylocal::detail::ends_runs(best);
         easylocal::detail::search_effort effort;
         effort.add(best);
         easylocal::detail::merged_front<decltype(best)> front;
@@ -187,7 +187,7 @@ public:
                 break;
             auto candidate = run_once(bound_runner, budget, options...);
             budget.consume(candidate);
-            termination = ended_by(candidate);
+            termination = easylocal::detail::ends_runs(candidate);
             effort.add(candidate);
             front.add(bound_runner, candidate);
             if (bound_runner.better(candidate.cost, best.cost))
@@ -241,21 +241,6 @@ private:
             this->make_initial_solution(bound_runner, rng_),
             rng_,
             budget.options_for_run(options...));
-    }
-
-    // Why a start ends the whole solve, if it does.
-    template<class Result>
-    [[nodiscard]]
-    static std::optional<termination_reason> ended_by(const Result& result)
-    {
-        const auto termination = easylocal::detail::termination_of(result);
-        if (termination == termination_reason::cancelled
-            || termination == termination_reason::target_reached
-            || termination == termination_reason::time_limit_reached)
-        {
-            return termination;
-        }
-        return std::nullopt;
     }
 
     RunnerType runner_;

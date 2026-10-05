@@ -143,6 +143,9 @@ reviewed by hand before tagging.
   projection included, reaches the cost components.
 - With a `cost::pareto` cost, MultiStart and the attempts of a pipeline stage
   return the front merged from all their runs, not the first run's front.
+- A pipeline stage's termination, and the solve's, say why the stage stopped
+  (cancelled, time or budget out, target reached), not why its best attempt
+  ended.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

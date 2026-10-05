@@ -397,6 +397,25 @@ int main()
             && budgeted_stages.stages[1].evaluations == 30
             && budgeted_stages.evaluations == 40,
         "a stage's own budget ends it, and the next one has what is left");
+    // The termination of a stage, and of the solve, is why it stopped, not why
+    // its best attempt did: the first attempt ends idle, the second runs out
+    // of the budget, and the third never starts.
+    auto idle_runner =
+        el::make_runner<el::runners::HillClimbing>({.max_idle_iterations = 10})
+        | (el::solution_manager<SolutionManager>() | el::component<Value>())
+        | el::neighborhood<EndlessNeighborhood>();
+    auto attempted =
+        solvers::pipeline(solvers::stage("only", idle_runner) & solvers::attempts(3));
+    const auto attempted_result =
+        attempted.initialization(el::initialization::initial)
+            .solve(instance, el::max_evaluations(15));
+    ok &= expect(
+        attempted_result.stages[0].attempts == 2
+            && attempted_result.stages[0].termination
+                == el::termination_reason::evaluation_budget_exhausted
+            && attempted_result.termination
+                == el::termination_reason::evaluation_budget_exhausted,
+        "a stage stopped by the budget in its second attempt says so");
     ok &= expect(
         solvers::stage("s", runner).with_max_evaluations(7).parameters().max_evaluations
             == 7,
