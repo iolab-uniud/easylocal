@@ -185,6 +185,9 @@ reviewed by hand before tagging.
   configurations.txt.
 - An `unlimited` limit given a finite tuning range starts at the upper bound
   of the range in configurations.txt, not at the lower one.
+- The irace scenario keeps the precision of real bounds with more than 4
+  decimals (`digits` in scenario.txt, at most 15), which irace rejected, and
+  open integer bounds that are fractional are no longer off by one.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

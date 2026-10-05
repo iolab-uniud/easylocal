@@ -499,6 +499,47 @@ void an_unlimited_limit_starts_at_its_upper_bound()
     std::filesystem::remove_all(directory);
 }
 
+// Real bounds with more decimals than irace's default 4 set its digits; the
+// open bounds of an integer range move to the nearest integer inside it.
+void bounds_keep_their_precision()
+{
+    using kind = config::parameter_kind;
+    const auto directory = fresh_directory("easylocal-tuning-digits");
+    easylocal::irace_stub stub{
+        .directory = directory,
+        .program = "solver",
+        .parameters =
+            {parameter(
+                 "rate",
+                 "0.001",
+                 kind::real,
+                 config::describe_domain(config::range(0.00001, 0.5))),
+                parameter(
+                    "share",
+                    "0.5",
+                    kind::real,
+                    config::describe_domain(config::range(0.0, 1.0).open())),
+                parameter(
+                    "count",
+                    "5",
+                    kind::integer,
+                    config::describe_domain(config::range(0.5, 10.5).open()))},
+        .ranges = {},
+        .requirements = {},
+        .runners = {},
+        .fixed = {},
+        .instance = {},
+    };
+    const auto result = easylocal::write_irace_stub(stub);
+    assert(result);
+    const auto parameters = read_file(directory / "parameters.txt");
+    assert(contains(parameters, "rate \"--rate=\" r (0.00001, 0.5)\n"));
+    assert(contains(parameters, "share \"--share=\" r (0.00001, 0.99999)\n"));
+    assert(contains(parameters, "count \"--count=\" i (1, 10)\n"));
+    assert(contains(read_file(directory / "scenario.txt"), "digits = 5\n"));
+    std::filesystem::remove_all(directory);
+}
+
 } // namespace
 
 int main()
@@ -512,4 +553,5 @@ int main()
     a_cost_without_a_number_is_not_tuned();
     the_stub_reads_numbers_in_any_locale();
     an_unlimited_limit_starts_at_its_upper_bound();
+    bounds_keep_their_precision();
 }

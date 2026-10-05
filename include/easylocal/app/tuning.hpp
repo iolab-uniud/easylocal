@@ -206,14 +206,48 @@ struct irace_stub_result
 namespace detail
 {
 
-// irace samples a real range with 4 digits after the point (its default
-// "digits"): an open bound moves inward by one such step.
-inline constexpr double irace_real_step = 1e-4;
+// irace samples a real range with "digits" digits after the point, 4 by
+// default: a scenario uses more when a bound needs them (at most 15), and an
+// open bound moves inward by one step of 10^-digits.
+inline constexpr int irace_default_digits = 4;
+inline constexpr int irace_max_digits = 15;
 
 [[nodiscard]]
-inline double round_to_irace_step(const double value)
+inline double irace_step(const int digits)
 {
-    return std::round(value / irace_real_step) * irace_real_step;
+    return std::pow(10.0, -digits);
+}
+
+[[nodiscard]]
+inline double round_to_irace_step(const double value, const int digits)
+{
+    const double scale = std::pow(10.0, digits);
+    return std::round(value * scale) / scale;
+}
+
+// The digits after the point that write value exactly, as the shortest fixed
+// notation reads back; at most irace_max_digits.
+[[nodiscard]]
+inline int decimals_of(const double value)
+{
+    if (!std::isfinite(value))
+        return 0;
+    for (int digits = 0; digits < irace_max_digits; ++digits)
+    {
+        std::array<char, 400> buffer{};
+        const auto [end, error] = std::to_chars(
+            buffer.data(),
+            buffer.data() + buffer.size(),
+            value,
+            std::chars_format::fixed,
+            digits);
+        static_cast<void>(error); // 400 characters hold any double
+        double back{};
+        std::from_chars(buffer.data(), end, back);
+        if (back == value)
+            return digits;
+    }
+    return irace_max_digits;
 }
 
 // A bound of a real range in fixed notation, 0.0001 rather than 1e-04, for a
@@ -286,7 +320,8 @@ inline bool numeric_kind(const config::parameter_kind kind) noexcept
 inline void set_irace_domain(
     irace_parameter& parameter,
     const config::parameter_kind kind,
-    const config::domain_info& domain)
+    const config::domain_info& domain,
+    const int digits)
 {
     if (domain.kind == config::domain_info::shape::choice)
     {
@@ -298,20 +333,24 @@ inline void set_irace_domain(
     {
         parameter.type = 'r';
         const double low = domain.low_open
-            ? round_to_irace_step(domain.low + irace_real_step)
+            ? round_to_irace_step(domain.low + irace_step(digits), digits)
             : domain.low;
         const double high = domain.high_open
-            ? round_to_irace_step(domain.high - irace_real_step)
+            ? round_to_irace_step(domain.high - irace_step(digits), digits)
             : domain.high;
         parameter.values = {irace_number(low), irace_number(high)};
     }
     else
     {
+        // The nearest integers inside the range: above an open lower bound,
+        // fractional or not, and below an open upper one.
         parameter.type = 'i';
-        const auto low =
-            static_cast<long long>(std::ceil(domain.low)) + (domain.low_open ? 1 : 0);
-        const auto high =
-            static_cast<long long>(std::floor(domain.high)) - (domain.high_open ? 1 : 0);
+        const auto low = domain.low_open
+            ? static_cast<long long>(std::floor(domain.low)) + 1
+            : static_cast<long long>(std::ceil(domain.low));
+        const auto high = domain.high_open
+            ? static_cast<long long>(std::ceil(domain.high)) - 1
+            : static_cast<long long>(std::floor(domain.high));
         parameter.values = {
             easylocal::detail::number_text(low),
             easylocal::detail::number_text(high)};
@@ -324,7 +363,8 @@ inline void set_irace_domain(
 inline void suggest_irace_domain(
     irace_parameter& parameter,
     const config::parameter_info& info,
-    const config::domain_info* bound)
+    const config::domain_info* bound,
+    const int digits)
 {
     // Read as the program writes it, whatever the locale.
     const double value =
@@ -358,7 +398,7 @@ inline void suggest_irace_domain(
         suggested.low_open = bound->low_open;
         suggested.logarithmic = bound->low > 0.0;
     }
-    set_irace_domain(parameter, info.kind, suggested);
+    set_irace_domain(parameter, info.kind, suggested, digits);
     parameter.note = "no finite domain: a range around the default to start from";
 }
 
@@ -467,9 +507,29 @@ inline std::string runner_of(const std::string_view path)
     return std::string{rest.substr(0, rest.find('.'))};
 }
 
+// The digits after the point of the scenario: irace's 4, or more for the
+// bounds of a real range (its own or its tuning range) that need them.
+[[nodiscard]]
+inline int irace_digits(const irace_stub& stub)
+{
+    int digits = irace_default_digits;
+    for (const auto& info : stub.parameters)
+    {
+        if (info.kind != config::parameter_kind::real)
+            continue;
+        const auto range = std::ranges::find(stub.ranges, info.path, &tuning_range::path);
+        const auto& domain = range != stub.ranges.end() ? range->domain : info.domain;
+        if (domain.kind != config::domain_info::shape::range || domain.high_unlimited)
+            continue;
+        digits = std::max({digits, decimals_of(domain.low), decimals_of(domain.high)});
+    }
+    return std::min(digits, irace_max_digits);
+}
+
 [[nodiscard]]
 inline std::vector<irace_parameter> irace_parameters(
     const irace_stub& stub,
+    const int digits,
     std::vector<std::string>& errors)
 {
     std::vector<irace_parameter> result;
@@ -554,11 +614,11 @@ inline std::vector<irace_parameter> irace_parameters(
         }
         if (finite)
         {
-            set_irace_domain(parameter, info.kind, *domain);
+            set_irace_domain(parameter, info.kind, *domain, digits);
             parameter.active = true;
         }
         else
-            suggest_irace_domain(parameter, info, domain);
+            suggest_irace_domain(parameter, info, domain, digits);
         result.push_back(std::move(parameter));
     }
     return result;
@@ -752,7 +812,8 @@ void write_new_file(
 inline irace_stub_result write_irace_stub(const irace_stub& stub)
 {
     irace_stub_result result;
-    auto parameters = detail::irace_parameters(stub, result.errors);
+    const int digits = detail::irace_digits(stub);
+    auto parameters = detail::irace_parameters(stub, digits, result.errors);
     if (!result)
         return result;
     detail::apply_irace_conditions(parameters, stub.parameters);
@@ -865,6 +926,8 @@ inline irace_stub_result write_irace_stub(const irace_stub& stub)
         out << "configurationsFile = \"./configurations.txt\"\n"
             << "trainInstancesDir = \"\"\n"
             << "trainInstancesFile = \"./instances.txt\"\n"
+            << "## The digits after the point of the real parameters.\n"
+            << "digits = " << digits << "\n"
             << "## The budget: the number of runs of the program.\n"
             << "maxExperiments = 1000\n"
             << "## Runs in parallel.\n"
