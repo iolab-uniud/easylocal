@@ -662,6 +662,38 @@ void a_problem_with_text_hooks_needs_no_codec()
         post(R"({"input": )" + input + R"(, "initial_solution": "0 1"})");
     assert(bad_tour.code == 422);
     assert(text(bad_tour.body["error"]["message"]).starts_with("'initial_solution': "));
+
+    // The start: random by default for a problem with random solutions, drawn
+    // from the run's seed, so the same seed starts from the same tour.
+    const auto solution_of = [&](const std::string& body) {
+        const auto run = post(body);
+        assert(run.code == 202);
+        const auto run_id = text(run.body["id"]);
+        wait_for_run(server, "/text/runs/" + run_id, "succeeded");
+        auto solved_run =
+            send(server, crow::HTTPMethod::GET, "/text/runs/" + run_id + "/solution");
+        return std::pair{text(run.body["start"]), text(solved_run.body["solution"])};
+    };
+    // With no evaluations the solution is the start.
+    const auto budget = R"(, "max_evaluations": 1, "seed": 3})";
+    const auto [default_start, first] = solution_of(R"({"input": )" + input + budget);
+    assert(default_start == "random");
+    const auto [random_start, again] =
+        solution_of(R"({"input": )" + input + R"(, "start": "random")" + budget);
+    assert(random_start == "random" && again == first);
+    const auto [initial_start, initial] =
+        solution_of(R"({"input": )" + input + R"(, "start": "initial")" + budget);
+    assert(initial_start == "initial" && initial == "0 1 2 3 4 \n");
+    const auto [given_start, given] = solution_of(
+        R"({"input": )" + input + R"(, "initial_solution": "4 3 2 1 0")" + budget);
+    assert(given_start == "solution" && given == "4 3 2 1 0 \n");
+
+    const auto bad_start = post(R"({"input": )" + input + R"(, "start": "greedy"})");
+    assert(bad_start.code == 422);
+    const auto both = post(
+        R"({"input": )" + input
+        + R"(, "start": "random", "initial_solution": "0 1 2 3 4"})");
+    assert(both.code == 422);
 }
 
 void a_full_queue_rejects_runs_and_a_queued_run_can_be_cancelled(crow::SimpleApp& server)

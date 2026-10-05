@@ -499,6 +499,7 @@ private:
         std::optional<double> timeout;                       // seconds
         std::optional<std::size_t> max_evaluations;
         std::vector<config::owned_text_override> parameters; // as requested
+        std::string start; // "solution", "initial" or "random"
         mutable std::mutex mutex;
         std::stop_source stop_source;
         run_state state{run_state::queued};
@@ -720,6 +721,7 @@ private:
         body["id"] = record->id;
         body["runner"] = record->runner;
         body["seed"] = record->seed;
+        body["start"] = record->start;
         if (record->target)
             body["target"] = encode_cost(*record->target);
         if (record->timeout)
@@ -770,39 +772,81 @@ private:
         }
     }
 
-    // The session's first current solution: the one in the request, decoded,
-    // which must be valid for the Input, or the initial solution of the
-    // SolutionManager.
-    void set_initial_solution(
+    // The start of a run, from the request: "solution", its initial_solution,
+    // decoded, which must be valid for the Input; "initial", the
+    // SolutionManager's initial_solution(); "random", its random_solution(),
+    // drawn when the run starts, once the session has the run's seed. Without
+    // "start" or "initial_solution", random when the problem has random
+    // solutions, as cli::run does. The session gets the solution of the
+    // first two.
+    [[nodiscard]] std::string choose_start(
         session_type& session,
-        const crow::json::rvalue* payload) const
+        const crow::json::rvalue& request) const
     {
-        if (payload != nullptr)
+        const bool given = request.has("initial_solution");
+        std::string start;
+        if (request.has("start"))
         {
-            if constexpr (detail::decodes_initial_solution<Codec, App>)
-            {
-                session.set_solution(decode_initial_solution(session.input(), *payload));
-                // Checked here: a runner's deltas may index out of bounds on a
-                // malformed solution.
-                if (!session.is_valid())
-                    throw std::invalid_argument{
-                        "'initial_solution' is not a valid solution for the input"};
-            }
-            else
-            {
+            const auto& field = request["start"];
+            if (field.t() == crow::json::type::String)
+                start = std::string{field.s()};
+            if (start != "initial" && start != "random")
+                throw std::invalid_argument{"'start' must be \"initial\" or \"random\""};
+            if (given)
                 throw std::invalid_argument{
-                    "initial_solution is not supported: the codec has no "
-                    "decode_initial_solution and the problem no read_solution"};
-            }
+                    "a run has either 'start' or 'initial_solution', not both"};
         }
-        else if constexpr (session_type::supports_initial_solution)
+        else if (given)
+            start = "solution";
+        else
+            start = session_type::supports_random_solution ? "random" : "initial";
+
+        if (start == "solution")
+            set_given_solution(session, request["initial_solution"]);
+        else if (start == "initial")
+            use_initial_solution(session);
+        else if (!session_type::supports_random_solution)
+            throw std::invalid_argument{"'start': this problem has no random_solution()"};
+        return start;
+    }
+
+    // The SolutionManager's initial_solution() as the session's solution.
+    static void use_initial_solution(session_type& session)
+    {
+        if constexpr (session_type::supports_initial_solution)
         {
             session.use_initial_solution();
         }
         else
         {
             throw std::invalid_argument{
-                "no initial_solution was supplied and this application does not provide initial_solution()"};
+                "this problem has no initial_solution(): give an "
+                "'initial_solution' or start from a random one"};
+        }
+    }
+
+    // The initial_solution of a request, decoded, as the session's solution:
+    // it must be valid for the Input.
+    void set_given_solution(
+        session_type& session,
+        const crow::json::rvalue& payload) const
+    {
+        if constexpr (detail::decodes_initial_solution<Codec, App>)
+        {
+            session.set_solution(decode_initial_solution(session.input(), payload));
+            // Checked here: a runner's deltas may index out of bounds on a
+            // malformed solution.
+            if (!session.is_valid())
+            {
+                throw std::invalid_argument{
+                    "'initial_solution' is not a valid solution for the input"};
+            }
+        }
+        else
+        {
+            throw std::invalid_argument{
+                "initial_solution is not supported: the codec has no "
+                "decode_initial_solution and the problem no read_solution"};
         }
     }
 
@@ -917,11 +961,7 @@ private:
                     return detail::error_response(422, "invalid_parameters", message);
                 }
             }
-            const crow::json::rvalue* initial_payload =
-                payload.has("initial_solution")
-                    ? &payload["initial_solution"]
-                    : nullptr;
-            set_initial_solution(session, initial_payload);
+            auto start = choose_start(session, payload);
 
             if (payload.has("seed") &&
                 (payload["seed"].t() != crow::json::type::Number ||
@@ -974,6 +1014,7 @@ private:
             record->timeout = timeout;
             record->max_evaluations = max_evaluations;
             record->parameters = std::move(parameters);
+            record->start = std::move(start);
             session.set_seed(record->seed);
 
             // The body of the response, before the run can start: queued. It
@@ -1002,6 +1043,12 @@ private:
 
                     try
                     {
+                        // A random start, from the run's seed.
+                        if constexpr (session_type::supports_random_solution)
+                        {
+                            if (record->start == "random")
+                                session.use_random_solution(session.rng());
+                        }
                         auto options = easylocal::with(control);
                         if (record->timeout)
                             options = options.timeout(*record->timeout);

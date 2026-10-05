@@ -122,6 +122,11 @@ reviewed by hand before tagging.
   apart in a trace, the stages on the hard cost included. The memory and JSONL
   recorders keep it, and `eltr.py --format summary` gives each run its stage
   and attempt.
+- **Breaking:** a REST run starts as `cli::run` does: the new `start` field
+  chooses `"random"` (drawn from the run's seed) or `"initial"`, and without
+  it or an `initial_solution` a problem with random solutions starts from a
+  random one, where every run started from `initial_solution()`. Run
+  resources report the `start`.
 - `rest::blueprint_options::max_timeout` bounds the time of the runs of a REST
   service: a request with a longer `timeout` is rejected with `422`, and a run
   without one gets that limit.

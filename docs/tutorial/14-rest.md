@@ -155,8 +155,10 @@ $ curl localhost:18080/tsp/runs/1/solution
 | `POST /tsp/runs/<id>/cancel` | cooperative cancellation |
 | `DELETE /tsp/runs/<id>` | forget a finished run |
 
-A run's `seed` makes stochastic runs reproducible; without one, a run uses
-`blueprint_options::seed` plus its id. A `target`, such as a known lower bound,
+A run's `seed` makes stochastic runs reproducible, its random start included;
+without one, a run uses `blueprint_options::seed` plus its id. A run starts
+from a random tour unless it gives an `initial_solution` or
+`"start": "initial"`. A `target`, such as a known lower bound,
 stops the run as soon as its cost is at least as good: for the tutorial's
 `double` tour length, `"target": 23.0`.
 

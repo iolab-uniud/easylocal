@@ -103,8 +103,7 @@ file representation, or any other JSON representation appropriate to the
 problem. Through a text hook, a value that is not a string, or a text the hook
 cannot read, is rejected with `422`. A decoded `initial_solution` must be valid for the Input (the
 SolutionManager's `is_valid`), or the request is rejected with `422`. If
-`initial_solution` is omitted, the SolutionManager `initial_solution()`
-capability is used when available.
+`initial_solution` is omitted, the run starts as its `start` says (below).
 
 The generic Blueprint is mounted explicitly:
 
@@ -166,6 +165,21 @@ An application codec may additionally support:
 {
   "input": { "...": "..." },
   "initial_solution": { "...": "..." }
+}
+```
+
+Without an `initial_solution`, the envelope may say where the run starts:
+`"start": "random"`, the SolutionManager's `random_solution()`, drawn from the
+run's seed, or `"start": "initial"`, its `initial_solution()`. Without either,
+a run starts from a random solution when the problem has them, from the
+initial one otherwise, as `cli::run` does; run resources report the `start`
+(`"solution"` for a given one). Both fields together, or a start the problem
+cannot build, are rejected with `422`.
+
+```json
+{
+  "input": { "...": "..." },
+  "start": "initial"
 }
 ```
 
