@@ -195,7 +195,13 @@ bool within_tolerance(
 // equivalence when it defines one, or within the tolerance, which forgives
 // the rounding errors of a floating-point cost updated by deltas, as the
 // Session does), with a delta whose sign agrees with a root compare.
-template<class SM, class NHE, class Evaluation, class Solution, class Current>
+template<
+    class SM,
+    class NHE,
+    class Evaluation,
+    class Solution,
+    class Current,
+    class Label>
 void check_app_move(
     testing::check_report& report,
     const SM& solution_manager,
@@ -203,16 +209,15 @@ void check_app_move(
     const Evaluation& evaluation,
     const Solution& solution,
     const Current& current,
-    const std::string& label,
+    const Label& label,
     const typename NHE::move_type& move,
     const testing::approximately& tolerance)
 {
     testing::detail::guarded(report, "incremental evaluation", label, [&] {
         const auto valid = static_cast<bool>(neighborhood.is_valid(solution, move));
-        report.check(
-            valid,
-            "neighborhood move validity",
-            label + ": an enumerated move does not satisfy is_valid");
+        report.check(valid, "neighborhood move validity", [&] {
+            return label() + ": an enumerated move does not satisfy is_valid";
+        });
         if (!valid)
             return;
 
@@ -220,10 +225,9 @@ void check_app_move(
         neighborhood.make_move(candidate_solution, move);
         const auto valid_candidate =
             static_cast<bool>(solution_manager.is_valid(candidate_solution));
-        report.check(
-            valid_candidate,
-            "neighborhood move application",
-            label + ": make_move produced an invalid Solution");
+        report.check(valid_candidate, "neighborhood move application", [&] {
+            return label() + ": make_move produced an invalid Solution";
+        });
         if (!valid_candidate)
             return;
 
@@ -241,10 +245,12 @@ void check_app_move(
                 cost::equivalent(solution_manager, incremental, full.cost())
                     || detail::within_tolerance(tolerance, incremental, full.cost()),
                 "incremental evaluation",
-                label + ": the incremental evaluation is "
-                    + testing::detail::value_text(incremental)
-                    + ", the full evaluation after the move "
-                    + testing::detail::value_text(full.cost()));
+                [&] {
+                    return label() + ": the incremental evaluation is "
+                        + testing::detail::value_text(incremental)
+                        + ", the full evaluation after the move "
+                        + testing::detail::value_text(full.cost());
+                });
         }
     });
 }
@@ -308,8 +314,10 @@ void check_app_neighborhood(
                             evaluation,
                             start,
                             *current,
-                            testing::detail::move_label(index, moves[index]) + " from "
-                                + from,
+                            [&] {
+                                return testing::detail::move_label(index, moves[index])
+                                    + " from " + from;
+                            },
                             moves[index],
                             options.tolerance);
                 }
@@ -330,17 +338,18 @@ void check_app_neighborhood(
                         break;
                     if (!move)
                         continue;
-                    const auto label = testing::detail::move_label(sample, *move)
-                        + " drawn from " + from;
+                    const auto label = [&] {
+                        return testing::detail::move_label(sample, *move) + " drawn from "
+                            + from;
+                    };
                     testing::detail::guarded(report, "random proposal", label, [&] {
                         const auto valid =
                             static_cast<bool>(neighborhood.is_valid(start, *move));
-                        report.check(
-                            valid,
-                            "random proposal",
-                            label
+                        report.check(valid, "random proposal", [&] {
+                            return label()
                                 + ": random_move produced a move that does not satisfy "
-                                  "is_valid");
+                                  "is_valid";
+                        });
                         if (!valid)
                             return;
                         auto candidate = start;
@@ -348,7 +357,10 @@ void check_app_neighborhood(
                         report.check(
                             static_cast<bool>(solution_manager.is_valid(candidate)),
                             "random proposal application",
-                            label + ": make_move produced an invalid Solution");
+                            [&] {
+                                return label()
+                                    + ": make_move produced an invalid Solution";
+                            });
                     });
                 }
             }

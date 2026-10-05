@@ -86,6 +86,24 @@ public:
         }
     }
 
+    /// Counts a check named `check_name`, and records a failure with the
+    /// message that `message()` returns when `condition` is false: a check
+    /// that passes builds no message.
+    template<std::invocable Message>
+        requires std::convertible_to<std::invoke_result_t<Message>, std::string>
+    void check(const bool condition, std::string_view check_name, Message&& message)
+    {
+        ++checks_;
+        if (!condition)
+        {
+            failures_.push_back(
+                check_failure{
+                    .check = std::string{check_name},
+                    .message = std::string{std::forward<Message>(message)()},
+                });
+        }
+    }
+
 private:
     std::string subject_;
     std::size_t checks_{};

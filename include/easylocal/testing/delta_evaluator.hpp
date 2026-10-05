@@ -97,7 +97,7 @@ template<class Fixture, class NHE, class Component, class Delta>
             const std::string& from,
             const std::size_t index,
             const move_type& move) {
-            const auto label = move_label(index, move) + " from " + from;
+            const auto label = [&] { return move_label(index, move) + " from " + from; };
             guarded(report, "delta law", label, [&] {
                 if (!static_cast<bool>(neighborhood.is_valid(solution, move)))
                     return;
@@ -109,20 +109,18 @@ template<class Fixture, class NHE, class Component, class Delta>
                 neighborhood.make_move(candidate, move);
                 const auto valid =
                     static_cast<bool>(solution_manager.is_valid(candidate));
-                report.check(
-                    valid,
-                    "move application",
-                    label + ": make_move produced an invalid Solution");
+                report.check(valid, "move application", [&] {
+                    return label() + ": make_move produced an invalid Solution";
+                });
                 if (!valid)
                     return;
 
                 const auto full = component.evaluate(candidate);
-                report.check(
-                    fixture.equivalent(incremental, full),
-                    "delta law",
-                    label + ": value + delta is " + value_text(incremental)
+                report.check(fixture.equivalent(incremental, full), "delta law", [&] {
+                    return label() + ": value + delta is " + value_text(incremental)
                         + ", the component after the move " + value_text(full)
-                        + " (value before the move " + value_text(current) + ")");
+                        + " (value before the move " + value_text(current) + ")";
+                });
             });
         };
 

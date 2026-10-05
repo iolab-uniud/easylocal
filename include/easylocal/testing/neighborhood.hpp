@@ -37,11 +37,11 @@ struct applied_moves
 
 // Applies move, valid, to a copy of solution: the result is valid, and
 // counted as changed or not when solutions compare.
-template<class SM, class NHE, class Solution>
+template<class SM, class NHE, class Solution, class Label>
 void check_application(
     check_report& report,
     const std::string_view check_name,
-    const std::string& label,
+    const Label& label,
     const SM& solution_manager,
     const NHE& neighborhood,
     const Solution& solution,
@@ -53,7 +53,7 @@ void check_application(
     report.check(
         static_cast<bool>(solution_manager.is_valid(candidate)),
         check_name,
-        label + ": make_move produced an invalid Solution");
+        [&] { return label() + ": make_move produced an invalid Solution"; });
     if constexpr (has_solution_equality<SM>)
     {
         ++counts.applied;
@@ -75,13 +75,15 @@ void check_moves(
     std::size_t index = 0;
     for (const auto& move : range)
     {
-        const auto label = move_label(index++, move) + " from " + from;
+        const auto label = [&, index] {
+            return move_label(index, move) + " from " + from;
+        };
+        ++index;
         guarded(report, check_name, label, [&] {
             const auto valid = static_cast<bool>(neighborhood.is_valid(solution, move));
-            report.check(
-                valid,
-                check_name,
-                label + ": an enumerated move does not satisfy is_valid");
+            report.check(valid, check_name, [&] {
+                return label() + ": an enumerated move does not satisfy is_valid";
+            });
             if (valid)
                 check_application(
                     report,
@@ -187,17 +189,17 @@ template<check_fixture Fixture, class NHE>
                         break;
                     if (!move)
                         continue;
-                    const auto label =
-                        detail::move_label(sample, *move) + " drawn from " + from;
+                    const auto label = [&] {
+                        return detail::move_label(sample, *move) + " drawn from " + from;
+                    };
                     detail::guarded(report, "random proposal", label, [&] {
                         const auto valid =
                             static_cast<bool>(neighborhood.is_valid(solution, *move));
-                        report.check(
-                            valid,
-                            "random proposal",
-                            label
+                        report.check(valid, "random proposal", [&] {
+                            return label()
                                 + ": random_move produced a move that does not "
-                                  "satisfy is_valid");
+                                  "satisfy is_valid";
+                        });
                         if (valid)
                             detail::check_application(
                                 report,

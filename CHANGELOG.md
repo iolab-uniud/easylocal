@@ -185,6 +185,9 @@ reviewed by hand before tagging.
   available whenever solutions compare so; with a solution hash it compares a
   solution only with those of the same hash, in linear time instead of
   quadratic (minutes on a 400-city 2-opt neighborhood).
+- `testing::check_report::check(condition, name, message)` also takes the
+  message as a callable, called only when the check fails: the move checks
+  build no text for the moves that pass.
 
 ### Runners and solvers
 

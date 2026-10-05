@@ -50,14 +50,26 @@ std::string move_label(const std::size_t index, const Move& move)
     return label;
 }
 
+// The text of a context: a string, or a callable that builds it, called only
+// for a failure.
+template<class Context>
+[[nodiscard]]
+std::string context_text(const Context& context)
+{
+    if constexpr (std::invocable<const Context&>)
+        return std::string{context()};
+    else
+        return std::string{context};
+}
+
 // Runs hook, a call of user hooks; when it throws, records a failed check
-// named check_name, with context and what the exception says, and returns
-// false.
-template<class Hook>
+// named check_name, with context (a string, or a callable that builds it)
+// and what the exception says, and returns false.
+template<class Context, class Hook>
 bool guarded(
     check_report& report,
     const std::string_view check_name,
-    const std::string& context,
+    const Context& context,
     Hook&& hook)
 {
     try
@@ -67,14 +79,17 @@ bool guarded(
     }
     catch (const std::exception& error)
     {
-        report.check(false, check_name, context + ": threw: " + error.what());
+        const std::string what = error.what();
+        report.check(false, check_name, [&] {
+            return context_text(context) + ": threw: " + what;
+        });
     }
     catch (...)
     {
-        report.check(
-            false,
-            check_name,
-            context + ": threw an exception that is not a std::exception");
+        report.check(false, check_name, [&] {
+            return context_text(context)
+                + ": threw an exception that is not a std::exception";
+        });
     }
     return false;
 }
