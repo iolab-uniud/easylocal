@@ -66,10 +66,12 @@ public:
     /// The parameter block of the algorithm.
     using parameters_type = HillClimbingParameters;
 
-    explicit HillClimbing(const HillClimbingParameters parameters) noexcept
-        : parameters_{parameters}
+    /// From its parameters.
+    ///
+    /// Throws `std::invalid_argument` when they are not valid.
+    explicit HillClimbing(const HillClimbingParameters parameters)
+        : parameters_{config::require_valid(parameters)}
     {
-        assert(parameters_.validate());
     }
 
     /// Runs the search from solution, drawing random moves with rng.

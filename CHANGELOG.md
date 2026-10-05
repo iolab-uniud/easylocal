@@ -189,6 +189,17 @@ reviewed by hand before tagging.
   hexadecimal digits in JSONL (`jsonl_recorder`) and in the output of
   `eltr.py`, the STN's nodes and edges included: as JSON numbers, JavaScript
   and jq rounded them to doubles. ELTR keeps them as `u64`.
+- **Breaking:** invalid parameters throw `std::invalid_argument` in every
+  build, instead of an assert that Release builds skipped (a Simulated
+  Annealing schedule then reached undefined behaviour, or never ended): the
+  constructors of the runners, of the temperature schedules and of the tabu
+  lists, `make_runner`, the neighborhood recipes, the binding of a runner or
+  of an app, and the construction of a `Session` and of a REST blueprint. The
+  message names the parameter, `runners.sa.temperature.cooling_rate: expected
+  a value in (0, 1), got 2`. The constructors that validate are no longer
+  `noexcept`. `config::require_valid(block)` and `config::require_valid(set)`
+  give the same check to custom code, and `check(app, ...)` reports invalid
+  app parameters as `app configuration` before binding.
 - **Breaking:** `search_run::with_context(ctx)` is replaced by
   `run.with_evaluation(wrap)`, which keeps the run's context and swaps only its
   evaluation facility for `wrap(run.evaluation())`. A decorated context

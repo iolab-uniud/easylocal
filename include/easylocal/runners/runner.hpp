@@ -469,16 +469,19 @@ class algorithm_source<Algorithm>
 public:
     using parameters_type = typename Algorithm::parameters_type;
 
+    // Throws std::invalid_argument when the parameters are not valid.
     explicit algorithm_source(parameters_type parameters)
         : parameters_{std::move(parameters)}
     {
-        assert(parameters_.validate() && "the runner's parameters must be valid");
+        config::require_valid(parameters_);
     }
 
+    // Throws std::invalid_argument when the parameters, which parameters()
+    // may have changed, are not valid.
     [[nodiscard]]
     Algorithm make() const
     {
-        return Algorithm{parameters_};
+        return Algorithm{config::require_valid(parameters_)};
     }
 
     template<class Self>
@@ -800,6 +803,9 @@ Runner(Algorithm) -> Runner<std::remove_cvref_t<Algorithm>>;
 
 /// A runner for a parameterized algorithm, from its parameters:
 /// make_runner<FirstImprovement>({.max_evaluations = 1000}).
+///
+/// Throws `std::invalid_argument` when the parameters are not valid; binding
+/// the runner checks them again, after a change through parameters().
 template<class Algorithm>
     requires detail::parameterized_algorithm<Algorithm>
 [[nodiscard]]

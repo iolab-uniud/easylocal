@@ -1254,6 +1254,14 @@ easylocal_add_test(
 )
 
 easylocal_add_test(
+    parameter-validation
+    SOURCES
+        parameter_validation.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
+
+easylocal_add_test(
     cost-text
     SOURCES
         cost_text.cpp

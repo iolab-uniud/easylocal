@@ -279,14 +279,16 @@ public:
     /// The parameter block of the policy.
     using parameters_type = ClassicParameters;
 
-    explicit Classic(const ClassicParameters parameters) noexcept
-        : parameters_{parameters},
+    /// From its parameters.
+    ///
+    /// Throws `std::invalid_argument` when they are not valid.
+    explicit Classic(const ClassicParameters parameters)
+        : parameters_{config::require_valid(parameters)},
           temperature_levels_{detail::temperature_level_count(
               parameters.initial_temperature,
               parameters.final_temperature,
               parameters.cooling_rate)}
     {
-        assert(parameters_.validate());
         reset();
     }
 
@@ -436,8 +438,11 @@ public:
     /// The parameter block of the policy.
     using parameters_type = FixedLengthParameters;
 
-    explicit FixedLength(const FixedLengthParameters parameters) noexcept
-        : parameters_{parameters},
+    /// From its parameters.
+    ///
+    /// Throws `std::invalid_argument` when they are not valid.
+    explicit FixedLength(const FixedLengthParameters parameters)
+        : parameters_{config::require_valid(parameters)},
           samples_per_temperature_{detail::positive_quotient(
               parameters.max_iterations,
               detail::temperature_level_count(
@@ -445,7 +450,6 @@ public:
                   parameters.final_temperature,
                   parameters.cooling_rate))}
     {
-        assert(parameters_.validate());
         reset();
     }
 
@@ -604,8 +608,11 @@ public:
     /// The parameter block of the policy.
     using parameters_type = CutoffParameters;
 
-    explicit Cutoff(const CutoffParameters parameters) noexcept
-        : parameters_{parameters},
+    /// From its parameters.
+    ///
+    /// Throws `std::invalid_argument` when they are not valid.
+    explicit Cutoff(const CutoffParameters parameters)
+        : parameters_{config::require_valid(parameters)},
           // The proposals of a level, were the iterations shared evenly.
           accepted_limit_{detail::accepted_limit(
               detail::positive_quotient(
@@ -616,7 +623,6 @@ public:
                       parameters.cooling_rate)),
               parameters.accepted_ratio)}
     {
-        assert(parameters_.validate());
         reset();
     }
 
@@ -712,21 +718,20 @@ public:
     /// The parameter block of the policy.
     using parameters_type = HybridParameters;
 
-    explicit Hybrid(
-        const HybridParameters parameters) noexcept
-        : parameters_{parameters},
+    /// From its parameters.
+    ///
+    /// Throws `std::invalid_argument` when they are not valid.
+    explicit Hybrid(const HybridParameters parameters)
+        : parameters_{config::require_valid(parameters)},
           temperature_levels_{detail::temperature_level_count(
               parameters.initial_temperature,
               parameters.final_temperature,
               parameters.cooling_rate)},
-          initial_sample_limit_{detail::positive_quotient(
-              parameters.max_iterations,
-              temperature_levels_)},
-          accepted_limit_{detail::accepted_limit(
-              initial_sample_limit_,
-              parameters.accepted_ratio)}
+          initial_sample_limit_{
+              detail::positive_quotient(parameters.max_iterations, temperature_levels_)},
+          accepted_limit_{
+              detail::accepted_limit(initial_sample_limit_, parameters.accepted_ratio)}
     {
-        assert(parameters_.validate());
         reset();
     }
 
@@ -920,13 +925,15 @@ public:
     /// The parameter block of the policy.
     using parameters_type = FixedTemperatureParameters;
 
-    explicit FixedTemperature(const FixedTemperatureParameters parameters) noexcept
-        : parameters_{parameters},
+    /// From its parameters.
+    ///
+    /// Throws `std::invalid_argument` when they are not valid.
+    explicit FixedTemperature(const FixedTemperatureParameters parameters)
+        : parameters_{config::require_valid(parameters)},
           accepted_limit_{detail::accepted_limit(
               parameters.max_iterations,
               parameters.accepted_ratio)}
     {
-        assert(parameters_.validate());
         reset();
     }
 
@@ -1100,15 +1107,17 @@ public:
     /// The parameter block of the policy.
     using parameters_type = TimeBasedParameters;
 
-    explicit BasicTimeBased(const TimeBasedParameters parameters) noexcept
-        : parameters_{parameters},
+    /// From its parameters.
+    ///
+    /// Throws `std::invalid_argument` when they are not valid.
+    explicit BasicTimeBased(const TimeBasedParameters parameters)
+        : parameters_{config::require_valid(parameters)},
           temperature_levels_{detail::temperature_level_count(
               parameters.initial_temperature,
               parameters.final_temperature,
               parameters.cooling_rate)},
           running_time_{clock_duration(parameters.allowed_running_time)}
     {
-        assert(parameters_.validate());
         reset();
     }
 
@@ -1399,10 +1408,13 @@ public:
     /// The parameter block of the policy.
     using parameters_type = ReheatingParameters<descent_parameters_type>;
 
+    /// From its parameters.
+    ///
+    /// Throws `std::invalid_argument` when they are not valid.
     explicit Reheating(const parameters_type parameters)
-        : parameters_{parameters}, descent_{first_descent(parameters)}
+        : parameters_{config::require_valid(parameters)},
+          descent_{first_descent(parameters)}
     {
-        assert(parameters_.validate());
     }
 
     /// The parameters.
@@ -1742,12 +1754,14 @@ public:
 
     /// From its parameters, {.temperature = {...}}: the form a Runner and an
     /// app hold, and build it from.
+    ///
+    /// Throws `std::invalid_argument` when they are not valid.
     template<class Policy = TemperaturePolicy>
         requires requires { typename Policy::parameters_type; }
     explicit SimulatedAnnealing(
         const SimulatedAnnealingParameters<typename Policy::parameters_type>& parameters,
         Acceptance acceptance = {})
-        : temperature_policy_{parameters.temperature},
+        : temperature_policy_{config::require_valid(parameters).temperature},
           acceptance_{std::move(acceptance)},
           max_evaluations_{parameters.max_evaluations}
     {

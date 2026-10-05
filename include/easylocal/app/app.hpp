@@ -885,6 +885,17 @@ public:
         }
     }
 
+    /// Throws std::invalid_argument unless the registration names
+    /// (check_registration_names) and every parameter of the app are valid,
+    /// the message giving each invalid block as "<path>: <message>".
+    ///
+    /// bind() checks them, as do a Session and a REST blueprint when they are
+    /// made.
+    void check_configuration() const
+    {
+        config::require_valid(configuration());
+    }
+
     /// A standalone Runner of the runner of Algorithm registered as name: its
     /// parameters, the app's SolutionManager recipe and the neighborhood
     /// recipe it runs on, for a solver.
@@ -916,15 +927,15 @@ public:
     /// The app bound to input: its services built for it, which it borrows (a
     /// temporary Input is rejected).
     ///
-    /// Throws std::invalid_argument when the registration names are not valid
-    /// (check_registration_names).
+    /// Throws std::invalid_argument when the registration names or the
+    /// parameters are not valid (check_configuration).
     template<class Spec = SMSpec>
         requires complete<Spec> && Spec::template
     constructible_from<const typename detail::service_t<Spec>::input_type>&& NHESpec::
         template constructible_from<detail::service_t<Spec>> [[nodiscard]]
         auto bind(const typename detail::service_t<Spec>::input_type& input) const
     {
-        check_registration_names();
+        check_configuration();
         return BoundApp<SMSpec, NHESpec, Registrations...>{
             input,
             solution_manager_spec_,

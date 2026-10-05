@@ -344,6 +344,25 @@ bool check_runners(const App& application, app_check_report& report)
     return valid;
 }
 
+// The check of the parameters of the whole app, among them those of its
+// pipelines' stages: their values, and stage names that are distinct and
+// non-empty. False when some are invalid, which binding the app rejects.
+template<class App>
+bool check_configuration(const App& application, app_check_report& report)
+{
+    try
+    {
+        application.check_configuration();
+    }
+    catch (const std::invalid_argument& error)
+    {
+        report.check(false, "app configuration", error.what());
+        return false;
+    }
+    report.check(true, "app configuration", {});
+    return true;
+}
+
 } // namespace detail
 
 /// Runs the contract checks of easylocal::testing on the components of an app
@@ -358,8 +377,8 @@ bool check_runners(const App& application, app_check_report& report)
 /// tolerance of the options, when the cost defines equivalence, and
 /// the sign of cost::delta agreeing with a root compare of the cost), and
 /// that each registered runner's parameters are valid and construct it. The
-/// runners are checked first: with invalid parameters the app is not bound,
-/// since binding it constructs them.
+/// runners and the app's parameters are checked first: with invalid ones the
+/// app is not bound, since binding it rejects them.
 template<class App, class Instance, class Solution>
 [[nodiscard]] app_check_report check(
     const App& application,
@@ -383,10 +402,11 @@ template<class App, class Instance, class Solution>
         detail::app_delta_binding_count_v<neighborhood_type>;
     report.coverage().runner_registrations = App::runner_count;
 
-    // Binding the app requires valid registration names and constructs its
-    // runners: not with invalid parameters.
+    // Binding the app requires valid registration names and valid parameters,
+    // and constructs its runners.
     if (!detail::check_registration_names(application, report)
-        || !detail::check_runners(application, report))
+        || !detail::check_runners(application, report)
+        || !detail::check_configuration(application, report))
         return report;
     auto bound = application.bind(instance);
 
@@ -450,21 +470,6 @@ template<class App, class Instance, class Solution>
                 options);
         });
 
-    // The parameters of the whole app, among them those of its pipelines'
-    // stages: their values, and stage names that are distinct and non-empty.
-    try
-    {
-        const auto validation = config::validate(application.configuration());
-        report.check(
-            static_cast<bool>(validation),
-            "app configuration",
-            "the app's parameters are invalid");
-    }
-    catch (const std::invalid_argument& error)
-    {
-        report.check(false, "app configuration", error.what());
-    }
-
     // Every parameter declares its domain, for validation and tuning: a
     // range, one_of, or easylocal::unlimited for any value.
     try
@@ -501,12 +506,13 @@ template<class App, class Instance>
         application.bind(instance).solution_manager().initial_solution();
     }
 {
-    // Binding the app requires valid registration names and constructs its
-    // runners: not with invalid parameters.
+    // Binding the app requires valid registration names and valid parameters,
+    // and constructs its runners.
     app_check_report report{application.name()};
     report.coverage().runner_registrations = App::runner_count;
     if (!detail::check_registration_names(application, report)
-        || !detail::check_runners(application, report))
+        || !detail::check_runners(application, report)
+        || !detail::check_configuration(application, report))
         return report;
     auto bound = application.bind(instance);
     return check(

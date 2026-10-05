@@ -98,10 +98,12 @@ public:
     /// The parameter block of the algorithm.
     using parameters_type = GreatDelugeParameters;
 
-    explicit GreatDeluge(const GreatDelugeParameters parameters) noexcept
-        : parameters_{parameters}
+    /// From its parameters.
+    ///
+    /// Throws `std::invalid_argument` when they are not valid.
+    explicit GreatDeluge(const GreatDelugeParameters parameters)
+        : parameters_{config::require_valid(parameters)}
     {
-        assert(parameters_.validate());
     }
 
     /// Runs the search from solution, drawing random moves with rng.

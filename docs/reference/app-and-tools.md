@@ -47,6 +47,12 @@ and a segment of its parameter paths (`runners.<name>.*`). `configuration()`
 and `bind()` throw `std::invalid_argument` otherwise, and `check(app, ...)`
 reports it as `registration names`.
 
+The parameters of the app are checked when it is bound, and when a `Session`
+or a REST blueprint is made on it: an invalid value throws
+`std::invalid_argument` with its path,
+`runners.sa.temperature.cooling_rate: expected a value in (0, 1), got 2`, and
+`check(app, ...)` reports it as `app configuration`.
+
 ### Pipelines
 
 An app also registers [pipelines](solvers.md#pipeline), beside its runners and

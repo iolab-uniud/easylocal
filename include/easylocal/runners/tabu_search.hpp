@@ -393,10 +393,12 @@ public:
     /// The parameter block of the list.
     using parameters_type = FixedLengthParameters;
 
-    explicit FixedLength(const FixedLengthParameters& parameters) noexcept
-        : parameters_{parameters}
+    /// From its parameters.
+    ///
+    /// Throws `std::invalid_argument` when they are not valid.
+    explicit FixedLength(const FixedLengthParameters& parameters)
+        : parameters_{config::require_valid(parameters)}
     {
-        assert(parameters_.validate());
     }
 
     /// The list of one run: tabu_tenure(candidate) tells whether a candidate is
@@ -511,10 +513,12 @@ public:
     /// The parameter block of the list.
     using parameters_type = RandomTenureParameters;
 
-    explicit RandomTenure(const RandomTenureParameters& parameters) noexcept
-        : parameters_{parameters}
+    /// From its parameters.
+    ///
+    /// Throws `std::invalid_argument` when they are not valid.
+    explicit RandomTenure(const RandomTenureParameters& parameters)
+        : parameters_{config::require_valid(parameters)}
     {
-        assert(parameters_.validate());
     }
 
     /// The list of one run: tabu_tenure(candidate) tells whether a candidate is
@@ -612,9 +616,12 @@ public:
     /// The parameter block of the list.
     using parameters_type = CyclicParameters;
 
-    explicit Cyclic(const CyclicParameters& parameters) : parameters_{parameters}
+    /// From its parameters.
+    ///
+    /// Throws `std::invalid_argument` when they are not valid.
+    explicit Cyclic(const CyclicParameters& parameters)
+        : parameters_{config::require_valid(parameters)}
     {
-        assert(parameters_.validate());
     }
 
     /// The list of one run: tabu_tenure(candidate) tells whether a candidate is
@@ -759,10 +766,12 @@ public:
     /// The parameter block of the list.
     using parameters_type = ReactiveParameters;
 
-    explicit Reactive(const ReactiveParameters& parameters) noexcept
-        : parameters_{parameters}
+    /// From its parameters.
+    ///
+    /// Throws `std::invalid_argument` when they are not valid.
+    explicit Reactive(const ReactiveParameters& parameters)
+        : parameters_{config::require_valid(parameters)}
     {
-        assert(parameters_.validate());
     }
 
     /// The list of one run: tabu_tenure(candidate) tells whether a candidate is
@@ -979,10 +988,12 @@ public:
     /// The parameter block of the list.
     using parameters_type = FrequencyParameters;
 
-    explicit Frequency(const FrequencyParameters& parameters) noexcept
-        : parameters_{parameters}
+    /// From its parameters.
+    ///
+    /// Throws `std::invalid_argument` when they are not valid.
+    explicit Frequency(const FrequencyParameters& parameters)
+        : parameters_{config::require_valid(parameters)}
     {
-        assert(parameters_.validate());
     }
 
     /// The list of one run: tabu_tenure(candidate) tells whether a candidate is
@@ -1080,10 +1091,12 @@ public:
     /// The parameter block of the list.
     using parameters_type = ObjectiveBasedParameters;
 
-    explicit ObjectiveBased(const ObjectiveBasedParameters& parameters) noexcept
-        : parameters_{parameters}
+    /// From its parameters.
+    ///
+    /// Throws `std::invalid_argument` when they are not valid.
+    explicit ObjectiveBased(const ObjectiveBasedParameters& parameters)
+        : parameters_{config::require_valid(parameters)}
     {
-        assert(parameters_.validate());
     }
 
     /// The list of one run: tabu_tenure(candidate) tells whether a candidate is
@@ -1187,10 +1200,12 @@ public:
     /// The parameter block of the list.
     using parameters_type = LimDynamicParameters;
 
-    explicit LimDynamic(const LimDynamicParameters& parameters) noexcept
-        : parameters_{parameters}
+    /// From its parameters.
+    ///
+    /// Throws `std::invalid_argument` when they are not valid.
+    explicit LimDynamic(const LimDynamicParameters& parameters)
+        : parameters_{config::require_valid(parameters)}
     {
-        assert(parameters_.validate());
     }
 
     /// The list of one run: tabu_tenure(candidate) tells whether a candidate is
@@ -1404,9 +1419,12 @@ public:
     /// The parameter block of the list.
     using parameters_type = FooParameters;
 
-    explicit Foo(const FooParameters& parameters) noexcept : parameters_{parameters}
+    /// From its parameters.
+    ///
+    /// Throws `std::invalid_argument` when they are not valid.
+    explicit Foo(const FooParameters& parameters)
+        : parameters_{config::require_valid(parameters)}
     {
-        assert(parameters_.validate());
     }
 
     /// The list of one run: tabu_tenure(candidate) tells whether a candidate is
@@ -1542,10 +1560,12 @@ public:
     /// The parameter block of the list.
     using parameters_type = RandomFooParameters;
 
-    explicit RandomFoo(const RandomFooParameters& parameters) noexcept
-        : parameters_{parameters}
+    /// From its parameters.
+    ///
+    /// Throws `std::invalid_argument` when they are not valid.
+    explicit RandomFoo(const RandomFooParameters& parameters)
+        : parameters_{config::require_valid(parameters)}
     {
-        assert(parameters_.validate());
     }
 
     /// The list of one run: tabu_tenure(candidate) tells whether a candidate is
@@ -2178,10 +2198,11 @@ public:
     using parameters_type = TabuSearchParameters<typename TabuList::parameters_type>;
 
     /// From its parameters and an aspiration criterion.
+    ///
+    /// Throws `std::invalid_argument` when the parameters are not valid.
     explicit TabuSearch(const parameters_type& parameters, Aspiration aspiration = {})
-        : engine_{parameters, std::move(aspiration)}
+        : engine_{config::require_valid(parameters), std::move(aspiration)}
     {
-        assert(parameters.validate());
     }
 
     /// Runs the search from solution, with rng for the ties and the random
@@ -2219,13 +2240,14 @@ public:
         FirstImprovementTabuSearchParameters<typename TabuList::parameters_type>;
 
     /// From its parameters and an aspiration criterion.
+    ///
+    /// Throws `std::invalid_argument` when the parameters are not valid.
     explicit FirstImprovementTabuSearch(
         const parameters_type& parameters,
         Aspiration aspiration = {})
-        : engine_{parameters, std::move(aspiration)},
+        : engine_{config::require_valid(parameters), std::move(aspiration)},
           improve_on_best_{parameters.improve_on_best}
     {
-        assert(parameters.validate());
     }
 
     /// Runs the search from solution, with rng for the ties and the random
@@ -2348,16 +2370,17 @@ public:
         AspirationPlusTabuSearchParameters<typename TabuList::parameters_type>;
 
     /// From its parameters and an aspiration criterion.
+    ///
+    /// Throws `std::invalid_argument` when the parameters are not valid.
     explicit AspirationPlusTabuSearch(
         const parameters_type& parameters,
         Aspiration aspiration = {})
-        : engine_{parameters, std::move(aspiration)},
+        : engine_{config::require_valid(parameters), std::move(aspiration)},
           min_moves_{parameters.min_moves},
           max_moves_{parameters.max_moves},
           plus_{parameters.plus},
           aspiration_level_{parameters.aspiration_level}
     {
-        assert(parameters.validate());
     }
 
     /// Runs the search from solution, with rng for the ties and the random
@@ -2476,14 +2499,15 @@ public:
         EliteCandidateTabuSearchParameters<typename TabuList::parameters_type>;
 
     /// From its parameters and an aspiration criterion.
+    ///
+    /// Throws `std::invalid_argument` when the parameters are not valid.
     explicit EliteCandidateTabuSearch(
         const parameters_type& parameters,
         Aspiration aspiration = {})
-        : engine_{parameters, std::move(aspiration)},
+        : engine_{config::require_valid(parameters), std::move(aspiration)},
           elite_size_{parameters.elite_size},
           quality_{parameters.quality}
     {
-        assert(parameters.validate());
     }
 
     /// Runs the search from solution, with rng for the ties and the random

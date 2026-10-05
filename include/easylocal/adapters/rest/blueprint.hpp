@@ -425,8 +425,8 @@ public:
     ///
     /// Leading and trailing slashes of the prefix are dropped. Throws
     /// `std::invalid_argument` when the prefix is empty,
-    /// `completed_run_capacity` is zero or `max_timeout` is negative or not a
-    /// number.
+    /// `completed_run_capacity` is zero, `max_timeout` is negative or not a
+    /// number, or the parameters of the app are not valid.
     app_blueprint(
         std::string prefix,
         App application,
@@ -450,6 +450,8 @@ public:
             throw std::invalid_argument{
                 "REST max_timeout must be a non-negative number of seconds"};
         }
+        if constexpr (requires(const App& app) { app.check_configuration(); })
+            application_.check_configuration();
         register_routes();
     }
 

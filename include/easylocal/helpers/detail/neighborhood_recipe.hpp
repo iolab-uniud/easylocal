@@ -110,7 +110,7 @@ public:
         requires(sizeof...(DeltaSpecs) == 0)
         : base_args_{std::move(base_args)}, parameters_{std::move(parameters)}
     {
-        assert_valid_parameters();
+        require_valid_parameters();
     }
 
     neighborhood_recipe(
@@ -121,7 +121,7 @@ public:
           delta_specs_{std::move(delta_specs)},
           parameters_{std::move(parameters)}
     {
-        assert_valid_parameters();
+        require_valid_parameters();
     }
 
     // The explorer's parameters, to read or change.
@@ -444,11 +444,12 @@ public:
     }
 
 private:
-    void assert_valid_parameters() const
+    // Throws std::invalid_argument when the neighborhood's parameters are not
+    // valid.
+    void require_valid_parameters() const
     {
         if constexpr (parameterized_neighborhood<BaseNHE>)
-            assert(
-                parameters_.validate() && "the neighborhood's parameters must be valid");
+            config::require_valid(parameters_);
     }
 
     BaseArgsTuple base_args_;

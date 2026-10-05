@@ -263,10 +263,14 @@ public:
     /// in an interactive frontend.
     ///
     /// The seed initializes the RNG of the session, which draws random
-    /// solutions and seeds the generator of each run.
+    /// solutions and seeds the generator of each run. Throws
+    /// `std::invalid_argument` when the parameters of the app are not valid, as
+    /// binding it would.
     explicit Session(App application, const std::uint64_t seed = 0)
         : app_{std::move(application)}, rng_{seed}
     {
+        if constexpr (requires(const App& app) { app.check_configuration(); })
+            app_.check_configuration();
     }
 
     /// A session on an Input, which it owns: the app bound to it, and the RNG

@@ -56,11 +56,12 @@ public:
     /// The parameter block of the algorithm.
     using parameters_type = BestImprovementParameters;
 
-    explicit BestImprovement(
-        const BestImprovementParameters parameters) noexcept
-        : parameters_{parameters}
+    /// From its parameters.
+    ///
+    /// Throws `std::invalid_argument` when they are not valid.
+    explicit BestImprovement(const BestImprovementParameters parameters)
+        : parameters_{config::require_valid(parameters)}
     {
-        assert(parameters_.validate());
     }
 
     /// Runs the search from solution.

@@ -79,11 +79,13 @@ public:
     /// The parameter block of the algorithm.
     using parameters_type = LateAcceptanceHillClimbingParameters;
 
+    /// From its parameters.
+    ///
+    /// Throws `std::invalid_argument` when they are not valid.
     explicit LateAcceptanceHillClimbing(
-        const LateAcceptanceHillClimbingParameters parameters) noexcept
-        : parameters_{parameters}
+        const LateAcceptanceHillClimbingParameters parameters)
+        : parameters_{config::require_valid(parameters)}
     {
-        assert(parameters_.validate());
     }
 
     /// Runs the search from solution, drawing random moves with rng.

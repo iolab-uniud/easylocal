@@ -22,6 +22,15 @@ is bound: `make_runner<Algorithm>(parameters)` creates it, and
 `Runner{Algorithm{...}}` is rejected at compile time. Any other algorithm is
 held as an object: `make_runner<Algorithm>(args...)` or `Runner{Algorithm{...}}`.
 
+Invalid parameters throw `std::invalid_argument`, in Release builds as in
+Debug ones, wherever they enter: the constructors of the built-in algorithms
+and of their policies (temperature schedules, tabu lists), `make_runner`, and
+`bind` after a change through `parameters()`. The message names the field,
+`temperature.cooling_rate: expected a value in (0, 1), got 2`, or gives the
+requirement that does not hold. A custom algorithm gets the same check from
+`config::require_valid(parameters)`. Inside a run, the remaining contracts are
+asserts.
+
 | Member | Purpose |
 | --- | --- |
 | `parameters()` | the algorithm's parameters, to read or change (parameterized algorithms) |

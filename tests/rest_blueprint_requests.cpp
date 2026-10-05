@@ -14,6 +14,7 @@
 #include <easylocal/adapters/rest.hpp>
 #include <easylocal/app/app.hpp>
 #include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/runners/hill_climbing.hpp>
 #include <easylocal/solvers/pipeline.hpp>
 
 #include <crow.h>
@@ -864,6 +865,32 @@ void a_zero_completed_run_capacity_is_rejected()
     assert(rejected);
 }
 
+void an_app_with_invalid_parameters_is_rejected()
+{
+    auto application =
+        easylocal::app("assignment")
+            .with_solution_manager(
+                easylocal::solution_manager<AssignmentSolutionManager>()
+                | assignment::assignment_cost())
+            .with_neighborhood(easylocal::neighborhood<ReassignJobNeighborhoodExplorer>())
+            .with_runner<easylocal::runners::HillClimbing>(
+                "hc",
+                {.max_idle_iterations = 0});
+    std::string message;
+    try
+    {
+        [[maybe_unused]] auto api = easylocal::rest::blueprint(
+            "/assignment",
+            std::move(application),
+            AssignmentCodec{});
+    }
+    catch (const std::invalid_argument& error)
+    {
+        message = error.what();
+    }
+    assert(message.find("runners.hc.max_idle_iterations") != std::string::npos);
+}
+
 } // namespace
 
 int main()
@@ -903,6 +930,7 @@ int main()
     an_empty_prefix_is_rejected();
     a_zero_completed_run_capacity_is_rejected();
     a_run_is_no_longer_than_the_max_timeout();
+    an_app_with_invalid_parameters_is_rejected();
     destroying_the_blueprint_stops_its_runs();
     run_gate.open(); // never leave a worker waiting on exit
 }

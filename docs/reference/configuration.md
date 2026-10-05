@@ -104,6 +104,14 @@ config::validation_result validate() const
 }
 ```
 
+`config::require_valid(block)` returns the block when it passes these checks,
+its groups included, and throws `std::invalid_argument` otherwise, the path of
+the field first (`temperature.cooling_rate: expected a value in (0, 1), got
+1.5`); `config::require_valid(set)` does the same for a parameter set, with
+each invalid block as `<path>: <message>`. The runners, their policies and the
+neighborhood recipes call it on the parameters they are made from, and an app
+on its whole configuration when it is bound.
+
 Every field declares a domain: `check(app, ...)` fails for a parameter of the
 app without one, and the library's tests for a built-in one; a boolean's
 domain is true and false. A field that takes any value says so with

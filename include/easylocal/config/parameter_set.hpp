@@ -625,6 +625,55 @@ inline configuration_validation_result validate(const parameter_set& parameters)
     return parameters.validate();
 }
 
+namespace detail
+{
+
+// Throws std::invalid_argument with "<path>: <message>" for each diagnostic,
+// joined by "; ", unless there are none.
+inline void throw_diagnostics(
+    const std::vector<configuration_validation_diagnostic>& diagnostics)
+{
+    if (diagnostics.empty())
+        return;
+    std::string message;
+    for (const auto& diagnostic : diagnostics)
+    {
+        if (!message.empty())
+            message += "; ";
+        if (!diagnostic.path.empty())
+        {
+            message += diagnostic.path;
+            message += ": ";
+        }
+        message += diagnostic.message;
+    }
+    throw std::invalid_argument{message};
+}
+
+} // namespace detail
+
+/// Throws `std::invalid_argument` unless every block of the set is valid; the
+/// message gives each invalid block as "<path>: <message>".
+inline void require_valid(const parameter_set& parameters)
+{
+    detail::throw_diagnostics(parameters.validate().diagnostics);
+}
+
+/// Returns block when it is valid, with its nested groups; throws
+/// `std::invalid_argument` otherwise, with the reason, the path of a field or
+/// group first ("temperature.cooling_rate: ...").
+///
+/// The constructors of the runners and of their policies call it on their
+/// parameters.
+template<parameter_block Block>
+const Block& require_valid(const Block& block)
+{
+    std::vector<configuration_validation_diagnostic> diagnostics;
+    detail::validate_block(block, std::string{}, diagnostics);
+    detail::throw_diagnostics(diagnostics);
+    return block;
+}
+
 /// The paths of the parameters of a set that declare no domain, but the
 /// booleans, whose domain is true and false: each should declare a range,
 /// one_of, or easylocal::unlimited for any value.
