@@ -120,7 +120,9 @@ inline config::validation_result validate_cooling_schedule(
     return config::validation_result::success();
 }
 
-// The number of temperature levels of a cooling schedule.
+// The number of temperature levels of a cooling schedule: the coolings from
+// initial_temperature to final_temperature. A count within rounding of an
+// integer is that integer, so that 1 -> 0.001 by 0.1 is three levels.
 [[nodiscard]]
 inline std::size_t temperature_level_count(
     const double initial_temperature,
@@ -133,7 +135,11 @@ inline std::size_t temperature_level_count(
     const auto raw_levels =
         std::log(final_temperature / initial_temperature) / std::log(cooling_rate);
 
-    return std::max(std::size_t{1}, static_cast<std::size_t>(std::ceil(raw_levels)));
+    constexpr double rounding = 1e-9;
+    return std::max(
+        std::size_t{1},
+        static_cast<std::size_t>(
+            std::ceil(raw_levels - rounding * std::max(1.0, raw_levels))));
 }
 
 // What the schemas cannot say: their domains have no upper bound, and let an
@@ -264,16 +270,21 @@ struct ClassicParameters
 /// The classic geometric schedule: samples_per_temperature proposals at each
 /// temperature, which is then multiplied by cooling_rate.
 ///
-/// The annealing ends when the temperature reaches final_temperature.
+/// The annealing ends when the temperature reaches final_temperature: after
+/// the levels from initial_temperature to it, counted once, so that rounding
+/// does not add one.
 class Classic
 {
 public:
     /// The parameter block of the policy.
     using parameters_type = ClassicParameters;
 
-    explicit Classic(
-        const ClassicParameters parameters) noexcept
-        : parameters_{parameters}
+    explicit Classic(const ClassicParameters parameters) noexcept
+        : parameters_{parameters},
+          temperature_levels_{detail::temperature_level_count(
+              parameters.initial_temperature,
+              parameters.final_temperature,
+              parameters.cooling_rate)}
     {
         assert(parameters_.validate());
         reset();
@@ -309,6 +320,7 @@ public:
     {
         temperature_ = parameters_.initial_temperature;
         sampled_ = 0;
+        completed_levels_ = 0;
     }
 
     /// The current temperature.
@@ -327,20 +339,24 @@ public:
         {
             temperature_ *= parameters_.cooling_rate;
             sampled_ = 0;
+            ++completed_levels_;
         }
     }
 
-    /// Whether the temperature has reached final_temperature.
+    /// Whether the temperature has reached final_temperature: every level has
+    /// been completed.
     [[nodiscard]]
     bool finished() const noexcept
     {
-        return temperature_ <= parameters_.final_temperature;
+        return completed_levels_ >= temperature_levels_;
     }
 
 private:
     ClassicParameters parameters_;
+    std::size_t temperature_levels_{};
     double temperature_{};
     std::size_t sampled_{};
+    std::size_t completed_levels_{};
 };
 
 /// The parameters of the FixedLength schedule.
@@ -1177,11 +1193,11 @@ public:
     }
 
     /// Whether allowed_running_time is over or the temperature has reached
-    /// final_temperature.
+    /// final_temperature (every level has been completed).
     [[nodiscard]]
     bool finished() const noexcept
     {
-        return timed_out_ || temperature_ <= parameters_.final_temperature;
+        return timed_out_ || completed_levels_ >= temperature_levels_;
     }
 
     /// The time of the current level: allowed_running_time over the levels or,

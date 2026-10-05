@@ -101,6 +101,10 @@ reviewed by hand before tagging.
   `target_reached`: it returns a point of the front that meets it, and
   `best_so_far` keeps the first cost that meets the target even when it does
   not dominate the best one.
+- The `Classic` and `TimeBased` annealing schedules ran one temperature level
+  more than they count with decimal cooling rates (1 to 0.001 by 0.1 took four
+  levels, as 0.1 * 0.1 * 0.1 is a little above 0.001): they end after the
+  levels counted, and the count is robust to rounding.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

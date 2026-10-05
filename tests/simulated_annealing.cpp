@@ -438,6 +438,47 @@ int main()
     }
 
     {
+        // 1 -> 0.1 -> 0.01 -> 0.001 is three levels, although 0.1 * 0.1 * 0.1
+        // is a little above 0.001 in floating point.
+        temperature::Classic classic{temperature::ClassicParameters{
+            .initial_temperature = 1.0,
+            .final_temperature = 0.001,
+            .cooling_rate = 0.1,
+            .samples_per_temperature = 1,
+        }};
+        std::size_t proposals = 0;
+        while (!classic.finished() && proposals < 10)
+        {
+            classic.on_iteration(false);
+            ++proposals;
+        }
+        ok &= expect(
+            proposals == 3,
+            "classic temperature runs as many levels as it counts");
+
+        temperature::BasicTimeBased<ManualClock> timed{temperature::TimeBasedParameters{
+            .initial_temperature = 1.0,
+            .final_temperature = 0.001,
+            .cooling_rate = 0.1,
+            .allowed_running_time = 30.0,
+            .accepted_per_temperature = 1,
+        }};
+        proposals = 0;
+        while (!timed.finished() && proposals < 10)
+        {
+            ManualClock::advance(std::chrono::milliseconds{1});
+            timed.on_iteration(true);
+            ++proposals;
+        }
+        ok &= expect(
+            proposals == 3,
+            "time-based temperature runs as many levels as it counts");
+        ok &= expect(
+            easylocal::runners::detail::temperature_level_count(1.0, 0.729, 0.9) == 3,
+            "the level count is robust to rounding");
+    }
+
+    {
         // Three levels, 8 -> 4 -> 2 -> 1, over three seconds.
         const temperature::TimeBasedParameters parameters{
             .initial_temperature = 8.0,

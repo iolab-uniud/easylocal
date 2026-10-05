@@ -180,6 +180,12 @@ Simulated Annealing returns the best solution found. Temperature policies in
 | `TimeBased` | initial/final temperature, cooling rate, running time, accepted per temperature (unlimited: cools only on time) | the running time is over or the final temperature is reached; levels share the time |
 | `Reheating<Descent>` | `descent`: the schedule's, plus max reheats, reheat ratio, first-descent share | the last descent ends; each reheat restarts from `reheat_ratio` times T0 |
 
+The levels of a schedule are counted once, from its temperatures: the
+smallest `k` with `initial_temperature * cooling_rate^k <= final_temperature`,
+a count within rounding of an integer being that integer, so that 1 to 0.001 by
+0.1 is three levels. `Classic` and `TimeBased` end after that many levels, and
+the schedules with a budget spread it over them.
+
 `TimeBased` reads the clock (`std::chrono::steady_clock`; `BasicTimeBased<Clock>`
 takes another one) once per proposal. Its trajectory depends on the speed of
 the machine, so equal seeds do not give equal runs.
