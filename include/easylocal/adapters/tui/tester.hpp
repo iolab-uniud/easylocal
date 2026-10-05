@@ -2706,8 +2706,10 @@ private:
         progress_ = {};
         run_progress_state_.reset();
 
+        // Every ending replaces the Last run box, a failure included.
         if (!completion.error.empty())
         {
+            last_run_result_ = run_name_ + ": failed: " + completion.error;
             set_status(
                 status_kind::error,
                 "Runner failed: " + run_name_ + ": " + completion.error);
@@ -2715,6 +2717,7 @@ private:
         }
         if (!completion.solution)
         {
+            last_run_result_ = run_name_ + ": runner not found";
             set_status(
                 status_kind::error,
                 "Run runner: runner not found: " + run_name_);
@@ -2725,6 +2728,8 @@ private:
         refresh_page_labels();
         if (!tester_.is_valid())
         {
+            last_run_result_ = run_name_ + ": " + run_before_ + " -> INVALID solution"
+                + detail::run_ending(completion.effort, completion.cancelled);
             set_status(
                 status_kind::error,
                 "Runner completed: " + run_name_ +

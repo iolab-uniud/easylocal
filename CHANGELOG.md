@@ -223,6 +223,8 @@ reviewed by hand before tagging.
   termination, and its evaluations ("(target reached, 1 evaluation)"),
   instead of comparing the cost with the target by `<`, which is wrong for a
   Pareto cost or a custom `better()`.
+- TextUI: after a run that fails, finds no runner or leaves an invalid
+  solution, the Last run box says so instead of showing the previous run.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 
