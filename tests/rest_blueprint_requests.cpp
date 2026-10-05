@@ -706,6 +706,11 @@ void a_problem_with_text_hooks_needs_no_codec()
     assert(not_text.code == 422);
     assert(
         text(not_text.body["error"]["message"]).starts_with("'input' must be a string"));
+    const auto asymmetric = post(R"({"input": "3\n0 1 2\n1 0 3\n2 4 0\n"})");
+    assert(asymmetric.code == 422);
+    assert(
+        text(asymmetric.body["error"]["message"])
+        == "'input': the TSP distances are not symmetric");
     const auto unreadable = post(R"({"input": "five"})");
     assert(unreadable.code == 422);
     assert(text(unreadable.body["error"]["message"]) == "'input': invalid TSP header");

@@ -24,7 +24,8 @@ class TwoOptLengthDelta
 public:
     explicit TwoOptLengthDelta(const Tsp& input) : input_{input} {}
 
-    // The tour goes a -> b ... c -> d; after the move it goes a -> c ... b -> d.
+    // The tour goes a -> b ... c -> d; after the move it goes a -> c ... b -> d,
+    // the segment b ... c reversed, at the same cost with symmetric distances.
     double delta_evaluate(const Tour& tour, const TwoOpt& move) const
     {
         const auto n = tour.order.size();

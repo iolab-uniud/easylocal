@@ -146,6 +146,11 @@ inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
         for (auto& value : row)
             if (!(in >> value))
                 throw std::runtime_error{"invalid TSP distances"};
+    // The 2-opt delta reverses a segment without its cost: symmetric only.
+    for (std::size_t i = 0; i < cities; ++i)
+        for (std::size_t j = 0; j < i; ++j)
+            if (tsp.distance[i][j] != tsp.distance[j][i])
+                throw std::runtime_error{"the TSP distances are not symmetric"};
     return tsp;
 }
 

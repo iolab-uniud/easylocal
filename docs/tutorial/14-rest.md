@@ -67,6 +67,11 @@ struct TspCodec
         for (const auto& values : tsp.distance)
             if (values.size() != tsp.cities())
                 throw std::invalid_argument{"'distance' must be a square matrix"};
+        // The 2-opt delta assumes that a reversed segment costs the same.
+        for (std::size_t i = 0; i < tsp.cities(); ++i)
+            for (std::size_t j = 0; j < i; ++j)
+                if (tsp.distance[i][j] != tsp.distance[j][i])
+                    throw std::invalid_argument{"'distance' must be symmetric"};
         return tsp;
     }
 

@@ -17,6 +17,9 @@ class TwoOptTourLengthDelta
 public:
     explicit TwoOptTourLengthDelta(const TspInstance& instance) : instance_{instance} {}
 
+    // The two edges removed and the two added: the reversed segment between
+    // them costs the same, since TspInstance::read accepts only symmetric
+    // distances.
     double delta_evaluate(const Tour& solution, const TwoOptMove& move) const
     {
         assert(solution.tour.size() == instance_.city_count);

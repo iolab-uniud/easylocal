@@ -35,6 +35,11 @@ struct TspInstance
         for (auto& distance : instance.distances)
             if (!(input >> distance) || !std::isfinite(distance) || distance < 0.0)
                 throw std::runtime_error("invalid TSP distance data");
+        // The 2-opt delta assumes that a reversed segment costs the same.
+        for (city_id from = 0; from < count; ++from)
+            for (city_id to = 0; to < from; ++to)
+                if (instance.distance(from, to) != instance.distance(to, from))
+                    throw std::runtime_error("TSP distances are not symmetric");
         return instance;
     }
 

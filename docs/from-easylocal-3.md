@@ -137,6 +137,11 @@ inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
         for (auto& value : row)
             if (!(in >> value))
                 throw std::runtime_error{"invalid TSP distances"};
+    // The 2-opt delta reverses a segment without its cost: symmetric only.
+    for (std::size_t i = 0; i < cities; ++i)
+        for (std::size_t j = 0; j < i; ++j)
+            if (tsp.distance[i][j] != tsp.distance[j][i])
+                throw std::runtime_error{"the TSP distances are not symmetric"};
     return tsp;
 }
 ```
@@ -479,7 +484,8 @@ class TwoOptLengthDelta
 public:
     explicit TwoOptLengthDelta(const Tsp& input) : input_{input} {}
 
-    // The tour goes a -> b ... c -> d; after the move it goes a -> c ... b -> d.
+    // The tour goes a -> b ... c -> d; after the move it goes a -> c ... b -> d,
+    // the segment b ... c reversed, at the same cost with symmetric distances.
     double delta_evaluate(const Tour& tour, const TwoOpt& move) const
     {
         const auto n = tour.order.size();
@@ -666,6 +672,11 @@ inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
         for (auto& value : row)
             if (!(in >> value))
                 throw std::runtime_error{"invalid TSP distances"};
+    // The 2-opt delta reverses a segment without its cost: symmetric only.
+    for (std::size_t i = 0; i < cities; ++i)
+        for (std::size_t j = 0; j < i; ++j)
+            if (tsp.distance[i][j] != tsp.distance[j][i])
+                throw std::runtime_error{"the TSP distances are not symmetric"};
     return tsp;
 }
 
