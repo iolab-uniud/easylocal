@@ -11,7 +11,8 @@ applies the command line and configuration files to it:
 <!-- snippet: tutorial/main.cpp:configuration -->
 ```cpp
 el::config::parameter_set configuration;
-configuration.add("solver", sa.configuration()); // --solver.search.*
+configuration.add("solver", sa.configuration());       // --solver.search.*
+configuration.add("limited", limited.configuration()); // --limited.cost.*
 
 const auto configured = el::config::load_and_apply(argc, argv, configuration);
 if (configured.help_requested)
@@ -54,6 +55,91 @@ $ ./program '--solver.cost.weights=[1, 20]'
 A `cost::hard_soft` names its branches, so its sums are
 `solver.cost.hard.weights` and `solver.cost.soft.weights`; children of
 `cost::in_order` and `cost::apply` are named by position (`0`, `1`, ...).
+
+### Parameters of your own classes
+
+The bound of the hierarchical cost of
+[chapter 2](02-cost.md#structured-costs), edges longer than 8, is a literal in
+its function. To let the program change it, the function becomes a class with
+a parameter block:
+
+<!-- snippet: tutorial/tsp.hpp:cost-parameters -->
+```cpp
+// The bound of chapter 2 as a parameter: how much the longest edge exceeds it.
+struct ExcessParameters
+{
+    double bound{8.0}; // the longest edge allowed
+
+    static consteval auto parameter_schema()
+    {
+        return easylocal::config::fields(
+            easylocal::config::field<"bound", &ExcessParameters::bound>(
+                "Longest edge allowed",
+                easylocal::config::range(0.0, easylocal::unlimited)));
+    }
+
+    easylocal::config::validation_result validate() const
+    {
+        return easylocal::config::check_schema(*this);
+    }
+};
+
+class Excess
+{
+public:
+    using parameters_type = ExcessParameters; // configurable, built from it
+
+    explicit Excess(ExcessParameters parameters) : bound_{parameters.bound} {}
+
+    // Its parameters are configured under its name: cost.excess.*
+    static std::string_view name()
+    {
+        return "excess";
+    }
+
+    double operator()(double longest) const
+    {
+        return std::max(0.0, longest - bound_);
+    }
+
+private:
+    double bound_;
+};
+```
+
+The rule is the same for every class the framework builds: its
+`parameters_type` is a parameter block, and it is constructed from it. The
+recipe holds the parameters and builds the class from them when a runner or
+an app is bound; `cost::apply<Excess>(parameters, children...)` gives them to a
+function, `component<C>(parameters, args...)` to a component:
+
+<!-- snippet: tutorial/main.cpp:cost-parameters-use -->
+```cpp
+// The same hierarchical cost, its bound a parameter: cost.excess.bound.
+auto limited =
+    el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
+    | (el::solution_manager<TourManager>()
+        | el::cost::hard_soft(
+            el::cost::apply<Excess>({.bound = 8.0}, el::component<MaxEdge>()),
+            el::component<TourLength>()))
+    | nhe;
+```
+
+A function or a component is configured under its `name()`, which must be
+static: `cost.excess.bound` here, wherever it is in the expression. Added to the
+program's set as `limited`, the bound is `--limited.cost.excess.bound`:
+
+```text
+$ ./easylocal_tutorial --limited.cost.excess.bound=5
+...
+limited 3, 26
+```
+
+The same rule makes a runner configurable, as in chapter 7, and a
+neighborhood explorer (`neighborhood<NHE>(parameters, args...)`, under
+`neighborhood`). A class that declares its parameters another way, with a
+`parameters()` or a `configuration()` and no such `parameters_type`, does not
+compile, with a message saying what to write.
 
 The prefix is the program's choice: `"solver"` here gives `--solver.search.*`.
 A program that configures a single runner could add its parameters without a

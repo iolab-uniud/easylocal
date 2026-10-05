@@ -170,7 +170,9 @@ auto bounded_sm = el::solution_manager<TourManager>()
   measures the violation: `cost::apply` turns the value of `MaxEdge` into the
   excess over 8, zero when every edge is short enough. Its soft cost is the
   length. The result is a `cost::hierarchical<double, double>`: a tour with
-  a smaller excess is always better, whatever its length.
+  a smaller excess is always better, whatever its length. The bound is a
+  literal here; [chapter 9](09-configuration.md#parameters-of-your-own-classes)
+  makes it a parameter.
 
 They are run like any other SolutionManager, with a runner (chapter 5) and
 the 2-opt neighborhood (chapters 3 and 4). The cost of the result is then read

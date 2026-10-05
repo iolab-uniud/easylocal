@@ -115,13 +115,42 @@ auto solution_manager(Args&&... args)
 
 /// A cost component, a leaf of a cost expression, constructed from the Input
 /// and `args` (or from `args` alone).
+///
+/// For a component whose parameters_type is a parameter block, a first
+/// argument of that type gives its parameters, which otherwise are the
+/// defaults, and lead its construction arguments; they are configurable under
+/// its static name(), `cost.<name>.*` in a runner or an app.
 template<class Component, class... Args>
 [[nodiscard]]
 auto component(Args&&... args)
 {
-    return detail::component_spec<
-        Component,
-        std::decay_t<Args>...>{std::forward<Args>(args)...};
+    if constexpr (config::detail::parameterized<Component> && sizeof...(Args) > 0)
+    {
+        return [](auto&& first, auto&&... rest) {
+            if constexpr (std::same_as<
+                              std::remove_cvref_t<decltype(first)>,
+                              typename Component::parameters_type>)
+            {
+                return detail::component_spec<Component, std::decay_t<decltype(rest)>...>{
+                    std::forward<decltype(first)>(first),
+                    std::forward<decltype(rest)>(rest)...};
+            }
+            else
+            {
+                return detail::component_spec<
+                    Component,
+                    std::decay_t<decltype(first)>,
+                    std::decay_t<decltype(rest)>...>{
+                    std::forward<decltype(first)>(first),
+                    std::forward<decltype(rest)>(rest)...};
+            }
+        }(std::forward<Args>(args)...);
+    }
+    else
+    {
+        return detail::component_spec<Component, std::decay_t<Args>...>{
+            std::forward<Args>(args)...};
+    }
 }
 
 /// The recipe of a NeighborhoodExplorer constructed from the SolutionManager

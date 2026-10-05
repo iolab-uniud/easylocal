@@ -33,6 +33,14 @@ reviewed by hand before tagging.
   `config::configurable_parameters_t` and `config::configuration_provider`
   move to `detail`; `parameter_set::add` still takes an object with
   `parameters()` and `configure()`.
+- **Breaking:** cost components and `cost::apply` functions follow the rule:
+  a component whose `parameters_type` is a parameter block is built from it,
+  `component<C>(parameters, args...)`, and a function from
+  `cost::apply<F>(parameters, children...)`; each is configured under its
+  static `name()`, `cost.<name>.*` in a runner or an app, wherever it is in
+  the expression. A function's `configuration()`, which `cost::apply` used to
+  read, no longer compiles. The tutorial's hierarchical cost has its bound of
+  8 as a parameter, `cost.excess.bound` (chapter 9).
 - `check(app, ...)` reports, as `runner parameters`, a registered runner whose
   `parameters_type` is not a parameter block (and not empty): the app runs it,
   but no frontend can change its parameters. The tutorial's `RandomDescent`

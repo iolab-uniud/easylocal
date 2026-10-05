@@ -163,7 +163,7 @@ an object already gone.
 | Provider | Paths |
 | --- | --- |
 | a parameterized algorithm (`FirstImprovement`, `BestImprovement`, `HillClimbing`, `GreatDeluge`, `LateAcceptanceHillClimbing`, `ParetoLateAcceptanceHillClimbing`, `SimulatedAnnealing`, the Tabu Search family), through its runner | the fields of its `parameters_type`; `temperature.*` for Simulated Annealing, `tabu_list.*` for Tabu Search |
-| the cost expression of a SolutionManager recipe | `weights` of a `cost::sum`; children by position (`0.*`, `1.*`), `hard.*` and `soft.*` of a `cost::hard_soft`; a `cost::apply` function's own |
+| the cost expression of a SolutionManager recipe | `weights` of a `cost::sum`; children by position (`0.*`, `1.*`), `hard.*` and `soft.*` of a `cost::hard_soft`; `tolerance.*` of a `cost::approximately`; each component and `cost::apply` function with a `parameters_type` under its `name()` (`<name>.*`) |
 | `neighborhood_union` with `random_biases` | `random_biases`, and each child's parameters under its position (`0.*`, `1.*`) |
 | `neighborhood<NHE>(parameters, args...)` for an explorer with `parameters_type` | the explorer's parameters |
 | `runner.configuration()` | `search.*`, `cost.*`, `neighborhood.*` |

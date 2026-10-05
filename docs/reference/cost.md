@@ -15,7 +15,8 @@ form the *delta cost layer*.
 | --- | --- |
 | `evaluate(const Solution&) const -> Value` | yes |
 | `delta_evaluate(const Solution&, const Move&) const -> Delta` | no: a co-located delta cost component |
-| `name() -> std::string_view` (static or not) | no: its name in reports, otherwise its position, `#1` |
+| `name() -> std::string_view` (static or not) | no: its name in reports, otherwise its position, `#1`; static, and required, for a component with parameters, which is configured under it |
+| `parameters_type` | no: a parameter block, which makes the component configurable (`cost.<name>.*`); the component is constructed from it |
 | `describe(const Solution&) const -> std::string` | no: a text that explains its value on a solution, such as the violations it counts |
 
 - `Value` is deduced from `evaluate` and may be arithmetic or a domain type,
@@ -25,6 +26,11 @@ form the *delta cost layer*.
   `Component(args...)` is accepted; `args` come from `component<C>(args...)`
   and convert as the constructor takes them. The same holds for a delta cost
   component and `delta<C, D>(args...)`.
+- With parameters: `Component(const Input&, const parameters_type&, args...)`
+  (or without the Input), from `component<C>(parameters, args...)`; without
+  a first argument of that type, the parameters are the defaults. The recipe
+  holds them, and builds the component from them when a runner or an app is
+  bound.
 - A component type may appear only once in a cost expression.
 - `name()` and `describe(solution)` are for people: `Session::cost_report()`,
   `cli::run`'s `--report` and the TextUI's solution window show each
@@ -38,13 +44,14 @@ are cost components; its nodes combine the costs of their children.
 
 | Expression | Cost | Configuration |
 | --- | --- | --- |
-| `component<C>(args...)` | the value of the component | none |
+| `component<C>([parameters,] args...)` | the value of the component | its `parameters_type`'s, under `<name>` |
 | `cost::sum(t1, ..., tn)` | `Σ wᵢ · costᵢ`, in the common type of the costs and the weights | `weights` |
 | `cost::weighted(child, w)`, or `child * w`, `w * child` | a term of `cost::sum` with weight `w` (default 1) | |
 | `cost::in_order(c1, ..., cn)` | `cost::lexicographic` of the children's costs | children's |
 | `cost::objectives(c1, ..., cn)` | `cost::pareto` of the children's costs (n ≥ 2) | children's |
 | `cost::hard_soft(hard, soft)` | `cost::hierarchical` of the two costs | `hard`, `soft` |
-| `cost::apply(f, c1, ..., cn)` | `f(cost₁, ..., costₙ)` | `f.configuration()`, if any, and children's |
+| `cost::apply(f, c1, ..., cn)` | `f(cost₁, ..., costₙ)` | children's |
+| `cost::apply<F>(parameters, c1, ..., cn)` | `F{parameters}(cost₁, ..., costₙ)` | `F::parameters_type`'s, under `<name>`, and children's |
 | `cost::approximately(c, tolerance)` | the cost of `c`, compared by the search within a `cost::tolerance` (at the root) | `tolerance.relative`, `tolerance.absolute`, and the child's as they are |
 
 ```cpp
@@ -69,6 +76,14 @@ solution_manager<SM>()
   `soft`, `in_order`, `objectives` and `apply` name them by position (`0`,
   `1`, ...); only
   configurable children appear. In the example above: `cost.hard.weights`.
+- A component or a `cost::apply` function whose `parameters_type` is a
+  parameter block is configured under its static `name()`, wherever it is in
+  the expression: `cost.<name>.*`. Two of them with the same name make the
+  configuration throw `std::invalid_argument`. A function with parameters is
+  built from them, `cost::apply<F>(parameters, children...)`, and built again
+  when they change; `cost::apply(F{...}, children...)` does not compile for it.
+  A component or a function that has `parameters()` or `configuration()` and
+  no such `parameters_type` does not compile.
 
 ## Cost models
 

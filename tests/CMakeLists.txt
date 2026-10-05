@@ -238,6 +238,14 @@ easylocal_add_test(
 )
 
 easylocal_add_test(
+    cost-parameters
+    SOURCES
+        cost_parameters.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
+
+easylocal_add_test(
     service-base
     SOURCES
         service_base.cpp
@@ -861,6 +869,23 @@ easylocal_add_compile_failure_test(
     delta_not_constructible.cpp
     "a delta cost component must be constructible either from the bound Instance followed by its recipe arguments or from its recipe arguments alone"
     "NonConstructibleDeltaA"
+)
+easylocal_add_compile_failure_test(
+    parameters-without-name
+    parameters_without_name.cpp
+    "is configured under cost.<name>"
+    "UnnamedComponent"
+)
+easylocal_add_compile_failure_test(
+    undeclared-parameters
+    undeclared_parameters.cpp
+    "only a parameters_type is configured"
+    "SelfConfiguredFunction"
+)
+easylocal_add_compile_failure_test(
+    apply-function-from-parameters
+    apply_function_from_parameters.cpp
+    "write cost::apply<F>(parameters, children...)"
 )
 easylocal_add_compile_failure_test(
     component-not-constructible

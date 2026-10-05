@@ -23,16 +23,21 @@
 ///                                components under `hard`;
 /// - cost::apply(f, children...)  f(costs...), any user function; f may also
 ///                                define compare(a, b), the order of the costs
-///                                (at the root), and configuration();
+///                                (at the root); cost::apply<F>(parameters,
+///                                children...) builds a function with
+///                                parameters, configurable as `<name>.*`;
 /// - cost::approximately(child)   the cost of child, compared by the search
 ///                                within a cost::tolerance (at the root).
 ///
 /// The expression types below only record the structure; they are given meaning
 /// by the SolutionManager recipe, which knows the components' value types.
 
+#include <easylocal/config/detail/parameterized.hpp>
 #include <easylocal/cost/concepts.hpp>
 #include <easylocal/cost/tolerance.hpp>
+#include <easylocal/utils/detail/attributes.hpp>
 
+#include <concepts>
 #include <cstddef>
 #include <tuple>
 #include <type_traits>
@@ -95,6 +100,10 @@ struct apply_expression
     Function function;
     /// The children, whose costs are the arguments of the function.
     std::tuple<Children...> children;
+    /// The parameters the function is built from, when its parameters_type is
+    /// a parameter block; empty otherwise.
+    EASYLOCAL_NO_UNIQUE_ADDRESS config::detail::parameters_storage_t<Function>
+        parameters{};
 };
 
 /// The node of `cost::approximately`: the cost of its child, compared within a
@@ -184,8 +193,9 @@ constexpr approximately_expression<Child> approximately(
 ///
 /// At the root of the expression, the function may also define the order of
 /// its costs, `compare(a, b)` returning a `std::partial_ordering`, from which
-/// `better` (less), `equivalent` and `better_or_equivalent` follow; it may
-/// expose parameters with `configuration()`.
+/// `better` (less), `equivalent` and `better_or_equivalent` follow. A function
+/// with parameters is built from them: `cost::apply<F>(parameters,
+/// children...)`.
 template<class Function, class... Children>
     requires(sizeof...(Children) > 0)
 [[nodiscard]]
@@ -193,9 +203,38 @@ constexpr apply_expression<Function, Children...> apply(
     Function function,
     Children... children)
 {
+    static_assert(
+        !config::detail::parameterized<Function>,
+        "a cost::apply function whose parameters_type is a parameter block is "
+        "built from its parameters: write cost::apply<F>(parameters, children...)");
     return {
         std::move(function),
         std::tuple<Children...>{std::move(children)...},
+    };
+}
+
+/// The value of a `Function` built from `parameters`, called with the
+/// children's costs: `cost::apply<Excess>({.bound = 8.0}, component<C>())`.
+///
+/// Its parameters are configurable under its name, `cost.<name>.*` in a
+/// runner or an app, and the function is built again from them when they
+/// change. Requires a function whose parameters_type is a parameter block, a
+/// constructor from it, and a static name().
+template<class Function, class... Children>
+    requires(sizeof...(Children) > 0) && config::detail::parameterized<Function>
+[[nodiscard]]
+constexpr apply_expression<Function, Children...> apply(
+    const typename Function::parameters_type& parameters,
+    Children... children)
+{
+    static_assert(
+        std::constructible_from<Function, const typename Function::parameters_type&>,
+        "a cost::apply function whose parameters_type is a parameter block is "
+        "built from it: give it a constructor from `const parameters_type&`");
+    return {
+        Function{parameters},
+        std::tuple<Children...>{std::move(children)...},
+        parameters,
     };
 }
 

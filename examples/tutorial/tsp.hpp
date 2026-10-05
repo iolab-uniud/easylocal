@@ -201,6 +201,49 @@ private:
 };
 // [domain-value] -----------------------------------------------------------
 
+// [cost-parameters] --------------------------------------------------------
+// The bound of chapter 2 as a parameter: how much the longest edge exceeds it.
+struct ExcessParameters
+{
+    double bound{8.0}; // the longest edge allowed
+
+    static consteval auto parameter_schema()
+    {
+        return easylocal::config::fields(
+            easylocal::config::field<"bound", &ExcessParameters::bound>(
+                "Longest edge allowed",
+                easylocal::config::range(0.0, easylocal::unlimited)));
+    }
+
+    easylocal::config::validation_result validate() const
+    {
+        return easylocal::config::check_schema(*this);
+    }
+};
+
+class Excess
+{
+public:
+    using parameters_type = ExcessParameters; // configurable, built from it
+
+    explicit Excess(ExcessParameters parameters) : bound_{parameters.bound} {}
+
+    // Its parameters are configured under its name: cost.excess.*
+    static std::string_view name()
+    {
+        return "excess";
+    }
+
+    double operator()(double longest) const
+    {
+        return std::max(0.0, longest - bound_);
+    }
+
+private:
+    double bound_;
+};
+// [cost-parameters] --------------------------------------------------------
+
 // [neighborhood] -----------------------------------------------------------
 class SwapExplorer : public easylocal::neighborhood_explorer_base<TourManager, SwapCities>
 {

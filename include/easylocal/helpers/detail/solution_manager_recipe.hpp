@@ -11,6 +11,7 @@
 
 #include <concepts>
 #include <cstddef>
+#include <string>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -103,20 +104,26 @@ public:
         return service_type{std::move(components), expression_};
     }
 
-    // The configurable parameters of the expression (the weights of its
-    // sums, the parameters of its functions); a runner puts them under "cost".
+    // The configurable parameters of the expression: the weights of its sums
+    // and its tolerance, by their place in it, and the parameters of its
+    // components and functions, under their names; a runner puts them under
+    // "cost".
     [[nodiscard]]
     config::parameter_set configuration() &
         requires expression_type::configurable
     {
-        return expression_.configuration();
+        config::parameter_set parameters;
+        expression_.add_parameters(parameters, std::string{});
+        return parameters;
     }
 
     [[nodiscard]]
     config::parameter_set configuration() const&
         requires expression_type::configurable
     {
-        return expression_.configuration();
+        config::parameter_set parameters;
+        expression_.add_parameters(parameters, std::string{});
+        return parameters;
     }
 
     // A temporary has no configuration: the set would refer to it after it is

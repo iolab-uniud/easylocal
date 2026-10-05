@@ -6,6 +6,7 @@
 // evaluates its cost from that flat tuple of component values, starting at its
 // own offset. Deltas therefore stay per component and never see the structure.
 
+#include <easylocal/config/detail/parameterized.hpp>
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
@@ -25,15 +26,52 @@
 namespace easylocal::detail
 {
 
+// A configurable component or cost::apply function is configured under its
+// static name(), which every one must have.
+template<class T>
+concept statically_named = requires {
+    { T::name() } -> std::convertible_to<std::string_view>;
+};
+
+template<class T, bool Configurable>
+consteval bool check_configurable_name()
+{
+    static_assert(
+        !Configurable || statically_named<T>,
+        "a cost component or cost::apply function whose parameters_type is a "
+        "parameter block is configured under cost.<name>: give it "
+        "`static std::string_view name()`");
+    return true;
+}
+
 template<class Component, class... StoredArgs>
 class component_spec
 {
+    using holder_type = config::detail::parameters_holder<Component>;
+
 public:
     using component_type = Component;
+    using parameters_type = typename holder_type::parameters_type;
 
     explicit component_spec(StoredArgs... args)
         : args_{std::move(args)...}
     {
+    }
+
+    // Throws std::invalid_argument when the parameters are not valid.
+    component_spec(parameters_type parameters, StoredArgs... args)
+        requires config::detail::parameterized<Component>
+        : args_{std::move(args)...}, parameters_{std::move(parameters)}
+    {
+    }
+
+    // The component's parameters, to read or change.
+    template<class Self>
+    [[nodiscard]]
+    auto& parameters(this Self& self) noexcept
+        requires config::detail::parameterized<Component>
+    {
+        return self.parameters_;
     }
 
     template<class Instance>
@@ -45,25 +83,27 @@ public:
                 if constexpr (std::constructible_from<
                                   Component,
                                   const Instance&,
-                                  const StoredArgs&...>)
+                                  decltype(args)...>)
                 {
                     return Component(instance, args...);
                 }
                 else
                 {
                     static_assert(
-                        std::constructible_from<Component, const StoredArgs&...>,
+                        std::constructible_from<Component, decltype(args)...>,
                         "a cost component must be constructible either from the "
                         "bound Instance followed by its recipe arguments or from "
-                        "its recipe arguments alone");
+                        "its recipe arguments alone (its parameters first, when "
+                        "it has a parameters_type)");
                     return Component(args...);
                 }
             },
-            args_);
+            parameters_.arguments(args_));
     }
 
 private:
     std::tuple<StoredArgs...> args_;
+    EASYLOCAL_NO_UNIQUE_ADDRESS holder_type parameters_;
 };
 
 // component<C>() * w and w * component<C>() are cost::weighted(component, w).
@@ -140,27 +180,32 @@ using component_value_t = std::remove_cvref_t<decltype(
 template<class... Tuples>
 using tuple_cat_t = decltype(std::tuple_cat(std::declval<Tuples>()...));
 
-// The parameters of a child node, under prefix, when it has any.
+// The parameters of a node, when it has any: those of its structure (the
+// weights of a sum, a tolerance) under its path, path, and those of its
+// configurable components and functions at the root of parameters, under
+// their names.
 template<class Node>
-void add_node_configuration(
+void add_node_parameters(
     config::parameter_set& parameters,
-    const std::string_view prefix,
+    const std::string& path,
     Node& node)
 {
     if constexpr (std::remove_const_t<Node>::configurable)
-    {
-        parameters.add(prefix, node.configuration());
-    }
+        node.add_parameters(parameters, path);
 }
 
-// The parameters of positional children, under their positions ("0", "1").
+// The parameters of positional children, their structure under their
+// positions ("0", "1") below path.
 template<class Children>
-void add_indexed_configurations(config::parameter_set& parameters, Children& children)
+void add_indexed_parameters(
+    config::parameter_set& parameters,
+    const std::string& path,
+    Children& children)
 {
     [&]<std::size_t... Indices>(std::index_sequence<Indices...>) {
-        (add_node_configuration(
+        (add_node_parameters(
              parameters,
-             std::to_string(Indices),
+             config::detail::join_path(path, std::to_string(Indices)),
              std::get<Indices>(children)),
             ...);
     }(std::make_index_sequence<std::tuple_size_v<std::remove_const_t<Children>>>{});
@@ -210,7 +255,9 @@ public:
         "or a floating-point value");
 
     static constexpr std::size_t leaf_count = 1;
-    static constexpr bool configurable = false;
+    static constexpr bool configurable = config::detail::parameterized<Component>;
+
+    static_assert(check_configurable_name<Component, configurable>());
 
     explicit cost_node(spec_type spec)
         : spec_{std::move(spec)}
@@ -221,6 +268,17 @@ public:
     leaf_specs leaves() const
     {
         return leaf_specs{spec_};
+    }
+
+    // The component's parameters, under its name.
+    template<class Self>
+    void add_parameters(
+        this Self& self,
+        config::parameter_set& parameters,
+        const std::string&)
+        requires configurable
+    {
+        parameters.add(Component::name(), self.spec_.parameters());
     }
 
     template<std::size_t Offset, class Values>
@@ -402,15 +460,16 @@ public:
         }(std::index_sequence_for<Terms...>{});
     }
 
-    // The weights, and the parameters of the terms under their positions.
+    // The weights, under path, and the parameters of the terms under their
+    // positions.
     template<class Self>
-    [[nodiscard]]
-    config::parameter_set configuration(this Self& self)
+    void add_parameters(
+        this Self& self,
+        config::parameter_set& parameters,
+        const std::string& path)
     {
-        config::parameter_set parameters;
-        parameters.add(self.parameters_);
-        add_indexed_configurations(parameters, self.children_);
-        return parameters;
+        parameters.add(path, self.parameters_);
+        add_indexed_parameters(parameters, path, self.children_);
     }
 
 private:
@@ -482,9 +541,12 @@ public:
     }
 
     template<class Self>
-    void add_configurations(this Self&& self, config::parameter_set& parameters)
+    void add_parameters(
+        this Self& self,
+        config::parameter_set& parameters,
+        const std::string& path)
     {
-        add_indexed_configurations(parameters, self.children_);
+        add_indexed_parameters(parameters, path, self.children_);
     }
 
 private:
@@ -529,27 +591,15 @@ public:
     }
 
     // The parameters of the children, under their positions.
-    [[nodiscard]]
-    config::parameter_set configuration() &
+    template<class Self>
+    void add_parameters(
+        this Self& self,
+        config::parameter_set& parameters,
+        const std::string& path)
         requires configurable
     {
-        config::parameter_set parameters;
-        children_.add_configurations(parameters);
-        return parameters;
+        self.children_.add_parameters(parameters, path);
     }
-
-    [[nodiscard]]
-    config::parameter_set configuration() const&
-        requires configurable
-    {
-        config::parameter_set parameters;
-        children_.add_configurations(parameters);
-        return parameters;
-    }
-
-    // A temporary has no configuration: the set would refer to it after it is
-    // gone. Configure the object that will run.
-    config::parameter_set configuration() const&& = delete;
 
 private:
     EASYLOCAL_NO_UNIQUE_ADDRESS children_type children_;
@@ -641,33 +691,88 @@ public:
     }
 
     // The parameters of the branches, under "hard" and "soft".
-    [[nodiscard]]
-    config::parameter_set configuration() &
+    template<class Self>
+    void add_parameters(
+        this Self& self,
+        config::parameter_set& parameters,
+        const std::string& path)
         requires configurable
     {
-        config::parameter_set parameters;
-        add_node_configuration(parameters, "hard", hard_);
-        add_node_configuration(parameters, "soft", soft_);
-        return parameters;
+        add_node_parameters(
+            parameters,
+            config::detail::join_path(path, "hard"),
+            self.hard_);
+        add_node_parameters(
+            parameters,
+            config::detail::join_path(path, "soft"),
+            self.soft_);
     }
-
-    [[nodiscard]]
-    config::parameter_set configuration() const&
-        requires configurable
-    {
-        config::parameter_set parameters;
-        add_node_configuration(parameters, "hard", hard_);
-        add_node_configuration(parameters, "soft", soft_);
-        return parameters;
-    }
-
-    // A temporary has no configuration: the set would refer to it after it is
-    // gone. Configure the object that will run.
-    config::parameter_set configuration() const&& = delete;
 
 private:
     EASYLOCAL_NO_UNIQUE_ADDRESS hard_node hard_;
     EASYLOCAL_NO_UNIQUE_ADDRESS soft_node soft_;
+};
+
+// The function of a cost::apply, as it is called: without parameters, as it
+// was given.
+template<class Function>
+class apply_function
+{
+public:
+    apply_function(Function function, config::detail::no_parameters)
+        : function_{std::move(function)}
+    {
+    }
+
+    [[nodiscard]]
+    const Function& function() const noexcept
+    {
+        return function_;
+    }
+
+private:
+    EASYLOCAL_NO_UNIQUE_ADDRESS Function function_;
+};
+
+// A function with parameters: a configurable endpoint, which builds the
+// function again from the parameters it is given.
+template<config::detail::parameterized Function>
+class apply_function<Function>
+{
+public:
+    using parameters_type = typename Function::parameters_type;
+
+    apply_function(Function function, parameters_type parameters)
+        : function_{std::move(function)}, parameters_{std::move(parameters)}
+    {
+    }
+
+    [[nodiscard]]
+    const Function& function() const noexcept
+    {
+        return function_;
+    }
+
+    [[nodiscard]]
+    const parameters_type& parameters() const noexcept
+    {
+        return parameters_;
+    }
+
+    [[nodiscard]]
+    config::validation_result configure(parameters_type parameters)
+    {
+        const auto validation = parameters.validate();
+        if (!validation)
+            return validation;
+        function_ = Function{parameters};
+        parameters_ = std::move(parameters);
+        return config::validation_result::success();
+    }
+
+private:
+    Function function_;
+    parameters_type parameters_;
 };
 
 // User function over the children's costs. At the root, it may also define
@@ -707,12 +812,17 @@ public:
         "compare(a, b) of the function of cost::apply must return "
         "std::partial_ordering (or a comparison category that converts to it)");
 
+    static constexpr bool parameterized_function =
+        config::detail::parameterized<Function>;
     static constexpr std::size_t leaf_count = children_type::leaf_count;
     static constexpr bool configurable =
-        config::detail::configuration_provider<Function> || children_type::configurable;
+        parameterized_function || children_type::configurable;
+
+    static_assert(config::detail::check_declared_parameters<Function>());
+    static_assert(check_configurable_name<Function, parameterized_function>());
 
     explicit cost_node(cost::apply_expression<Function, Children...> expression)
-        : function_{std::move(expression.function)},
+        : function_{std::move(expression.function), std::move(expression.parameters)},
           children_{std::move(expression.children)}
     {
     }
@@ -720,7 +830,7 @@ public:
     [[nodiscard]]
     const Function& function() const noexcept
     {
-        return function_;
+        return function_.function();
     }
 
     [[nodiscard]]
@@ -735,7 +845,7 @@ public:
     {
         return children_.template evaluate_with<Offset>(
             [&](const auto&... cost) -> cost_type {
-                return std::invoke(function_, cost...);
+                return std::invoke(function_.function(), cost...);
             },
             values);
     }
@@ -746,37 +856,26 @@ public:
     std::partial_ordering compare(const cost_type& lhs, const cost_type& rhs) const
         requires apply_function_orders<Function, cost_type>
     {
-        return static_cast<std::partial_ordering>(function_.compare(lhs, rhs));
+        return static_cast<std::partial_ordering>(function_.function().compare(lhs, rhs));
     }
 
-    // The function's parameters, at the root, and the children's, under their
-    // positions.
-    [[nodiscard]]
-    config::parameter_set configuration() &
+    // The function's parameters, under its name, and the children's, under
+    // their positions.
+    template<class Self>
+    void add_parameters(
+        this Self& self,
+        config::parameter_set& parameters,
+        const std::string& path)
         requires configurable
     {
-        config::parameter_set parameters;
-        config::add_configuration(parameters, {}, function_);
-        children_.add_configurations(parameters);
-        return parameters;
+        if constexpr (parameterized_function)
+            parameters.add(Function::name(), self.function_);
+        if constexpr (children_type::configurable)
+            self.children_.add_parameters(parameters, path);
     }
-
-    [[nodiscard]]
-    config::parameter_set configuration() const&
-        requires configurable
-    {
-        config::parameter_set parameters;
-        config::add_configuration(parameters, {}, function_);
-        children_.add_configurations(parameters);
-        return parameters;
-    }
-
-    // A temporary has no configuration: the set would refer to it after it is
-    // gone. Configure the object that will run.
-    config::parameter_set configuration() const&& = delete;
 
 private:
-    EASYLOCAL_NO_UNIQUE_ADDRESS Function function_;
+    EASYLOCAL_NO_UNIQUE_ADDRESS apply_function<Function> function_;
     EASYLOCAL_NO_UNIQUE_ADDRESS children_type children_;
 };
 
@@ -892,13 +991,13 @@ public:
     // The tolerance, under "tolerance", and the parameters of the child, as
     // they are without it.
     template<class Self>
-    [[nodiscard]]
-    config::parameter_set configuration(this Self& self)
+    void add_parameters(
+        this Self& self,
+        config::parameter_set& parameters,
+        const std::string& path)
     {
-        config::parameter_set parameters;
-        parameters.add("tolerance", self.within_);
-        add_node_configuration(parameters, {}, self.child_);
-        return parameters;
+        parameters.add(config::detail::join_path(path, "tolerance"), self.within_);
+        add_node_parameters(parameters, path, self.child_);
     }
 
 private:

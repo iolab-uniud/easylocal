@@ -117,6 +117,17 @@ int main(int argc, char* argv[])
     const double length_within_bound = within_bound.cost.soft();
     // [structured-costs-read] ----------------------------------------------
 
+    // [cost-parameters-use] ------------------------------------------------
+    // The same hierarchical cost, its bound a parameter: cost.excess.bound.
+    auto limited =
+        el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
+        | (el::solution_manager<TourManager>()
+            | el::cost::hard_soft(
+                el::cost::apply<Excess>({.bound = 8.0}, el::component<MaxEdge>()),
+                el::component<TourLength>()))
+        | nhe;
+    // [cost-parameters-use] ------------------------------------------------
+
     // [annealing] ----------------------------------------------------------
     using Classic = runners::temperature::Classic;
 
@@ -172,7 +183,8 @@ int main(int argc, char* argv[])
 
     // [configuration] ------------------------------------------------------
     el::config::parameter_set configuration;
-    configuration.add("solver", sa.configuration()); // --solver.search.*
+    configuration.add("solver", sa.configuration());       // --solver.search.*
+    configuration.add("limited", limited.configuration()); // --limited.cost.*
 
     const auto configured = el::config::load_and_apply(argc, argv, configuration);
     if (configured.help_requested)
@@ -298,6 +310,9 @@ int main(int argc, char* argv[])
             .bind(tsp);
     const auto excess_cost = excess_search.run(excess_search.initial_solution()).cost;
 
+    auto limited_search = limited.bind(tsp);
+    const auto limited_cost = limited_search.run(limited_search.initial_solution()).cost;
+
     auto colocated =
         (el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
             | colocated_sm | colocated_nhe)
@@ -312,6 +327,7 @@ int main(int argc, char* argv[])
         << longest_edge << ", " << length_after_edge << "\nhierarchical " << excess
         << ", " << length_within_bound << "\nlong edges " << fewest.excess << " in "
         << fewest.count << "\nexcess " << excess_cost.hard() << ", " << excess_cost.soft()
+        << "\nlimited " << limited_cost.hard() << ", " << limited_cost.soft()
         << "\nco-located " << colocated.run(colocated.initial_solution()).cost
         << "\nannealing " << annealed.cost << "\nunion "
         << union_search.run(union_search.initial_solution(), union_rng).cost
