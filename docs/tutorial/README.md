@@ -148,7 +148,6 @@ snippets write `Tour` for `tutorial::Tour`.
 14. [A REST service](14-rest.md): searches over HTTP.
 15. [Observing and controlling a run](15-observing-and-controlling.md):
     progress, cancellation, tracing.
-16. [Comparison with EasyLocal 3](16-comparison-with-easylocal-3.md).
 
 Porting an EasyLocal 3 program? [Coming from EasyLocal 3](../from-easylocal-3.md)
 takes one through, step by step.

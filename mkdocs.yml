@@ -88,7 +88,6 @@ nav:
       - tutorial/13-checking.md
       - tutorial/14-rest.md
       - tutorial/15-observing-and-controlling.md
-      - tutorial/16-comparison-with-easylocal-3.md
   - Coming from EasyLocal 3: from-easylocal-3.md
   - Reference:
       - reference/README.md

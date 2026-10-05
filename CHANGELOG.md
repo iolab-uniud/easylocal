@@ -386,6 +386,9 @@ reviewed by hand before tagging.
   `examples/tutorial/launcher_main.cpp` opens a 2-opt and a swap app of the
   tutorial's own TSP. `AGENTS.md` says what each example directory is.
 - The quick start says that costs are minimized and how to maximize.
+- The tutorial's chapter 16, a table of EasyLocal 3 concepts and their
+  counterparts, is part of [Coming from EasyLocal 3](docs/from-easylocal-3.md),
+  which it duplicated; the tutorial has 15 chapters.
 - The migration page says that `hard_soft` changes what Simulated Annealing
   accepts, compared with EasyLocal 3's `HARD_WEIGHT` (a weighted sum still
   crosses infeasible regions), and that Best Improvement keeps the first of

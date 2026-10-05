@@ -64,5 +64,6 @@ Diagnostic logging (`<easylocal/utils/logging.hpp>`) is separate from tracing.
 
 ## Next steps
 
-[Chapter 16](16-comparison-with-easylocal-3.md) compares this framework with
-EasyLocal 3, or go to the [reference](../reference/README.md).
+The [reference](../reference/README.md) describes every component in full;
+[Coming from EasyLocal 3](../from-easylocal-3.md) maps EasyLocal 3 to this
+framework.

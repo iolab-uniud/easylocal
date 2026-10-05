@@ -7,9 +7,26 @@ TSP of the [tutorial](tutorial/README.md).
 
 ## The main differences
 
-The concepts of the two versions are mapped one to one in the
-[comparison with EasyLocal 3](tutorial/16-comparison-with-easylocal-3.md) of
-the tutorial. Beyond the names:
+The concepts of EasyLocal 3 and their counterparts:
+
+| EasyLocal 3 | EasyLocal 4 |
+| --- | --- |
+| Input / State / Move | Input / Solution / Move, plain values |
+| `StateManager` | SolutionManager: validity and construction only |
+| `CostComponent` | cost component (`evaluate`), attached with `component<C>()` |
+| `PrintViolations` | an optional `describe(solution)` member of the cost component |
+| hard/soft components and weights | cost expressions: `cost::hard_soft`, `cost::sum`, `cost::weighted`, `cost::in_order`, `cost::apply` |
+| `DeltaCostComponent` | delta cost component (`delta_evaluate`), attached with `delta<C, D>()` |
+| `NeighborhoodExplorer` (`FirstMove`, `NextMove`, `RandomMove`, `MakeMove`) | NeighborhoodExplorer: cursor or `moves`, `random_move`, `make_move` |
+| `MultimodalNeighborhoodExplorer` | `neighborhood_union` |
+| `Runner` subclasses (hill climbing, SA, ...) | algorithm classes in `easylocal::runners` with one `run` member |
+| `Solver` (`SimpleLocalSearch`, token ring, ...) | `easylocal::solvers`, or a Session that runs a runner by name |
+| `Tester`, `MoveTester` | the interactive tester: `tui::run(app, options)` (TextUI adapter); the checks of `check` and the Session |
+| observers | `easylocal::trace` |
+| `ParameterBox`, `Parameter<T>`, `CommandLineParameters` | parameter schemas and parameter sets |
+| `Random::Uniform`, `Random::SetSeed` | an RNG passed to the members that need one |
+
+Beyond the names:
 
 - **No virtual dispatch and no required base classes.** Capabilities are
   checked by concepts at compile time; the bases are optional conveniences.
