@@ -216,6 +216,9 @@ reviewed by hand before tagging.
 - REST: an `initial_solution` that is not valid for the Input is rejected
   with `422` when the run is submitted, instead of reaching the runner's
   deltas, which could read out of bounds.
+- TextUI: however its event loop ends, an exception included, the tester
+  stops and joins a running search before the loop's screen is destroyed,
+  which the search posts its progress to.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

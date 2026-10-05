@@ -823,18 +823,40 @@ public:
             return handle_key(app, event);
         });
 
+        // The progress modal normally keeps the loop running until the run
+        // completes. However the loop ends, an exception included, the worker
+        // is stopped and joined before app is destroyed, since it posts its
+        // events to app.
+        const worker_guard guard{*this};
         event_app_ = &app;
         app.Loop(root);
-        event_app_ = nullptr;
-
-        // The progress modal normally keeps the frontend alive until the run
-        // completes.  Joining here also makes exceptional/event-loop exits
-        // deterministic and prevents a worker from outliving the frontend.
-        if (run_worker_.joinable())
-            run_worker_.join();
     }
 
 private:
+    // Stops and joins the run worker, and forgets the event loop, when the
+    // loop is left.
+    class worker_guard
+    {
+    public:
+        explicit worker_guard(tester_frontend& frontend) noexcept : frontend_{frontend} {}
+
+        worker_guard(const worker_guard&) = delete;
+        worker_guard& operator=(const worker_guard&) = delete;
+
+        ~worker_guard()
+        {
+            if (frontend_.run_worker_.joinable())
+            {
+                frontend_.run_worker_.request_stop();
+                frontend_.run_worker_.join();
+            }
+            frontend_.event_app_ = nullptr;
+        }
+
+    private:
+        tester_frontend& frontend_;
+    };
+
     // A bold label over a group of controls.
     [[nodiscard]] static ftxui::Component section_label(std::string label)
     {
