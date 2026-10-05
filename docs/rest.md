@@ -202,7 +202,9 @@ A `timeout`, in seconds (a non-negative JSON number), stops the run once it has
 passed (`timeout` in C++), and `max_evaluations`, a non-negative integer, once
 it has made that many evaluations (`max_evaluations` in C++; a runner's own,
 if smaller, still applies); run resources repeat them. Any other value is
-rejected with `422`.
+rejected with `422`. A service with `blueprint_options::max_timeout` bounds
+the time of every run: a longer `timeout` is rejected with `422`, and a run
+without one gets `max_timeout` (`GET /` reports it).
 
 ```json
 {
@@ -437,8 +439,11 @@ ingress controls, and deployment hardening belong to the surrounding network
 infrastructure.
 
 The adapter still performs ordinary protocol/application validation and relies
-on maintained Crow/Asio HTTP parsing. Queue/history bounds are resource-control
-semantics, not a substitute for edge security.
+on maintained Crow/Asio HTTP parsing. Queue/history bounds and `max_timeout`
+are resource-control semantics, not a substitute for edge security: without
+`max_timeout` a client may ask for a run without a time limit, which holds a
+worker until it ends or is cancelled. The body size is left to Crow and the
+proxy in front of it.
 
 No Crow, Asio, HTTP, or JSON type appears in a Core signature. The architecture
 test also prevents optional adapters from reaching into `easylocal/detail/*`.

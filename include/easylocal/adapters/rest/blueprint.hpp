@@ -46,7 +46,8 @@
 namespace easylocal::rest
 {
 
-/// The options of an app_blueprint: its execution pool and run history.
+/// The options of an app_blueprint: its execution pool, its run history and
+/// the bound on the time of a run.
 struct blueprint_options
 {
     /// The number of worker threads that execute runs (default: one less than
@@ -62,6 +63,10 @@ struct blueprint_options
     /// explicit "seed" uses seed + its run id, so runs differ but are
     /// reproducible.
     std::uint64_t seed{0};
+    /// The longest time limit of a run, in seconds: a request with a longer
+    /// "timeout" is rejected with `422`, and a run without one gets this
+    /// limit; empty: no bound. Must be a non-negative number.
+    std::optional<double> max_timeout{};
 };
 
 /// The codec of an app served through the problem's text hooks alone: it has
@@ -419,8 +424,9 @@ public:
     /// From the prefix of its routes, the app, the codec and the options.
     ///
     /// Leading and trailing slashes of the prefix are dropped. Throws
-    /// `std::invalid_argument` when the prefix is empty or
-    /// `completed_run_capacity` is zero.
+    /// `std::invalid_argument` when the prefix is empty,
+    /// `completed_run_capacity` is zero or `max_timeout` is negative or not a
+    /// number.
     app_blueprint(
         std::string prefix,
         App application,
@@ -437,6 +443,12 @@ public:
         {
             throw std::invalid_argument{
                 "REST completed_run_capacity must be greater than zero"};
+        }
+        if (options_.max_timeout
+            && (!(*options_.max_timeout >= 0.0) || std::isnan(*options_.max_timeout)))
+        {
+            throw std::invalid_argument{
+                "REST max_timeout must be a non-negative number of seconds"};
         }
         register_routes();
     }
@@ -803,6 +815,8 @@ private:
         body["queue_capacity"] = static_cast<std::uint64_t>(execution_.queue_capacity());
         body["completed_run_capacity"] = static_cast<std::uint64_t>(
             options_.completed_run_capacity);
+        if (options_.max_timeout)
+            body["max_timeout"] = *options_.max_timeout;
         {
             const std::lock_guard lock{runs_mutex_};
             body["runs"] = static_cast<std::uint64_t>(runs_.size());
@@ -928,6 +942,20 @@ private:
             std::optional<double> timeout;
             if (payload.has("timeout"))
                 timeout.emplace(decode_timeout(payload["timeout"]));
+            // The service's bound: no run longer, and none without a limit.
+            if (options_.max_timeout)
+            {
+                if (!timeout)
+                    timeout = *options_.max_timeout;
+                else if (*timeout > *options_.max_timeout)
+                {
+                    return detail::error_response(
+                        422,
+                        "invalid_run_request",
+                        "'timeout' is longer than the limit of this service, "
+                            + config::format_value(*options_.max_timeout) + " seconds");
+                }
+            }
             std::optional<std::size_t> max_evaluations;
             if (payload.has("max_evaluations"))
                 max_evaluations.emplace(

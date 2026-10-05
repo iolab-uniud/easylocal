@@ -760,6 +760,60 @@ void an_empty_prefix_is_rejected()
     assert(rejected);
 }
 
+// A service with a max_timeout: longer runs are rejected, and a run without a
+// timeout gets it.
+void a_run_is_no_longer_than_the_max_timeout()
+{
+    auto api = easylocal::rest::blueprint(
+        "/bounded",
+        make_application(),
+        AssignmentCodec{},
+        easylocal::rest::blueprint_options{.workers = 1, .max_timeout = 5.0});
+    crow::SimpleApp server;
+    server.loglevel(crow::LogLevel::Warning);
+    server.register_blueprint(api.crow_blueprint());
+    server.add_blueprint();
+    server.validate();
+    const auto post = [&server](std::string body) {
+        return send(
+            server,
+            crow::HTTPMethod::POST,
+            "/bounded/runners/fi/runs",
+            std::move(body));
+    };
+
+    const auto longer = post(R"({"input": {}, "timeout": 10})");
+    assert(longer.code == 422);
+    assert(text(longer.body["error"]["code"]) == "invalid_run_request");
+    assert(text(longer.body["error"]["message"]).starts_with("'timeout' is longer"));
+
+    const auto bounded = post(R"({"input": {}})");
+    assert(bounded.code == 202);
+    assert(bounded.body["timeout"].d() == 5.0);
+    const auto shorter = post(R"({"input": {}, "timeout": 1.5})");
+    assert(shorter.code == 202);
+    assert(shorter.body["timeout"].d() == 1.5);
+    wait_for_run(server, "/bounded/runs/" + text(bounded.body["id"]), "succeeded");
+    wait_for_run(server, "/bounded/runs/" + text(shorter.body["id"]), "succeeded");
+    assert(
+        send(server, crow::HTTPMethod::GET, "/bounded/").body["max_timeout"].d() == 5.0);
+
+    bool rejected = false;
+    try
+    {
+        [[maybe_unused]] auto negative = easylocal::rest::blueprint(
+            "/negative",
+            make_application(),
+            AssignmentCodec{},
+            easylocal::rest::blueprint_options{.max_timeout = -1.0});
+    }
+    catch (const std::invalid_argument&)
+    {
+        rejected = true;
+    }
+    assert(rejected);
+}
+
 void a_zero_completed_run_capacity_is_rejected()
 {
     bool rejected = false;
@@ -816,6 +870,7 @@ int main()
     a_full_queue_rejects_runs_and_a_queued_run_can_be_cancelled(server);
     an_empty_prefix_is_rejected();
     a_zero_completed_run_capacity_is_rejected();
+    a_run_is_no_longer_than_the_max_timeout();
     destroying_the_blueprint_stops_its_runs();
     run_gate.open(); // never leave a worker waiting on exit
 }

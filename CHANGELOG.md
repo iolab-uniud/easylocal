@@ -122,6 +122,9 @@ reviewed by hand before tagging.
   apart in a trace, the stages on the hard cost included. The memory and JSONL
   recorders keep it, and `eltr.py --format summary` gives each run its stage
   and attempt.
+- `rest::blueprint_options::max_timeout` bounds the time of the runs of a REST
+  service: a request with a longer `timeout` is rejected with `422`, and a run
+  without one gets that limit.
 - The REST blueprint needs no codec for a problem with text hooks:
   `rest::blueprint(prefix, app, options)` serves it with `rest::text_codec`,
   the Input and the solutions as JSON strings in the text of `read_input`,
