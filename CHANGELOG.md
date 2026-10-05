@@ -30,6 +30,9 @@ reviewed by hand before tagging.
 - The ELTR recorders write and flush the header at construction: a run that
   crashes leaves a trace that decodes, without the events of the last block,
   instead of an empty file. `eltr.py` reports an empty file as an empty trace.
+- An output error of `trace::async_binary_recorder` stops the recording, not
+  the search: `emit` drops the events instead of throwing mid-search, and
+  `good()` and `flush()` report the error, a failed final flush included.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

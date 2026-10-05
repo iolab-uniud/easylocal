@@ -1,8 +1,10 @@
 #include <easylocal/cost.hpp>
 #include <easylocal/trace.hpp>
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <ios>
 #include <iostream>
 #include <limits>
 #include <sstream>
@@ -108,6 +110,30 @@ protected:
     {
         ++sync_calls;
         return std::stringbuf::sync();
+    }
+};
+
+// A stream buffer that fails its writes once broken, or its flushes.
+class failing_streambuf : public std::stringbuf
+{
+public:
+    std::atomic_bool broken{false};
+    std::atomic_bool failing_sync{false};
+
+protected:
+    auto xsputn(const char* data, std::streamsize count) -> std::streamsize override
+    {
+        return broken ? 0 : std::stringbuf::xsputn(data, count);
+    }
+
+    auto overflow(int_type character) -> int_type override
+    {
+        return broken ? traits_type::eof() : std::stringbuf::overflow(character);
+    }
+
+    auto sync() -> int override
+    {
+        return failing_sync ? -1 : std::stringbuf::sync();
     }
 };
 
@@ -545,6 +571,61 @@ int main()
         sync_equivalent_stream.str() == async_equivalent_stream.str() &&
             sync_equivalent_stream.str() == binary_data,
         "buffered and asynchronous recorders preserve identical ELTR bytes");
+
+    // An output error stops the recording, not the search: emit() goes on
+    // without throwing, and good() and flush() report the error.
+    {
+        failing_streambuf storage;
+        std::ostream output{&storage};
+        easylocal::trace::async_binary_recorder<int> recorder{output, {.block_size = 1}};
+        storage.broken = true;
+        bool thrown = false;
+        try
+        {
+            for (int index = 0; index < 1000; ++index)
+                easylocal::trace::emit(
+                    recorder,
+                    easylocal::trace::event::run_started<int>{index});
+        }
+        catch (const std::ios_base::failure&)
+        {
+            thrown = true;
+        }
+        ok &= expect(
+            !thrown,
+            "async binary recorder does not throw from emit after an error");
+        bool flush_thrown = false;
+        try
+        {
+            recorder.flush();
+        }
+        catch (const std::ios_base::failure&)
+        {
+            flush_thrown = true;
+        }
+        ok &= expect(
+            flush_thrown && !recorder.good(),
+            "async binary recorder reports a write error through flush and good");
+    }
+    {
+        failing_streambuf storage;
+        std::ostream output{&storage};
+        easylocal::trace::async_binary_recorder<int> recorder{output};
+        easylocal::trace::emit(recorder, easylocal::trace::event::run_started<int>{1});
+        storage.failing_sync = true;
+        bool flush_thrown = false;
+        try
+        {
+            recorder.flush();
+        }
+        catch (const std::ios_base::failure&)
+        {
+            flush_thrown = true;
+        }
+        ok &= expect(
+            flush_thrown && !recorder.good(),
+            "async binary recorder reports a failed final flush through flush and good");
+    }
 
     // The trajectory and tabu events, in ELTR: tags 8, 9 and 10, with the
     // hash as a little-endian u64 after the counters.

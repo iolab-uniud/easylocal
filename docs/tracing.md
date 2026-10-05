@@ -113,6 +113,11 @@ trace.flush();              // drain the writer and expose I/O failures
 if (!trace.good()) { /* handle output failure */ }
 ```
 
+An output error of the asynchronous recorder stops the recording, not the
+search: from then on `emit` drops the events, `good()` is false and `flush()`
+throws `std::ios_base::failure`, also when the final flush of the stream is
+what fails.
+
 Block size and the number of queued blocks are explicit policy knobs, not global
 state, and the options carry the metadata written in the header: whatever tells
 the run apart, as text.

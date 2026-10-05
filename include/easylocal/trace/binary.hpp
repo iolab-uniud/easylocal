@@ -943,21 +943,23 @@ public:
         stop();
     }
 
+    // A free block; after an error, an empty block whose records are dropped.
     std::vector<char> acquire()
     {
         std::unique_lock lock{mutex_};
         free_cv_.wait(lock, [this] {
             return failed_.load(std::memory_order_relaxed) || !free_.empty();
         });
-        if (failed_.load(std::memory_order_relaxed))
+        if (failed_.load(std::memory_order_relaxed) && free_.empty())
         {
-            throw std::ios_base::failure{"EasyLocal async trace writer failed"};
+            return {};
         }
         auto block = std::move(free_.front());
         free_.pop_front();
         return block;
     }
 
+    // Queues the block for the writer; after an error, drops it.
     void submit(std::vector<char>&& block)
     {
         if (block.empty())
@@ -968,13 +970,16 @@ public:
             std::lock_guard lock{mutex_};
             if (failed_.load(std::memory_order_relaxed))
             {
-                throw std::ios_base::failure{"EasyLocal async trace writer failed"};
+                block.clear();
+                free_.push_back(std::move(block));
+                return;
             }
             ready_.push_back(std::move(block));
         }
         ready_cv_.notify_one();
     }
 
+    // Waits until the writer has written the queued blocks, or failed.
     void wait_idle()
     {
         std::unique_lock lock{mutex_};
@@ -982,15 +987,14 @@ public:
             return failed_.load(std::memory_order_relaxed) ||
                 (ready_.empty() && !busy_);
         });
-        if (failed_.load(std::memory_order_relaxed))
-        {
-            throw std::ios_base::failure{"EasyLocal async trace writer failed"};
-        }
     }
 
-    void flush_output()
+    // Waits for the writer and flushes the stream: whether no error occurred.
+    bool flush_output()
     {
         wait_idle();
+        if (failed_.load(std::memory_order_relaxed))
+            return false;
         try
         {
             out_.flush();
@@ -1003,6 +1007,7 @@ public:
         {
             failed_.store(true, std::memory_order_relaxed);
         }
+        return good();
     }
 
     [[nodiscard]]
@@ -1224,6 +1229,9 @@ using binary_recorder = buffered_binary_recorder<Cost, CostWriter>;
 /// construction, and the destructor writes the pending records: a run that
 /// ends without it, such as one that crashes, loses the events of the blocks
 /// not yet written, about `block_size` times `async_queue_blocks + 1` bytes.
+///
+/// An output error stops the recording, not the search: emit() drops the
+/// events from then on, good() turns false and flush() throws.
 /// Requires a CostWriter callable as `writer(out, cost)`, with `fields()`.
 template<class Cost, class CostWriter = default_binary_cost_writer<Cost>>
 class async_binary_recorder
@@ -1250,7 +1258,8 @@ public:
         current_ = sink_.acquire();
         current_.reserve(block_size_);
         encoder_.append_header(current_, options.metadata);
-        flush();
+        submit_current();
+        static_cast<void>(sink_.flush_output());
     }
 
     /// Writes to out, costs with cost_writer.
@@ -1265,7 +1274,8 @@ public:
         current_ = sink_.acquire();
         current_.reserve(block_size_);
         encoder_.append_header(current_, options.metadata);
-        flush();
+        submit_current();
+        static_cast<void>(sink_.flush_output());
     }
 
     async_binary_recorder(const async_binary_recorder&) = delete;
@@ -1289,7 +1299,7 @@ public:
     static constexpr bool observes = encoder_type::template observes<Event>;
 
     /// Encodes value as a record, handing the block to the writer thread when
-    /// it is full.
+    /// it is full; after an output error, drops it.
     ///
     /// An application event with a schema is preceded, the first time, by the
     /// schema record of its tag.
@@ -1297,6 +1307,8 @@ public:
         requires (encoder_type::template observes<Event>)
     void emit(const Event& value)
     {
+        if (!sink_.good())
+            return;
         encoder_.append(current_, value);
         if (current_.size() >= block_size_)
         {
@@ -1307,14 +1319,15 @@ public:
     /// Hands the pending records to the writer thread, waits until it has
     /// written them and flushes the stream.
     ///
-    /// Throws `std::ios_base::failure` if the writer has failed.
+    /// Throws `std::ios_base::failure` if a write or this flush has failed.
     void flush()
     {
         submit_current();
-        sink_.flush_output();
+        if (!sink_.flush_output())
+            throw std::ios_base::failure{"EasyLocal async trace writer failed"};
     }
 
-    /// Whether the writer thread has had no error.
+    /// Whether no write or flush of the stream has failed.
     [[nodiscard]]
     bool good() const noexcept
     {
