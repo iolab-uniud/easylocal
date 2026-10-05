@@ -3,8 +3,9 @@
 /// \file
 /// fixture: what every contract check runs on, an Input, a valid Solution and
 /// the SolutionManager built on the Input, with the options (samples, move
-/// limits) and the comparison of the values.
+/// limits, tolerance) and the comparison of the values.
 
+#include <easylocal/cost/tolerance.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/testing/check.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
@@ -12,7 +13,6 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <random>
 #include <type_traits>
 #include <utility>
@@ -20,8 +20,18 @@
 namespace easylocal::testing
 {
 
+/// The comparison of the checks: values equal within a relative and an
+/// absolute tolerance, `approximately{.relative = 1e-6, .absolute = 1e-9}`
+/// (see cost::tolerance).
+///
+/// Floating-point values computed along two paths (a full evaluation, and the
+/// value before a move plus its delta) differ by rounding errors: the checks
+/// compare them within it, integers exactly, structured costs level by level,
+/// other values with `==`.
+using approximately = cost::tolerance;
+
 /// The options of the contract checks: how many moves and solutions they try,
-/// and the seed of their random draws.
+/// the seed of their random draws and the tolerance of their comparisons.
 ///
 /// The randomized checks draw from a `std::mt19937_64` seeded with `seed`: the
 /// same seed repeats the same draws, another seed tries other moves and
@@ -34,18 +44,22 @@ struct check_options
     std::size_t max_enumerated_moves{1024};
     /// The seed of the random draws (default the generator's default seed).
     std::uint64_t seed{std::mt19937_64::default_seed};
+    /// The tolerance of the comparisons of floating-point values (default
+    /// relative and absolute 1e-9); `{0, 0}` compares them exactly.
+    approximately tolerance{};
 };
 
 /// The data every component check runs on: an Input, a valid Solution and the
 /// SolutionManager built on the Input.
 ///
-/// Values are compared with Equivalent (operator== by default; pass a
-/// tolerance-based comparison for floating point costs that accumulate rounding
-/// errors).
+/// Values are compared with Equivalent: by default testing::approximately,
+/// with the tolerance of the options, which forgives the rounding errors of
+/// floating-point values and compares the others exactly; `std::equal_to<>`
+/// compares every value with `==`.
 ///
 /// The fixture owns the Input the SolutionManager refers to, so it can be
 /// neither copied nor moved: construct it in place.
-template<easylocal::base_solution_manager SM, class Equivalent = std::equal_to<>>
+template<easylocal::base_solution_manager SM, class Equivalent = approximately>
 class fixture
 {
 public:
@@ -63,7 +77,8 @@ public:
         : input_{std::move(input)},
           solution_manager_{input_},
           solution_{std::move(solution)},
-          options_{options}
+          options_{options},
+          equivalent_{comparison(options)}
     {
     }
 
@@ -73,7 +88,8 @@ public:
         : input_{std::move(input)},
           solution_manager_{input_},
           solution_{solution_manager_.initial_solution()},
-          options_{options}
+          options_{options},
+          equivalent_{comparison(options)}
     {
     }
 
@@ -113,11 +129,22 @@ public:
     }
 
 private:
+    // The comparison: the tolerance of the options for approximately, a
+    // default Equivalent otherwise.
+    [[nodiscard]]
+    static Equivalent comparison(const check_options& options)
+    {
+        if constexpr (std::same_as<Equivalent, approximately>)
+            return options.tolerance;
+        else
+            return Equivalent{};
+    }
+
     input_type input_;
     SM solution_manager_;
     solution_type solution_;
     check_options options_;
-    EASYLOCAL_NO_UNIQUE_ADDRESS Equivalent equivalent_{};
+    EASYLOCAL_NO_UNIQUE_ADDRESS Equivalent equivalent_;
 };
 
 namespace detail

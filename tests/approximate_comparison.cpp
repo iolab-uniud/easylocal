@@ -1,6 +1,8 @@
-#include "support/approximate.hpp"
+// cost::tolerance and the approximate comparisons of costs.
+#include <easylocal/cost.hpp>
 
 #include <cmath>
+#include <compare>
 #include <iostream>
 #include <limits>
 #include <string_view>
@@ -8,9 +10,18 @@
 namespace
 {
 
-using easylocal::test_support::ApproximateTolerance;
-using easylocal::test_support::approximately_equal;
-using easylocal::test_support::definitely_less;
+using easylocal::cost::approximate_compare;
+using easylocal::cost::approximately_equal;
+using ApproximateTolerance = easylocal::cost::tolerance;
+
+[[nodiscard]]
+auto definitely_less(
+    const double lhs,
+    const double rhs,
+    const ApproximateTolerance tolerance) -> bool
+{
+    return approximate_compare(lhs, rhs, tolerance) < 0;
+}
 
 auto expect(const bool condition, const std::string_view description) -> bool
 {
@@ -99,6 +110,53 @@ int main()
             approximately_equal(b, c, absolute_only) &&
             !approximately_equal(a, c, absolute_only),
         "approximate equality is deliberately not assumed transitive");
+
+    ok &= expect(
+        approximately_equal(3, 3, tight) && !approximately_equal(3, 4, absolute_only)
+            && approximately_equal(3, 3.0 + 1.0e-13, tight),
+        "integers compare exactly, a floating-point value with the tolerance");
+
+    using easylocal::cost::hierarchical;
+    using easylocal::cost::lexicographic;
+    using easylocal::cost::pareto;
+    const hierarchical<int, double> drifted{0, 0.1 + 0.2};
+    ok &= expect(
+        approximately_equal(drifted, hierarchical<int, double>{0, 0.3}, tight)
+            && !approximately_equal(drifted, hierarchical<int, double>{1, 0.3}, tight)
+            && approximate_compare(drifted, hierarchical<int, double>{0, 0.3}, tight) == 0
+            && approximate_compare(drifted, hierarchical<int, double>{0, 0.4}, tight) < 0,
+        "a hierarchical cost compares its hard, then its soft cost, within the tolerance");
+    ok &= expect(
+        approximate_compare(
+            lexicographic<double, int>{0.1 + 0.2, 5},
+            lexicographic<double, int>{0.3, 4},
+            tight)
+            > 0,
+        "a lexicographic level equal within the tolerance passes to the next");
+    ok &= expect(
+        approximate_compare(
+            pareto<double, int>{0.1 + 0.2, 1},
+            pareto<double, int>{0.3, 2},
+            tight)
+                < 0
+            && approximate_compare(
+                   pareto<double, int>{0.1 + 0.2, 3},
+                   pareto<double, int>{0.2, 2},
+                   tight)
+                > 0
+            && approximate_compare(
+                   pareto<double, int>{0.1, 3},
+                   pareto<double, int>{0.2, 2},
+                   tight)
+                == std::partial_ordering::unordered,
+        "a pareto cost dominates by objectives compared within the tolerance");
+    ok &= expect(
+        approximate_compare(nan, 1.0, tight) == std::partial_ordering::unordered,
+        "NaN is unordered");
+    ok &= expect(
+        ApproximateTolerance{}(1.0, 1.0 + 1.0e-12)
+            && !ApproximateTolerance{}(1.0, 1.0001),
+        "a tolerance compares two values when called");
 
     return ok ? 0 : 1;
 }

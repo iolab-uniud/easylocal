@@ -13,6 +13,7 @@
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost/semantics.hpp>
 #include <easylocal/cost/text.hpp>
+#include <easylocal/cost/tolerance.hpp>
 #include <easylocal/helpers/detail/evaluation.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
@@ -834,14 +835,15 @@ public:
     }
 
     /// Whether evaluate_move and evaluate_move_fully agree, by the cost's
-    /// equivalent().
+    /// equivalent() or within `tolerance`, which forgives the rounding errors
+    /// of a floating-point cost updated by deltas (`{0, 0}`: exactly).
     [[nodiscard]]
-    bool move_evaluation_matches_full() const
+    bool move_evaluation_matches_full(const cost::tolerance& tolerance = {}) const
         requires cost::has_equivalent<solution_manager_type>
     {
         const auto incremental = evaluate_move();
         const auto full = evaluate_move_fully();
-        return cost::equivalent(bound_->solution_manager(), incremental, full);
+        return costs_agree(incremental, full, tolerance);
     }
 
     /// The moves enumerated from the current solution, counted, the invalid
@@ -917,9 +919,11 @@ public:
     }
 
     /// Compares the delta evaluation of each enumerated move with the full
-    /// evaluation of the solution it leads to.
+    /// evaluation of the solution it leads to, by the cost's equivalent() or
+    /// within `tolerance` (`{0, 0}`: exactly).
     [[nodiscard]]
-    neighborhood_cost_check_result check_neighborhood_costs() const
+    neighborhood_cost_check_result check_neighborhood_costs(
+        const cost::tolerance& tolerance = {}) const
         requires supports_cost_consistency_check
     {
         assert(bound_);
@@ -951,7 +955,7 @@ public:
                 continue;
             }
             const auto full = solution_manager.evaluate(candidate);
-            if (!cost::equivalent(solution_manager, incremental, full))
+            if (!costs_agree(incremental, full, tolerance))
                 ++result.mismatches;
         }
         return result;
@@ -1102,6 +1106,22 @@ private:
         if constexpr (detail::describing_component<component_type, solution_type>)
             entry.description = component.describe(*solution_);
         return entry;
+    }
+
+    // Whether a delta evaluation and a full one agree: by the cost's
+    // equivalent(), or within the tolerance when the cost compares so.
+    [[nodiscard]]
+    bool costs_agree(
+        const cost_type& incremental,
+        const cost_type& full,
+        const cost::tolerance& tolerance) const
+    {
+        if (cost::equivalent(bound_->solution_manager(), incremental, full))
+            return true;
+        if constexpr (cost::approximately_equality_comparable<cost_type, cost_type>)
+            return tolerance(incremental, full);
+        else
+            return false;
     }
 
     // The incremental evaluation of the bound app: the current solution is

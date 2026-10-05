@@ -172,8 +172,8 @@ class cost_node
     static_assert(
         is_cost_expression_v<Expression>,
         "a cost expression is built from component<C>(...) leaves and "
-        "cost::sum, cost::in_order, cost::objectives, cost::hard_soft and "
-        "cost::apply nodes");
+        "cost::sum, cost::in_order, cost::objectives, cost::hard_soft, "
+        "cost::apply and cost::approximately nodes");
 };
 
 template<class Child, class Weight, class Solution>
@@ -779,6 +779,132 @@ public:
 private:
     EASYLOCAL_NO_UNIQUE_ADDRESS Function function_;
     EASYLOCAL_NO_UNIQUE_ADDRESS children_type children_;
+};
+
+// The order of costs within a tolerance, which cost::approximately gives to the
+// hard projection of its cost.
+class tolerance_order
+{
+public:
+    explicit tolerance_order(const cost::tolerance within) noexcept : within_{within} {}
+
+    template<class Cost>
+    [[nodiscard]]
+    std::partial_ordering compare(const Cost& lhs, const Cost& rhs) const
+    {
+        return cost::approximate_compare(lhs, rhs, within_);
+    }
+
+private:
+    cost::tolerance within_;
+};
+
+// The number of hard components of Node, for a node that passes them through:
+// none unless Node has a hard projection.
+template<class Node>
+struct hard_leaves_of
+{
+};
+
+template<class Node>
+    requires requires { Node::hard_leaf_count; }
+struct hard_leaves_of<Node>
+{
+    static constexpr std::size_t hard_leaf_count = Node::hard_leaf_count;
+};
+
+// The cost of the child, ordered within a tolerance: the root, which defines
+// the cost semantics, over a structure it leaves visible (the hard components
+// of a hard_soft child).
+template<class Child, class Solution>
+class cost_node<cost::approximately_expression<Child>, Solution>
+    : public hard_leaves_of<cost_node<Child, Solution>>
+{
+    using child_node = cost_node<Child, Solution>;
+
+    static_assert(
+        no_ordering_child_v<child_node>,
+        "the cost semantics are defined at the root of the cost expression: a "
+        "cost::apply whose function defines compare(a, b), or "
+        "cost::approximately, cannot be the child of another node");
+
+public:
+    using cost_type = typename child_node::cost_type;
+    using leaf_specs = typename child_node::leaf_specs;
+
+    static_assert(
+        cost::approximately_comparable<cost_type>,
+        "cost::approximately compares numbers, lexicographic, hierarchical and "
+        "pareto costs of them, or costs with <=> or <");
+
+    static constexpr std::size_t leaf_count = child_node::leaf_count;
+    static constexpr bool configurable = true;
+
+    explicit cost_node(cost::approximately_expression<Child> expression)
+        : child_{std::move(expression.child)}, within_{expression.within}
+    {
+    }
+
+    [[nodiscard]]
+    leaf_specs leaves() const
+    {
+        return child_.leaves();
+    }
+
+    template<std::size_t Offset, class Values>
+    [[nodiscard]]
+    cost_type evaluate(const Values& values) const
+    {
+        return child_.template evaluate<Offset>(values);
+    }
+
+    [[nodiscard]]
+    std::partial_ordering compare(const cost_type& lhs, const cost_type& rhs) const
+    {
+        return cost::approximate_compare(lhs, rhs, within_);
+    }
+
+    // The tolerance.
+    [[nodiscard]]
+    const cost::tolerance& tolerance() const noexcept
+    {
+        return within_;
+    }
+
+    // The hard cost of a hard_soft child, from its hard components, which stay
+    // the leading ones.
+    template<class HardValues>
+    [[nodiscard]]
+    auto hard_cost(const HardValues& values) const
+        requires requires(const child_node& child) { child.hard_cost(values); }
+    {
+        return child_.hard_cost(values);
+    }
+
+    // The order of the hard costs, for the hard projection of the cost: within
+    // the same tolerance.
+    [[nodiscard]]
+    tolerance_order hard_semantics() const noexcept
+        requires cost::hierarchical_type<cost_type>
+    {
+        return tolerance_order{within_};
+    }
+
+    // The tolerance, under "tolerance", and the parameters of the child, as
+    // they are without it.
+    template<class Self>
+    [[nodiscard]]
+    config::parameter_set configuration(this Self& self)
+    {
+        config::parameter_set parameters;
+        parameters.add("tolerance", self.within_);
+        add_node_configuration(parameters, {}, self.child_);
+        return parameters;
+    }
+
+private:
+    EASYLOCAL_NO_UNIQUE_ADDRESS child_node child_;
+    cost::tolerance within_;
 };
 
 } // namespace easylocal::detail

@@ -73,6 +73,29 @@ reviewed by hand before tagging.
   algorithms that read it (Simulated Annealing, Great Deluge, the aspiration
   levels of Tabu Search): Simulated Annealing and Great Deluge reject a
   `compare` that provably finds a larger cost better.
+### Checking tools
+
+- **Breaking:** the contract checks compare floating-point values within a
+  tolerance: a cost updated by deltas drifts from its full evaluation in the
+  last bits, and the checks reported false delta mismatches on a TSP with
+  decimal distances. The new `cost::tolerance{.relative, .absolute}` (1e-9
+  each by default), with `cost::approximately_equal` and
+  `cost::approximate_compare`, compares numbers within it, integers exactly
+  and structured costs level by level. `testing::approximately` (the same
+  type) is the default comparison of `testing::fixture`, instead of
+  `std::equal_to<>`, with the new `check_options::tolerance`;
+  `check(app, input[, solution], options)` takes the options (their seed and
+  tolerance), and the Session's `check_neighborhood_costs(tolerance)` and
+  `move_evaluation_matches_full(tolerance)` accept a cost agreeing by
+  `equivalent()` or within it. `{0, 0}` compares exactly.
+- `cost::approximately(expression, {.relative, .absolute})`, a root node of
+  the cost expression whose costs the search compares within a tolerance:
+  equal within it is equivalent, better is better by more than it. It keeps a
+  `cost::hard_soft` below it visible, so `until_feasible()` evaluates only the
+  hard components and compares the hard costs within the same tolerance; the
+  tolerance is configurable as `cost.tolerance.relative` and
+  `cost.tolerance.absolute`.
+
 ### Runners and solvers
 
 - **Breaking:** the Pareto archive keeps one point per non-dominated cost by

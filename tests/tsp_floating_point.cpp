@@ -1,13 +1,23 @@
-#include <easylocal/helpers/neighborhood_explorer.hpp>
+// A TSP with distances that binary floating point cannot represent: the cost
+// updated by deltas drifts from the full evaluation, which the checks of the
+// library forgive within their tolerance, and only within it.
+#include "apps.hpp"
 #include "neighborhood_explorer.hpp"
 #include "solution.hpp"
 #include "solution_manager.hpp"
 #include "tour_length_component.hpp"
 #include "tour_length_delta.hpp"
 
-#include "support/approximate.hpp"
+#include <easylocal/app/check.hpp>
+#include <easylocal/app/session.hpp>
+#include <easylocal/cost/tolerance.hpp>
+#include <easylocal/helpers/neighborhood_explorer.hpp>
+#include <easylocal/testing/delta_evaluator.hpp>
+#include <easylocal/testing/fixture.hpp>
 
+#include <compare>
 #include <cstddef>
+#include <functional>
 #include <iostream>
 #include <string_view>
 
@@ -15,14 +25,21 @@ namespace
 {
 
 using namespace tsp;
-using easylocal::test_support::ApproximateTolerance;
-using easylocal::test_support::approximately_equal;
-using easylocal::test_support::definitely_less;
+using easylocal::cost::approximately_equal;
 
-constexpr ApproximateTolerance tsp_tolerance{
+constexpr easylocal::cost::tolerance tsp_tolerance{
     .relative = 1.0e-12,
     .absolute = 1.0e-12,
 };
+
+[[nodiscard]]
+auto definitely_less(
+    const double lhs,
+    const double rhs,
+    const easylocal::cost::tolerance within) -> bool
+{
+    return easylocal::cost::approximate_compare(lhs, rhs, within) < 0;
+}
 
 auto expect(const bool condition, const std::string_view description) -> bool
 {
@@ -201,6 +218,51 @@ int main()
             improving.full_candidate,
             tsp_tolerance),
         "full and incremental paths agree approximately on a real improvement");
+
+    // The library's checks on the drift instance: within their default
+    // tolerance the delta law holds, compared exactly it does not.
+    namespace elt = easylocal::testing;
+    const auto check_delta = [](const auto& fixture) {
+        return elt::check_delta_evaluator<
+            TwoOptNeighborhoodExplorer,
+            TourLengthComponent,
+            TwoOptTourLengthDelta>(fixture)
+            .passed();
+    };
+    const elt::fixture<TspSolutionManager> tolerant{drift_instance, solution};
+    const elt::fixture<TspSolutionManager> exact{
+        drift_instance,
+        solution,
+        {.tolerance = {.relative = 0.0, .absolute = 0.0}}};
+    const elt::fixture<TspSolutionManager, std::equal_to<>> equal{
+        drift_instance,
+        solution};
+    ok &= expect(check_delta(tolerant), "the delta check forgives the drift by default");
+    ok &= expect(
+        !check_delta(exact) && !check_delta(equal),
+        "the delta check without tolerance reports the drift");
+
+    const auto application = tsp::two_opt_app();
+    ok &= expect(
+        easylocal::check(application, drift_instance, solution).passed(),
+        "check(app) forgives the drift by default");
+    ok &= expect(
+        !easylocal::check(
+            application,
+            drift_instance,
+            solution,
+            {.tolerance = {.relative = 0.0, .absolute = 0.0}})
+            .passed(),
+        "check(app) without tolerance reports the drift");
+
+    easylocal::Session session{application, drift_instance, 1};
+    session.set_solution(solution);
+    ok &= expect(
+        session.check_neighborhood_costs().mismatches == 0
+            && session.check_neighborhood_costs({.relative = 0.0, .absolute = 0.0})
+                    .mismatches
+                != 0,
+        "the Session's cost check forgives the drift within its tolerance only");
 
     return ok ? 0 : 1;
 }

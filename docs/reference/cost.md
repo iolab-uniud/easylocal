@@ -45,6 +45,7 @@ are cost components; its nodes combine the costs of their children.
 | `cost::objectives(c1, ..., cn)` | `cost::pareto` of the children's costs (n ≥ 2) | children's |
 | `cost::hard_soft(hard, soft)` | `cost::hierarchical` of the two costs | `hard`, `soft` |
 | `cost::apply(f, c1, ..., cn)` | `f(cost₁, ..., costₙ)` | `f.configuration()`, if any, and children's |
+| `cost::approximately(c, tolerance)` | the cost of `c`, compared by the search within a `cost::tolerance` (at the root) | `tolerance.relative`, `tolerance.absolute`, and the child's as they are |
 
 ```cpp
 solution_manager<SM>()
@@ -60,7 +61,8 @@ solution_manager<SM>()
   first: a pipeline stage `until_feasible()` (the first stage of
   `two_stage()`) evaluates only them.
 - At the root, the function of a `cost::apply` may define the order of its
-  costs, `compare(a, b)` (see Cost semantics).
+  costs, `compare(a, b)`, and `cost::approximately` compares them within a
+  tolerance (see Cost semantics).
 - Configuration: the expression is exposed under `cost`. A `sum` has its
   `weights` (one per term, finite: a negative weight is accepted, NaN and
   infinity are not), a `hard_soft` names its children `hard` and
@@ -172,6 +174,21 @@ specializing `cost::zero_cost<Cost>` with a static `value()`;
 `cost::has_zero<Cost>` tells whether it exists. A pipeline stage
 `until_feasible()` stops at the zero of the hard cost.
 
+### Comparisons within a tolerance
+
+`<easylocal/cost/tolerance.hpp>` compares costs forgiving the rounding errors
+of floating-point arithmetic. `cost::tolerance{.relative, .absolute}` (both
+1e-9 by default) is the tolerance: two floating-point values are equal within
+it when they differ by at most `max(absolute, relative * max(|a|, |b|))`.
+
+| Function | Result |
+| --- | --- |
+| `cost::approximately_equal(a, b, tolerance)`, or `tolerance(a, b)` | numbers within the tolerance when either is floating point, integers exactly; lexicographic, hierarchical and pareto costs level by level; other values with `==` |
+| `cost::approximate_compare(a, b, tolerance)` | a `std::partial_ordering`: equivalent within the tolerance, otherwise by `<=>`; level by level, as the cost model orders, for structured costs |
+
+The checks of `easylocal::testing`, `check(app)` and the Session use it by
+default (`testing::approximately` is the same type). It is not transitive.
+
 ### Costs as text
 
 `cost::from_text<Cost>(text)` (`<easylocal/cost/text.hpp>`) reads a cost
@@ -217,6 +234,25 @@ The rules, checked when the recipe is built:
 - A root `cost::apply` hides the structure below it: with a `cost::hard_soft`
   under it, a pipeline stage `until_feasible()` evaluates every component, and
   its hard stage compares the hard costs with their own operators.
+
+`cost::approximately(child, {.relative, .absolute})` is the root that compares
+floating-point costs within a tolerance (both 1e-9 by default): costs equal
+within it are `equivalent`, and a cost is `better` only by more than it, with
+`cost::approximate_compare` (see Comparisons within a tolerance). A descent
+then stops at a move that improves only by rounding errors, and a target is
+reached by a cost within the tolerance of it. It keeps the structure below it:
+over a `cost::hard_soft`, `until_feasible()` still evaluates only the hard
+components, and its hard stage compares within the same tolerance. The
+tolerance is configurable, `cost.tolerance.relative` and
+`cost.tolerance.absolute` in an app.
+
+    solution_manager<SM>()
+        | cost::approximately(
+              cost::hard_soft(component<Overlaps>(), component<Length>()),
+              {.relative = 1e-9, .absolute = 1e-6})
+
+Without it the search compares exactly, and only the checks forgive rounding
+errors (see [Testing](testing.md)).
 - The algorithms that read `cost::delta` (Simulated Annealing, Great Deluge,
   the aspiration levels of Tabu Search) assume that a negative delta is an
   improvement: the sign of `cost::delta(a, b)` must agree with `better(a, b)`.

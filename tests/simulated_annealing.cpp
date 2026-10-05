@@ -2,7 +2,6 @@
 #include "cost_deltas.hpp"
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
-#include "support/approximate.hpp"
 #include "support/exam_timeslot_load_delta.hpp"
 
 #include <easylocal/config/parameter_set.hpp>
@@ -662,10 +661,9 @@ int main()
     }
 
     {
-        using easylocal::test_support::approximately_equal;
-        constexpr auto tolerance = easylocal::test_support::ApproximateTolerance{
-            .relative = 1e-12,
-            .absolute = 0.0};
+        using easylocal::cost::approximately_equal;
+        constexpr auto tolerance =
+            easylocal::cost::tolerance{.relative = 1e-12, .absolute = 0.0};
         const auto expected = 3.0 / std::log(2.0);
 
         const std::array<double, 4>

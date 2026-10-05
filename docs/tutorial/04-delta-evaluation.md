@@ -52,6 +52,11 @@ auto nhe =
 - The contract is algebraic: `Value + Delta -> Value`. With an arithmetic value
   the delta can have the same type; with a domain value, define
   `operator+(Value, Delta)`.
+- With floating-point values the law holds up to rounding: the length of a
+  tour with decimal distances, updated by deltas, drifts from its full
+  evaluation in the last bits. The checks of chapters 10 and 13 forgive it,
+  within a tolerance; the search compares the costs exactly, unless the cost
+  expression is `cost::approximately(...)` (chapter 2).
 - Deltas are **per component and per neighborhood**. The cost of a move is
   always recomputed by the cost expression from the updated component values,
   so a delta never deals with weights or hierarchical structure.

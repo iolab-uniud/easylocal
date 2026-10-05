@@ -12,4 +12,5 @@
 #include <easylocal/cost/scalar.hpp>
 #include <easylocal/cost/semantics.hpp>
 #include <easylocal/cost/text.hpp>
+#include <easylocal/cost/tolerance.hpp>
 // IWYU pragma: end_exports

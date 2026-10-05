@@ -23,12 +23,15 @@
 ///                                components under `hard`;
 /// - cost::apply(f, children...)  f(costs...), any user function; f may also
 ///                                define compare(a, b), the order of the costs
-///                                (at the root), and configuration().
+///                                (at the root), and configuration();
+/// - cost::approximately(child)   the cost of child, compared by the search
+///                                within a cost::tolerance (at the root).
 ///
 /// The expression types below only record the structure; they are given meaning
 /// by the SolutionManager recipe, which knows the components' value types.
 
 #include <easylocal/cost/concepts.hpp>
+#include <easylocal/cost/tolerance.hpp>
 
 #include <cstddef>
 #include <tuple>
@@ -94,6 +97,17 @@ struct apply_expression
     std::tuple<Children...> children;
 };
 
+/// The node of `cost::approximately`: the cost of its child, compared within a
+/// tolerance.
+template<class Child>
+struct approximately_expression
+{
+    /// The expression whose costs are compared.
+    Child child;
+    /// The tolerance of the comparisons.
+    tolerance within;
+};
+
 /// The term `child` of a `cost::sum` with weight `weight`.
 ///
 /// A term not weighted has weight 1; `child * weight` and `weight * child` are
@@ -148,6 +162,24 @@ constexpr hard_soft_expression<Hard, Soft> hard_soft(Hard hard, Soft soft)
     return {std::move(hard), std::move(soft)};
 }
 
+/// The cost of `child`, which the search compares within `within`: costs
+/// equal within it are equivalent, and a cost is better only by more than it
+/// (see cost::approximate_compare).
+///
+/// It defines the cost semantics, so it is the root of the expression, and
+/// keeps the structure below it: over a `cost::hard_soft`, a pipeline stage
+/// until_feasible() still evaluates only the hard components, and compares the
+/// hard costs within the tolerance. Its parameters are `tolerance.relative` and
+/// `tolerance.absolute`.
+template<class Child>
+[[nodiscard]]
+constexpr approximately_expression<Child> approximately(
+    Child child,
+    const tolerance within = {})
+{
+    return {std::move(child), within};
+}
+
 /// The value of `function` called with the children's costs.
 ///
 /// At the root of the expression, the function may also define the order of
@@ -168,7 +200,7 @@ constexpr apply_expression<Function, Children...> apply(
 }
 
 /// Whether `T` is a node of a cost expression (`sum`, `in_order`, `objectives`,
-/// `hard_soft` or `apply`).
+/// `hard_soft`, `apply` or `approximately`).
 template<class T>
 struct is_expression : std::false_type
 {
@@ -196,6 +228,11 @@ struct is_expression<hard_soft_expression<Hard, Soft>> : std::true_type
 
 template<class Function, class... Children>
 struct is_expression<apply_expression<Function, Children...>> : std::true_type
+{
+};
+
+template<class Child>
+struct is_expression<approximately_expression<Child>> : std::true_type
 {
 };
 

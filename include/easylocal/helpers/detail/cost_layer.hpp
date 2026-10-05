@@ -352,6 +352,15 @@ public:
     {
         return this->inner().evaluate(solution).hard();
     }
+
+    // The order of the hard costs, when the root of the cost expression gives
+    // one (cost::approximately): the hard stage compares as the full cost does.
+    [[nodiscard]]
+    auto cost_expression() const
+        requires requires(const SM& inner) { inner.cost_expression().hard_semantics(); }
+    {
+        return this->inner().cost_expression().hard_semantics();
+    }
 };
 
 // The hard-cost projection; when SM has cost components, it evaluates only the

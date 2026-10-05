@@ -135,7 +135,12 @@ void check_delta_sign(
     const Cost& candidate,
     const Cost& current)
 {
-    if constexpr (cost::detail::custom_compare<SM> && cost::has_delta<Cost>)
+    // cost::approximately orders as the cost does, up to a tolerance that the
+    // sign of a delta does not know.
+    constexpr bool tolerant = requires {
+        solution_manager.cost_expression().tolerance();
+    };
+    if constexpr (cost::detail::custom_compare<SM> && cost::has_delta<Cost> && !tolerant)
     {
         using cost::delta;
         const auto difference = static_cast<long double>(delta(candidate, current));
@@ -151,6 +156,21 @@ void check_delta_sign(
     }
 }
 
+// Whether two costs are equal within the tolerance of the checks, when their
+// type can be compared so.
+template<class Cost>
+[[nodiscard]]
+bool within_tolerance(
+    const testing::approximately& tolerance,
+    const Cost& lhs,
+    const Cost& rhs)
+{
+    if constexpr (cost::approximately_equality_comparable<Cost, Cost>)
+        return tolerance(lhs, rhs);
+    else
+        return false;
+}
+
 template<class Report, class SM, class NHE, class Solution, class Range>
 void check_app_moves(
     Report& report,
@@ -158,7 +178,8 @@ void check_app_moves(
     const NHE& neighborhood,
     const Solution& solution,
     Range&& moves,
-    std::size_t limit)
+    std::size_t limit,
+    const testing::approximately& tolerance)
 {
     using move_type = typename NHE::move_type;
     const runner_context<SM, NHE> context{solution_manager, neighborhood};
@@ -201,12 +222,16 @@ void check_app_moves(
             std::move(candidate));
         const auto full = evaluation.evaluate(committed_solution);
 
-        // The costs are compared as the search compares them, with the cost
-        // expression's equivalence when it defines one (as the Session does).
+        // The costs agree as the search compares them, with the cost
+        // expression's equivalence when it defines one, or within the
+        // tolerance, which forgives the rounding errors of a floating-point
+        // cost updated by deltas (as the Session does).
         if constexpr (cost::has_equivalent<SM>)
         {
+            const auto& incremental = incremental_state.cost();
             report.check(
-                cost::equivalent(solution_manager, incremental_state.cost(), full.cost()),
+                cost::equivalent(solution_manager, incremental, full.cost())
+                    || detail::within_tolerance(tolerance, incremental, full.cost()),
                 "incremental evaluation",
                 "incremental move evaluation does not match full recomputation");
         }
@@ -220,7 +245,8 @@ void check_app_neighborhood(
     Report& report,
     const SM& solution_manager,
     const NHE& neighborhood,
-    const Solution& solution)
+    const Solution& solution,
+    const testing::check_options& options)
 {
     constexpr std::size_t max_moves = 128;
     if constexpr (deterministic_neighborhood_for<NHE, Solution>)
@@ -231,12 +257,13 @@ void check_app_neighborhood(
             neighborhood,
             solution,
             easylocal::moves(neighborhood, solution),
-            max_moves);
+            max_moves,
+            options.tolerance);
     }
 
     if constexpr (random_neighborhood_for<NHE, Solution, std::mt19937_64>)
     {
-        std::mt19937_64 rng{testing::check_options{}.seed};
+        std::mt19937_64 rng{options.seed};
         for (std::size_t sample = 0; sample < 16; ++sample)
         {
             auto move = easylocal::random_move(neighborhood, solution, rng);
@@ -320,13 +347,15 @@ bool check_runners(const App& application, app_check_report& report)
 } // namespace detail
 
 /// Runs the contract checks of easylocal::testing on the components of an app
-/// bound to instance, from solution, and returns their report.
+/// bound to instance, from solution, with the seed and the tolerance of
+/// options, and returns their report.
 ///
 /// It checks that the services refer to instance, that solution is valid and
 /// evaluates twice to the same cost, that the first 128 enumerated moves and 16
 /// random moves of each neighborhood (the app's, and those of the runners that
 /// have their own) are valid and lead to valid solutions (with the incremental
-/// evaluation matching the full one, when the cost defines equivalence, and
+/// evaluation matching the full one, by the cost's equivalence or within the
+/// tolerance of the options, when the cost defines equivalence, and
 /// the sign of cost::delta agreeing with a root compare of the cost), and
 /// that each registered runner's parameters are valid and construct it. The
 /// runners are checked first: with invalid parameters the app is not bound,
@@ -335,8 +364,11 @@ template<class App, class Instance, class Solution>
 [[nodiscard]] app_check_report check(
     const App& application,
     const Instance& instance,
-    Solution solution)
-    requires requires { application.bind(instance); }
+    Solution solution,
+    const testing::check_options& options = {})
+    requires requires {
+        application.bind(instance).solution_manager().is_valid(solution);
+    }
 {
     using bound_type = decltype(application.bind(instance));
     using solution_manager_type = typename bound_type::solution_manager_type;
@@ -398,7 +430,12 @@ template<class App, class Instance, class Solution>
     }
 
     // The app's neighborhood, then those the runners have of their own.
-    detail::check_app_neighborhood(report, solution_manager, neighborhood, solution);
+    detail::check_app_neighborhood(
+        report,
+        solution_manager,
+        neighborhood,
+        solution,
+        options);
     detail::app_access::for_each_own_neighborhood(
         bound,
         [&](std::string_view, const auto& own_neighborhood) {
@@ -409,7 +446,8 @@ template<class App, class Instance, class Solution>
                 report,
                 solution_manager,
                 own_neighborhood,
-                solution);
+                solution,
+                options);
         });
 
     // The parameters of the whole app, among them those of its pipelines'
@@ -452,10 +490,13 @@ template<class App, class Instance, class Solution>
     return report;
 }
 
-/// Runs check(app, instance, solution) from the SolutionManager's
+/// Runs check(app, instance, solution, options) from the SolutionManager's
 /// initial_solution().
 template<class App, class Instance>
-[[nodiscard]] auto check(const App& application, const Instance& instance)
+[[nodiscard]] auto check(
+    const App& application,
+    const Instance& instance,
+    const testing::check_options& options = {})
     requires requires {
         application.bind(instance).solution_manager().initial_solution();
     }
@@ -468,7 +509,11 @@ template<class App, class Instance>
         || !detail::check_runners(application, report))
         return report;
     auto bound = application.bind(instance);
-    return check(application, instance, bound.solution_manager().initial_solution());
+    return check(
+        application,
+        instance,
+        bound.solution_manager().initial_solution(),
+        options);
 }
 
 } // namespace easylocal

@@ -19,7 +19,10 @@ coverage: solution_managers=1, cost_components=1, neighborhood_graphs=1, delta_b
 ```
 
 `easylocal::check(app, input)` builds the app for the Input, takes the initial
-solution (or the one passed as third argument) and verifies:
+solution (or the one passed as third argument) and verifies the following;
+a last argument, `testing::check_options`, sets the seed of its random draws and
+the tolerance of its cost comparisons (chapter 10), which forgives the rounding
+errors of a floating-point cost updated by deltas:
 
 | Check | What fails it |
 | --- | --- |
@@ -77,7 +80,9 @@ if (costs.mismatches != 0 || costs.invalid != 0 || sampling.out_of_neighborhood 
 | `check_random_move_distribution(rng)` | `neighborhood_size`, `samples`, `out_of_neighborhood`, `unseen`, `min_frequency`, `max_frequency` | a sampled move that is not in the enumerated neighborhood; moves never sampled (`unseen`) hint at a biased `random_move` |
 
 All three need the moves to be enumerable; the last one also needs
-`random_move`. The interactive tester of chapter 12 runs the same checks from
+`random_move`. `check_neighborhood_costs(tolerance)` compares the costs within
+a `cost::tolerance` (1e-9 relative and absolute by default; `{0, 0}` compares
+exactly). The interactive tester of chapter 12 runs the same checks from
 its Move page: `C`, `D` and `U`.
 
 The last two compare values: `check_move_independence` compares the solution
