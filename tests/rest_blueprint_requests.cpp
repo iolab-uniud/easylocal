@@ -411,6 +411,9 @@ void a_run_has_a_time_limit(crow::SimpleApp& server)
     assert(submitted.code == 202);
     const auto done = wait_for(server, text(submitted.body["id"]), "succeeded");
     assert(done["timeout"].d() == 0.0);
+    // A terminal status says why the run ended, and its cost.
+    assert(text(done["termination"]) == "time_limit_reached");
+    assert(done.has("cost"));
 
     for (const auto* const body :
         {R"({"input": {}, "timeout": -1})", R"({"input": {}, "timeout": "soon"})"})
@@ -426,6 +429,7 @@ void a_run_has_a_time_limit(crow::SimpleApp& server)
     const auto spent = wait_for(server, text(budgeted.body["id"]), "succeeded");
     assert(spent["max_evaluations"].u() == 1);
     assert(spent["progress"]["evaluations"].u() == 1);
+    assert(text(spent["termination"]) == "evaluation_budget_exhausted");
     for (const auto* const body :
         {R"({"input": {}, "max_evaluations": -1})",
             R"({"input": {}, "max_evaluations": 1.5})"})
@@ -435,6 +439,23 @@ void a_run_has_a_time_limit(crow::SimpleApp& server)
         assert(text(rejected.body["error"]["message"])
                 .starts_with("'max_evaluations' must be"));
     }
+}
+
+// A running run that is cancelled ends "cancelled", as its termination says,
+// with its partial solution and its cost.
+void a_cancelled_run_reports_its_termination(crow::SimpleApp& server)
+{
+    const auto id = text(submit(server, "endless", R"({"input": {}})").body["id"]);
+    const auto running = wait_for(server, id, "running");
+    assert(!running.has("termination"));
+    assert(!running.has("cost"));
+    assert(
+        send(server, crow::HTTPMethod::POST, "/assignment/runs/" + id + "/cancel").code
+        == 202);
+    const auto cancelled = wait_for(server, id, "cancelled");
+    assert(text(cancelled["termination"]) == "cancelled");
+    assert(cancelled.has("cost"));
+    assert(cancelled.has("solution_url"));
 }
 
 void a_run_starts_from_the_given_initial_solution(crow::SimpleApp& server)
@@ -776,7 +797,7 @@ void a_full_queue_rejects_runs_and_a_queued_run_can_be_cancelled(crow::SimpleApp
         crow::HTTPMethod::GET,
         "/assignment/runs/" + queued_id + "/solution");
     assert(solution.code == 409);
-    assert(text(solution.body["error"]["code"]) == "result_not_ready");
+    assert(text(solution.body["error"]["code"]) == "no_solution");
 
     // It left its place in the queue, and can be forgotten.
     const auto replacement = submit(server, "gated", R"({"input": {}})");
@@ -896,22 +917,31 @@ void a_run_is_no_longer_than_the_max_timeout()
     assert(rejected);
 }
 
-void a_zero_completed_run_capacity_is_rejected()
+// No worker, no room in the queue or none in the history: each is rejected.
+void a_zero_capacity_is_rejected()
 {
-    bool rejected = false;
-    try
+    for (const auto& [options, field] :
+        std::vector<std::pair<easylocal::rest::blueprint_options, std::string>>{
+            {{.workers = 0}, "workers"},
+            {{.queue_capacity = 0}, "queue_capacity"},
+            {{.completed_run_capacity = 0}, "completed_run_capacity"},
+        })
     {
-        [[maybe_unused]] auto api = easylocal::rest::blueprint(
-            "/assignment",
-            make_application(),
-            AssignmentCodec{},
-            easylocal::rest::blueprint_options{.completed_run_capacity = 0});
+        std::string message;
+        try
+        {
+            [[maybe_unused]] auto api = easylocal::rest::blueprint(
+                "/assignment",
+                make_application(),
+                AssignmentCodec{},
+                options);
+        }
+        catch (const std::invalid_argument& error)
+        {
+            message = error.what();
+        }
+        assert(message == "REST " + field + " must be positive");
     }
-    catch (const std::invalid_argument&)
-    {
-        rejected = true;
-    }
-    assert(rejected);
 }
 
 void an_app_with_invalid_parameters_is_rejected()
@@ -967,6 +997,7 @@ int main()
     a_codec_failure_is_an_internal_error(server);
     a_run_starts_from_the_given_initial_solution(server);
     a_run_has_a_time_limit(server);
+    a_cancelled_run_reports_its_termination(server);
     a_deeply_nested_body_is_rejected_before_parsing(server);
     a_pipeline_runs_by_name(server);
     a_run_stops_at_its_target(server);
@@ -978,7 +1009,7 @@ int main()
     a_pareto_run_returns_its_front();
     a_full_queue_rejects_runs_and_a_queued_run_can_be_cancelled(server);
     an_empty_prefix_is_rejected();
-    a_zero_completed_run_capacity_is_rejected();
+    a_zero_capacity_is_rejected();
     a_run_is_no_longer_than_the_max_timeout();
     an_app_with_invalid_parameters_is_rejected();
     destroying_the_blueprint_stops_its_runs();

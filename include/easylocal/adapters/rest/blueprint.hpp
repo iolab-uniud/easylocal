@@ -19,11 +19,14 @@
 #include <easylocal/cost/text.hpp>
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/runners/search_run.hpp>
+#include <easylocal/trace/tracer.hpp>
+#include <easylocal/utils/termination.hpp>
 
 #include <crow.h>
 
 #include <algorithm>
 #include <atomic>
+#include <cassert>
 #include <cmath>
 #include <concepts>
 #include <cstddef>
@@ -51,10 +54,10 @@ namespace easylocal::rest
 struct blueprint_options
 {
     /// The number of worker threads that execute runs (default: one less than
-    /// the hardware threads, at least 1).
+    /// the hardware threads, at least 1); must be positive.
     std::size_t workers{default_worker_count()};
     /// The maximum number of runs waiting for a worker: a submission beyond it
-    /// is rejected with `503`.
+    /// is rejected with `503`; must be positive.
     std::size_t queue_capacity{64};
     /// The maximum number of terminal runs kept, the oldest forgotten first;
     /// must be positive.
@@ -298,6 +301,14 @@ inline constexpr std::size_t max_json_depth = 64;
     return "text";
 }
 
+// Why a run ended, as an identifier: "target_reached", "cancelled"...
+[[nodiscard]] inline std::string termination_name(const termination_reason reason)
+{
+    std::string name{easylocal::to_string(reason)};
+    std::ranges::replace(name, ' ', '_');
+    return name;
+}
+
 // The answer about a run that does not exist, or no longer does.
 [[nodiscard]] inline crow::response run_not_found(const std::string& id)
 {
@@ -424,9 +435,9 @@ public:
     /// From the prefix of its routes, the app, the codec and the options.
     ///
     /// Leading and trailing slashes of the prefix are dropped. Throws
-    /// `std::invalid_argument` when the prefix is empty,
-    /// `completed_run_capacity` is zero, `max_timeout` is negative or not a
-    /// number, or the parameters of the app are not valid.
+    /// `std::invalid_argument` when the prefix is empty, `workers`,
+    /// `queue_capacity` or `completed_run_capacity` is zero, `max_timeout` is
+    /// negative or not a number, or the parameters of the app are not valid.
     app_blueprint(
         std::string prefix,
         App application,
@@ -434,22 +445,11 @@ public:
         blueprint_options options = {})
         : application_{std::move(application)},
           codec_{std::move(codec)},
-          options_{options},
+          options_{validated(options)},
           prefix_{detail::normalize_prefix(std::move(prefix))},
           blueprint_{prefix_},
           execution_{options_.workers, options_.queue_capacity}
     {
-        if (options_.completed_run_capacity == 0)
-        {
-            throw std::invalid_argument{
-                "REST completed_run_capacity must be greater than zero"};
-        }
-        if (options_.max_timeout
-            && (!(*options_.max_timeout >= 0.0) || std::isnan(*options_.max_timeout)))
-        {
-            throw std::invalid_argument{
-                "REST max_timeout must be a non-negative number of seconds"};
-        }
         if constexpr (requires(const App& app) { app.check_configuration(); })
             application_.check_configuration();
         register_routes();
@@ -502,7 +502,8 @@ private:
         std::shared_ptr<const input_type> input;
         std::uint64_t seed{};
         std::optional<cost_type> target;
-        std::optional<double> timeout;                       // seconds
+        std::optional<crow::json::wvalue> encoded_target; // by the codec, once
+        std::optional<double> timeout;                    // seconds
         std::optional<std::size_t> max_evaluations;
         std::vector<config::owned_text_override> parameters; // as requested
         std::string start; // "solution", "initial" or "random"
@@ -510,11 +511,30 @@ private:
         std::stop_source stop_source;
         run_state state{run_state::queued};
         std::optional<solution_type> solution;
-        std::optional<cost_type> cost;
+        std::optional<crow::json::wvalue> encoded_cost; // by the codec, once
         typename session_type::front_type front; // with a cost::pareto cost
+        std::optional<run_effort> effort;        // when the runner reports it
         std::string error;
         easylocal::shared_run_progress progress;
     };
+
+    // The options, checked before the execution pool starts its threads.
+    [[nodiscard]] static blueprint_options validated(const blueprint_options& options)
+    {
+        if (options.workers == 0)
+            throw std::invalid_argument{"REST workers must be positive"};
+        if (options.queue_capacity == 0)
+            throw std::invalid_argument{"REST queue_capacity must be positive"};
+        if (options.completed_run_capacity == 0)
+            throw std::invalid_argument{"REST completed_run_capacity must be positive"};
+        if (options.max_timeout
+            && (!(*options.max_timeout >= 0.0) || std::isnan(*options.max_timeout)))
+        {
+            throw std::invalid_argument{
+                "REST max_timeout must be a non-negative number of seconds"};
+        }
+        return options;
+    }
 
     [[nodiscard]] static std::string_view state_name(const run_state state) noexcept
     {
@@ -532,18 +552,6 @@ private:
             return "failed";
         }
         return "unknown";
-    }
-
-    [[nodiscard]] App copy_application() const
-    {
-        const std::lock_guard lock{application_mutex_};
-        return application_;
-    }
-
-    [[nodiscard]] std::string application_name() const
-    {
-        const std::lock_guard lock{application_mutex_};
-        return std::string{application_.name()};
     }
 
     [[nodiscard]] input_type decode_input(const crow::json::rvalue& payload) const
@@ -595,14 +603,12 @@ private:
 
     [[nodiscard]] bool runner_exists(const std::string_view requested) const
     {
-        const std::lock_guard lock{application_mutex_};
         const auto names = application_.runner_names();
         return std::ranges::find(names, requested) != names.end();
     }
 
     [[nodiscard]] std::vector<std::string> runner_names() const
     {
-        const std::lock_guard lock{application_mutex_};
         const auto names = application_.runner_names();
         return {names.begin(), names.end()};
     }
@@ -729,8 +735,8 @@ private:
         body["runner"] = record->runner;
         body["seed"] = record->seed;
         body["start"] = record->start;
-        if (record->target)
-            body["target"] = encode_cost(*record->target);
+        if (record->encoded_target)
+            body["target"] = crow::json::wvalue{*record->encoded_target};
         if (record->timeout)
             body["timeout"] = *record->timeout;
         if (record->max_evaluations)
@@ -748,15 +754,23 @@ private:
             body["progress"]["evaluation_limit"] =
                 static_cast<std::uint64_t>(*progress.evaluation_limit);
         }
+        if (record->effort)
+        {
+            // The final counts, which the last progress report may precede.
+            body["progress"]["evaluations"] =
+                static_cast<std::uint64_t>(record->effort->evaluations);
+            body["progress"]["iterations"] =
+                static_cast<std::uint64_t>(record->effort->iterations);
+            body["termination"] = detail::termination_name(record->effort->termination);
+        }
         if (!record->error.empty())
         {
             body["error"]["code"] = "run_failed";
             body["error"]["message"] = record->error;
         }
-        if ((record->state == run_state::succeeded ||
-             record->state == run_state::cancelled) &&
-            record->solution.has_value())
+        if (record->solution.has_value())
         {
+            body["cost"] = crow::json::wvalue{*record->encoded_cost};
             body["solution_url"] = run_url(record->id) + "/solution";
         }
         return body;
@@ -860,7 +874,7 @@ private:
     [[nodiscard]] crow::response root_response() const
     {
         crow::json::wvalue body;
-        body["application"] = application_name();
+        body["application"] = std::string{application_.name()};
         body["runners"] = runner_names();
         body["workers"] = static_cast<std::uint64_t>(execution_.worker_count());
         body["queue_capacity"] = static_cast<std::uint64_t>(execution_.queue_capacity());
@@ -884,7 +898,6 @@ private:
         crow::json::wvalue body;
         body["parameters"] = crow::json::wvalue::list{};
         std::size_t index = 0;
-        const std::lock_guard lock{application_mutex_};
         for (const auto& parameter : application_.configuration().parameters())
         {
             auto& entry = body["parameters"][index++];
@@ -948,9 +961,10 @@ private:
         {
             auto input = std::make_shared<const input_type>(
                 decode_input(payload["input"]));
-            // The run's own session; its seed is set once the run has an id.
-            session_type session{copy_application(), input, 0};
-            // The run's parameters, before its initial solution is built.
+            // The run's own session, configured before it is bound to the
+            // Input, so that the app is bound once here; its seed is set once
+            // the run has an id.
+            session_type session{application_, 0};
             std::vector<config::owned_text_override> parameters;
             if (payload.has("parameters"))
             {
@@ -968,6 +982,7 @@ private:
                     return detail::error_response(422, "invalid_parameters", message);
                 }
             }
+            session.set_input(input);
             auto start = choose_start(session, payload);
 
             if (payload.has("seed") &&
@@ -1017,7 +1032,9 @@ private:
                 : options_.seed + static_cast<std::uint64_t>(run_number);
             record->runner = runner;
             record->input = input;
-            record->target = target;
+            if (target)
+                record->encoded_target = encode_cost(*target);
+            record->target = std::move(target);
             record->timeout = timeout;
             record->max_evaluations = max_evaluations;
             record->parameters = std::move(parameters);
@@ -1056,30 +1073,33 @@ private:
                             if (record->start == "random")
                                 session.use_random_solution(session.rng());
                         }
-                        auto options = easylocal::with(control);
+                        // One run path, with or without a target.
+                        easylocal::run_options<trace::null_tracer, cost_type> options{
+                            .control = &control,
+                            .target = record->target,
+                        };
                         if (record->timeout)
                             options = options.timeout(*record->timeout);
                         if (record->max_evaluations)
                             options = options.max_evaluations(*record->max_evaluations);
-                        const bool ran = record->target
-                            ? session.run(runner, options.stop_at(*record->target))
-                            : session.run(runner, options);
+                        // The runner exists: submit_run checked it on this app.
+                        [[maybe_unused]] const bool ran = session.run(runner, options);
+                        assert(ran);
+                        // Encoded once, for every status poll.
+                        auto encoded_cost = encode_cost(session.evaluate());
 
                         const std::lock_guard lock{record->mutex};
-                        if (ran)
-                        {
-                            record->solution.emplace(session.solution());
-                            record->cost.emplace(session.evaluate());
-                            record->front = session.last_run_front();
-                            record->state = record->stop_source.stop_requested()
-                                ? run_state::cancelled
-                                : run_state::succeeded;
-                        }
-                        else
-                        {
-                            record->state = run_state::failed;
-                            record->error = "runner disappeared from application snapshot";
-                        }
+                        record->solution.emplace(session.solution());
+                        record->encoded_cost.emplace(std::move(encoded_cost));
+                        record->front = session.last_run_front();
+                        record->effort = session.last_run_effort();
+                        // Cancelled when the run says so; without an effort,
+                        // when its cancellation was requested.
+                        const bool cancelled = record->effort
+                            ? record->effort->termination == termination_reason::cancelled
+                            : record->stop_source.stop_requested();
+                        record->state =
+                            cancelled ? run_state::cancelled : run_state::succeeded;
                     }
                     catch (const std::exception& error)
                     {
@@ -1161,22 +1181,28 @@ private:
                 "run_failed",
                 record->error.empty() ? "run failed" : record->error);
         }
-        if ((record->state != run_state::succeeded &&
-             record->state != run_state::cancelled) ||
-            !record->solution)
+        if (!is_terminal(record->state))
         {
             return detail::error_response(
                 409,
                 "result_not_ready",
                 "run has not produced a solution yet");
         }
+        // A run cancelled while queued ended without a solution.
+        if (!record->solution)
+        {
+            return detail::error_response(
+                409,
+                "no_solution",
+                "run ended without a solution");
+        }
 
         crow::json::wvalue body;
         body["id"] = record->id;
         body["runner"] = record->runner;
         body["seed"] = record->seed;
-        if (record->target)
-            body["target"] = encode_cost(*record->target);
+        if (record->encoded_target)
+            body["target"] = crow::json::wvalue{*record->encoded_target};
         if (record->timeout)
             body["timeout"] = *record->timeout;
         if (record->max_evaluations)
@@ -1184,7 +1210,7 @@ private:
                 static_cast<std::uint64_t>(*record->max_evaluations);
         add_parameters(body, *record);
         body["status"] = std::string{state_name(record->state)};
-        body["cost"] = encode_cost(*record->cost);
+        body["cost"] = crow::json::wvalue{*record->encoded_cost};
         body["solution"] = encode_solution(
             *record->input,
             *record->solution);
@@ -1311,13 +1337,13 @@ private:
             ([this](std::string id) { return delete_run(id); });
     }
 
-    App application_;
+    // Never changed after construction: every run copies it, without a lock.
+    const App application_;
     Codec codec_;
     blueprint_options options_;
     std::string prefix_;
     crow::Blueprint blueprint_;
 
-    mutable std::mutex application_mutex_;
     mutable std::mutex codec_mutex_;
     mutable std::mutex runs_mutex_;
     std::unordered_map<std::string, std::shared_ptr<run_record>> runs_;

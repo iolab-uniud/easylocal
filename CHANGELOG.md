@@ -217,6 +217,14 @@ reviewed by hand before tagging.
 - `rest::blueprint_options::max_timeout` bounds the time of the runs of a REST
   service: a request with a longer `timeout` is rejected with `422`, and a run
   without one gets that limit.
+- REST: the status of a run that ended gives its `termination`
+  (`target_reached`, `cancelled`, ...), its `cost` and its final counts. A run
+  is `cancelled` when its runner says so, no longer when a cancellation came
+  after it had ended on its own terms.
+- **Breaking:** REST: the solution of a run that ended without one (cancelled
+  while queued) is `409 no_solution`, where it was `result_not_ready` as for a
+  run still active. The REST reference no longer calls the status shape
+  stable, and its result example lists every field.
 - The REST blueprint needs no codec for a problem with text hooks:
   `rest::blueprint(prefix, app, options)` serves it with `rest::text_codec`,
   the Input and the solutions as JSON strings in the text of `read_input`,
@@ -550,6 +558,13 @@ reviewed by hand before tagging.
 - REST: an `initial_solution` that is not valid for the Input is rejected
   with `422` when the run is submitted, instead of reaching the runner's
   deltas, which could read out of bounds.
+- REST: `blueprint_options` with zero `workers` or a zero `queue_capacity` is
+  rejected with `std::invalid_argument`, where it was raised to 1, and every
+  option is checked before a worker thread starts.
+- REST: a submission binds the app once on the HTTP thread, where it bound it
+  twice (the run's session is configured before it gets the Input), and the
+  target and the cost of a run are encoded once: status polls no longer wait
+  for the codec.
 - TextUI: however its event loop ends, an exception included, the tester
   stops and joins a running search before the loop's screen is destroyed,
   which the search posts its progress to.

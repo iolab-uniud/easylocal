@@ -313,7 +313,8 @@ Every runner is cancellable: the control is carried by the framework-owned
 
 ## Status and result shape
 
-`GET /runs/<id>` has a stable generic shape:
+`GET /runs/<id>` has the same generic shape for every problem (an
+Experimental surface, as [Stability](stability.md) says of the adapters):
 
 ```json
 {
@@ -332,19 +333,49 @@ Every runner is cancellable: the control is carried by the framework-owned
 
 `evaluation_limit` is omitted when the Runner does not report one. Once the run
 has succeeded, or was cancelled with a partial solution, the status also gives
-`"solution_url"`, the address of `GET /runs/<id>/solution`; a failed run gives
-`"error": {"code": "run_failed", "message": ...}` instead. The `solution` and
-`cost` values remain problem-specific and are produced by the codec:
+its final `progress`, its `cost` and `"solution_url"`, the address of `GET
+/runs/<id>/solution`, and, when the runner reports it, `termination`: why the
+run ended (`completed`, `local_optimum`, `evaluation_budget_exhausted`,
+`cancelled`, `target_reached`, `idle_limit_reached`, `time_limit_reached`). A
+run is `cancelled` when its termination says so: one whose cancellation came
+after it ended on its own terms is `succeeded`. A failed run gives
+`"error": {"code": "run_failed", "message": ...}` instead.
 
 ```json
 {
   "id": "42",
   "runner": "fi",
+  "seed": 42,
   "status": "succeeded",
-  "solution": { "...": "..." },
-  "cost": { "...": "..." }
+  "cancellation_requested": false,
+  "progress": { "evaluations": 2000, "iterations": 118, "evaluation_limit": 2000 },
+  "termination": "evaluation_budget_exhausted",
+  "cost": { "...": "..." },
+  "solution_url": "/assignment/runs/42/solution"
 }
 ```
+
+`GET /runs/<id>/solution` gives the solution and its cost, whose values
+remain problem-specific and are produced by the codec, with the request the
+run was submitted with (`seed`, and `target`, `timeout`, `max_evaluations` and
+`parameters` when it had them):
+
+```json
+{
+  "id": "42",
+  "runner": "fi",
+  "seed": 42,
+  "max_evaluations": 2000,
+  "parameters": { "runners.fi.max_evaluations": "5000" },
+  "status": "succeeded",
+  "cost": { "...": "..." },
+  "solution": { "...": "..." }
+}
+```
+
+Before the run ends it answers `409 result_not_ready`; for a run that ended
+without a solution, cancelled while it was queued, `409 no_solution`; for a
+failed run, `409 run_failed`.
 
 With a `cost::pareto` cost the result also has `front`, the non-dominated
 solutions the run reached, ordered by their objectives, each with its cost,
@@ -372,7 +403,8 @@ returned by the controlled Runner.
 
 ## Error mapping
 
-Protocol errors use one envelope:
+Every response with an error status (`4xx`, `5xx`) has the same envelope; the
+status of a failed run, a `200` response, carries one too, under `error`:
 
 ```json
 {
@@ -389,7 +421,7 @@ The generic mapping is:
 | --- | --- |
 | `400` | syntactically invalid JSON, or arrays and objects nested deeper than 64 levels (`invalid_json`) |
 | `404` | unknown runner or run (`unknown_runner`, `run_not_found`) |
-| `409` | valid operation in the wrong run state/capability (`result_not_ready`, `run_not_terminal`, `run_not_active`), or the solution of a run that failed (`run_failed`) |
+| `409` | valid operation in the wrong run state/capability (`result_not_ready`, `run_not_terminal`, `run_not_active`), the solution of a run that ended without one (`no_solution`), or of a run that failed (`run_failed`) |
 | `422` | valid JSON but invalid run envelope/domain data (`invalid_run_request`), or parameters that do not apply (`invalid_parameters`) |
 | `503` | bounded solver queue full (`queue_full`) |
 | `500` | unexpected adapter/application failure (`internal_error`) |
@@ -430,15 +462,18 @@ They decode the request, materialize the immutable Input and initial Solution,
 enqueue work, and return the run identifier.
 
 Each accepted job owns a `Session` on the run's Input, created when the run is
-submitted, with the initial solution and the run's seed. The worker calls
+submitted: configured with the run's parameters, then bound to the Input once,
+with the initial solution and the run's seed. The worker calls
 `session.run("name", with(control))`, which binds fresh services for that run,
-and stores the resulting solution and its cost. Mutable SolutionManager, neighborhood,
+and stores the resulting solution and its cost, encoded once for every status
+poll. Mutable SolutionManager, neighborhood,
 algorithm, Runner, RNG, and Solution state therefore belongs to that run only.
 No mutex is added to those Core objects and no `Clone()` protocol is required.
 
 The default worker count is `max(1, hardware_concurrency() - 1)` and the default
-waiting-queue capacity is 64; both are adapter policy and configurable per
-Blueprint.
+waiting-queue capacity is 64; both are adapter policy, configurable per
+Blueprint, and must be positive: the Blueprint's constructor rejects a zero
+with `std::invalid_argument` before any worker starts.
 
 ## Cooperative control and TextUI
 
