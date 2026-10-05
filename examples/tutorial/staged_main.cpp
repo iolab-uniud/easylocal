@@ -76,7 +76,6 @@ int main(int argc, char* argv[])
             | el::delta<TourLength, TwoOptLengthDelta>());
     // [staged-recipes] -----------------------------------------------------
 
-    // [staged-command-line] ------------------------------------------------
     // The runner's parameters under its own prefix: --descent.search.*, and
     // --descent.cost.* for the weights of a cost that has them.
     MainParameters main_parameters{.instance = EASYLOCAL_TUTORIAL_INSTANCE};
@@ -95,7 +94,6 @@ int main(int argc, char* argv[])
         el::config::print_diagnostics(std::cerr, configured);
         return 2;
     }
-    // [staged-command-line] ------------------------------------------------
 
     // [staged-instance] ----------------------------------------------------
     // Parameters that depend on the instance, set once it is read, as

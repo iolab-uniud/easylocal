@@ -53,7 +53,6 @@ int main()
     const auto result = solver.seed(7).solve(tsp);
     // [pipeline] -----------------------------------------------------------
 
-    // [pipeline-report] ----------------------------------------------------
     // The result is the last stage's, with the effort of every stage, and
     // reports what each stage did.
     for (const auto& report : result.stages)
@@ -63,7 +62,6 @@ int main()
     }
     std::cout << "violations " << result.cost.hard() << ", length " << result.cost.soft()
               << ", evaluations " << result.evaluations << '\n';
-    // [pipeline-report] ----------------------------------------------------
 
     // [app-pipeline] -------------------------------------------------------
     // The same stages registered in an app, as algorithms on the app's

@@ -1,8 +1,9 @@
 #pragma once
 
 // The running example of docs/tutorial: a symmetric TSP built up chapter by
-// chapter. Every snippet of the tutorial is taken from this file, main.cpp or
-// checks.cpp, which are compiled and run as tests.
+// chapter. The tutorial's snippets are the marked regions of this file and of
+// the other programs of examples/tutorial, which are compiled and run as
+// tests.
 
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
@@ -260,7 +261,6 @@ public:
                 co_yield SwapCities{i, j};
     }
 
-    // [random-move]
     // Uniform: two distinct positions, each pair equally likely, put in order.
     template<std::uniform_random_bit_generator RNG>
     std::optional<SwapCities> random_move(const Tour& tour, RNG& rng) const
@@ -275,7 +275,6 @@ public:
             j = pick(rng);
         return SwapCities{std::min(i, j), std::max(i, j)};
     }
-    // [random-move]
 
     bool is_valid(const Tour& tour, const SwapCities& move) const
     {

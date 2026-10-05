@@ -19,8 +19,7 @@
 namespace tsp
 {
 
-// [apps] -------------------------------------------------------------------
-// The SolutionManager recipe of both apps: the launcher of tui_main.cpp
+// The SolutionManager recipe of the apps: the launcher of tui_main.cpp
 // passes the Input and the solution from one app to the other, so they must
 // have the same one.
 inline auto tsp_solution_manager()
@@ -50,7 +49,6 @@ inline auto swap_app()
             "fi",
             {.max_evaluations = 100});
 }
-// [apps] -------------------------------------------------------------------
 
 // The union of the two neighborhoods, whose random biases are a parameter of
 // the problem (neighborhood.*), which the tester's P window edits.
