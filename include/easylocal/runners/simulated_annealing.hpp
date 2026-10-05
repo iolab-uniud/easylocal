@@ -1710,9 +1710,10 @@ consteval bool validate_simulated_annealing_acceptance()
 {
     static_assert(
         acceptance_policy_for<Acceptance, typename Context::cost_type, RNG>,
-        "SimulatedAnnealing acceptance policy cannot consume this cost_type; "
-        "MetropolisAcceptance requires candidate_cost - current_cost to be "
-        "convertible to a numeric delta");
+        "the acceptance policy of SimulatedAnnealing cannot compare this cost: "
+        "MetropolisAcceptance requires a cost with a numeric cost::delta, an "
+        "arithmetic cost, a cost::hierarchical with an arithmetic soft level, or "
+        "a cost type with a delta(candidate, current) found by ADL");
     return true;
 }
 
@@ -1761,16 +1762,16 @@ public:
     /// Rejects, with a readable message, a cost the acceptance policy cannot
     /// compare.
     template<class Run, std::uniform_random_bit_generator RNG>
-        requires detail::random_move_context<typename Run::context_type, RNG> &&
-                 detail::strict_improvement_context<typename Run::context_type> &&
-                 (!detail::acceptance_policy_for<
-                     Acceptance, typename Run::cost_type, RNG>)
+        requires detail::random_move_context<typename Run::context_type, RNG>
+        && detail::strict_improvement_context<typename Run::context_type>
+        && (!detail::acceptance_policy_for<Acceptance, typename Run::cost_type, RNG>)
     [[nodiscard]]
-    auto run(Run&, typename Run::solution_type, RNG&) const
+    typename Run::result_type run(Run&, typename Run::solution_type, RNG&) const
     {
         static_assert(
             detail::validate_simulated_annealing_acceptance<
                 typename Run::context_type, Acceptance, RNG>());
+        std::unreachable();
     }
 
     /// Runs the search from solution, drawing random moves and acceptances with

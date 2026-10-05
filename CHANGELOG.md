@@ -242,6 +242,11 @@ reviewed by hand before tagging.
   cannot be copied binds, since it holds only the parameters.
   **Breaking:** `run_control::stop_possible()`, which nothing used, is
   removed.
+- Great Deluge, the aspiration plus and elite candidate Tabu Searches and
+  Pareto Late Acceptance reject a cost they cannot use with one message that
+  names what they need (an arithmetic cost, a `cost::pareto` cost), as
+  Simulated Annealing does, whose message now names `cost::delta` rather than
+  a difference of costs; the rejected run no longer adds a second error.
 
 ### Added
 

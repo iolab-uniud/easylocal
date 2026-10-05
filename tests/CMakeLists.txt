@@ -969,8 +969,28 @@ easylocal_add_compile_failure_test(
 easylocal_add_compile_failure_test(
     simulated-annealing-non-difference-cost
     simulated_annealing_non_difference_cost.cpp
-    "MetropolisAcceptance requires candidate_cost - current_cost"
+    "MetropolisAcceptance requires a cost with a numeric cost::delta"
     "MetropolisAcceptance"
+)
+easylocal_add_compile_failure_test(
+    great-deluge-non-arithmetic-cost
+    great_deluge_non_arithmetic_cost.cpp
+    "Great Deluge compares the cost with a water level"
+)
+easylocal_add_compile_failure_test(
+    pareto-late-acceptance-non-pareto-cost
+    pareto_late_acceptance_non_pareto_cost.cpp
+    "it requires a cost::pareto cost"
+)
+easylocal_add_compile_failure_test(
+    aspiration-plus-tabu-non-arithmetic-cost
+    aspiration_plus_tabu_non_arithmetic_cost.cpp
+    "Aspiration plus Tabu Search compares the costs with the aspiration level"
+)
+easylocal_add_compile_failure_test(
+    elite-candidate-tabu-non-arithmetic-cost
+    elite_candidate_tabu_non_arithmetic_cost.cpp
+    "Elite candidate Tabu Search compares the costs with the quality level"
 )
 easylocal_add_compile_failure_test(
     duplicate-parameter-field-name

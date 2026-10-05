@@ -17,6 +17,7 @@
 #include <easylocal/runners/search_run.hpp>
 #include <easylocal/trace/events.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
+#include <easylocal/utils/detail/meta.hpp>
 #include <easylocal/utils/limit.hpp>
 
 #include <algorithm>
@@ -2450,6 +2451,21 @@ public:
     {
     }
 
+    /// Rejects, with a readable message, a cost that is not arithmetic.
+    template<class Run, std::uniform_random_bit_generator RNG>
+        requires detail::tabu_search_context<typename Run::context_type>
+        && (!cost::arithmetic<typename Run::cost_type>)
+    [[nodiscard]]
+    typename Run::result_type run(Run&, typename Run::solution_type, RNG&) const
+    {
+        static_assert(
+            easylocal::detail::always_false_v<Run>,
+            "Aspiration plus Tabu Search compares the costs with the aspiration level, a value of the cost: it "
+            "requires an arithmetic cost (cost::arithmetic), not a hierarchical, "
+            "lexicographic or Pareto one");
+        std::unreachable();
+    }
+
     /// Runs the search from solution, with rng for the ties and the random
     /// choices of the list.
     ///
@@ -2522,6 +2538,21 @@ public:
           elite_size_{parameters.candidates.elite_size},
           quality_{parameters.candidates.quality}
     {
+    }
+
+    /// Rejects, with a readable message, a cost that is not arithmetic.
+    template<class Run, std::uniform_random_bit_generator RNG>
+        requires detail::tabu_search_context<typename Run::context_type>
+        && (!cost::arithmetic<typename Run::cost_type>)
+    [[nodiscard]]
+    typename Run::result_type run(Run&, typename Run::solution_type, RNG&) const
+    {
+        static_assert(
+            easylocal::detail::always_false_v<Run>,
+            "Elite candidate Tabu Search compares the costs with the quality level, a value of the cost: it "
+            "requires an arithmetic cost (cost::arithmetic), not a hierarchical, "
+            "lexicographic or Pareto one");
+        std::unreachable();
     }
 
     /// Runs the search from solution, with rng for the ties and the random

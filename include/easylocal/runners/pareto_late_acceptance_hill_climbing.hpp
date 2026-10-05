@@ -9,6 +9,7 @@
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
 #include <easylocal/runners/search_run.hpp>
+#include <easylocal/utils/detail/meta.hpp>
 #include <easylocal/utils/limit.hpp>
 
 #include <cassert>
@@ -111,6 +112,20 @@ public:
         const ParetoLateAcceptanceHillClimbingParameters parameters)
         : parameters_{config::require_valid(parameters)}
     {
+    }
+
+    /// Rejects, with a readable message, a cost that is not a cost::pareto.
+    template<class Run, std::uniform_random_bit_generator RNG>
+        requires(!Run::archives_front)
+        && detail::random_move_context<typename Run::context_type, RNG>
+    [[nodiscard]]
+    typename Run::result_type run(Run&, typename Run::solution_type, RNG&) const
+    {
+        static_assert(
+            easylocal::detail::always_false_v<Run>,
+            "Pareto Late Acceptance Hill Climbing keeps the solutions no other "
+            "dominates: it requires a cost::pareto cost");
+        std::unreachable();
     }
 
     /// Runs the search from solution, drawing random moves with rng.

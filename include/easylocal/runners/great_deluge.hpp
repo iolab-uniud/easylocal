@@ -8,6 +8,7 @@
 #include <easylocal/cost/concepts.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
 #include <easylocal/runners/search_run.hpp>
+#include <easylocal/utils/detail/meta.hpp>
 #include <easylocal/utils/limit.hpp>
 
 #include <cassert>
@@ -104,6 +105,22 @@ public:
     explicit GreatDeluge(const GreatDelugeParameters parameters)
         : parameters_{config::require_valid(parameters)}
     {
+    }
+
+    /// Rejects, with a readable message, a cost that is not arithmetic.
+    template<class Run, std::uniform_random_bit_generator RNG>
+        requires detail::random_move_context<typename Run::context_type, RNG>
+        && detail::strict_improvement_context<typename Run::context_type>
+        && (!detail::great_deluge_cost<typename Run::context_type>)
+    [[nodiscard]]
+    typename Run::result_type run(Run&, typename Run::solution_type, RNG&) const
+    {
+        static_assert(
+            easylocal::detail::always_false_v<Run>,
+            "Great Deluge compares the cost with a water level, a value of the "
+            "cost: it requires an arithmetic cost (cost::arithmetic), not a "
+            "hierarchical, lexicographic or Pareto one");
+        std::unreachable();
     }
 
     /// Runs the search from solution, drawing random moves with rng.
