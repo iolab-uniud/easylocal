@@ -113,7 +113,10 @@ each with a README that guides through its files.
   macOS deployment target (`CMAKE_OSX_DEPLOYMENT_TARGET`) of 26.0 or later, for
   the floating-point `std::from_chars` of its libc++, and CMake stops with a
   message otherwise;
-- CMake 3.25 or later and Ninja.
+- CMake 3.25 or later and Ninja;
+- no `-ffast-math` (or `-ffinite-math-only`, MSVC's `/fp:fast`): the library
+  checks for NaN and infinite values, in the parameters, the costs and the
+  temperatures, and these flags let the compiler assume there are none.
 
 The core uses only the standard library. The optional components need toml++,
 FTXUI or Crow, found on the system or fetched by CMake when

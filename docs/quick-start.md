@@ -15,6 +15,8 @@ the rest of the framework.
   floating-point `std::from_chars` of its libc++ (CMake stops with a message
   otherwise);
 - CMake 3.25+;
+- no `-ffast-math`: the library checks for NaN and infinite values, which the
+  flag lets the compiler assume away;
 - EasyLocal, either installed (`cmake --install <build> --prefix <prefix>`) or
   added to your project with `add_subdirectory`.
 

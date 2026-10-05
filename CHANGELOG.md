@@ -379,6 +379,9 @@ reviewed by hand before tagging.
 
 ### Documentation and examples
 
+- The README and the quick start say not to build with `-ffast-math` (or
+  `-ffinite-math-only`, `/fp:fast`), which lets the compiler drop the
+  library's checks for NaN and infinite values.
 - The tutorial no longer takes the launcher of chapter 12 from `examples/tsp`:
   `examples/tutorial/launcher_main.cpp` opens a 2-opt and a swap app of the
   tutorial's own TSP. `AGENTS.md` says what each example directory is.
