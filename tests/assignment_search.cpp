@@ -45,7 +45,7 @@ auto default_neighborhood_recipe()
 class AssignmentCardinalityComponent
 {
 public:
-    using value_type = std::size_t;
+    using value_type = std::int64_t;
 
     explicit AssignmentCardinalityComponent(const AssignmentInstance&) noexcept
     {
@@ -54,7 +54,7 @@ public:
     [[nodiscard]]
     auto evaluate(const AssignmentSolution& solution) const noexcept -> value_type
     {
-        return solution.assignment.size();
+        return static_cast<std::int64_t>(solution.assignment.size());
     }
 };
 
@@ -67,14 +67,10 @@ public:
 struct FallbackAggregator
 {
     [[nodiscard]]
-    auto operator()(
-        const CapacityValue& capacity,
-        const std::size_t cardinality) const -> HardCost
+    auto operator()(const CapacityValue& capacity, const std::int64_t cardinality) const
+        -> HardCost
     {
-        return HardCost{
-            capacity.total_overload,
-            static_cast<std::int64_t>(cardinality),
-        };
+        return HardCost{capacity.total_overload, cardinality};
     }
 };
 

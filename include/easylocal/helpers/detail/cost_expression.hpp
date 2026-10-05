@@ -170,6 +170,12 @@ public:
     using cost_type = component_value_t<Component, Solution>;
     using leaf_specs = std::tuple<spec_type>;
 
+    static_assert(
+        !cost::detail::unsigned_cost_v<cost_type>,
+        "a cost component cannot return an unsigned integer, whose "
+        "differences wrap around: return a signed integer (int, long long) "
+        "or a floating-point value");
+
     static constexpr std::size_t leaf_count = 1;
     static constexpr bool configurable = false;
 
@@ -617,6 +623,12 @@ public:
         const Function&,
         const typename cost_node<Children, Solution>::cost_type&...>>;
     using leaf_specs = typename children_type::leaf_specs;
+
+    static_assert(
+        !cost::detail::unsigned_cost_v<cost_type>,
+        "the function of cost::apply cannot return an unsigned integer, whose "
+        "differences wrap around: return a signed integer (int, long long) "
+        "or a floating-point value");
 
     static constexpr std::size_t leaf_count = children_type::leaf_count;
     static constexpr bool configurable =

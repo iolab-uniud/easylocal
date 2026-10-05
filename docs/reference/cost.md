@@ -18,7 +18,9 @@ form the *delta cost layer*.
 | `name() -> std::string_view` (static or not) | no: its name in reports, otherwise its position, `#1` |
 | `describe(const Solution&) const -> std::string` | no: a text that explains its value on a solution, such as the violations it counts |
 
-- `Value` is deduced from `evaluate` and may be arithmetic or a domain type.
+- `Value` is deduced from `evaluate` and may be arithmetic or a domain type,
+  but not an unsigned integer: the difference of two costs would wrap around,
+  so a component that counts returns `int` or `long long`.
 - Construction: `Component{const Input&, args...}` is preferred,
   `Component{args...}` is accepted; `args` come from `component<C>(args...)`.
 - A component type may appear only once in a cost expression.
@@ -67,7 +69,7 @@ solution_manager<SM>()
 
 | Type | Ordering | `cost::delta` |
 | --- | --- | --- |
-| arithmetic (`cost::arithmetic`) | `<` | `candidate - current` |
+| arithmetic (`cost::arithmetic`: signed integers and floating point) | `<` | `candidate - current` |
 | `cost::lexicographic<Ts...>` | lexicographic over the values | none |
 | `cost::pareto<Ts...>` | Pareto dominance (a partial order) | none |
 | `cost::hierarchical<Hard, Soft>` | hard first, soft when hard is equivalent | hard better: `-∞`, hard worse: `+∞`, else the soft delta |

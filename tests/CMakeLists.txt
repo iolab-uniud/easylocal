@@ -770,6 +770,11 @@ easylocal_add_compile_failure_test(
     "ComponentA"
 )
 easylocal_add_compile_failure_test(
+    unsigned-cost
+    unsigned_cost.cpp
+    "a cost component cannot return an unsigned integer"
+)
+easylocal_add_compile_failure_test(
     inactive-delta
     inactive_delta.cpp
     "attached delta names a component that is not active in the bound SolutionManager recipe"

@@ -33,7 +33,7 @@ using easylocal::runners::FirstImprovement;
 class AssignmentCardinalityComponent
 {
 public:
-    using value_type = std::size_t;
+    using value_type = std::int64_t;
 
     explicit AssignmentCardinalityComponent(const AssignmentInstance&) noexcept
     {
@@ -42,7 +42,7 @@ public:
     [[nodiscard]]
     auto evaluate(const AssignmentSolution& solution) const noexcept -> value_type
     {
-        return solution.assignment.size();
+        return static_cast<std::int64_t>(solution.assignment.size());
     }
 };
 
@@ -54,15 +54,14 @@ public:
     }
 
     [[nodiscard]]
-    auto evaluate(const AssignmentSolution& solution) const noexcept -> std::size_t
+    auto evaluate(const AssignmentSolution& solution) const noexcept -> std::int64_t
     {
-        return solution.assignment.size();
+        return static_cast<std::int64_t>(solution.assignment.size());
     }
 
     [[nodiscard]]
-    auto delta_evaluate(
-        const AssignmentSolution&,
-        const ReassignJobMove&) const noexcept -> std::size_t
+    auto delta_evaluate(const AssignmentSolution&, const ReassignJobMove&) const noexcept
+        -> std::int64_t
     {
         return 0;
     }
@@ -77,9 +76,9 @@ public:
     }
 
     [[nodiscard]]
-    auto evaluate(const AssignmentSolution& solution) const noexcept -> std::size_t
+    auto evaluate(const AssignmentSolution& solution) const noexcept -> std::int64_t
     {
-        return solution.assignment.size() + offset_;
+        return static_cast<std::int64_t>(solution.assignment.size() + offset_);
     }
 
 private:
@@ -90,9 +89,8 @@ class StatelessCardinalityDeltaEvaluator
 {
 public:
     [[nodiscard]]
-    auto delta_evaluate(
-        const AssignmentSolution&,
-        const ReassignJobMove&) const noexcept -> std::size_t
+    auto delta_evaluate(const AssignmentSolution&, const ReassignJobMove&) const noexcept
+        -> std::int64_t
     {
         return 0;
     }
@@ -101,7 +99,7 @@ public:
 class CountingSoftComponent
 {
 public:
-    using value_type = std::size_t;
+    using value_type = std::int64_t;
 
     CountingSoftComponent(
         const AssignmentInstance&,
@@ -114,7 +112,7 @@ public:
     auto evaluate(const AssignmentSolution& solution) const noexcept -> value_type
     {
         ++evaluation_count_.get();
-        return solution.assignment.size();
+        return static_cast<std::int64_t>(solution.assignment.size());
     }
 
 private:
@@ -145,7 +143,7 @@ public:
 
     [[nodiscard]]
     auto delta_evaluate(const AssignmentSolution&, const ReassignJobMove&) const noexcept
-        -> std::size_t
+        -> std::int64_t
     {
         return 0;
     }

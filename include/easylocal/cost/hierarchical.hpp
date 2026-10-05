@@ -30,6 +30,12 @@ namespace easylocal::cost
 template<class HardCost, class SoftCost>
 class hierarchical
 {
+    static_assert(
+        !detail::unsigned_cost_v<HardCost> && !detail::unsigned_cost_v<SoftCost>,
+        "a cost cannot be an unsigned integer, whose differences wrap "
+        "around: use a signed integer (int, long long) or a floating-point "
+        "type");
+
 public:
     /// The type of the hard cost.
     using hard_cost_type = HardCost;

@@ -15,9 +15,23 @@
 namespace easylocal::cost
 {
 
-/// An arithmetic cost: an integral or floating-point type other than bool.
+namespace detail
+{
+
+// An unsigned integer cannot be a cost: the difference of two costs, which
+// acceptance criteria and checks compute, would wrap around.
+template<class Value>
+inline constexpr bool unsigned_cost_v = std::unsigned_integral<std::remove_cv_t<Value>>
+    && !std::same_as<std::remove_cv_t<Value>, bool>;
+
+} // namespace detail
+
+/// An arithmetic cost: a signed integral or floating-point type other than
+/// bool.
+///
+/// Unsigned integers are not costs: their differences wrap around.
 template<class Cost>
-concept arithmetic = easylocal::detail::number<Cost>;
+concept arithmetic = easylocal::detail::number<Cost> && !detail::unsigned_cost_v<Cost>;
 
 /// The numeric difference `candidate - current` of two arithmetic costs.
 ///

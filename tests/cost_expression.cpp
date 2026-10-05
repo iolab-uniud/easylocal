@@ -2,9 +2,10 @@
 #include <easylocal/helpers/recipes.hpp>
 
 #include <array>
+#include <cmath>
 #include <compare>
 #include <concepts>
-#include <cmath>
+#include <cstddef>
 #include <iostream>
 #include <string_view>
 #include <utility>
@@ -122,6 +123,9 @@ int main()
     static_assert(std::three_way_comparable<LexicographicCost>);
     static_assert(cost::lexicographic_type<LexicographicCost>);
     static_assert(!cost::lexicographic_type<int>);
+    static_assert(cost::arithmetic<int> && cost::arithmetic<double>);
+    static_assert(!cost::arithmetic<unsigned> && !cost::arithmetic<std::size_t>);
+    static_assert(!cost::arithmetic<unsigned char> && !cost::arithmetic<bool>);
     static_assert(LexicographicCost::levels == 2);
     static_assert(std::three_way_comparable<HierarchicalCost>);
     static_assert(!std::same_as<LexicographicCost, HierarchicalCost>);

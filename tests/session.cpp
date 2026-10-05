@@ -42,9 +42,9 @@ struct RandomOnlyMove
 struct RandomOnlyValue
 {
     [[nodiscard]]
-    static auto evaluate(const RandomOnlySolution& solution) noexcept -> std::uint64_t
+    static auto evaluate(const RandomOnlySolution& solution) noexcept -> std::int64_t
     {
-        return solution.value;
+        return static_cast<std::int64_t>(solution.value);
     }
 };
 
@@ -106,10 +106,10 @@ struct CountedValue
     static inline std::size_t evaluations = 0;
 
     [[nodiscard]]
-    static std::uint64_t evaluate(const CountedSolution& solution) noexcept
+    static std::int64_t evaluate(const CountedSolution& solution) noexcept
     {
         ++evaluations;
-        return solution.value;
+        return static_cast<std::int64_t>(solution.value);
     }
 };
 

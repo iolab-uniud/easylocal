@@ -28,6 +28,12 @@ namespace easylocal::cost
 template<class... Values>
 class pareto
 {
+    static_assert(
+        (!detail::unsigned_cost_v<Values> && ...),
+        "a cost cannot be an unsigned integer, whose differences wrap "
+        "around: use a signed integer (int, long long) or a floating-point "
+        "type");
+
 public:
     /// The number of objectives.
     static constexpr std::size_t levels = sizeof...(Values);

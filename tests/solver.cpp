@@ -16,7 +16,10 @@ struct Move {};
 
 struct ValueCost
 {
-    static auto evaluate(const Solution& s) -> std::uint64_t { return s.value; }
+    static auto evaluate(const Solution& s) -> std::int64_t
+    {
+        return static_cast<std::int64_t>(s.value);
+    }
 };
 
 class DeterministicSM

@@ -11,6 +11,15 @@ reviewed by hand before tagging.
 
 ## [4.0.0-alpha.2] — not yet released
 
+### Cost
+
+- **Breaking:** unsigned integers are no longer costs. A cost component or a
+  `cost::apply` function that returns one, and a `cost::lexicographic`,
+  `cost::pareto` or `cost::hierarchical` level of an unsigned type, fail to
+  compile with a message: the difference of two unsigned costs wraps around,
+  so Simulated Annealing never accepted an improving move.
+  `cost::arithmetic` excludes them, weights included.
+
 ## [4.0.0-alpha.1] — 2026-10-04
 
 A pre-release: the API, header paths included, may still change before 4.0.0
