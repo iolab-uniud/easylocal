@@ -246,6 +246,11 @@ reviewed by hand before tagging.
 - `EASYLOCAL_SANITIZERS` (such as `address;undefined`) builds EasyLocal's own
   tests and examples with those sanitizers, a report stopping the program;
   the `asan` preset uses it, and the full CI runs it with GCC 16.
+- Through `add_subdirectory`, EasyLocal no longer installs its headers and
+  package into the consumer's prefix: `EASYLOCAL_INSTALL`, on by default only
+  when EasyLocal is the top-level project, enables its install rules. The
+  installed package version file is architecture-independent unless it
+  bundles the compiled FTXUI of the TUI.
 
 ### Documentation and examples
 

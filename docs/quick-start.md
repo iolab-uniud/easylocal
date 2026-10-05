@@ -514,7 +514,9 @@ cmake --build build
 
 If EasyLocal is not installed, replace the `find_package` line with
 `add_subdirectory(/path/to/easylocal easylocal)`, which builds it as part of
-your project, and drop `-DCMAKE_PREFIX_PATH` from the first command.
+your project, and drop `-DCMAKE_PREFIX_PATH` from the first command. Your
+project's install then leaves EasyLocal out, unless you configure it with
+`-DEASYLOCAL_INSTALL=ON`.
 
 The program prints:
 

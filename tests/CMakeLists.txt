@@ -679,42 +679,45 @@ else()
     set(_easylocal_rest_asio_bundled OFF)
 endif()
 
-# A list is one argument of the test: $<SEMICOLON> keeps add_test from
-# splitting a CMAKE_PREFIX_PATH of several entries.
-string(REPLACE ";" "$<SEMICOLON>" _easylocal_prefix_path "${CMAKE_PREFIX_PATH}")
-add_test(
-    NAME easylocal.installed-package-consumer
-    COMMAND
-        "${CMAKE_COMMAND}"
-        "-DEASYLOCAL_BUILD_DIR=${PROJECT_BINARY_DIR}"
-        "-DEASYLOCAL_CONFIG_TOML_ENABLED=${_easylocal_config_toml_enabled}"
-        "-DEASYLOCAL_CONFIG_TOML_BUNDLED=${_easylocal_config_toml_bundled}"
-        "-DEASYLOCAL_TUI_ENABLED=${_easylocal_tui_enabled}"
-        "-DEASYLOCAL_TUI_BUNDLED=${_easylocal_tui_bundled}"
-        "-DEASYLOCAL_REST_ENABLED=${_easylocal_rest_enabled}"
-        "-DEASYLOCAL_REST_BUNDLED=${_easylocal_rest_bundled}"
-        "-DEASYLOCAL_REST_ASIO_BUNDLED=${_easylocal_rest_asio_bundled}"
-        "-DEASYLOCAL_DEPENDENCY_PREFIX_PATH=${_easylocal_prefix_path}"
-        "-DEASYLOCAL_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
-        "-DEASYLOCAL_CONFIG=$<CONFIG>"
-        "-DEASYLOCAL_CONSUMER_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/package_consumer"
-        "-DEASYLOCAL_CTEST_COMMAND=${CMAKE_CTEST_COMMAND}"
-        "-DEASYLOCAL_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
-        "-DEASYLOCAL_GENERATOR=${CMAKE_GENERATOR}"
-        "-DEASYLOCAL_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}"
-        "-DEASYLOCAL_GENERATOR_TOOLSET=${CMAKE_GENERATOR_TOOLSET}"
-        "-DEASYLOCAL_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}"
-        "-DEASYLOCAL_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
-        "-DEASYLOCAL_VERSION=${PROJECT_VERSION}"
-        "-DEASYLOCAL_VERSION_PRERELEASE=${EASYLOCAL_VERSION_PRERELEASE}"
-        "-DEASYLOCAL_WORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/package-consumer"
-        -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_installed_package.cmake"
-)
-set_tests_properties(
-    easylocal.installed-package-consumer
-    PROPERTIES
-        LABELS integration
-)
+# The installed package, when EasyLocal has its install rules.
+if(EASYLOCAL_INSTALL)
+    # A list is one argument of the test: $<SEMICOLON> keeps add_test from
+    # splitting a CMAKE_PREFIX_PATH of several entries.
+    string(REPLACE ";" "$<SEMICOLON>" _easylocal_prefix_path "${CMAKE_PREFIX_PATH}")
+    add_test(
+        NAME easylocal.installed-package-consumer
+        COMMAND
+            "${CMAKE_COMMAND}"
+            "-DEASYLOCAL_BUILD_DIR=${PROJECT_BINARY_DIR}"
+            "-DEASYLOCAL_CONFIG_TOML_ENABLED=${_easylocal_config_toml_enabled}"
+            "-DEASYLOCAL_CONFIG_TOML_BUNDLED=${_easylocal_config_toml_bundled}"
+            "-DEASYLOCAL_TUI_ENABLED=${_easylocal_tui_enabled}"
+            "-DEASYLOCAL_TUI_BUNDLED=${_easylocal_tui_bundled}"
+            "-DEASYLOCAL_REST_ENABLED=${_easylocal_rest_enabled}"
+            "-DEASYLOCAL_REST_BUNDLED=${_easylocal_rest_bundled}"
+            "-DEASYLOCAL_REST_ASIO_BUNDLED=${_easylocal_rest_asio_bundled}"
+            "-DEASYLOCAL_DEPENDENCY_PREFIX_PATH=${_easylocal_prefix_path}"
+            "-DEASYLOCAL_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+            "-DEASYLOCAL_CONFIG=$<CONFIG>"
+            "-DEASYLOCAL_CONSUMER_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/package_consumer"
+            "-DEASYLOCAL_CTEST_COMMAND=${CMAKE_CTEST_COMMAND}"
+            "-DEASYLOCAL_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+            "-DEASYLOCAL_GENERATOR=${CMAKE_GENERATOR}"
+            "-DEASYLOCAL_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}"
+            "-DEASYLOCAL_GENERATOR_TOOLSET=${CMAKE_GENERATOR_TOOLSET}"
+            "-DEASYLOCAL_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}"
+            "-DEASYLOCAL_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
+            "-DEASYLOCAL_VERSION=${PROJECT_VERSION}"
+            "-DEASYLOCAL_VERSION_PRERELEASE=${EASYLOCAL_VERSION_PRERELEASE}"
+            "-DEASYLOCAL_WORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/package-consumer"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_installed_package.cmake"
+    )
+    set_tests_properties(
+        easylocal.installed-package-consumer
+        PROPERTIES
+            LABELS integration
+    )
+endif()
 
 function(easylocal_add_compile_failure_test name source expected_diagnostic)
     set(expected_context "")

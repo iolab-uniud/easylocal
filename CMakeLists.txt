@@ -95,6 +95,12 @@ function(easylocal_install_adapter target component)
 endfunction()
 
 option(
+    EASYLOCAL_INSTALL
+    "Generate EasyLocal's install rules (off by default in add_subdirectory)"
+    ${PROJECT_IS_TOP_LEVEL}
+)
+
+option(
     EASYLOCAL_BUILD_EXAMPLES
     "Build EasyLocal examples"
     ${PROJECT_IS_TOP_LEVEL}
@@ -246,7 +252,7 @@ if(EASYLOCAL_ENABLE_TUI)
             set(FTXUI_BUILD_MODULES OFF CACHE BOOL "" FORCE)
             set(FTXUI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
             set(FTXUI_BUILD_TESTS_FUZZER OFF CACHE BOOL "" FORCE)
-            set(FTXUI_ENABLE_INSTALL ON CACHE BOOL "" FORCE)
+            set(FTXUI_ENABLE_INSTALL ${EASYLOCAL_INSTALL} CACHE BOOL "" FORCE)
             FetchContent_Declare(
                 ftxui
                 GIT_REPOSITORY https://github.com/ArthurSonzogni/FTXUI.git
@@ -336,7 +342,7 @@ if(EASYLOCAL_ENABLE_REST)
             set(CROW_BUILD_FUZZER OFF CACHE BOOL "" FORCE)
             set(CROW_ENABLE_SSL OFF CACHE BOOL "" FORCE)
             set(CROW_ENABLE_COMPRESSION OFF CACHE BOOL "" FORCE)
-            set(CROW_INSTALL ON CACHE BOOL "" FORCE)
+            set(CROW_INSTALL ${EASYLOCAL_INSTALL} CACHE BOOL "" FORCE)
             FetchContent_Declare(
                 Crow
                 GIT_REPOSITORY https://github.com/CrowCpp/Crow.git
@@ -366,6 +372,14 @@ endif()
 if(EASYLOCAL_BUILD_TESTS)
     include(CTest)
     add_subdirectory(tests)
+endif()
+
+# Through add_subdirectory EasyLocal is part of the consumer's build, and its
+# headers and package would land in the consumer's install prefix: the rules
+# exist only with EASYLOCAL_INSTALL, by default when it is the top-level
+# project.
+if(NOT EASYLOCAL_INSTALL)
+    return()
 endif()
 
 install(
@@ -458,10 +472,19 @@ configure_package_config_file(
     INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/EasyLocal"
 )
 
+# The package is header-only, so a consumer of any architecture may use it,
+# unless the installation bundles a compiled dependency (the fetched FTXUI of
+# the TUI). The version is the numeric one: find_package(EasyLocal 4.0)
+# accepts a pre-release of 4.0.0, as docs/stability.md says.
+set(_easylocal_version_file_options)
+if(NOT EASYLOCAL_TUI_BUNDLED)
+    list(APPEND _easylocal_version_file_options ARCH_INDEPENDENT)
+endif()
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/EasyLocalConfigVersion.cmake"
     VERSION "${PROJECT_VERSION}"
     COMPATIBILITY SameMajorVersion
+    ${_easylocal_version_file_options}
 )
 
 install(
