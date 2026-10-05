@@ -143,6 +143,23 @@ prepares once. The rest of the tutorial uses the separate version.
 
 Chapter 10 shows how to check that a delta agrees with the full evaluation.
 
+## Checking the deltas during a run
+
+A delta that is wrong only on some solutions may pass the checks of chapters
+10 and 13 and still mislead a long search. Defining `EASYLOCAL_VERIFY_DELTAS`
+(`-DEASYLOCAL_VERIFY_DELTAS`, or `target_compile_definitions`) makes every
+search re-evaluate the solution after each move it keeps and compare the value
+of each component with the one its delta gave; at the first disagreement the
+program stops with the component's position:
+
+```text
+EASYLOCAL_VERIFY_DELTAS: the delta of cost component #1 disagrees with its full evaluation after a move
+```
+
+A floating-point value is compared within 1e-9, relative. The check costs a
+full evaluation per accepted move: it is for debugging, not for the runs that
+count.
+
 ## See also
 
 - [Cost](../reference/cost.md#delta-cost-components): the delta contract.

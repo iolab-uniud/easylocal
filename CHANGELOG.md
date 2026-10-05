@@ -22,6 +22,11 @@ reviewed by hand before tagging.
 
 ### Problem model
 
+- `EASYLOCAL_VERIFY_DELTAS`, defined when compiling, makes every search
+  compare the component values its deltas gave with a full evaluation after
+  each move it keeps, and stop at the first disagreement naming the
+  component (tutorial chapter 4).
+
 - A neighborhood recipe checks the explorer's contract member by member when
   it is written (when the explorer declares its `solution_type`, else when it
   is bound): a missing `move_type` or `is_valid`, a `make_move` that is not

@@ -9,9 +9,12 @@
 #include <easylocal/helpers/detail/solution_manager_recipe.hpp>
 #include <easylocal/utils/detail/expensive_assert.hpp>
 
+#include <algorithm>
 #include <cassert>
 #include <concepts>
 #include <cstddef>
+#include <cstdio>
+#include <cstdlib>
 #include <memory>
 #include <tuple>
 #include <type_traits>
@@ -612,9 +615,65 @@ public:
         neighborhood_.make_move(solution, candidate.move());
         assert(solution_manager_.is_valid(solution));
         current = std::move(candidate.evaluation());
+#ifdef EASYLOCAL_VERIFY_DELTAS
+        verify_deltas(solution, current);
+#endif
     }
 
 private:
+    // Whether a component value from the deltas agrees with the full
+    // evaluation: within 1e-9 relative for a floating-point value.
+    template<class Value>
+    [[nodiscard]]
+    static bool same_component_value(const Value& incremental, const Value& full)
+    {
+        if constexpr (std::floating_point<Value>)
+        {
+            const auto scale = std::max(
+                {Value{1},
+                    incremental < Value{} ? -incremental : incremental,
+                    full < Value{} ? -full : full});
+            const auto difference = incremental - full;
+            return (difference < Value{} ? -difference : difference)
+                <= Value{1e-9} * scale;
+        }
+        else if constexpr (std::equality_comparable<Value>)
+            return static_cast<bool>(incremental == full);
+        else
+            return true;
+    }
+
+    // With EASYLOCAL_VERIFY_DELTAS, the values of the components after a
+    // commit, which the deltas computed, against a full evaluation of the
+    // solution: a disagreement names the component (by its position, from 1)
+    // and stops the program.
+    void verify_deltas(
+        const solution_type& solution,
+        const evaluation_type& current) const
+    {
+        if constexpr (component_aware)
+        {
+            const auto full = evaluate(solution);
+            [&]<std::size_t... Indices>(std::index_sequence<Indices...>) {
+                (
+                    [&] {
+                        if (!same_component_value(
+                                std::get<Indices>(current.component_values()),
+                                std::get<Indices>(full.component_values())))
+                        {
+                            std::fprintf(
+                                stderr,
+                                "EASYLOCAL_VERIFY_DELTAS: the delta of cost component "
+                                "#%zu disagrees with its full evaluation after a move\n",
+                                Indices + 1);
+                            std::abort();
+                        }
+                    }(),
+                    ...);
+            }(std::make_index_sequence<std::tuple_size_v<component_types>>{});
+        }
+    }
+
     const SM& solution_manager_;
     const NHE& neighborhood_;
     // The candidate solution of the last move evaluated on one, its number

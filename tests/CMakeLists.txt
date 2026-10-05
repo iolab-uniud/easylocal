@@ -279,6 +279,21 @@ easylocal_add_test(
         EasyLocal::Core
 )
 
+# A debug check of the deltas during a run: a wrong delta stops the program.
+easylocal_add_test(
+    verify-deltas
+    SOURCES
+        verify_deltas.cpp
+    LIBRARIES
+        EasyLocal::Core
+    DEFINITIONS
+        EASYLOCAL_VERIFY_DELTAS
+)
+add_test(NAME easylocal.verify-deltas-mismatch COMMAND easylocal_verify_deltas_test wrong)
+set_tests_properties(
+    easylocal.verify-deltas-mismatch
+    PROPERTIES PASS_REGULAR_EXPRESSION "EASYLOCAL_VERIFY_DELTAS: the delta of cost component #1")
+
 easylocal_add_test(
     cost-parameters
     SOURCES
