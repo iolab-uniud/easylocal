@@ -16,8 +16,8 @@ named 0, 1, ... become a list).
 
 The JSON Lines output starts with a "trace" line (format version, metadata,
 cost layout) and goes on with one line per record, with the field names of
-trace::jsonl_recorder, so the tools that read a JSONL trace read a decoded ELTR
-trace too. A record without a schema becomes {"event": "user" (or "unknown"
+trace::jsonl_recorder (and null for NaN and the infinities, as it writes them),
+so the tools that read a JSONL trace read a decoded ELTR trace too. A record without a schema becomes {"event": "user" (or "unknown"
 for a core tag), "tag": ..., "payload": hex}.
 
 The STN output is the search trajectory network of the solution_visited
@@ -35,6 +35,7 @@ from __future__ import annotations
 import argparse
 import itertools
 import json
+import math
 import struct
 import sys
 from collections import Counter
@@ -102,7 +103,10 @@ class Reader:
         return self.take(U32)[0]
 
     def string(self) -> str:
-        return self.raw(self.u32()).decode("utf-8")
+        try:
+            return self.raw(self.u32()).decode("utf-8")
+        except UnicodeDecodeError:
+            raise FormatError(f"{self.what} has a string that is not UTF-8") from None
 
     def fields(self) -> list[tuple[str, int]]:
         result = []
@@ -121,7 +125,11 @@ class Reader:
     def value(self, kind: int, cost_fields: list[tuple[str, int]]) -> Any:
         name, layout = TYPES[kind]
         if layout is not None:
-            return self.take(layout)[0]
+            value = self.take(layout)[0]
+            # NaN and the infinities as null, as trace::jsonl_recorder writes them.
+            if isinstance(value, float) and not math.isfinite(value):
+                return None
+            return value
         if name == "string":
             return self.string()
         if name == "bytes":
@@ -339,27 +347,36 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     keep = {name.strip() for name in args.events.split(",")} if args.events else None
 
-    stream = sys.stdin.buffer if args.trace == "-" else open(args.trace, "rb")
-    output = open(args.output, "w", encoding="utf-8") if args.output else sys.stdout
+    stream: IO[bytes] = sys.stdin.buffer
+    output: IO[str] = sys.stdout
     try:
+        if args.trace != "-":
+            stream = open(args.trace, "rb")
+        if args.output:
+            output = open(args.output, "w", encoding="utf-8")
         trace = Trace(stream, allow_truncated=args.allow_truncated)
         if args.format == "jsonl":
             for record in itertools.chain([trace.describe()], trace):
                 if keep is None or record["event"] in keep:
-                    output.write(json.dumps(record, separators=(",", ":")) + "\n")
+                    output.write(
+                        json.dumps(record, separators=(",", ":"), allow_nan=False) + "\n"
+                    )
         else:
             result = {
                 "summary": summary,
                 "stn": search_trajectory_network,
                 "schema": Trace.schema_listing,
             }[args.format](trace)
-            json.dump(result, output, indent=2)
+            json.dump(result, output, indent=2, allow_nan=False)
             output.write("\n")
     except FormatError as error:
         print(f"eltr: {args.trace}: {error}", file=sys.stderr)
         return 1
     except BrokenPipeError:
         return 0
+    except OSError as error:
+        print(f"eltr: {error.filename or args.trace}: {error.strerror or error}", file=sys.stderr)
+        return 1
     finally:
         if stream is not sys.stdin.buffer:
             stream.close()

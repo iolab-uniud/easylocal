@@ -206,7 +206,9 @@ scripts/eltr.py run-0042.eltrace --format schema    # what the trace records
 ```
 
 A cost decodes to a number, or to an object nested as its fields are named,
-with lists for numbered levels: `{"hard": [0, 2], "soft": 13.5}`. An application
+with lists for numbered levels: `{"hard": [0, 2], "soft": 13.5}`; NaN and the
+infinities become `null`, as in the JSONL recorder, so the output is strict
+JSON. An application
 event without a schema is kept as its tag and the hexadecimal payload, and a run
 interrupted mid-record is read up to its last whole record with
 `--allow-truncated`. As a module, `eltr.Trace(stream)` reads the header

@@ -39,6 +39,9 @@ reviewed by hand before tagging.
   record in the trace, which made an ELTR file undecodable: the binary
   recorders drop the whole record, and `jsonl_recorder` writes each line at
   once.
+- `eltr.py` writes NaN and the infinities as `null`, as `jsonl_recorder` does,
+  instead of `NaN` and `Infinity`, which are not JSON; a missing file or a
+  string that is not UTF-8 is reported in one line, without a traceback.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

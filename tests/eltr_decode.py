@@ -77,6 +77,14 @@ def trace(cost_fields=(("", 8),), schemas=(), records=()):
     return io.BytesIO(b"ELTR" + struct.pack("<II", 1, len(header)) + header + body)
 
 
+def run_cli(*arguments):
+    return subprocess.run(
+        [sys.executable, eltr.__file__, *map(str, arguments)],
+        capture_output=True,
+        text=True,
+    )
+
+
 class FixtureTraces(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -272,6 +280,44 @@ class HandcraftedTraces(unittest.TestCase):
             list(eltr.Trace(trace(records=[(42, b"\x01\x02")]))),
             [{"event": "unknown", "tag": 42, "payload": "0102"}],
         )
+
+    def test_non_finite_numbers_are_null(self):
+        schemas = [(1, "run_started", [("cost", 15)])]
+        records = [(1, struct.pack("<d", value)) for value in (math.inf, -math.inf, math.nan)]
+        stream = trace(cost_fields=(("", 10),), schemas=schemas, records=records)
+        self.assertEqual(
+            list(eltr.Trace(stream)), 3 * [{"event": "run_started", "cost": None}]
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            path = pathlib.Path(directory) / "non-finite.eltr"
+            stream.seek(0)
+            path.write_bytes(stream.read())
+            result = run_cli(path)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        lines = result.stdout.splitlines()
+        self.assertEqual(lines[1:], 3 * ['{"event":"run_started","cost":null}'])
+
+    def test_a_string_that_is_not_utf8_is_a_format_error(self):
+        schemas = [(1, "run_finished", [("termination", 12)])]
+        records = [(1, struct.pack("<I", 2) + b"\xff\xfe")]
+        with self.assertRaisesRegex(eltr.FormatError, "not UTF-8"):
+            list(eltr.Trace(trace(schemas=schemas, records=records)))
+
+    def test_a_file_that_cannot_be_read_is_reported_without_a_traceback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            missing = run_cli(pathlib.Path(directory) / "missing.eltr")
+            self.assertEqual(missing.returncode, 1)
+            self.assertIn("missing.eltr", missing.stderr)
+            self.assertNotIn("Traceback", missing.stderr)
+
+            path = pathlib.Path(directory) / "corrupt.eltr"
+            schemas = [(1, "run_finished", [("termination", 12)])]
+            records = [(1, struct.pack("<I", 2) + b"\xff\xfe")]
+            path.write_bytes(trace(schemas=schemas, records=records).read())
+            corrupt = run_cli(path)
+            self.assertEqual(corrupt.returncode, 1)
+            self.assertIn("not UTF-8", corrupt.stderr)
+            self.assertNotIn("Traceback", corrupt.stderr)
 
     def test_cost_values(self):
         self.assertEqual(eltr.nest([("", 3)]), 3)
