@@ -126,7 +126,7 @@ component, followed by its description, indented), and the solution
 (or saves it to `--output`) to `options.out`; errors go to `options.err`. It
 returns 0, 2 for an invalid command line, an unknown runner or a `--solution`
 that is not valid for the Input (`error: solution: ...`), 1 when the run
-throws. It requires the `read_input` hook, and the solution hooks only when the
+throws (`error: unknown exception` for what is not a `std::exception`). It requires the `read_input` hook, and the solution hooks only when the
 corresponding switches are used.
 
 ### Tuning with irace

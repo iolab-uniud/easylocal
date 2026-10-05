@@ -160,6 +160,8 @@ reviewed by hand before tagging.
   deltas that may index out of bounds.
 - `Session::last_run_effort()` is empty after a new Input and after a run that
   does not complete, instead of keeping an older run's effort.
+- `cli::run` exits with status 1 and `error: unknown exception` when a run
+  throws something other than a `std::exception`, instead of terminating.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

@@ -46,6 +46,26 @@ struct Extra
     }
 };
 
+// An algorithm that throws what is not a std::exception.
+struct ThrowingParameters
+{
+};
+
+class ThrowingAlgorithm
+{
+public:
+    using parameters_type = ThrowingParameters;
+
+    explicit ThrowingAlgorithm(ThrowingParameters) {}
+
+    template<class Context>
+    easylocal::search_result<typename Context::solution_type, typename Context::cost_type>
+    run(const Context&, typename Context::solution_type)
+    {
+        throw 42;
+    }
+};
+
 auto tsp_app()
 {
     using namespace tutorial;
@@ -243,6 +263,30 @@ int main()
     const auto unreadable = run({"--instance", "no-such-instance.tsp"});
     assert(unreadable.status == 1);
     assert(unreadable.err.starts_with("error: failed to open Input file"));
+
+    // A run that throws something else than a std::exception: exit status 1.
+    {
+        using namespace tutorial;
+        auto throwing = easylocal::app("tsp")
+            | (easylocal::solution_manager<TourManager>()
+                | easylocal::component<TourLength>())
+            | easylocal::neighborhood<TwoOptExplorer>()
+            | easylocal::runner<ThrowingAlgorithm>("throwing");
+        std::string program{"cli_run"};
+        std::string instance_switch{"--instance"};
+        std::string instance_path{instance};
+        std::vector<char*>
+            argv{program.data(), instance_switch.data(), instance_path.data()};
+        std::ostringstream out;
+        std::ostringstream err;
+        const int status = easylocal::cli::run(
+            std::move(throwing),
+            static_cast<int>(argv.size()),
+            argv.data(),
+            {.out = &out, .err = &err});
+        assert(status == 1);
+        assert(err.str() == "error: unknown exception\n");
+    }
 
     // The app's and the program's parameters are on the same command line.
     Extra extra;

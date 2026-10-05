@@ -274,8 +274,8 @@ inline int write_irace(
 /// with the ranges of settings.tuning, and exits without loading the Input.
 ///
 /// Returns the exit status: 0 on success, 1 when the run fails (an unreadable
-/// file, for example), 2 for an invalid command line, a --solution that is not
-/// valid for the Input included.
+/// file or any other exception), 2 for an invalid command line, a --solution
+/// that is not valid for the Input included.
 template<class App>
 [[nodiscard]]
 int run(App application, const int argc, char* argv[], options settings = {})
@@ -496,6 +496,11 @@ int run(App application, const int argc, char* argv[], options settings = {})
     catch (const std::exception& error)
     {
         err << "error: " << error.what() << '\n';
+        return 1;
+    }
+    catch (...)
+    {
+        err << "error: unknown exception\n";
         return 1;
     }
     return 0;
