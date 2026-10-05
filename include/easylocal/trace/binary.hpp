@@ -888,31 +888,47 @@ public:
         append_trace_header(buffer, cost_fields, metadata);
     }
 
+    // Appends the record of value, after the schema of its tag the first
+    // time; if the encoding throws, buffer and the schemas written are left
+    // as they were.
     template<class Event>
         requires (binary_event_encodable_v<Event, CostWriter>)
     void append(std::vector<char>& buffer, const Event& value)
     {
         const auto tag = event_tag(value, cost_writer_);
-        if constexpr (!core_binary_event_for<Event, CostWriter>
-            && described_binary_event<Event>)
+        const auto mark = buffer.size();
+        bool* newly_described = nullptr;
+        try
         {
-            if (tag >= first_user_tag && !described_[tag - first_user_tag])
+            if constexpr (!core_binary_event_for<Event, CostWriter>
+                && described_binary_event<Event>)
             {
-                described_[tag - first_user_tag] = true;
-                const auto schema_offset = begin_record(
-                    buffer,
-                    static_cast<std::uint8_t>(core_binary_event_tag::schema));
-                binary_record_writer schema_out{buffer};
-                schema_out.schema(
-                    tag,
-                    describe_binary_event(std::type_identity<Event>{}));
-                finish_record(buffer, schema_offset);
+                if (tag >= first_user_tag && !described_[tag - first_user_tag])
+                {
+                    const auto schema_offset = begin_record(
+                        buffer,
+                        static_cast<std::uint8_t>(core_binary_event_tag::schema));
+                    binary_record_writer schema_out{buffer};
+                    schema_out.schema(
+                        tag,
+                        describe_binary_event(std::type_identity<Event>{}));
+                    finish_record(buffer, schema_offset);
+                    newly_described = &described_[tag - first_user_tag];
+                    *newly_described = true;
+                }
             }
+            const auto payload_offset = begin_record(buffer, tag);
+            binary_record_writer out{buffer};
+            encode_event(out, value, cost_writer_);
+            finish_record(buffer, payload_offset);
         }
-        const auto payload_offset = begin_record(buffer, tag);
-        binary_record_writer out{buffer};
-        encode_event(out, value, cost_writer_);
-        finish_record(buffer, payload_offset);
+        catch (...)
+        {
+            buffer.resize(mark);
+            if (newly_described != nullptr)
+                *newly_described = false;
+            throw;
+        }
     }
 
 private:

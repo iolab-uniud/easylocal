@@ -293,6 +293,12 @@ close to the problem code while the recorder owns buffering and persistence.
 Tag ownership is application-level metadata; independent extensions should
 coordinate their user-tag assignments when they share a trace schema.
 
+A cost writer or an `encode_binary_event` that throws leaves no part of its
+record in the trace: the binary recorders drop the whole record (and the schema
+written before it, which the next record of the tag writes again), and the
+JSONL recorder formats a line before writing it at once.  The exception reaches
+the caller of `emit`.
+
 By default, JSONL persistence accepts costs that can be inserted into an
 `std::ostream`. A number is written as the shortest text that reads back to the
 same value, and NaN and the infinities, which JSON has no numbers for, as

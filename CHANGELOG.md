@@ -35,6 +35,10 @@ reviewed by hand before tagging.
   `good()` and `flush()` report the error, a failed final flush included.
 - `trace::async_binary_recorder` rejects an unlimited `async_queue_blocks` with
   `std::invalid_argument`, instead of deadlocking at construction.
+- A cost writer or an `encode_binary_event` that throws no longer leaves half a
+  record in the trace, which made an ELTR file undecodable: the binary
+  recorders drop the whole record, and `jsonl_recorder` writes each line at
+  once.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

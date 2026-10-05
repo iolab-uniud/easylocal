@@ -138,6 +138,77 @@ protected:
     }
 };
 
+// Cost writers that write part of a cost 13, then throw.
+struct throwing_cost_error
+{
+};
+
+struct throwing_binary_cost_writer
+{
+    void operator()(easylocal::trace::binary_record_writer& out, const int cost) const
+    {
+        out.i32(cost);
+        if (cost == 13)
+            throw throwing_cost_error{};
+    }
+
+    [[nodiscard]] static auto fields() -> std::vector<easylocal::trace::binary_field>
+    {
+        return {{"", easylocal::trace::binary_type::i32}};
+    }
+};
+
+struct throwing_json_cost_writer
+{
+    void operator()(std::ostream& out, const int cost) const
+    {
+        out << cost;
+        if (cost == 13)
+            throw throwing_cost_error{};
+    }
+};
+
+// An application event whose encoding throws for a value of 13.
+struct fragile_event
+{
+    int value{};
+};
+
+constexpr auto binary_event_tag(const fragile_event&) noexcept -> std::uint8_t
+{
+    return easylocal::trace::user_binary_event_tag<1>();
+}
+
+inline void encode_binary_event(
+    easylocal::trace::binary_record_writer& out,
+    const fragile_event& event)
+{
+    out.i32(event.value);
+    if (event.value == 13)
+        throw throwing_cost_error{};
+}
+
+inline auto describe_binary_event(std::type_identity<fragile_event>)
+    -> easylocal::trace::binary_event_schema
+{
+    return {"fragile", {{"value", easylocal::trace::binary_type::i32}}};
+}
+
+// Emits value, and whether its encoding threw.
+template<class Tracer, class Event>
+auto emit_throws(Tracer& tracer, const Event& value) -> bool
+{
+    try
+    {
+        easylocal::trace::emit(tracer, value);
+    }
+    catch (const throwing_cost_error&)
+    {
+        return true;
+    }
+    return false;
+}
+
 // Emits one event of every kind, with routes, to a tracer.
 template<class Tracer>
 void emit_every_event(Tracer& tracer)
@@ -626,6 +697,54 @@ int main()
         ok &= expect(
             flush_thrown && !recorder.good(),
             "async binary recorder reports a failed final flush through flush and good");
+    }
+
+    // An encoding that throws leaves no part of its record behind.
+    {
+        namespace event = easylocal::trace::event;
+        std::ostringstream stream;
+        easylocal::trace::binary_recorder<int, throwing_binary_cost_writer> recorder{
+            stream,
+            throwing_binary_cost_writer{}};
+        const auto records = stream.str().size();
+        const bool threw = !emit_throws(recorder, event::run_started<int>{1})
+            && emit_throws(recorder, event::run_started<int>{13})
+            && !emit_throws(recorder, event::run_started<int>{2});
+        recorder.flush();
+        const auto data = stream.str();
+        ok &= expect(
+            threw && data.size() == records + 2 * (5 + 4)
+                && static_cast<unsigned char>(data[records + 5]) == 1
+                && static_cast<unsigned char>(data[records + 9 + 5]) == 2,
+            "binary recorder drops the whole record whose cost writer throws");
+
+        std::ostringstream described_stream;
+        easylocal::trace::binary_recorder<int> described{described_stream};
+        const auto start = described_stream.str().size();
+        const bool described_threw = emit_throws(described, fragile_event{13})
+            && !emit_throws(described, fragile_event{2});
+        described.flush();
+        const auto described_data = described_stream.str();
+        ok &= expect(
+            described_threw && static_cast<unsigned char>(described_data[start]) == 0
+                && described_data.find("fragile") != std::string::npos
+                && described_data.size()
+                    == start + 5 + (1 + 4 + 7 + 4 + 4 + 5 + 1) + 5 + 4,
+            "binary recorder writes the schema again after a record that threw");
+
+        std::ostringstream jsonl;
+        easylocal::trace::jsonl_recorder<int, throwing_json_cost_writer> json{
+            jsonl,
+            throwing_json_cost_writer{}};
+        const bool json_threw = !emit_throws(json, event::run_started<int>{1})
+            && emit_throws(json, event::run_started<int>{13})
+            && !emit_throws(json, event::run_started<int>{2});
+        ok &= expect(
+            json_threw
+                && jsonl.str()
+                    == "{\"event\":\"run_started\",\"cost\":1}\n"
+                       "{\"event\":\"run_started\",\"cost\":2}\n",
+            "JSONL recorder writes no part of a line whose cost writer throws");
     }
 
     // The queued blocks are allocated at construction: an unlimited queue is

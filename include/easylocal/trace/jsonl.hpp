@@ -12,8 +12,10 @@
 #include <cmath>
 #include <concepts>
 #include <cstddef>
+#include <ios>
 #include <limits>
 #include <ostream>
+#include <sstream>
 #include <type_traits>
 #include <utility>
 
@@ -107,6 +109,13 @@ inline void write_route_json(
     out << ']';
 }
 
+// The line a jsonl_recorder formats, one per thread, reused by every event.
+inline std::ostringstream& jsonl_line_buffer()
+{
+    thread_local std::ostringstream line;
+    return line;
+}
+
 } // namespace detail
 
 /// A tracer that writes each event to a stream as it is emitted, one JSON
@@ -145,120 +154,140 @@ public:
     /// Writes the event as a JSON line.
     void emit(const event::run_started<Cost>& value)
     {
-        out_ << "{\"event\":\"run_started\",\"cost\":";
-        cost_writer_(out_, value.cost);
-        out_ << "}\n";
+        write_line([&](std::ostream& out) {
+            out << "{\"event\":\"run_started\",\"cost\":";
+            cost_writer_(out, value.cost);
+            out << "}\n";
+        });
     }
 
     /// Writes the event as a JSON line.
     void emit(const event::move_evaluated<Cost>& value)
     {
-        out_ << "{\"event\":\"move_evaluated\",\"evaluations\":" << value.evaluations
-             << ",\"iterations\":" << value.iterations
-             << ",\"current_cost\":";
-        cost_writer_(out_, value.current_cost);
-        out_ << ",\"candidate_cost\":";
-        cost_writer_(out_, value.candidate_cost);
-        out_ << ",\"neighborhood\":";
-        detail::write_route_json(out_, value.neighborhood);
-        out_ << "}\n";
+        write_line([&](std::ostream& out) {
+            out << "{\"event\":\"move_evaluated\",\"evaluations\":" << value.evaluations
+                << ",\"iterations\":" << value.iterations << ",\"current_cost\":";
+            cost_writer_(out, value.current_cost);
+            out << ",\"candidate_cost\":";
+            cost_writer_(out, value.candidate_cost);
+            out << ",\"neighborhood\":";
+            detail::write_route_json(out, value.neighborhood);
+            out << "}\n";
+        });
     }
 
     /// Writes the event as a JSON line.
     void emit(const event::move_accepted<Cost>& value)
     {
-        out_ << "{\"event\":\"move_accepted\",\"evaluations\":" << value.evaluations
-             << ",\"iterations\":" << value.iterations
-             << ",\"previous_cost\":";
-        cost_writer_(out_, value.previous_cost);
-        out_ << ",\"cost\":";
-        cost_writer_(out_, value.cost);
-        out_ << ",\"neighborhood\":";
-        detail::write_route_json(out_, value.neighborhood);
-        out_ << "}\n";
+        write_line([&](std::ostream& out) {
+            out << "{\"event\":\"move_accepted\",\"evaluations\":" << value.evaluations
+                << ",\"iterations\":" << value.iterations << ",\"previous_cost\":";
+            cost_writer_(out, value.previous_cost);
+            out << ",\"cost\":";
+            cost_writer_(out, value.cost);
+            out << ",\"neighborhood\":";
+            detail::write_route_json(out, value.neighborhood);
+            out << "}\n";
+        });
     }
 
     /// Writes the event as a JSON line.
     void emit(const event::incumbent_updated<Cost>& value)
     {
-        out_ << "{\"event\":\"incumbent_updated\",\"evaluations\":" << value.evaluations
-             << ",\"iterations\":" << value.iterations
-             << ",\"previous_cost\":";
-        cost_writer_(out_, value.previous_cost);
-        out_ << ",\"cost\":";
-        cost_writer_(out_, value.cost);
-        out_ << "}\n";
+        write_line([&](std::ostream& out) {
+            out << "{\"event\":\"incumbent_updated\",\"evaluations\":"
+                << value.evaluations << ",\"iterations\":" << value.iterations
+                << ",\"previous_cost\":";
+            cost_writer_(out, value.previous_cost);
+            out << ",\"cost\":";
+            cost_writer_(out, value.cost);
+            out << "}\n";
+        });
     }
 
     /// Writes the event as a JSON line.
     void emit(const event::local_optimum<Cost>& value)
     {
-        out_ << "{\"event\":\"local_optimum\",\"evaluations\":" << value.evaluations
-             << ",\"iterations\":" << value.iterations
-             << ",\"cost\":";
-        cost_writer_(out_, value.cost);
-        out_ << "}\n";
+        write_line([&](std::ostream& out) {
+            out << "{\"event\":\"local_optimum\",\"evaluations\":" << value.evaluations
+                << ",\"iterations\":" << value.iterations << ",\"cost\":";
+            cost_writer_(out, value.cost);
+            out << "}\n";
+        });
     }
 
     /// Writes the event as a JSON line.
     void emit(const event::neighborhood_selection& value)
     {
-        out_ << "{\"event\":\"neighborhood_selection\",\"attempt\":" << value.attempt
-             << ",\"child\":" << value.child << ",\"bias\":";
-        detail::write_json_number(out_, value.bias);
-        out_ << ",\"active_bias_total\":";
-        detail::write_json_number(out_, value.active_bias_total);
-        out_ << ",\"conditional_probability\":";
-        detail::write_json_number(out_, value.conditional_probability);
-        out_ << ",\"produced_move\":" << (value.produced_move ? "true" : "false")
-             << ",\"neighborhood\":";
-        detail::write_route_json(out_, value.neighborhood);
-        out_ << "}\n";
+        write_line([&](std::ostream& out) {
+            out << "{\"event\":\"neighborhood_selection\",\"attempt\":" << value.attempt
+                << ",\"child\":" << value.child << ",\"bias\":";
+            detail::write_json_number(out, value.bias);
+            out << ",\"active_bias_total\":";
+            detail::write_json_number(out, value.active_bias_total);
+            out << ",\"conditional_probability\":";
+            detail::write_json_number(out, value.conditional_probability);
+            out << ",\"produced_move\":" << (value.produced_move ? "true" : "false")
+                << ",\"neighborhood\":";
+            detail::write_route_json(out, value.neighborhood);
+            out << "}\n";
+        });
     }
 
     /// Writes the event as a JSON line.
     void emit(const event::solution_visited<Cost>& value)
     {
-        out_ << "{\"event\":\"solution_visited\",\"evaluations\":" << value.evaluations
-             << ",\"iterations\":" << value.iterations << ",\"hash\":" << value.hash
-             << ",\"cost\":";
-        cost_writer_(out_, value.cost);
-        out_ << "}\n";
+        write_line([&](std::ostream& out) {
+            out << "{\"event\":\"solution_visited\",\"evaluations\":" << value.evaluations
+                << ",\"iterations\":" << value.iterations << ",\"hash\":" << value.hash
+                << ",\"cost\":";
+            cost_writer_(out, value.cost);
+            out << "}\n";
+        });
     }
 
     /// Writes the event as a JSON line.
     void emit(const event::aspiration_applied<Cost>& value)
     {
-        out_ << "{\"event\":\"aspiration_applied\",\"evaluations\":" << value.evaluations
-             << ",\"iterations\":" << value.iterations << ",\"cost\":";
-        cost_writer_(out_, value.cost);
-        out_ << "}\n";
+        write_line([&](std::ostream& out) {
+            out << "{\"event\":\"aspiration_applied\",\"evaluations\":"
+                << value.evaluations << ",\"iterations\":" << value.iterations
+                << ",\"cost\":";
+            cost_writer_(out, value.cost);
+            out << "}\n";
+        });
     }
 
     /// Writes the event as a JSON line.
     void emit(const event::tabu_escape& value)
     {
-        out_ << "{\"event\":\"tabu_escape\",\"evaluations\":" << value.evaluations
-             << ",\"iterations\":" << value.iterations << ",\"moves\":" << value.moves
-             << "}\n";
+        write_line([&](std::ostream& out) {
+            out << "{\"event\":\"tabu_escape\",\"evaluations\":" << value.evaluations
+                << ",\"iterations\":" << value.iterations << ",\"moves\":" << value.moves
+                << "}\n";
+        });
     }
 
     /// Writes the event as a JSON line.
     void emit(const event::tabu_tenure_changed& value)
     {
-        out_ << "{\"event\":\"tabu_tenure_changed\",\"evaluations\":" << value.evaluations
-             << ",\"iterations\":" << value.iterations << ",\"previous_tenure\":"
-             << value.previous_tenure << ",\"tenure\":" << value.tenure << "}\n";
+        write_line([&](std::ostream& out) {
+            out << "{\"event\":\"tabu_tenure_changed\",\"evaluations\":"
+                << value.evaluations << ",\"iterations\":" << value.iterations
+                << ",\"previous_tenure\":" << value.previous_tenure
+                << ",\"tenure\":" << value.tenure << "}\n";
+        });
     }
 
     /// Writes the event as a JSON line.
     void emit(const event::run_finished<Cost>& value)
     {
-        out_ << "{\"event\":\"run_finished\",\"evaluations\":" << value.evaluations
-             << ",\"iterations\":" << value.iterations
-             << ",\"cost\":";
-        cost_writer_(out_, value.cost);
-        out_ << ",\"termination\":\"" << to_string(value.termination) << "\"}\n";
+        write_line([&](std::ostream& out) {
+            out << "{\"event\":\"run_finished\",\"evaluations\":" << value.evaluations
+                << ",\"iterations\":" << value.iterations << ",\"cost\":";
+            cost_writer_(out, value.cost);
+            out << ",\"termination\":\"" << to_string(value.termination) << "\"}\n";
+        });
     }
 
     /// Flushes the stream.
@@ -275,6 +304,21 @@ public:
     }
 
 private:
+    // Formats a line with the stream's format, then writes it at once: a
+    // cost writer that throws leaves no part of it in the stream.
+    template<class Format>
+    void write_line(Format&& format)
+    {
+        auto& line = detail::jsonl_line_buffer();
+        line.str({});
+        line.clear();
+        line.copyfmt(out_);
+        line.tie(nullptr);
+        std::forward<Format>(format)(static_cast<std::ostream&>(line));
+        const auto text = line.view();
+        out_.write(text.data(), static_cast<std::streamsize>(text.size()));
+    }
+
     std::ostream& out_;
     EASYLOCAL_NO_UNIQUE_ADDRESS CostWriter cost_writer_{};
 };
