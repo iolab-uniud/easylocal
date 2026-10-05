@@ -17,13 +17,15 @@ namespace
 
 struct member_described
 {
-    [[nodiscard]] auto describe() const -> std::string
+    [[nodiscard]] std::string describe() const
     {
         return "member";
     }
 };
 
-[[maybe_unused]] inline auto operator<<(std::ostream& out, const member_described&) -> std::ostream&
+[[maybe_unused]] inline std::ostream& operator<<(
+    std::ostream& out,
+    const member_described&)
 {
     return out << "stream";
 }
@@ -34,12 +36,12 @@ struct value
 {
 };
 
-[[nodiscard]] inline auto describe(const value&) -> std::string
+[[nodiscard]] inline std::string describe(const value&)
 {
     return "adl";
 }
 
-[[maybe_unused]] inline auto operator<<(std::ostream& out, const value&) -> std::ostream&
+[[maybe_unused]] inline std::ostream& operator<<(std::ostream& out, const value&)
 {
     return out << "stream";
 }
@@ -49,7 +51,7 @@ struct stream_only
 {
 };
 
-inline auto operator<<(std::ostream& out, const stream_only&) -> std::ostream&
+inline std::ostream& operator<<(std::ostream& out, const stream_only&)
 {
     return out << "stream";
 }
@@ -60,14 +62,23 @@ struct context_probe
     bool solution{};
     bool valid{true};
 
-    [[nodiscard]] auto has_input() const noexcept -> bool { return input; }
-    [[nodiscard]] auto has_solution() const noexcept -> bool { return solution; }
-    [[nodiscard]] auto is_valid() const noexcept -> bool { return valid; }
+    [[nodiscard]] bool has_input() const noexcept
+    {
+        return input;
+    }
+    [[nodiscard]] bool has_solution() const noexcept
+    {
+        return solution;
+    }
+    [[nodiscard]] bool is_valid() const noexcept
+    {
+        return valid;
+    }
 };
 
 struct named_value
 {
-    [[nodiscard]] static constexpr auto name() noexcept -> std::string_view
+    [[nodiscard]] static constexpr std::string_view name() noexcept
     {
         return "named";
     }

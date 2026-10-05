@@ -11,7 +11,7 @@ struct named_app
 {
     std::string_view label;
 
-    [[nodiscard]] auto name() const noexcept -> std::string_view
+    [[nodiscard]] std::string_view name() const noexcept
     {
         return label;
     }

@@ -94,3 +94,8 @@ def test_buttons_shortcuts_and_help_name_an_action_alike(tui):
     tui.expect("Keyboard help")
     tui.expect("U Distribution")
     tui.expect("X in the progress window stops the run")
+
+
+def test_a_problem_without_parameters_says_so(tui):
+    tui.press("I", F5, "P")
+    tui.expect("The problem has no parameters")

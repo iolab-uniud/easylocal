@@ -80,6 +80,34 @@ def test_an_invalid_target_runs_nothing(tui):
     tui.expect_absent("Runner executing")
 
 
+def test_h_in_a_field_is_text_not_help(tui):
+    # In a text field ? and h are characters, not the help key.
+    tui.press("I")
+    set_target(tui, "h?")
+    tui.expect_absent("Keyboard help")
+    tui.press("G")
+    tui.expect("Parameters of fi")
+    tui.press(ENTER)
+    tui.expect("Target cost: ")
+    tui.expect_absent("Runner executing")
+
+
+def test_help_does_not_open_behind_a_run(tui):
+    tui.press("I", F5)
+    tui.select("sa")
+    tui.press("G")
+    tui.expect("Parameters of sa")
+    # So slow a cooling that the run lasts until X stops it.
+    tui.press(TAB, TAB).keys(*[BACKSPACE] * 4)
+    tui.type("0.99999999")
+    tui.press(ENTER)
+    tui.expect("Running sa [eval=")
+    tui.press("h")
+    tui.expect_absent("Keyboard help")
+    tui.press("X")
+    tui.expect("Runner stopped: sa", timeout=10)
+
+
 def test_a_time_limit_stops_the_run(tui):
     # No time at all: First Improvement stops at its first check, from the
     # initial tour.
