@@ -90,35 +90,6 @@ inline std::size_t accepted_limit(
         static_cast<std::size_t>(static_cast<double>(sample_limit) * accepted_ratio));
 }
 
-[[nodiscard]]
-inline config::validation_result validate_cooling_schedule(
-    const double initial_temperature,
-    const double final_temperature,
-    const double cooling_rate) noexcept
-{
-    if (!std::isfinite(initial_temperature) || initial_temperature <= 0.0)
-    {
-        return config::validation_result::failure(
-            "initial_temperature must be finite and positive");
-    }
-    if (!std::isfinite(final_temperature) || final_temperature <= 0.0)
-    {
-        return config::validation_result::failure(
-            "final_temperature must be finite and positive");
-    }
-    if (final_temperature >= initial_temperature)
-    {
-        return config::validation_result::failure(
-            "final_temperature must be smaller than initial_temperature");
-    }
-    if (!std::isfinite(cooling_rate) || cooling_rate <= 0.0 || cooling_rate >= 1.0)
-    {
-        return config::validation_result::failure(
-            "cooling_rate must be finite and in the open interval (0, 1)");
-    }
-    return config::validation_result::success();
-}
-
 // The number of temperature levels of a cooling schedule: the coolings from
 // initial_temperature to final_temperature. A count within rounding of an
 // integer is that integer, so that 1 -> 0.001 by 0.1 is three levels.
@@ -128,8 +99,9 @@ inline std::size_t temperature_level_count(
     const double final_temperature,
     const double cooling_rate)
 {
-    assert(
-        validate_cooling_schedule(initial_temperature, final_temperature, cooling_rate));
+    // The schemas of the schedules check these (cooling_fields, cooling_rule).
+    assert(final_temperature > 0.0 && final_temperature < initial_temperature);
+    assert(cooling_rate > 0.0 && cooling_rate < 1.0);
 
     const auto raw_levels =
         std::log(final_temperature / initial_temperature) / std::log(cooling_rate);
@@ -138,6 +110,50 @@ inline std::size_t temperature_level_count(
     return (std::max)(std::size_t{1},
         static_cast<std::size_t>(
             std::ceil(raw_levels - rounding * (std::max)(1.0, raw_levels))));
+}
+
+// The fields of a cooling schedule, shared by the blocks that have one: its
+// initial and final temperatures and its cooling rate.
+template<class Block>
+[[nodiscard]]
+consteval auto cooling_fields()
+{
+    return config::fields(
+        config::field<"initial_temperature", &Block::initial_temperature>(
+            "Initial annealing temperature",
+            config::range(0.0, easylocal::unlimited).open_low()),
+        config::field<"final_temperature", &Block::final_temperature>(
+            "Final annealing temperature",
+            config::range(0.0, easylocal::unlimited).open_low()),
+        config::field<"cooling_rate", &Block::cooling_rate>(
+            "Multiplicative cooling factor",
+            config::range(0.0, 1.0).open()));
+}
+
+// The rule between the temperatures of a cooling schedule.
+[[nodiscard]]
+consteval auto cooling_rule()
+{
+    return config::require(
+        config::value<"final_temperature"> < config::value<"initial_temperature">,
+        "final_temperature must be smaller than initial_temperature");
+}
+
+// The fields of the calibration of the initial temperature, shared by every
+// built-in schedule.
+template<class Block>
+[[nodiscard]]
+consteval auto calibration_fields()
+{
+    return config::fields(
+        config::field<"calibration_samples", &Block::calibration_samples>(
+            "Moves sampled to estimate the initial temperature (0: none)",
+            config::range(0, easylocal::unlimited)),
+        config::field<"initial_acceptance", &Block::initial_acceptance>(
+            "Acceptance probability of an average worsening move at the "
+            "estimated initial temperature",
+            config::range(0.0, 1.0).open())
+            .only_if(config::value<"calibration_samples"> > 0));
 }
 
 // What the schemas cannot say: their domains have no upper bound, and let an
@@ -222,32 +238,16 @@ struct ClassicParameters
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
-        return config::fields(
-            config::field<"initial_temperature", &ClassicParameters::initial_temperature>(
-                "Initial annealing temperature",
-                config::range(0.0, easylocal::unlimited).open_low()),
-            config::field<"final_temperature", &ClassicParameters::final_temperature>(
-                "Final annealing temperature",
-                config::range(0.0, easylocal::unlimited).open_low()),
-            config::field<"cooling_rate", &ClassicParameters::cooling_rate>(
-                "Multiplicative cooling factor",
-                config::range(0.0, 1.0).open()),
-            config::field<
-                "samples_per_temperature",
-                &ClassicParameters::samples_per_temperature>(
-                "Proposals evaluated at each temperature",
-                config::range(1, easylocal::unlimited)),
-            config::field<"calibration_samples", &ClassicParameters::calibration_samples>(
-                "Moves sampled to estimate the initial temperature (0: none)",
-                config::range(0, easylocal::unlimited)),
-            config::field<"initial_acceptance", &ClassicParameters::initial_acceptance>(
-                "Acceptance probability of an average worsening move at the "
-                "estimated initial temperature",
-                config::range(0.0, 1.0).open())
-                .only_if(config::value<"calibration_samples"> > 0),
-            config::require(
-                config::value<"final_temperature"> < config::value<"initial_temperature">,
-                "final_temperature must be smaller than initial_temperature"));
+        return std::tuple_cat(
+            detail::cooling_fields<ClassicParameters>(),
+            config::fields(
+                config::field<
+                    "samples_per_temperature",
+                    &ClassicParameters::samples_per_temperature>(
+                    "Proposals evaluated at each temperature",
+                    config::range(1, easylocal::unlimited))),
+            detail::calibration_fields<ClassicParameters>(),
+            config::fields(detail::cooling_rule()));
     }
 
     /// Whether the parameters are valid, and why not.
@@ -381,38 +381,16 @@ struct FixedLengthParameters
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
-        return config::fields(
-            config::field<
-                "initial_temperature",
-                &FixedLengthParameters::initial_temperature>(
-                "Initial annealing temperature",
-                config::range(0.0, easylocal::unlimited).open_low()),
-            config::field<"final_temperature", &FixedLengthParameters::final_temperature>(
-                "Final annealing temperature",
-                config::range(0.0, easylocal::unlimited).open_low()),
-            config::field<"cooling_rate", &FixedLengthParameters::cooling_rate>(
-                "Multiplicative cooling factor",
-                config::range(0.0, 1.0).open()),
-            config::field<
-                "allowed_iterations",
-                &FixedLengthParameters::allowed_iterations>(
-                "Proposals of the annealing, spread over its levels",
-                config::range(1, easylocal::unlimited)),
-            config::field<
-                "calibration_samples",
-                &FixedLengthParameters::calibration_samples>(
-                "Moves sampled to estimate the initial temperature (0: none)",
-                config::range(0, easylocal::unlimited)),
-            config::field<
-                "initial_acceptance",
-                &FixedLengthParameters::initial_acceptance>(
-                "Acceptance probability of an average worsening move at the "
-                "estimated initial temperature",
-                config::range(0.0, 1.0).open())
-                .only_if(config::value<"calibration_samples"> > 0),
-            config::require(
-                config::value<"final_temperature"> < config::value<"initial_temperature">,
-                "final_temperature must be smaller than initial_temperature"));
+        return std::tuple_cat(
+            detail::cooling_fields<FixedLengthParameters>(),
+            config::fields(
+                config::field<
+                    "allowed_iterations",
+                    &FixedLengthParameters::allowed_iterations>(
+                    "Proposals of the annealing, spread over its levels",
+                    config::range(1, easylocal::unlimited))),
+            detail::calibration_fields<FixedLengthParameters>(),
+            config::fields(detail::cooling_rule()));
     }
 
     /// Whether the parameters are valid, and why not.
@@ -556,33 +534,19 @@ struct CutoffParameters
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
-        return config::fields(
-            config::field<"initial_temperature", &CutoffParameters::initial_temperature>(
-                "Initial annealing temperature",
-                config::range(0.0, easylocal::unlimited).open_low()),
-            config::field<"final_temperature", &CutoffParameters::final_temperature>(
-                "Final annealing temperature",
-                config::range(0.0, easylocal::unlimited).open_low()),
-            config::field<"cooling_rate", &CutoffParameters::cooling_rate>(
-                "Multiplicative cooling factor",
-                config::range(0.0, 1.0).open()),
-            config::field<"allowed_iterations", &CutoffParameters::allowed_iterations>(
-                "Proposals of the annealing, spread over its levels",
-                config::range(1, easylocal::unlimited)),
-            config::field<"accepted_ratio", &CutoffParameters::accepted_ratio>(
-                "Fraction of accepted proposals that triggers cooling",
-                config::range(0.0, 1.0).open_low()),
-            config::field<"calibration_samples", &CutoffParameters::calibration_samples>(
-                "Moves sampled to estimate the initial temperature (0: none)",
-                config::range(0, easylocal::unlimited)),
-            config::field<"initial_acceptance", &CutoffParameters::initial_acceptance>(
-                "Acceptance probability of an average worsening move at the "
-                "estimated initial temperature",
-                config::range(0.0, 1.0).open())
-                .only_if(config::value<"calibration_samples"> > 0),
-            config::require(
-                config::value<"final_temperature"> < config::value<"initial_temperature">,
-                "final_temperature must be smaller than initial_temperature"));
+        return std::tuple_cat(
+            detail::cooling_fields<CutoffParameters>(),
+            config::fields(
+                config::field<
+                    "allowed_iterations",
+                    &CutoffParameters::allowed_iterations>(
+                    "Proposals of the annealing, spread over its levels",
+                    config::range(1, easylocal::unlimited)),
+                config::field<"accepted_ratio", &CutoffParameters::accepted_ratio>(
+                    "Fraction of accepted proposals that triggers cooling",
+                    config::range(0.0, 1.0).open_low())),
+            detail::calibration_fields<CutoffParameters>(),
+            config::fields(detail::cooling_rule()));
     }
 
     /// Whether the parameters are valid, and why not.
@@ -886,30 +850,20 @@ struct FixedTemperatureParameters
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
-        return config::fields(
-            config::field<"temperature", &FixedTemperatureParameters::temperature>(
-                "Constant annealing temperature",
-                config::range(0.0, easylocal::unlimited).open_low()),
-            config::field<
-                "allowed_iterations",
-                &FixedTemperatureParameters::allowed_iterations>(
-                "Proposals of the annealing",
-                config::range(1, easylocal::unlimited)),
-            config::field<"max_accepted", &FixedTemperatureParameters::max_accepted>(
-                "Accepted proposals that end the annealing, or unlimited",
-                config::range(1, easylocal::unlimited)),
-            config::field<
-                "calibration_samples",
-                &FixedTemperatureParameters::calibration_samples>(
-                "Moves sampled to estimate the initial temperature (0: none)",
-                config::range(0, easylocal::unlimited)),
-            config::field<
-                "initial_acceptance",
-                &FixedTemperatureParameters::initial_acceptance>(
-                "Acceptance probability of an average worsening move at the "
-                "estimated initial temperature",
-                config::range(0.0, 1.0).open())
-                .only_if(config::value<"calibration_samples"> > 0));
+        return std::tuple_cat(
+            config::fields(
+                config::field<"temperature", &FixedTemperatureParameters::temperature>(
+                    "Constant annealing temperature",
+                    config::range(0.0, easylocal::unlimited).open_low()),
+                config::field<
+                    "allowed_iterations",
+                    &FixedTemperatureParameters::allowed_iterations>(
+                    "Proposals of the annealing",
+                    config::range(1, easylocal::unlimited)),
+                config::field<"max_accepted", &FixedTemperatureParameters::max_accepted>(
+                    "Accepted proposals that end the annealing, or unlimited",
+                    config::range(1, easylocal::unlimited))),
+            detail::calibration_fields<FixedTemperatureParameters>());
     }
 
     /// Whether the parameters are valid, and why not.
@@ -1031,41 +985,21 @@ struct TimeBasedParameters
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
-        return config::fields(
-            config::field<
-                "initial_temperature",
-                &TimeBasedParameters::initial_temperature>(
-                "Initial annealing temperature",
-                config::range(0.0, easylocal::unlimited).open_low()),
-            config::field<"final_temperature", &TimeBasedParameters::final_temperature>(
-                "Final annealing temperature",
-                config::range(0.0, easylocal::unlimited).open_low()),
-            config::field<"cooling_rate", &TimeBasedParameters::cooling_rate>(
-                "Multiplicative cooling factor",
-                config::range(0.0, 1.0).open()),
-            config::field<
-                "allowed_running_time",
-                &TimeBasedParameters::allowed_running_time>(
-                "Running time of the annealing, in seconds",
-                config::range(0.0, easylocal::unlimited).open_low()),
-            config::field<
-                "accepted_per_temperature",
-                &TimeBasedParameters::accepted_per_temperature>(
-                "Accepted proposals that trigger cooling (unlimited: cool only on time)",
-                config::range(1, easylocal::unlimited)),
-            config::field<
-                "calibration_samples",
-                &TimeBasedParameters::calibration_samples>(
-                "Moves sampled to estimate the initial temperature (0: none)",
-                config::range(0, easylocal::unlimited)),
-            config::field<"initial_acceptance", &TimeBasedParameters::initial_acceptance>(
-                "Acceptance probability of an average worsening move at the "
-                "estimated initial temperature",
-                config::range(0.0, 1.0).open())
-                .only_if(config::value<"calibration_samples"> > 0),
-            config::require(
-                config::value<"final_temperature"> < config::value<"initial_temperature">,
-                "final_temperature must be smaller than initial_temperature"));
+        return std::tuple_cat(
+            detail::cooling_fields<TimeBasedParameters>(),
+            config::fields(
+                config::field<
+                    "allowed_running_time",
+                    &TimeBasedParameters::allowed_running_time>(
+                    "Running time of the annealing, in seconds",
+                    config::range(0.0, easylocal::unlimited).open_low()),
+                config::field<
+                    "accepted_per_temperature",
+                    &TimeBasedParameters::accepted_per_temperature>(
+                    "Accepted proposals that trigger cooling (unlimited: cool only on time)",
+                    config::range(1, easylocal::unlimited))),
+            detail::calibration_fields<TimeBasedParameters>(),
+            config::fields(detail::cooling_rule()));
     }
 
     /// Whether the parameters are valid, and why not.
@@ -1592,8 +1526,6 @@ static_assert(!detail::reheatable_policy<temperature::FixedTemperature>);
 namespace detail
 {
 
-template<class Cost>
-concept metropolis_cost = cost::has_delta<Cost>;
 
 } // namespace detail
 
@@ -1622,7 +1554,7 @@ concept acceptance_policy_for = std::uniform_random_bit_generator<RNG>
 struct MetropolisAcceptance
 {
     /// Whether candidate is accepted over current at temperature.
-    template<detail::metropolis_cost Cost, std::uniform_random_bit_generator RNG>
+    template<cost::has_delta Cost, std::uniform_random_bit_generator RNG>
     [[nodiscard]]
     bool accept(
         const Cost& candidate,
@@ -1686,9 +1618,7 @@ struct SimulatedAnnealingParameters
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        return config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 
