@@ -208,6 +208,8 @@ reviewed by hand before tagging.
 - REST: when the execution pool cannot create one of its worker threads, its
   constructor throws instead of waiting forever for the workers already
   started.
+- REST: a submission whose response cannot be built (a codec that fails to
+  encode the target) no longer leaves a run that stays `queued` forever.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

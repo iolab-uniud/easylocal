@@ -217,8 +217,11 @@ struct AssignmentCodec
         return crow::json::wvalue::empty_object();
     }
 
-    [[nodiscard]] auto encode_cost(const cost_type&) const -> crow::json::wvalue
+    // A soft cost of 666 stands for a cost the codec cannot encode.
+    [[nodiscard]] auto encode_cost(const cost_type& cost) const -> crow::json::wvalue
     {
+        if (cost.soft() == 666)
+            throw std::runtime_error{"cannot encode the cost"};
         return crow::json::wvalue::empty_object();
     }
 };
@@ -462,6 +465,21 @@ void a_run_stops_at_its_target(crow::SimpleApp& server)
     assert(text(misspelt.body["error"]["message"]).starts_with("'target': "));
 }
 
+void a_run_whose_response_fails_is_not_registered(crow::SimpleApp& server)
+{
+    const auto runs = [&server] {
+        return send(server, crow::HTTPMethod::GET, "/assignment/").body["runs"].u();
+    };
+    const auto before = runs();
+    const auto failed =
+        submit(server, "fi", R"({"input": {}, "target": {"hard": [0, 0], "soft": 666}})");
+    assert(failed.code == 500);
+    assert(
+        text(failed.body["error"]["message"])
+        == "cannot create run: cannot encode the cost");
+    assert(runs() == before);
+}
+
 void a_run_has_its_own_parameters(crow::SimpleApp& server)
 {
     // The app's parameters, as text, with the values runs use by default.
@@ -696,6 +714,7 @@ int main()
     a_pipeline_runs_by_name(server);
     a_run_stops_at_its_target(server);
     a_run_has_its_own_parameters(server);
+    a_run_whose_response_fails_is_not_registered(server);
     json_parameter_values_become_text();
     an_arithmetic_target_is_a_number();
     a_full_queue_rejects_runs_and_a_queued_run_can_be_cancelled(server);

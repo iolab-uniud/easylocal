@@ -836,13 +836,14 @@ private:
             record->max_evaluations = max_evaluations;
             record->parameters = std::move(parameters);
             session.set_seed(record->seed);
+
+            // The body of the response, before the run can start: queued. It
+            // is built before the run is registered, since the codec may fail.
+            auto body = run_body(record);
             {
                 const std::lock_guard lock{runs_mutex_};
                 runs_.emplace(id, record);
             }
-
-            // The body of the response, before the run can start: queued.
-            auto body = run_body(record);
             const bool accepted = execution_.try_submit(
                 [this, session = std::move(session), record, runner]() mutable {
                     {
