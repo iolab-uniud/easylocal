@@ -115,6 +115,17 @@ public:
         return inner_.random_solution(rng);
     }
 
+    // The cost component of type Component of the innermost cost layer, for
+    // the co-located deltas (delta<C>()) bound to this layer: every layer,
+    // the hard projection included, reaches all the components.
+    template<class Component, class Self>
+    [[nodiscard]]
+    auto& component(this Self&& self) noexcept
+        requires requires(Inner& inner) { inner.template component<Component>(); }
+    {
+        return self.inner_.template component<Component>();
+    }
+
 protected:
     // The layer below, for what the derived layer adds on it.
     [[nodiscard]] Inner& inner() noexcept
@@ -281,13 +292,6 @@ public:
     cost_type evaluate(const solution_type& solution) const
     {
         return cost_from_components(evaluate_components(solution));
-    }
-
-    template<class Component, class Self>
-    [[nodiscard]]
-    auto& component(this Self&& self) noexcept
-    {
-        return self.inner().template component<Component>();
     }
 
     [[nodiscard]]

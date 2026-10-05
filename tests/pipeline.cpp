@@ -450,6 +450,32 @@ struct SoftPartDelta
     }
 };
 
+// The hard and soft parts with co-located deltas (delta<C>()): the hard-only
+// first stage must still reach both components.
+struct ColocatedHardPart
+{
+    [[nodiscard]] static auto evaluate(const Solution& solution) -> int
+    {
+        return solution.hard;
+    }
+    [[nodiscard]] static auto delta_evaluate(const Solution&, const StepMove& move) -> int
+    {
+        return move.hard ? -1 : 0;
+    }
+};
+
+struct ColocatedSoftPart
+{
+    [[nodiscard]] static auto evaluate(const Solution& solution) -> int
+    {
+        return solution.soft;
+    }
+    [[nodiscard]] static auto delta_evaluate(const Solution&, const StepMove& move) -> int
+    {
+        return move.hard ? 0 : -1;
+    }
+};
+
 // Always proposes a move, also once the hard cost is zero: only the stage-1
 // target stops a Simulated Annealing on it before its schedule ends.
 class EndlessHardNeighborhood
@@ -610,6 +636,31 @@ bool run()
     ok &= expect(
         two_part_result.cost.hard() == 0 && two_part_result.cost.soft() == 0,
         "a soft delta is ignored by the hard-only stage and used by the full one");
+
+    auto colocated_runner =
+        easylocal::make_runner<
+            runners::SimulatedAnnealing<runners::temperature::FixedLength>>(
+            {.temperature =
+                    runners::temperature::FixedLengthParameters{
+                        .initial_temperature = 2.0,
+                        .final_temperature = 0.5,
+                        .cooling_rate = 0.5,
+                        .max_iterations = 32,
+                    }})
+        | (solution_manager<SolutionManager>()
+            | cost::hard_soft(
+                component<ColocatedHardPart>(),
+                component<ColocatedSoftPart>()))
+        | (neighborhood<StepNeighborhood>() | delta<ColocatedHardPart>()
+            | delta<ColocatedSoftPart>());
+    auto colocated_solver =
+        solvers::two_stage(std::move(colocated_runner))
+            .initialization(initialization::initial)
+            .seed(5);
+    const auto colocated_result = colocated_solver.solve(instance);
+    ok &= expect(
+        colocated_result.cost.hard() == 0 && colocated_result.cost.soft() == 0,
+        "two_stage() binds co-located deltas on a hard and a soft component");
 
     // Stage 1 stops as soon as the hard cost is zero, and the result reports
     // the effort of both stages.

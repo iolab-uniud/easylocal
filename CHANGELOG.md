@@ -138,6 +138,10 @@ reviewed by hand before tagging.
   with a pareto cost on a problem without solution equality no longer warns
   about an unused lambda capture.
 
+- `with_hard_cost()`, `until_feasible()` and `two_stage()` compile with
+  co-located deltas (`delta<C>()`): every SolutionManager layer, the hard-cost
+  projection included, reaches the cost components.
+
 ## [4.0.0-alpha.1] — 2026-10-04
 
 A pre-release: the API, header paths included, may still change before 4.0.0
