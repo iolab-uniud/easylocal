@@ -197,9 +197,10 @@ window ends, of the tenure that `increase` would bring for `Reactive`.
 A tabu list is a value with its parameters that makes, for each run, a state
 with `make_state<Run>()`. `tabu_tenure(candidate)` gives the iterations left
 before a candidate move is admissible, nothing when it is (`tabu_candidate`:
-`move()`, `forbidden_by(tabu_move)` through the inverse, `attribute()`, and
-`cost()` and `equivalent_cost(other)` when the state declares
-`static constexpr bool needs_cost = true`);
+`move()`, `forbidden_by(tabu_move)` through the inverse, `attribute()`, and,
+when the state declares `static constexpr bool needs_cost = true`, `cost()` and
+`equivalent_cost(other)`, members of `tabu_candidate<Run, true>` only, so a
+list that reads the cost without declaring it does not compile);
 `update(step, rng)` records an applied move (`tabu_step`: `move()`,
 `solution()`, `cost()`, `iteration()`, `improved_best()`, `attribute()`,
 `solution_hash()`, the last two when the problem has them). A state with

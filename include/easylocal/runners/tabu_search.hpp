@@ -41,9 +41,10 @@ namespace easylocal::runners
 
 /// A candidate move, as a tabu list sees it: forbidden_by(tabu_move), whether a
 /// move the list holds forbids it (the neighborhood's inverse), its attribute()
-/// when the neighborhood has one, and its cost() and equivalent_cost(other) for
-/// the lists that need it (their state declares needs_cost = true).
-template<class Run>
+/// when the neighborhood has one, and, WithCost, its cost() and
+/// equivalent_cost(other), for the lists whose state declares needs_cost =
+/// true.
+template<class Run, bool WithCost = false>
 class tabu_candidate
 {
 public:
@@ -56,31 +57,44 @@ public:
     /// The neighborhood explorer type of the run.
     using neighborhood_type = typename Run::neighborhood_explorer_type;
 
-    /// The candidate move of run at solution, with the cost after it when the
-    /// move was evaluated (nullptr otherwise).
+    /// The candidate move of run at solution, not evaluated.
+    ///
+    /// It refers to its arguments, which must outlive it.
+    tabu_candidate(
+        const Run& run,
+        const solution_type& solution,
+        const move_type& move) noexcept
+        requires(!WithCost)
+        : run_{run}, solution_{solution}, move_{move}, cost_{nullptr}
+    {
+    }
+
+    /// The candidate move of run at solution, evaluated: cost is the cost
+    /// after it.
     ///
     /// It refers to its arguments, which must outlive it.
     tabu_candidate(
         const Run& run,
         const solution_type& solution,
         const move_type& move,
-        const cost_type* cost = nullptr) noexcept
-        : run_{run}, solution_{solution}, move_{move}, cost_{cost}
+        const cost_type& cost) noexcept
+        requires WithCost
+        : run_{run}, solution_{solution}, move_{move}, cost_{&cost}
     {
     }
 
-    /// The cost after the move; only for lists with needs_cost.
+    /// The cost after the move, for the lists whose state declares needs_cost.
     [[nodiscard]]
     const cost_type& cost() const noexcept
+        requires WithCost
     {
-        assert(cost_ != nullptr && "the list's state must declare needs_cost = true");
         return *cost_;
     }
 
     /// Whether the cost after the move is equivalent to other, by the semantics
-    /// of the cost; only for lists with needs_cost.
+    /// of the cost, for the lists whose state declares needs_cost.
     template<class R = Run>
-        requires requires(const R& run, const cost_type& value) {
+        requires WithCost && requires(const R& run, const cost_type& value) {
             { run.equivalent(value, value) } -> std::convertible_to<bool>;
         }
     [[nodiscard]]
@@ -234,6 +248,17 @@ private:
     bool improved_best_;
 };
 
+namespace detail
+{
+
+// Whether the state of a tabu list sees its candidates evaluated.
+template<class State>
+inline constexpr bool tabu_state_needs_cost_v = requires {
+    requires std::remove_cvref_t<State>::needs_cost;
+};
+
+} // namespace detail
+
 /// A tabu list policy: a value holding its parameters, from which each run
 /// makes the list's state with make_state<Run>().
 ///
@@ -252,7 +277,10 @@ concept tabu_list_for =
         decltype(std::declval<const List&>().template make_state<Run>())& state,
         const decltype(std::declval<const List&>().template make_state<Run>())&
             const_state,
-        const tabu_candidate<Run>& candidate,
+        const tabu_candidate<
+            Run,
+            detail::tabu_state_needs_cost_v<decltype(std::declval<const List&>()
+                    .template make_state<Run>())>>& candidate,
         const tabu_step<Run>& step,
         RNG& rng) {
            {
@@ -1943,6 +1971,8 @@ struct tabu_scan
     // The chosen move was tabu, admitted by the aspiration criterion.
     bool chosen_aspirated{false};
     std::optional<typename Run::move_type> least_tabu;
+    // The evaluation of the least tabu move, when the scan made one.
+    std::optional<typename Run::candidate_type> least_tabu_candidate;
     bool empty{true};
     bool interrupted{false};
 };
@@ -2025,9 +2055,8 @@ public:
         RNG& rng,
         OnAdmissible&& on_admissible) const
     {
-        constexpr bool list_needs_cost = requires {
-            requires std::remove_cvref_t<decltype(state.list)>::needs_cost;
-        };
+        constexpr bool list_needs_cost =
+            detail::tabu_state_needs_cost_v<decltype(state.list)>;
 
         tabu_scan<Run> result;
         std::size_t ties = 0;
@@ -2047,28 +2076,49 @@ public:
 
             // A list on costs sees the candidate evaluated.
             std::optional<typename Run::candidate_type> evaluated;
-            if constexpr (list_needs_cost)
-                evaluated = run.evaluate_move(state.solution, state.current, move);
-            const auto tenure = state.list.tabu_tenure(
-                tabu_candidate<Run>{
-                    run,
-                    state.solution,
-                    move,
-                    evaluated.has_value() ? &evaluated->cost() : nullptr});
+            const auto tenure = [&] {
+                if constexpr (list_needs_cost)
+                {
+                    evaluated = run.evaluate_move(state.solution, state.current, move);
+                    return state.list.tabu_tenure(
+                        tabu_candidate<Run, true>{
+                            run,
+                            state.solution,
+                            move,
+                            evaluated->cost()});
+                }
+                else
+                {
+                    return state.list.tabu_tenure(
+                        tabu_candidate<Run>{run, state.solution, move});
+                }
+            }();
+            // Whether this move is now the least tabu one, whose evaluation, if
+            // it has one, apply() then reuses.
+            bool least_here = false;
             if (tenure.has_value())
             {
                 if (!result.least_tabu.has_value() || *tenure < least_tenure)
                 {
-                    result.least_tabu = move;
+                    least_here = true;
                     least_tenure = *tenure;
                     least_ties = 1;
                 }
                 else if (*tenure == least_tenure && draw(rng, ++least_ties) == 0)
                 {
+                    least_here = true;
+                }
+                if (least_here)
+                {
                     result.least_tabu = move;
+                    result.least_tabu_candidate.reset();
                 }
                 if constexpr (!Aspiration::needs_cost)
+                {
+                    if (least_here && evaluated.has_value())
+                        result.least_tabu_candidate = std::move(evaluated);
                     continue;
+                }
             }
 
             auto candidate = evaluated.has_value()
@@ -2077,6 +2127,8 @@ public:
             if (tenure.has_value()
                 && !aspiration_.overrides(run, candidate.cost(), state.best.cost))
             {
+                if (least_here)
+                    result.least_tabu_candidate = std::move(candidate);
                 continue;
             }
 
@@ -2114,11 +2166,18 @@ public:
     {
         if (!scan.chosen.has_value())
         {
+            // Every move was tabu: the least tabu one, evaluated by the scan or
+            // now.
             assert(scan.least_tabu.has_value());
-            if (run.should_stop())
-                return false;
-            scan.chosen =
-                run.evaluate_move(state.solution, state.current, *scan.least_tabu);
+            if (scan.least_tabu_candidate.has_value())
+                scan.chosen = std::move(scan.least_tabu_candidate);
+            else
+            {
+                if (run.should_stop())
+                    return false;
+                scan.chosen =
+                    run.evaluate_move(state.solution, state.current, *scan.least_tabu);
+            }
             scan.chosen_move = std::move(scan.least_tabu);
         }
 

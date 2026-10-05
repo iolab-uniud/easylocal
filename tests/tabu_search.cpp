@@ -544,6 +544,19 @@ int main()
             negative.solution.value == 4 && negative.evaluations == 2,
             "the aspiration level is above a negative best cost");
 
+        // Every move tabu after the first iteration and none aspirated: the
+        // least tabu move, evaluated for the aspiration, is applied without a
+        // second evaluation (1 + 2 + 2).
+        const auto least_tabu =
+            line_runner<TabuSearch<>, Valley>(
+                {.max_iterations = 2, .tabu_list = {.tenure = 2}},
+                true)
+                .bind(instance)
+                .run(Position{1}, rng);
+        ok &= expect(
+            least_tabu.iterations == 2 && least_tabu.evaluations == 5,
+            "the least tabu move is not evaluated twice");
+
         // From 1 nothing improves: the best admissible move is applied.
         const auto worse =
             line_runner<FirstImprovementTabuSearch<>, Valley>(

@@ -259,6 +259,12 @@ reviewed by hand before tagging.
 - `easylocal::moves()` and a run's `moves()` keep the reference an explorer's
   `moves()` returns to moves it keeps, which they copied at every call, and
   `random_move()` moves the move it gets instead of copying it.
+- **Breaking:** `tabu_candidate<Run, WithCost>` has `cost()` and
+  `equivalent_cost()` only `WithCost`, the candidate a list whose state
+  declares `needs_cost` receives: a custom list that read the cost without
+  declaring it dereferenced a null pointer in a Release build. When every
+  move is tabu, Tabu Search applies the least tabu move with the evaluation
+  its scan made, instead of evaluating (and tracing) it again.
 
 ### Added
 
