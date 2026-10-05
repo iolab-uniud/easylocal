@@ -177,6 +177,9 @@ reviewed by hand before tagging.
   belongs to an instance) and writes path parameters there as absolute paths.
 - `--tuning.hard_weight`, given when the irace stub is written, goes to
   fixed.conf: irace runs no longer fall back to the default weight.
+- `--tuning.irace` fails with status 2 for a cost that is not one number (no
+  `scalar_cost`, such as a Pareto cost), instead of writing a scenario whose
+  every run fails.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

@@ -203,7 +203,8 @@ argument-dependent lookup, else `cost::scalar(cost, hard_weight)`
 (`<easylocal/cost/scalar.hpp>`): a number as it is, a `hierarchical` cost as
 `hard * weight + soft`, a `lexicographic` one as the sum of each value times
 `weight` to the number of values after it. `scalar_cost_available<Input, Cost>`
-tells whether either applies; without it, `--tuning.print` fails with status 2.
+tells whether either applies; without it, `--tuning.print` and
+`--tuning.irace` fail with status 2.
 
 A program that reads its configuration from the command line itself adds
 `easylocal::RunParameters` for the target, under a prefix of its choice:

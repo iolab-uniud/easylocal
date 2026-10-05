@@ -361,6 +361,21 @@ int run(App application, const int argc, char* argv[], options settings = {})
         return 2;
     }
 
+    // Tuning compares runs by their cost as one number: a scenario whose every
+    // run would fail is not written.
+    if constexpr (!scalar_cost_available<
+                      typename session_type::input_type,
+                      typename session_type::cost_type>)
+    {
+        if (!tuning.irace.empty() || !tuning.print.empty())
+        {
+            err << (tuning.irace.empty() ? "tuning.print" : "tuning.irace")
+                << ": this cost is not one number; give the problem a "
+                   "scalar_cost(input, cost)\n";
+            return 2;
+        }
+    }
+
     if (!tuning.irace.empty())
         return detail::write_irace(
             out,
@@ -379,18 +394,6 @@ int run(App application, const int argc, char* argv[], options settings = {})
     {
         err << "error: instance must be set\n";
         return 2;
-    }
-
-    if constexpr (!scalar_cost_available<
-                      typename session_type::input_type,
-                      typename session_type::cost_type>)
-    {
-        if (!tuning.print.empty())
-        {
-            err << "tuning.print: this cost is not one number; give the problem a "
-                   "scalar_cost(input, cost)\n";
-            return 2;
-        }
     }
 
     try

@@ -396,6 +396,46 @@ void fixed_values_are_shared_by_every_run()
     std::filesystem::remove_all(directory);
 }
 
+// A second objective of the tour, for a Pareto cost.
+struct NoObjective
+{
+    static int evaluate(const tutorial::Tour&)
+    {
+        return 0;
+    }
+};
+
+// A cost that is not one number: no irace scenario, whose every run would
+// fail, and no --tuning.print.
+void a_cost_without_a_number_is_not_tuned()
+{
+    using namespace tutorial;
+    const auto directory = fresh_directory("easylocal-tuning-pareto");
+    const auto pareto_app = [] {
+        return easylocal::app("tsp")
+            | (easylocal::solution_manager<TourManager>()
+                | cost::objectives(
+                    easylocal::component<TourLength>(),
+                    easylocal::component<NoObjective>()))
+            | easylocal::neighborhood<TwoOptExplorer>()
+            | easylocal::runner<easylocal::runners::FirstImprovement>("fi");
+    };
+    std::string program{"/opt/bin/tsp"};
+    std::string irace_switch{"--tuning.irace"};
+    std::string irace_directory{directory.string()};
+    std::vector<char*> argv{program.data(), irace_switch.data(), irace_directory.data()};
+    std::ostringstream out;
+    std::ostringstream err;
+    const int status = easylocal::cli::run(
+        pareto_app(),
+        static_cast<int>(argv.size()),
+        argv.data(),
+        {.out = &out, .err = &err});
+    assert(status == 2);
+    assert(contains(err.str(), "tuning.irace: this cost is not one number"));
+    assert(!std::filesystem::exists(directory));
+}
+
 } // namespace
 
 int main()
@@ -406,4 +446,5 @@ int main()
     cli_prints_only_the_cost();
     cli_writes_the_stub_without_an_instance();
     fixed_values_are_shared_by_every_run();
+    a_cost_without_a_number_is_not_tuned();
 }
