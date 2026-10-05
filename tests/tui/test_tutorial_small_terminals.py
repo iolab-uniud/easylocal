@@ -72,9 +72,9 @@ def test_the_result_of_a_run_is_shown_after_changed_parameters(tui):
 
 
 def test_the_focus_scrolls_to_the_target_field(terminal):
-    # In 80x24 the target field is below the last line until the focus
+    # In 80x23 the target field is below the last line until the focus
     # reaches it.
-    tui = terminal(80, 24)
+    tui = terminal(80, 23)
     tui.press("I", F5)
     tui.expect_absent("current cost")
     tui.focus("P Problem parameters")  # through the runner list

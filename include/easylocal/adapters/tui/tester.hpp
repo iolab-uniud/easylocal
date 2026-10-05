@@ -34,7 +34,6 @@
 #include <memory>
 #include <optional>
 #include <ostream>
-#include <random>
 #include <span>
 #include <sstream>
 #include <stdexcept>
@@ -136,14 +135,13 @@ enum class frontend_role
 
 enum class progress_mode
 {
-    unavailable,
     indeterminate,
     determinate,
 };
 
 struct progress_snapshot
 {
-    progress_mode mode{progress_mode::unavailable};
+    progress_mode mode{progress_mode::indeterminate};
     std::size_t current{};
     std::optional<std::size_t> total{};
     std::string label{};
@@ -207,12 +205,6 @@ template<class Tester>
 [[nodiscard]] bool context_pages_available(const Tester& tester)
 {
     return solution_stage_of(tester) == solution_stage::ready;
-}
-
-template<class Tester>
-[[nodiscard]] bool page_available(const Tester& tester, const tester_page page)
-{
-    return page == tester_page::solution || context_pages_available(tester);
 }
 
 template<class Tester>
@@ -1110,10 +1102,6 @@ private:
             run_controls->Add(Button(
                 "G Run selected",
                 [this] { run_runner(); },
-                ButtonOption::Ascii()));
-            run_controls->Add(Button(
-                "X Stop running",
-                [this] { stop_runner(); },
                 ButtonOption::Ascii()));
         }
         else
@@ -2877,33 +2865,6 @@ private:
         return truncate_text(value_text(tester_.move()), options_.max_render_chars);
     }
 
-    [[nodiscard]] ftxui::Element render_solution_summary() const
-    {
-        using namespace ftxui;
-        Elements lines;
-        lines.push_back(text(
-            std::string{"Instance: "} +
-            (tester_.has_input() ? "loaded" : "not loaded")));
-        if (tester_.has_input() && !loaded_input_path_.empty())
-        {
-            lines.push_back(
-                paragraph("Instance file: " + format_path(loaded_input_path_)));
-        }
-        lines.push_back(text(
-            std::string{"Solution: "} +
-            (tester_.has_solution() ? "available" : "not selected")));
-        if (tester_.has_solution())
-        {
-            const bool valid = tester_.is_valid();
-            lines.push_back(text(std::string{"Valid: "} + (valid ? "yes" : "NO")));
-            if (valid)
-            {
-                lines.push_back(text("Cost: " + value_text(tester_.evaluate())));
-            }
-        }
-        return vbox(std::move(lines));
-    }
-
     [[nodiscard]] ftxui::Element render_progress(const progress_snapshot& progress) const
     {
         using namespace ftxui;
@@ -2923,13 +2884,8 @@ private:
             }
             [[fallthrough]];
         case progress_mode::indeterminate:
-            return text(
-                progress.label.empty() ? "working" : progress.label);
-        case progress_mode::unavailable:
         default:
-            return text(
-                       progress.label.empty() ? "not reported" : progress.label) |
-                   dim;
+            return text(progress.label.empty() ? "working" : progress.label);
         }
     }
 
@@ -3437,7 +3393,7 @@ private:
             text("B best   I first improving   F first   N next   R random   A apply"),
             text("P list   T stats   C costs   D independence   U distribution"),
             text("Run page") | bold,
-            text("G run selected   Enter run selected   X stop running"),
+            text("G run selected   Enter run selected   X stop the run in progress"),
             text("Running asks for the runner's parameters first; P problem parameters"),
             separator(),
             text("Q  " + options_.exit_label),

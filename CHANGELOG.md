@@ -587,6 +587,10 @@ reviewed by hand before tagging.
   twice (the run's session is configured before it gets the Input), and the
   target and the cost of a run are encoded once: status polls no longer wait
   for the codec.
+- TextUI: the Run page no longer shows an `X Stop running` button, which no
+  one could press: a run's progress window covers the page, and its `X Stop`
+  stops the run. The launcher's header comment no longer says that its apps
+  load no files.
 - TextUI: however its event loop ends, an exception included, the tester
   stops and joins a running search before the loop's screen is destroyed,
   which the search posts its progress to.

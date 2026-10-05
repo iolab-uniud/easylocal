@@ -89,7 +89,6 @@ int main()
     using easylocal::tui::detail::initial_input_file;
     using easylocal::tui::detail::object_name;
     using easylocal::tui::detail::page_after_solution_change;
-    using easylocal::tui::detail::page_available;
     using easylocal::tui::detail::page_index;
     using easylocal::tui::detail::page_scroll_selection;
     using easylocal::tui::detail::path_basename;
@@ -136,12 +135,6 @@ int main()
 
     const context_probe empty_context{};
     const context_probe ready_context{.input = true, .solution = true};
-    assert(page_available(empty_context, tester_page::solution));
-    assert(!page_available(empty_context, tester_page::move));
-    assert(!page_available(empty_context, tester_page::run));
-    assert(page_available(ready_context, tester_page::solution));
-    assert(page_available(ready_context, tester_page::move));
-    assert(page_available(ready_context, tester_page::run));
     assert(page_after_solution_change(empty_context) == tester_page::solution);
     assert(page_after_solution_change(ready_context) == tester_page::move);
     assert(page_after_solution_change(

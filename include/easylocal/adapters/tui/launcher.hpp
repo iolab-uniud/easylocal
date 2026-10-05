@@ -6,11 +6,11 @@
 ///
 /// The apps share the Input and the current solution, which the launcher owns:
 /// its first entry, "Input and solution", loads and saves them, and each app
-/// opens on them, creates solutions, moves and runs, but loads no files; what
-/// it leaves becomes the shared state, so a solution built with one
-/// neighborhood can be explored with another. Each app keeps its own session:
-/// its runner and problem parameters and its seed stay from one opening to
-/// the next.
+/// opens on them in a complete tester, which may load and save files, create
+/// solutions, explore moves and run; what it leaves becomes the shared state,
+/// so a solution built with one neighborhood can be explored with another.
+/// Each app keeps its own session: its runner and problem parameters and its
+/// seed stay from one opening to the next.
 
 #include <easylocal/adapters/tui/tester.hpp>
 #include <easylocal/app/session.hpp>
