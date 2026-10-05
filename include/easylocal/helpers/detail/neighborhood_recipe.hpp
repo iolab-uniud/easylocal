@@ -308,7 +308,7 @@ public:
                                       decltype(dependency.base()),
                                       const decltype(args)&...>)
                     {
-                        return BaseNHE{dependency.base(), args...};
+                        return BaseNHE(dependency.base(), args...);
                     }
                     else
                     {
@@ -363,7 +363,7 @@ public:
                                 "the configured SolutionManager (or its base) followed "
                                 "by its recipe arguments");
                         }
-                        return BaseNHE{dependency, args...};
+                        return BaseNHE(dependency, args...);
                     }
                 }
                 else
@@ -417,7 +417,7 @@ public:
                             "the configured SolutionManager followed by its recipe "
                             "arguments");
                     }
-                    return BaseNHE{dependency, args...};
+                    return BaseNHE(dependency, args...);
                 }
             },
             construction_args);

@@ -1,12 +1,14 @@
-#include <easylocal/runners/runner.hpp>
-#include <easylocal/solvers.hpp>
 #include <easylocal/runners/best_improvement.hpp>
 #include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/runners/runner.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
+#include <easylocal/solvers.hpp>
 
 #include <cassert>
 #include <concepts>
 #include <cstdint>
+#include <optional>
+#include <random>
 #include <ranges>
 #include <type_traits>
 #include <utility>
@@ -120,6 +122,130 @@ private:
     int token_{};
 };
 
+// Components whose recipe arguments are doubles, given as ints: the recipes
+// construct with parentheses, as std::constructible_from checks, so an int
+// converts to a double instead of being rejected as narrowing.
+class ScaledSolutionManager
+{
+public:
+    using input_type = Instance;
+    using solution_type = Solution;
+
+    ScaledSolutionManager(const Instance& instance, double scale)
+        : instance_{instance}, scale_{scale}
+    {
+    }
+
+    const Instance& input() const noexcept
+    {
+        return instance_;
+    }
+    bool is_valid(const Solution&) const noexcept
+    {
+        return scale_ > 0.0;
+    }
+    Solution initial_solution() const
+    {
+        return {};
+    }
+
+private:
+    const Instance& instance_;
+    double scale_;
+};
+
+struct ScaledMove
+{
+    explicit ScaledMove(double amount) : amount{amount} {}
+
+    double amount;
+};
+
+class ScaledNeighborhoodExplorer
+{
+public:
+    using input_type = Instance;
+    using solution_type = Solution;
+    using move_type = ScaledMove;
+
+    ScaledNeighborhoodExplorer(ScaledSolutionManager& sm, double step)
+        : instance_{sm.input()}, step_{step}
+    {
+    }
+
+    const Instance& input() const noexcept
+    {
+        return instance_;
+    }
+    auto moves(const Solution&) const
+    {
+        return std::views::single(ScaledMove{step_});
+    }
+    // An int, from which the move is built.
+    std::optional<int> random_move(const Solution&, std::mt19937_64&) const
+    {
+        return static_cast<int>(step_);
+    }
+    static bool is_valid(const Solution&, const ScaledMove&) noexcept
+    {
+        return true;
+    }
+    void make_move(Solution&, const ScaledMove&) const {}
+
+private:
+    const Instance& instance_;
+    double step_;
+};
+
+class ScaledComponent
+{
+public:
+    ScaledComponent(const Instance&, double weight) : weight_{weight} {}
+
+    int evaluate(const Solution& solution) const noexcept
+    {
+        return static_cast<int>(weight_) * solution.value;
+    }
+
+private:
+    double weight_;
+};
+
+class ScaledDeltaEvaluator
+{
+public:
+    explicit ScaledDeltaEvaluator(double weight) : weight_{weight} {}
+
+    MoveDelta delta_evaluate(const Solution&, const ScaledMove&) const noexcept
+    {
+        return {static_cast<int>(weight_)};
+    }
+
+private:
+    double weight_;
+};
+
+void recipe_arguments_convert_as_constructors_take_them()
+{
+    using namespace easylocal;
+    auto runner = make_runner<IdentityAlgorithm>()
+        | (solution_manager<ScaledSolutionManager>(2) | component<ScaledComponent>(3))
+        | (neighborhood<ScaledNeighborhoodExplorer>(4)
+            | delta<ScaledComponent, ScaledDeltaEvaluator>(5));
+    auto solver = make_solver<solvers::LocalSearch>(
+        runner,
+        solvers::LocalSearchConfig<initialization::Initial>{
+            .initialization = initialization::initial,
+            .seed = 17});
+    const Instance instance{};
+    assert(solver.solve(instance).cost == 0);
+
+    ScaledSolutionManager sm{instance, 2.0};
+    const ScaledNeighborhoodExplorer explorer{sm, 4.0};
+    std::mt19937_64 rng{17};
+    const auto move = easylocal::random_move(explorer, Solution{}, rng);
+    assert(move && move->amount == 4.0);
+}
 
 } // namespace
 
@@ -213,5 +339,6 @@ int main()
     assert(multistart_result.solution.value == 0);
     assert(multistart_result.cost == 0);
 
+    recipe_arguments_convert_as_constructors_take_them();
     return 0;
 }

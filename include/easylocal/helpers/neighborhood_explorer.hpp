@@ -299,7 +299,7 @@ inline std::optional<typename Explorer::move_type> random_move(
         return std::nullopt;
     }
 
-    return typename Explorer::move_type{*result};
+    return std::optional<typename Explorer::move_type>(std::in_place, *result);
 }
 
 /// Optional tabu customization points, used by tabu search.

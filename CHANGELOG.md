@@ -67,6 +67,11 @@ reviewed by hand before tagging.
 - `cost::hierarchical` compares a branch that has only `<` and `==`, as its
   `delta` already accepted: its `operator<=>` was deleted for such a hard
   cost.
+- The recipes construct their components with parentheses, as their
+  `std::constructible_from` checks do: `neighborhood<X>(2)` for a `double`
+  parameter failed with a narrowing error inside the library (also in
+  `solution_manager`, `component`, `delta` and the `random_move` of a move
+  built from another type).
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

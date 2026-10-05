@@ -21,8 +21,10 @@ form the *delta cost layer*.
 - `Value` is deduced from `evaluate` and may be arithmetic or a domain type,
   but not an unsigned integer: the difference of two costs would wrap around,
   so a component that counts returns `int` or `long long`.
-- Construction: `Component{const Input&, args...}` is preferred,
-  `Component{args...}` is accepted; `args` come from `component<C>(args...)`.
+- Construction: `Component(const Input&, args...)` is preferred,
+  `Component(args...)` is accepted; `args` come from `component<C>(args...)`
+  and convert as the constructor takes them. The same holds for a delta cost
+  component and `delta<C, D>(args...)`.
 - A component type may appear only once in a cost expression.
 - `name()` and `describe(solution)` are for people: `Session::cost_report()`,
   `cli::run`'s `--report` and the TextUI's solution window show each

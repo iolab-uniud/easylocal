@@ -46,7 +46,7 @@ public:
                                   const Instance&,
                                   const StoredArgs&...>)
                 {
-                    return Component{instance, args...};
+                    return Component(instance, args...);
                 }
                 else
                 {
@@ -55,7 +55,7 @@ public:
                         "a cost component must be constructible either from the "
                         "bound Instance followed by its recipe arguments or from "
                         "its recipe arguments alone");
-                    return Component{args...};
+                    return Component(args...);
                 }
             },
             args_);

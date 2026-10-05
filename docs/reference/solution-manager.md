@@ -48,8 +48,8 @@ Both depend on the order of the values and on `std::hash`, so a hash may differ
 between standard libraries.
 
 The SolutionManager is constructed from the Input when a runner is bound:
-`SM{const Input&, args...}`, where `args` come from the recipe
-`solution_manager<SM>(args...)`.
+`SM(const Input&, args...)`, where `args` come from the recipe
+`solution_manager<SM>(args...)` and convert as the constructor takes them.
 
 ## Convenience base
 

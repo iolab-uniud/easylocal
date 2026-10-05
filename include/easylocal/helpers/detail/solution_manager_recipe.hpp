@@ -47,7 +47,7 @@ BaseSM construct_base_solution_manager(
         "the base constructors; did you forget `using solution_manager_base::solution_manager_base;`?");
 
     return std::apply(
-        [&](const auto&... args) { return BaseSM{instance, args...}; },
+        [&](const auto&... args) { return BaseSM(instance, args...); },
         base_args);
 }
 

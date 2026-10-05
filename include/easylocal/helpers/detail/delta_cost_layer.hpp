@@ -76,7 +76,7 @@ public:
                                   const StoredArgs&...>)
                 {
                     return binding_type{
-                        DeltaEvaluator{dependency.input(), args...},
+                        DeltaEvaluator(dependency.input(), args...),
                     };
                 }
                 else
@@ -86,7 +86,7 @@ public:
                         "a delta cost component must be constructible either from the "
                         "bound Instance followed by its recipe arguments or from "
                         "its recipe arguments alone");
-                    return binding_type{DeltaEvaluator{args...}};
+                    return binding_type{DeltaEvaluator(args...)};
                 }
             },
             args_);

@@ -35,7 +35,9 @@ solution, move, tabu_move)` and `easylocal::tabu_attribute(nhe, move)`.
   jobs, or any move of either job) is a modelling choice of the neighborhood,
   and can be one of its parameters.
 - The explorer is constructed from the SolutionManager:
-  `NHE{const SM&, args...}`, `args` from `neighborhood<NHE>(args...)`.
+  `NHE(const SM&, args...)`, `args` from `neighborhood<NHE>(args...)`. The
+  construction uses parentheses, so the arguments convert as the constructor
+  takes them (`neighborhood<NHE>(2)` for a `double` parameter).
 
 ## Parameters
 
