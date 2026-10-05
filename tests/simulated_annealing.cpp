@@ -627,6 +627,30 @@ int main()
             first_descent == 6 && reheat == 4,
             "each descent of a schedule without a budget runs it whole");
 
+        // The reheats share what the first descent leaves, at least one
+        // proposal each: 9 of 10 leave 1, too few for 3 reheats.
+        using FixedReheating =
+            temperature::ReheatingParameters<temperature::FixedLengthParameters>;
+        const FixedReheating tight{
+            .descent = {.max_iterations = 10},
+            .max_reheats = 1,
+            .first_descent_share = 0.9};
+        temperature::Reheating<temperature::FixedLength> spent{tight};
+        std::size_t proposals = 0;
+        while (!spent.finished() && proposals < 100)
+        {
+            spent.on_iteration(false);
+            ++proposals;
+        }
+        ok &= expect(
+            proposals == 10,
+            "the descents of a reheated schedule spend its budget, no more");
+        auto overspent = tight;
+        overspent.max_reheats = 3;
+        ok &= expect(
+            !overspent.validate(),
+            "reheating rejects more reheats than the proposals the first descent leaves");
+
         // A time budget is divided like an iteration budget.
         temperature::Reheating<temperature::TimeBased> timed{
             {.descent = {.allowed_running_time = 8.0},

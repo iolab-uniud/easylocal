@@ -195,8 +195,10 @@ the machine, so equal seeds do not give equal runs.
 `max_reheats` descents that restart from `reheat_ratio` times the initial
 temperature. When the schedule has a budget, `max_iterations` or
 `allowed_running_time`, the first descent spends `first_descent_share` of it
-and the reheats divide the rest evenly; `Classic`, which has none, runs whole
-at every descent. The schedule's parameters are the group `descent`:
+and the reheats divide the rest evenly, at least one iteration each, so
+`max_reheats` may not exceed the iterations the first descent leaves (a
+requirement of the block); `Classic`, which has none, runs whole at every
+descent. The schedule's parameters are the group `descent`:
 `{.temperature = {.descent = {...}, .max_reheats = 2}}`,
 `search.temperature.descent.*` in a configuration. It calibrates when the
 schedule does, keeping the reheat temperature above the final one.

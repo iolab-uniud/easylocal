@@ -1299,7 +1299,7 @@ struct ReheatingParameters
         // Only a descent with an iteration or time budget shares it.
         constexpr bool budgeted = detail::iteration_budget<DescentParameters>
             || detail::time_budget<DescentParameters>;
-        return config::fields(
+        const auto fields = config::fields(
             config::group<"descent", &ReheatingParameters::descent>(
                 "The schedule of each descent"),
             config::field<"max_reheats", &ReheatingParameters::max_reheats>(
@@ -1315,6 +1315,23 @@ struct ReheatingParameters
                 "Share of the budget spent by the first descent",
                 config::range(0.0, 1.0).open())
                 .only_if(config::value<"max_reheats"> > 0 && budgeted));
+        if constexpr (detail::iteration_budget<DescentParameters>)
+        {
+            // The first descent spends ceil(max_iterations * share), and each
+            // reheat at least one of the rest.
+            const auto rest = config::require(
+                config::value<"max_reheats"> == 0
+                    || config::value<"descent.max_iterations">
+                                * config::value<"first_descent_share">
+                            + config::value<"max_reheats">
+                        <= config::value<"descent.max_iterations">,
+                "max_reheats must not exceed the iterations the first descent leaves");
+            return std::tuple_cat(fields, std::tuple<decltype(rest)>{rest});
+        }
+        else
+        {
+            return fields;
+        }
     }
 
     /// Whether the parameters are valid, and why not.

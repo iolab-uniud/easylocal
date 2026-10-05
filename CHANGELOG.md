@@ -105,6 +105,10 @@ reviewed by hand before tagging.
   more than they count with decimal cooling rates (1 to 0.001 by 0.1 took four
   levels, as 0.1 * 0.1 * 0.1 is a little above 0.001): they end after the
   levels counted, and the count is robust to rounding.
+- `Reheating` over a schedule with an iteration budget gave each reheat at
+  least one iteration, so with fewer iterations left than `max_reheats` the
+  descents spent more than the budget: the parameters require `max_reheats`
+  to be at most the iterations the first descent leaves.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 
