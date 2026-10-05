@@ -30,8 +30,7 @@ then the capacities (`instances/small.assignment`):
 
 | File | Holds |
 | --- | --- |
-| `instance.hpp` | the input, `AssignmentInstance`: the demands and the capacities |
-| `instance_io.hpp` | `read_input`, which reads an instance file |
+| `instance.hpp` | the input, `AssignmentInstance`: the demands and the capacities, with `read`, which reads an instance file, and `describe` |
 | `solution.hpp` | the solution, `AssignmentSolution`: the machine of each job, with `read`, `write` and `describe` |
 | `solution_manager.hpp` | `AssignmentSolutionManager`: the initial solution and the validity check |
 | `cost_components.hpp` | the cost components, `CapacityCostComponent` (hard) and `LoadImbalanceCostComponent` (soft) |
@@ -43,6 +42,12 @@ then the capacities (`instances/small.assignment`):
 | `main.cpp` | the command-line program |
 | `tui_main.cpp` | the TextUI program |
 | `rest_main.cpp` | the REST service |
+
+The hooks that read, write and describe the values are members, in one style
+throughout: `AssignmentInstance::read`, `AssignmentSolution::read` and
+`write`, and the `describe` of the instance, the solution and the move
+([Problem model](../../docs/reference/problem-model.md) lists the other
+spellings).
 
 There are no delta cost components: the change of a machine's load needs the
 loads, and computing them scans every job, as a full evaluation does. EasyLocal

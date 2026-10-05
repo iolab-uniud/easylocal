@@ -3,7 +3,6 @@
 // runners' parameters (--runners.fi.max_evaluations, ...) and prints the
 // result.
 #include "application.hpp"
-#include "instance_io.hpp" // IWYU pragma: keep (the read_input hook, found by ADL)
 
 #include <easylocal/app/cli.hpp>
 

@@ -1,7 +1,6 @@
 #include "../examples/assignment/cost.hpp"
 #include "../examples/assignment/cost_components.hpp"
 #include "../examples/assignment/demo_runner.hpp"
-#include "../examples/assignment/instance_io.hpp"
 #include "../examples/assignment/neighborhood_explorer.hpp"
 #include "../examples/assignment/solution_manager.hpp"
 #include "support/assignment_capacity_delta.hpp"

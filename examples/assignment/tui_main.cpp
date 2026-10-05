@@ -1,7 +1,6 @@
 // The assignment problem in the TextUI, the interactive tester, on the large
 // instance.
 #include "application.hpp"
-#include "instance_io.hpp" // IWYU pragma: keep (the read_input hook, found by ADL)
 
 #include <easylocal/adapters/tui/tester.hpp>
 
