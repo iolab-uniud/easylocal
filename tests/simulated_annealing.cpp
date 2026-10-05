@@ -259,6 +259,16 @@ struct OrderedCost
     auto operator<=>(const OrderedCost&) const = default;
 };
 static_assert(!easylocal::cost::has_delta<OrderedCost>);
+static_assert(easylocal::runners::acceptance_policy_for<
+    easylocal::runners::MetropolisAcceptance,
+    int,
+    std::mt19937>);
+static_assert(!easylocal::runners::acceptance_policy_for<
+    easylocal::runners::MetropolisAcceptance,
+    OrderedCost,
+    std::mt19937>);
+static_assert(
+    easylocal::runners::acceptance_policy_for<AlwaysAccept, OrderedCost, std::mt19937>);
 
 struct OrderedChainValue
 {

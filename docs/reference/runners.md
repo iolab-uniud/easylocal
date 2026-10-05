@@ -110,7 +110,9 @@ admissible unless the tabu list forbids it, through the neighborhood's
 aspiration criterion does not lift the prohibition:
 `aspiration::ByObjective` (the default) admits a tabu move that would improve
 the best cost, `aspiration::None` never does and then skips evaluating tabu
-moves. When every move is tabu, the least tabu one (the shortest remaining
+moves. Another criterion is a value with `overrides(run, candidate, best) ->
+bool` and `static constexpr bool needs_cost`, which `aspiration_for<A, Run>`
+checks. When every move is tabu, the least tabu one (the shortest remaining
 tenure) is applied. The search ends with `idle_limit_reached` after
 `max_idle_iterations` iterations without improving the best cost, and returns
 the best solution found. `FirstImprovementTabuSearch` stops the scan at the
@@ -271,7 +273,9 @@ iterations. A custom policy opts in by modelling
 `calibrate(std::span<const double> deltas)`.
 
 `runners::MetropolisAcceptance` (the default) requires `cost::delta` (see
-[Cost](cost.md)). The parameters of `SimulatedAnnealing<Policy>` are
+[Cost](cost.md)). Another acceptance criterion is a value with
+`accept(candidate, current, temperature, rng) -> bool`, which
+`acceptance_policy_for<Acceptance, Cost, RNG>` checks. The parameters of `SimulatedAnnealing<Policy>` are
 `SimulatedAnnealingParameters<Policy::parameters_type>`, the policy's under the
 group `temperature` and the evaluation budget `max_evaluations`:
 `make_runner<SimulatedAnnealing<Classic>>({.temperature = {...}})`,

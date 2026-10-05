@@ -1597,6 +1597,22 @@ concept metropolis_cost = cost::has_delta<Cost>;
 
 } // namespace detail
 
+/// An acceptance criterion of Simulated Annealing: accept(candidate, current,
+/// temperature, rng) tells whether a move of cost candidate is accepted from a
+/// solution of cost current at temperature, drawing from rng if it needs to.
+template<class Acceptance, class Cost, class RNG>
+concept acceptance_policy_for = std::uniform_random_bit_generator<RNG>
+    && requires(
+        const Acceptance& acceptance,
+        const Cost candidate,
+        const Cost current,
+        const double temperature,
+        RNG& rng) {
+           {
+               acceptance.accept(candidate, current, temperature, rng)
+           } -> std::convertible_to<bool>;
+       };
+
 /// The Metropolis criterion: a move that does not worsen the cost is accepted,
 /// a worsening one with probability exp(-delta / temperature).
 ///
@@ -1692,21 +1708,6 @@ struct policy_parameters<Policy>
     using parameters_type =
         runners::SimulatedAnnealingParameters<typename Policy::parameters_type>;
 };
-template<class Acceptance, class Cost, class RNG>
-concept acceptance_policy_for =
-    std::uniform_random_bit_generator<RNG> &&
-    requires(
-        const Acceptance& acceptance,
-        const Cost candidate,
-        const Cost current,
-        const double temperature,
-        RNG& rng)
-    {
-        {
-            acceptance.accept(candidate, current, temperature, rng)
-        } -> std::convertible_to<bool>;
-    };
-
 template<class Context, class Acceptance, class RNG>
 concept simulated_annealing_context =
     random_move_context<Context, RNG> &&
@@ -1772,7 +1773,7 @@ public:
     template<class Run, std::uniform_random_bit_generator RNG>
         requires detail::random_move_context<typename Run::context_type, RNG>
         && detail::strict_improvement_context<typename Run::context_type>
-        && (!detail::acceptance_policy_for<Acceptance, typename Run::cost_type, RNG>)
+        && (!acceptance_policy_for<Acceptance, typename Run::cost_type, RNG>)
     [[nodiscard]]
     typename Run::result_type run(Run&, typename Run::solution_type, RNG&) const
     {

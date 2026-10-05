@@ -280,6 +280,10 @@ reviewed by hand before tagging.
 - A runner rejects, with a message, a neighborhood whose `make_move` takes the
   Solution by value or by const reference (`runner | neighborhood<NHE>()`): it
   changed a copy, and Hill Climbing ran forever.
+- The policy contracts of Simulated Annealing and Tabu Search are public
+  concepts: `acceptance_policy_for<Acceptance, Cost, RNG>` (formerly in
+  `detail`) and the new `aspiration_for<A, Run>`, which constrains the four
+  tabu searches.
 
 ### Added
 

@@ -1704,6 +1704,19 @@ private:
 
 } // namespace tabu
 
+/// An aspiration criterion of Tabu Search: overrides(run, candidate, best)
+/// tells whether a tabu move of cost candidate is admitted, when the best cost
+/// found is best; needs_cost tells whether the search must evaluate the tabu
+/// moves for it (false: never admitted, as aspiration::None).
+template<class Aspiration, class Run>
+concept aspiration_for = requires(
+    const Aspiration& aspiration,
+    const Run& run,
+    const typename Run::cost_type& cost) {
+    { Aspiration::needs_cost } -> std::convertible_to<bool>;
+    { aspiration.overrides(run, cost, cost) } -> std::convertible_to<bool>;
+};
+
 namespace aspiration
 {
 
@@ -2414,7 +2427,7 @@ public:
     /// evaluation, cost relations).
     template<class Run, std::uniform_random_bit_generator RNG>
         requires detail::tabu_search_context<typename Run::context_type>
-        && tabu_list_for<TabuList, Run, RNG>
+        && tabu_list_for<TabuList, Run, RNG> && aspiration_for<Aspiration, Run>
         && detail::tabu_escape_supported<TabuList, Run, RNG>
     [[nodiscard]]
     auto run(Run& run, typename Run::solution_type solution, RNG& rng) const
@@ -2461,7 +2474,7 @@ public:
     /// evaluation, cost relations).
     template<class Run, std::uniform_random_bit_generator RNG>
         requires detail::tabu_search_context<typename Run::context_type>
-        && tabu_list_for<TabuList, Run, RNG>
+        && tabu_list_for<TabuList, Run, RNG> && aspiration_for<Aspiration, Run>
         && detail::tabu_escape_supported<TabuList, Run, RNG>
     [[nodiscard]]
     auto run(Run& run, typename Run::solution_type solution, RNG& rng) const
@@ -2543,6 +2556,7 @@ public:
     template<class Run, std::uniform_random_bit_generator RNG>
         requires detail::tabu_search_context<typename Run::context_type>
         && cost::arithmetic<typename Run::cost_type> && tabu_list_for<TabuList, Run, RNG>
+        && aspiration_for<Aspiration, Run>
         && detail::tabu_escape_supported<TabuList, Run, RNG>
     [[nodiscard]]
     auto run(Run& run, typename Run::solution_type solution, RNG& rng) const
@@ -2632,6 +2646,7 @@ public:
     template<class Run, std::uniform_random_bit_generator RNG>
         requires detail::tabu_search_context<typename Run::context_type>
         && cost::arithmetic<typename Run::cost_type> && tabu_list_for<TabuList, Run, RNG>
+        && aspiration_for<Aspiration, Run>
         && detail::tabu_escape_supported<TabuList, Run, RNG>
     [[nodiscard]]
     auto run(Run& run, typename Run::solution_type solution, RNG& rng) const
