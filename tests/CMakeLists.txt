@@ -987,6 +987,11 @@ easylocal_add_compile_failure_test(
     runner_neighborhood_not_runnable.cpp
     "a registered runner's algorithm must run on its neighborhood"
 )
+easylocal_add_compile_failure_test(
+    tracer-emit-mismatch
+    tracer_emit_mismatch.cpp
+    "no emit() of the tracer takes it"
+)
 
 # A test that runs a program and checks both its exit status and its output
 # (expect_output.cmake): EXIT_CODE is the status expected, 0 by default, and

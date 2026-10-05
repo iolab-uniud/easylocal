@@ -48,11 +48,26 @@ concept observes = tracer_for<Tracer, Event> &&
 
 /// Sends value to tracer when it observes the event type, and does nothing,
 /// at compile time, otherwise.
+///
+/// A tracer whose `observes<Event>` is true but that has no `emit()` taking
+/// the event is a compile error, rather than an event silently dropped.
 template<class Event, class Tracer>
 constexpr void emit(Tracer& tracer, const Event& value)
 {
-    if constexpr (observes<Tracer, Event>)
+    using tracer_type = std::remove_cvref_t<Tracer>;
+    static_assert(
+        requires {
+            { tracer_type::template observes<Event> } -> std::convertible_to<bool>;
+        },
+        "a tracer says which events it receives with a member "
+        "template<class Event> static constexpr bool observes");
+    if constexpr (tracer_type::template observes<Event>)
     {
+        static_assert(
+            requires { tracer.emit(value); },
+            "the tracer's observes<Event> is true for this event, but no emit() of "
+            "the tracer takes it: check the parameter type of its emit(const Event&), "
+            "the cost type included");
         tracer.emit(value);
     }
 }

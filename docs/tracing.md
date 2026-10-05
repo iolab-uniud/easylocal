@@ -32,10 +32,20 @@ the problem has a solution hash, and the hash is computed only when the tracer
 observes the event, so the hash costs nothing to a run that does not record
 it. The 64-bit hash is a `u64` in ELTR and, in JSONL and in the output of
 `eltr.py`, a string of 16 hexadecimal digits (`"00000000feedface"`): as a JSON
-number, JavaScript and jq would round it to a double. Every recorder observes every core event; a run that builds no trajectory
-or local optima network leaves the visited solutions out at compile time with
-`trace::without`, which wraps any tracer and hides the given event templates
-from the search:
+number, JavaScript and jq would round it to a double.
+
+A recorder has a cost type, its `cost_type`: it observes the core events of
+that cost and those without a cost (`run_context`, `neighborhood_selection`,
+the tabu events), not the events of a run on another cost, which it would
+otherwise drop or convert. A tracer of your own says with `observes<Event>`
+which events it receives: `trace::emit` rejects at compile time a tracer
+whose `observes<Event>` is true but whose `emit()` does not take the event,
+such as an `emit` for another cost type.
+
+Every recorder observes every core event of its cost; a run that builds no
+trajectory or local optima network leaves the visited solutions out at
+compile time with `trace::without`, which wraps any tracer and hides the given
+event templates from the search:
 
 ```cpp
 easylocal::trace::binary_recorder<cost_type> recorder{out};
@@ -358,7 +368,9 @@ easylocal::trace::binary_event_schema describe_binary_event(
 
 No EasyLocal specialization is required.  A binary recorder automatically
 advertises `observes<my_problem::temperature_changed>` and the ordinary
-`trace::emit(...)` path can emit it.  This keeps problem-specific instrumentation
+`trace::emit(...)` path can emit it. Application events are ELTR records
+only: the memory and JSONL recorders, which have no encoding for them, do not
+observe them.  This keeps problem-specific instrumentation
 close to the problem code while the recorder owns buffering and persistence.
 Tag ownership is application-level metadata; independent extensions should
 coordinate their user-tag assignments when they share a trace schema.

@@ -2,6 +2,7 @@
 #include <easylocal/trace.hpp>
 
 #include <atomic>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <ios>
@@ -299,6 +300,32 @@ void emit_every_event(Tracer& tracer)
         tracer,
         event::run_finished<int>{.evaluations = 4, .iterations = 4, .cost = 6});
 }
+
+// A recorder observes the core events of its cost type and those without a
+// cost, not the events of another cost type, which a binary recorder would
+// otherwise convert: a run on the hard cost of an until_feasible() stage
+// sends only its events without a cost.
+template<class Recorder>
+constexpr bool observes_its_cost_only = std::same_as<typename Recorder::cost_type, int>
+    && easylocal::trace::observes<Recorder, easylocal::trace::event::move_evaluated<int>>
+    && easylocal::trace::observes<Recorder, easylocal::trace::event::run_context>
+    && easylocal::trace::observes<Recorder, easylocal::trace::event::tabu_escape>
+    && !easylocal::trace::observes<
+        Recorder,
+        easylocal::trace::event::move_evaluated<long>>
+    && !easylocal::trace::observes<
+        Recorder,
+        easylocal::trace::event::run_finished<double>>;
+
+static_assert(observes_its_cost_only<easylocal::trace::memory_recorder<int>>);
+static_assert(observes_its_cost_only<easylocal::trace::jsonl_recorder<int>>);
+static_assert(observes_its_cost_only<easylocal::trace::binary_recorder<int>>);
+static_assert(observes_its_cost_only<easylocal::trace::async_binary_recorder<int>>);
+// Application events are ELTR records only.
+static_assert(
+    !easylocal::trace::observes<easylocal::trace::memory_recorder<int>, structured_cost>);
+static_assert(
+    !easylocal::trace::observes<easylocal::trace::jsonl_recorder<int>, structured_cost>);
 
 } // namespace
 

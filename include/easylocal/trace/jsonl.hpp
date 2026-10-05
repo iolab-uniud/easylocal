@@ -184,8 +184,10 @@ struct jsonl_options
 ///
 /// The first line, written at construction, is the header:
 /// `{"event":"trace","version":1,"metadata":{...}}`, as `eltr.py` starts its
-/// JSONL output. It observes every event; costs are written by CostWriter,
-/// routes as arrays of child indices. The stream is held by reference.
+/// JSONL output. It observes the core events of its cost type, the events
+/// without a cost included, but not those of a run on another cost type nor
+/// the application events; costs are written by CostWriter, routes as arrays
+/// of child indices. The stream is held by reference.
 /// Requires a CostWriter callable as `writer(out, cost)`.
 template<class Cost, class CostWriter = ostream_json_cost_writer>
 class jsonl_recorder
@@ -195,6 +197,9 @@ class jsonl_recorder
         "jsonl_recorder requires a cost writer callable as writer(ostream, cost)");
 
 public:
+    /// The cost type of the events recorded.
+    using cost_type = Cost;
+
     /// The version of the JSONL trace format written, in the header line.
     static constexpr unsigned format_version = 1;
 
@@ -217,9 +222,10 @@ public:
         start(options);
     }
 
-    /// Whether the recorder receives Event: always.
+    /// Whether the recorder receives Event: a core event without a cost or of
+    /// its cost type.
     template<class Event>
-    static constexpr bool observes = true;
+    static constexpr bool observes = detail::core_event_of<Event, Cost>;
 
     /// Writes the event as a JSON line.
     void emit(const event::run_context& value)

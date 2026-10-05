@@ -855,9 +855,13 @@ concept custom_binary_event = requires(
     encode_binary_event(out, value);
 };
 
-template<class Event, class CostWriter>
+// A core event of the recorder's cost type (or without a cost), or an
+// application event: a core event of another cost type, such as those of an
+// until_feasible() stage on the hard cost, is not converted to Cost.
+template<class Event, class Cost, class CostWriter>
 inline constexpr bool binary_event_encodable_v =
-    core_binary_event_for<Event, CostWriter> || custom_binary_event<Event>;
+    (core_event_of<Event, Cost> && core_binary_event_for<Event, CostWriter>)
+    || (!core_event<Event> && custom_binary_event<Event>);
 
 template<class Event, class CostWriter>
 std::uint8_t event_tag(const Event& value, CostWriter&)
@@ -891,7 +895,7 @@ void encode_event(
     }
 }
 
-template<class CostWriter>
+template<class Cost, class CostWriter>
 class binary_event_encoder
 {
     static constexpr std::uint8_t first_user_tag = 128;
@@ -908,7 +912,7 @@ public:
     }
 
     template<class Event>
-    static constexpr bool observes = binary_event_encodable_v<Event, CostWriter>;
+    static constexpr bool observes = binary_event_encodable_v<Event, Cost, CostWriter>;
 
     // Appends the header of the trace; with timestamps, the core events end
     // with the time since now.
@@ -927,7 +931,7 @@ public:
     // time; if the encoding throws, buffer and the schemas written are left
     // as they were.
     template<class Event>
-        requires (binary_event_encodable_v<Event, CostWriter>)
+        requires(binary_event_encodable_v<Event, Cost, CostWriter>)
     void append(std::vector<char>& buffer, const Event& value)
     {
         const auto tag = event_tag(value, cost_writer_);
@@ -1194,9 +1198,12 @@ class buffered_binary_recorder
         "an ELTR cost writer is callable as writer(binary_record_writer&, cost) and "
         "describes its fields with fields()");
 
-    using encoder_type = detail::binary_event_encoder<CostWriter>;
+    using encoder_type = detail::binary_event_encoder<Cost, CostWriter>;
 
 public:
+    /// The cost type of the events recorded.
+    using cost_type = Cost;
+
     /// The version of the ELTR format written.
     static constexpr std::uint32_t format_version = detail::eltr_format_version;
 
@@ -1244,9 +1251,9 @@ public:
         }
     }
 
-    /// Whether the recorder receives Event: a core event, or an application
-    /// event with the ADL functions `binary_event_tag` and
-    /// `encode_binary_event`.
+    /// Whether the recorder receives Event: a core event without a cost or of
+    /// its cost type, or an application event with the ADL functions
+    /// `binary_event_tag` and `encode_binary_event`.
     template<class Event>
     static constexpr bool observes = encoder_type::template observes<Event>;
 
@@ -1321,9 +1328,12 @@ class async_binary_recorder
         "an ELTR cost writer is callable as writer(binary_record_writer&, cost) and "
         "describes its fields with fields()");
 
-    using encoder_type = detail::binary_event_encoder<CostWriter>;
+    using encoder_type = detail::binary_event_encoder<Cost, CostWriter>;
 
 public:
+    /// The cost type of the events recorded.
+    using cost_type = Cost;
+
     /// The version of the ELTR format written.
     static constexpr std::uint32_t format_version = detail::eltr_format_version;
 
@@ -1380,9 +1390,9 @@ public:
         }
     }
 
-    /// Whether the recorder receives Event: a core event, or an application
-    /// event with the ADL functions `binary_event_tag` and
-    /// `encode_binary_event`.
+    /// Whether the recorder receives Event: a core event without a cost or of
+    /// its cost type, or an application event with the ADL functions
+    /// `binary_event_tag` and `encode_binary_event`.
     template<class Event>
     static constexpr bool observes = encoder_type::template observes<Event>;
 

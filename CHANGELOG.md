@@ -379,6 +379,15 @@ reviewed by hand before tagging.
   example's `slow-fi` ignored `--target`. `search_run` takes the facility as a
   third template parameter, and `run.evaluation()` returns the one it
   evaluates with.
+- **Breaking:** a recorder observes the core events of its cost type, its new
+  `cost_type`, and those without a cost, instead of declaring every event
+  observed: the memory and JSONL recorders silently dropped an event of
+  another cost type, and the binary recorders converted its cost to theirs.
+  The memory and JSONL recorders no longer claim the application events,
+  which are ELTR records only, and `memory_recorder::stored_as_is` is
+  private. `trace::emit` rejects at compile time a tracer whose
+  `observes<Event>` is true but that has no `emit()` taking the event, such
+  as an `emit` declared for another cost type.
 
 ### Fixed
 

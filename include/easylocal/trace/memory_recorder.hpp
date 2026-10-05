@@ -20,11 +20,28 @@ namespace easylocal::trace
 /// A tracer that keeps a copy of every event in memory, in order, for tests,
 /// short traces and in-process analysis.
 ///
-/// It observes every event and copies the neighborhood routes.
+/// It observes the core events of its cost type, the events without a cost
+/// included, and copies the neighborhood routes. The events of a run on another
+/// cost type, such as an until_feasible() stage on the hard cost, and the
+/// application events are not observed.
 template<class Cost>
 class memory_recorder
 {
+    // Whether an event is recorded as it is: it has no route to copy.
+    template<class Event>
+    static constexpr bool stored_as_is = std::same_as<Event, event::run_started<Cost>>
+        || std::same_as<Event, event::incumbent_updated<Cost>>
+        || std::same_as<Event, event::local_optimum<Cost>>
+        || std::same_as<Event, event::solution_visited<Cost>>
+        || std::same_as<Event, event::aspiration_applied<Cost>>
+        || std::same_as<Event, event::tabu_escape>
+        || std::same_as<Event, event::tabu_tenure_changed>
+        || std::same_as<Event, event::run_finished<Cost>>;
+
 public:
+    /// The cost type of the events recorded.
+    using cost_type = Cost;
+
     /// A recorded `event::run_context`, its stage name copied.
     struct run_context_record
     {
@@ -111,17 +128,6 @@ public:
     /// A recorded `event::run_finished`, as it is.
     using run_finished_record = event::run_finished<Cost>;
 
-    /// Whether an event is recorded as it is: it has no route to copy.
-    template<class Event>
-    static constexpr bool stored_as_is = std::same_as<Event, run_started_record>
-        || std::same_as<Event, incumbent_updated_record>
-        || std::same_as<Event, local_optimum_record>
-        || std::same_as<Event, solution_visited_record>
-        || std::same_as<Event, aspiration_applied_record>
-        || std::same_as<Event, tabu_escape_record>
-        || std::same_as<Event, tabu_tenure_changed_record>
-        || std::same_as<Event, run_finished_record>;
-
     /// A recorded event.
     using record = std::variant<
         run_started_record,
@@ -137,9 +143,10 @@ public:
         run_finished_record,
         run_context_record>;
 
-    /// Whether the recorder receives Event: always.
+    /// Whether the recorder receives Event: a core event without a cost or of
+    /// its cost type.
     template<class Event>
-    static constexpr bool observes = true;
+    static constexpr bool observes = detail::core_event_of<Event, Cost>;
 
     /// Records the event.
     void emit(const event::run_context& value)

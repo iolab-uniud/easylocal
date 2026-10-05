@@ -6,6 +6,7 @@
 #include <easylocal/utils/termination.hpp>
 
 #include <algorithm>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <string_view>
@@ -224,5 +225,51 @@ struct run_finished
 };
 
 } // namespace event
+
+namespace detail
+{
+
+// Whether Event is a core event, of any cost type.
+template<class Event>
+inline constexpr bool core_event = std::same_as<Event, event::run_context>
+    || std::same_as<Event, event::neighborhood_selection>
+    || std::same_as<Event, event::tabu_escape>
+    || std::same_as<Event, event::tabu_tenure_changed>;
+
+template<class Cost>
+inline constexpr bool core_event<event::run_started<Cost>> = true;
+template<class Cost>
+inline constexpr bool core_event<event::move_evaluated<Cost>> = true;
+template<class Cost>
+inline constexpr bool core_event<event::move_accepted<Cost>> = true;
+template<class Cost>
+inline constexpr bool core_event<event::incumbent_updated<Cost>> = true;
+template<class Cost>
+inline constexpr bool core_event<event::local_optimum<Cost>> = true;
+template<class Cost>
+inline constexpr bool core_event<event::solution_visited<Cost>> = true;
+template<class Cost>
+inline constexpr bool core_event<event::aspiration_applied<Cost>> = true;
+template<class Cost>
+inline constexpr bool core_event<event::run_finished<Cost>> = true;
+
+// Whether Event is a core event that a recorder of Cost receives: one without
+// a cost, or one of that cost type. The events of a run on another cost, such
+// as an until_feasible() stage on the hard cost, are not.
+template<class Event, class Cost>
+inline constexpr bool core_event_of = std::same_as<Event, event::run_context>
+    || std::same_as<Event, event::neighborhood_selection>
+    || std::same_as<Event, event::tabu_escape>
+    || std::same_as<Event, event::tabu_tenure_changed>
+    || std::same_as<Event, event::run_started<Cost>>
+    || std::same_as<Event, event::move_evaluated<Cost>>
+    || std::same_as<Event, event::move_accepted<Cost>>
+    || std::same_as<Event, event::incumbent_updated<Cost>>
+    || std::same_as<Event, event::local_optimum<Cost>>
+    || std::same_as<Event, event::solution_visited<Cost>>
+    || std::same_as<Event, event::aspiration_applied<Cost>>
+    || std::same_as<Event, event::run_finished<Cost>>;
+
+} // namespace detail
 
 } // namespace easylocal::trace

@@ -28,8 +28,10 @@ const auto observed = descent_search.run(
   `neighborhood_selection`, `solution_visited` (the hash of each solution
   reached), Tabu Search's `aspiration_applied`, `tabu_escape` and
   `tabu_tenure_changed`, and `run_finished`, which says why the run ended
-  (its `termination`). Without a tracer, their construction is removed at
-  compile time.
+  (its `termination`); the solvers add `run_context` before each run. Without
+  a tracer, their construction is removed at compile time.
+- A recorder has the cost type of the run, `memory_recorder<double>` for the
+  tour length: it observes the events of that cost, and those without one.
 - `easylocal::with(control)`, `easylocal::with(tracer)` and
   `easylocal::with(control, tracer)` are all accepted.
 - A target cost ends the run as soon as the best cost is at least as good:
