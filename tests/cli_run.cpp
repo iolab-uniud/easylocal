@@ -1,12 +1,15 @@
 #include "../examples/tutorial/tsp.hpp"
+#include "support/pareto_grid.hpp"
 
 #include <easylocal/app/app.hpp>
 #include <easylocal/app/cli.hpp>
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/runners/pareto_late_acceptance_hill_climbing.hpp>
 #include <easylocal/solvers/pipeline.hpp>
 
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -86,7 +89,19 @@ auto tsp_app()
             solvers::stage("second", descent));
 }
 
-Captured run(
+// Points of a grid with two objectives: a run has a front.
+auto grid_app()
+{
+    using namespace pareto_grid;
+    return easylocal::app("grid") | grid_solution_manager()
+        | easylocal::neighborhood<StepNeighborhood>()
+        | easylocal::runner<easylocal::runners::ParetoLateAcceptanceHillClimbing>(
+            "plahc");
+}
+
+template<class App>
+Captured run_app(
+    App application,
     std::initializer_list<std::string> arguments,
     easylocal::config::parameter_set own = {},
     easylocal::cli::parameters defaults = {})
@@ -101,7 +116,7 @@ Captured run(
     std::ostringstream err;
     Captured captured;
     captured.status = easylocal::cli::run(
-        tsp_app(),
+        std::move(application),
         static_cast<int>(argv.size()),
         argv.data(),
         {.defaults = std::move(defaults),
@@ -111,6 +126,23 @@ Captured run(
     captured.out = out.str();
     captured.err = err.str();
     return captured;
+}
+
+Captured run(
+    std::initializer_list<std::string> arguments,
+    easylocal::config::parameter_set own = {},
+    easylocal::cli::parameters defaults = {})
+{
+    return run_app(tsp_app(), arguments, std::move(own), std::move(defaults));
+}
+
+// The number of times text occurs in out.
+std::size_t occurrences(const std::string& out, const std::string& text)
+{
+    std::size_t count = 0;
+    for (auto at = out.find(text); at != std::string::npos; at = out.find(text, at + 1))
+        ++count;
+    return count;
 }
 
 } // namespace
@@ -170,6 +202,50 @@ int main()
     assert(saved.out.find("0 1 3 4 2") == std::string::npos); // in the file
     assert(std::filesystem::exists(output_file));
     std::filesystem::remove(output_file);
+
+    // A run with a Pareto cost: after the solution, the front, each point with
+    // its cost and its solution, here on the row y = 0. A tour has no front.
+    assert(solved.out.find("\nfront ") == std::string::npos);
+    const auto grid_file = directory / "easylocal_cli_run_grid.txt";
+    std::ofstream{grid_file} << "grid\n";
+    const auto fronted = run_app(grid_app(), {"--instance", grid_file.string()});
+    assert(fronted.status == 0);
+    const auto front_at = fronted.out.find("\nfront ");
+    assert(front_at != std::string::npos);
+    const auto size = std::stoul(fronted.out.substr(front_at + 7));
+    assert(size >= 2);
+    assert(occurrences(fronted.out, "\npoint ") == size);
+    assert(fronted.out.find("\npoint 1 cost [") != std::string::npos);
+    assert(occurrences(fronted.out, " 0\n") >= size + 1); // the solution too
+
+    // With --output the solutions are files next to it, numbered from 1.
+    const auto front_output = directory / "easylocal_cli_run_front.txt";
+    const auto saved_front = run_app(
+        grid_app(),
+        {"--instance", grid_file.string(), "--output", front_output.string()});
+    assert(saved_front.status == 0);
+    assert(std::filesystem::exists(front_output));
+    std::filesystem::remove(front_output);
+    const auto saved_size =
+        std::stoul(saved_front.out.substr(saved_front.out.find("\nfront ") + 7));
+    assert(occurrences(saved_front.out, " 0\n") == 0); // in the files
+    for (std::size_t index = 1; index <= saved_size; ++index)
+    {
+        const auto file =
+            directory / ("easylocal_cli_run_front." + std::to_string(index) + ".txt");
+        assert(std::filesystem::exists(file));
+        std::ifstream in{file};
+        int x = -1;
+        int y = -1;
+        in >> x >> y;
+        assert(x >= 0 && y == 0);
+        in.close();
+        std::filesystem::remove(file);
+    }
+    assert(!std::filesystem::exists(
+        directory
+        / ("easylocal_cli_run_front." + std::to_string(saved_size + 1) + ".txt")));
+    std::filesystem::remove(grid_file);
 
     // A starting solution that is not valid for the Input does not run.
     std::ofstream{start_file} << "0 1 7 4 2\n";

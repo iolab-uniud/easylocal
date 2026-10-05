@@ -1,8 +1,8 @@
 // The REST blueprint answering requests in-process (no network): unknown runs,
 // runs that fail, a codec that fails, a run from a given initial solution, a
 // run with a target cost, runs with their own parameters, a deeply nested body,
-// a full queue, a run cancelled while still queued, and a problem served
-// through its text hooks, without a codec.
+// a full queue, a run cancelled while still queued, a problem served through
+// its text hooks, without a codec, and the front of a run with a Pareto cost.
 #include "../examples/assignment/cost.hpp"
 #include "../examples/assignment/cost_components.hpp"
 #include "../examples/assignment/instance.hpp"
@@ -10,11 +10,13 @@
 #include "../examples/assignment/solution_manager.hpp"
 #include "../examples/tutorial/tsp.hpp"
 #include "support/assignment_capacity_delta.hpp"
+#include "support/pareto_grid.hpp"
 
 #include <easylocal/adapters/rest.hpp>
 #include <easylocal/app/app.hpp>
 #include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/runners/hill_climbing.hpp>
+#include <easylocal/runners/pareto_late_acceptance_hill_climbing.hpp>
 #include <easylocal/solvers/pipeline.hpp>
 
 #include <crow.h>
@@ -22,6 +24,7 @@
 #include <cassert>
 #include <chrono>
 #include <condition_variable>
+#include <cstddef>
 #include <mutex>
 #include <stdexcept>
 #include <string>
@@ -649,6 +652,7 @@ void a_problem_with_text_hooks_needs_no_codec()
     assert(solved.body["cost"].d() == 26.0);
     assert(solved.body["solution"].t() == crow::json::type::String);
     assert(text(solved.body["solution"]).size() == 11); // five "c ", then "\n"
+    assert(!solved.body.has("front"));
 
     // A value that is not a string, or text the hook cannot read, is a bad
     // request.
@@ -695,6 +699,51 @@ void a_problem_with_text_hooks_needs_no_codec()
         R"({"input": )" + input
         + R"(, "start": "random", "initial_solution": "0 1 2 3 4"})");
     assert(both.code == 422);
+}
+
+// With a cost::pareto cost the solution resource has the run's front: each
+// point's cost and solution, here through the text hooks; without one it has
+// no front.
+void a_pareto_run_returns_its_front()
+{
+    using namespace pareto_grid;
+    auto application = easylocal::app("grid") | grid_solution_manager()
+        | easylocal::neighborhood<StepNeighborhood>()
+        | easylocal::runner<easylocal::runners::ParetoLateAcceptanceHillClimbing>(
+            "plahc");
+    auto api = easylocal::rest::blueprint(
+        "/grid",
+        std::move(application),
+        easylocal::rest::blueprint_options{.workers = 1});
+    crow::SimpleApp server;
+    server.loglevel(crow::LogLevel::Warning);
+    server.register_blueprint(api.crow_blueprint());
+    server.add_blueprint();
+    server.validate();
+
+    const auto submitted = send(
+        server,
+        crow::HTTPMethod::POST,
+        "/grid/runners/plahc/runs",
+        R"({"input": "grid", "seed": 11})");
+    assert(submitted.code == 202);
+    const auto id = text(submitted.body["id"]);
+    wait_for_run(server, "/grid/runs/" + id, "succeeded");
+    const auto solved =
+        send(server, crow::HTTPMethod::GET, "/grid/runs/" + id + "/solution");
+    assert(solved.code == 200);
+    const auto& front = solved.body["front"];
+    assert(front.t() == crow::json::type::List);
+    assert(front.size() >= 2);
+    bool has_solution = false;
+    for (std::size_t index = 0; index < front.size(); ++index)
+    {
+        assert(text(front[index]["cost"]).starts_with("["));
+        const auto point = text(front[index]["solution"]);
+        assert(point.ends_with(" 0\n")); // on the row y = 0
+        has_solution |= point == text(solved.body["solution"]);
+    }
+    assert(has_solution);
 }
 
 void a_full_queue_rejects_runs_and_a_queued_run_can_be_cancelled(crow::SimpleApp& server)
@@ -926,6 +975,7 @@ int main()
     json_parameter_values_become_text();
     an_arithmetic_target_is_a_number();
     a_problem_with_text_hooks_needs_no_codec();
+    a_pareto_run_returns_its_front();
     a_full_queue_rejects_runs_and_a_queued_run_can_be_cancelled(server);
     an_empty_prefix_is_rejected();
     a_zero_completed_run_capacity_is_rejected();

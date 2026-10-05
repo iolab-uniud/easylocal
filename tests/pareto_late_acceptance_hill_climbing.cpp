@@ -2,6 +2,8 @@
 // for any runner with a cost::pareto cost (and the solvers merge across their
 // runs), on points of a 10 x 10 grid with objectives x + y and (9 - x) + y:
 // the front is the row y = 0.
+#include "support/pareto_grid.hpp"
+
 #include <easylocal/app/app.hpp>
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
@@ -25,120 +27,7 @@ namespace
 
 using namespace easylocal;
 using namespace easylocal::runners;
-
-struct Grid
-{
-    static constexpr int side = 10;
-};
-
-struct Point
-{
-    int x{};
-    int y{};
-
-    friend auto operator==(const Point&, const Point&) -> bool = default;
-};
-
-// One step in one of the four directions.
-struct Step
-{
-    int dx{};
-    int dy{};
-};
-
-class PointManager
-{
-public:
-    using input_type = Grid;
-    using solution_type = Point;
-
-    explicit PointManager(const Grid& grid) noexcept : grid_{grid} {}
-
-    [[nodiscard]] auto input() const noexcept -> const Grid&
-    {
-        return grid_;
-    }
-
-    template<std::uniform_random_bit_generator RNG>
-    [[nodiscard]] static auto random_solution(RNG& rng) -> Point
-    {
-        std::uniform_int_distribution<int> coordinate{0, Grid::side - 1};
-        const auto x = coordinate(rng);
-        return Point{x, coordinate(rng)};
-    }
-
-    [[nodiscard]] static auto is_valid(const Point& point) noexcept -> bool
-    {
-        return point.x >= 0 && point.x < Grid::side && point.y >= 0
-            && point.y < Grid::side;
-    }
-
-private:
-    const Grid& grid_;
-};
-
-class StepNeighborhood
-{
-public:
-    using input_type = Grid;
-    using solution_type = Point;
-    using move_type = Step;
-
-    explicit StepNeighborhood(const PointManager& manager) noexcept
-        : grid_{manager.input()}
-    {
-    }
-
-    [[nodiscard]] auto input() const noexcept -> const Grid&
-    {
-        return grid_;
-    }
-
-    template<std::uniform_random_bit_generator RNG>
-    [[nodiscard]] static auto random_move(const Point& point, RNG& rng)
-        -> std::optional<Step>
-    {
-        static constexpr std::array<Step, 4> steps{{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}};
-        std::uniform_int_distribution<std::size_t> pick{0, steps.size() - 1};
-        for (;;)
-        {
-            const auto step = steps[pick(rng)];
-            if (is_valid(point, step))
-                return step;
-        }
-    }
-
-    [[nodiscard]] static auto is_valid(const Point& point, const Step& step) noexcept
-        -> bool
-    {
-        return PointManager::is_valid(Point{point.x + step.dx, point.y + step.dy});
-    }
-
-    static void make_move(Point& point, const Step& step) noexcept
-    {
-        point.x += step.dx;
-        point.y += step.dy;
-    }
-
-private:
-    const Grid& grid_;
-};
-
-struct Left
-{
-    [[nodiscard]] static auto evaluate(const Point& point) noexcept -> int
-    {
-        return point.x + point.y;
-    }
-};
-
-struct Right
-{
-    [[nodiscard]] static auto evaluate(const Point& point) noexcept -> int
-    {
-        return (Grid::side - 1 - point.x) + point.y;
-    }
-};
+using namespace pareto_grid;
 
 // The column x of a point, and its mirror: every point of a column has the
 // same cost, a plateau of 10 points, and every column is on the front.

@@ -29,6 +29,7 @@
 #include <chrono>
 #include <cmath>
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <filesystem>
@@ -66,7 +67,9 @@ struct parameters
     std::string start{};
     /// A file to read the starting solution from, instead of start.
     std::filesystem::path solution{};
-    /// The file to write the solution to; empty: the standard output.
+    /// The file to write the solution to; empty: the standard output. The
+    /// points of a front go to numbered files next to it: best.txt gives
+    /// best.1.txt, best.2.txt...
     std::filesystem::path output{};
     /// The cost at which the run stops, such as 0 or [0, 120]; empty: no
     /// target.
@@ -104,7 +107,8 @@ struct parameters
                 "Starting solution read from this file, instead of start",
                 easylocal::unlimited),
             config::field<"output", &parameters::output>(
-                "Solution file (empty: standard output)",
+                "Solution file, with the points of a front in numbered files next "
+                "to it (empty: standard output)",
                 easylocal::unlimited),
             config::field<"target", &parameters::target>(
                 "Stop when the solution reaches this cost, such as 0 or "
@@ -299,12 +303,57 @@ void write_report(std::ostream& out, const Session& session)
 }
 
 template<class Session>
-void write_solution(std::ostream& out, const Session& session)
+void write_solution(
+    std::ostream& out,
+    const Session& session,
+    const typename Session::solution_type& solution)
 {
     if constexpr (Session::supports_solution_saving)
-        session.save_solution(out);
+        easylocal::write_solution(session.input(), solution, out);
     else
-        out << easylocal::describe(session.solution()) << '\n';
+        out << easylocal::describe(solution) << '\n';
+}
+
+// The file of the point of the front numbered index, from 1, next to the
+// output file: best.txt gives best.1.txt, best.2.txt...
+inline std::filesystem::path front_file(
+    const std::filesystem::path& output,
+    const std::size_t index)
+{
+    auto file = output;
+    file.replace_filename(
+        output.stem().string() + '.' + std::to_string(index)
+        + output.extension().string());
+    return file;
+}
+
+// The front of the last run, when it has one: a line `front <size>`, then for
+// each point a line `point <index> cost <cost>` followed by its solution, or,
+// with an output file, the solutions saved to the front_file()s.
+template<class Session>
+void write_front(
+    std::ostream& out,
+    const Session& session,
+    const std::filesystem::path& output)
+{
+    const auto& front = session.last_run_front();
+    if (front.empty())
+        return;
+    out << "front " << front.size() << '\n';
+    std::size_t index = 0;
+    for (const auto& point : front)
+    {
+        ++index;
+        out << "point " << index << " cost " << easylocal::detail::report_text(point.cost)
+            << '\n';
+        if (output.empty())
+            write_solution(out, session, point.solution);
+        else if constexpr (Session::supports_solution_saving)
+            easylocal::save_solution(
+                session.input(),
+                point.solution,
+                front_file(output, index));
+    }
 }
 
 // --tuning.irace: writes the irace scenario of the program, with the values
@@ -383,7 +432,9 @@ inline int write_irace(
 /// chosen runner and prints "cost", "time" (seconds), the effort of the run
 /// ("iterations", "evaluations", "termination") when the algorithm reports it,
 /// with --report the value of each cost component, and the solution, or saves
-/// it to --output.
+/// it to --output. After a run with a cost::pareto cost it prints "front" and
+/// its size, then each point, "point", its number and "cost", followed by its
+/// solution, or saves the solutions to numbered files next to --output.
 ///
 /// With --tuning.print=cost it prints only the cost as one number
 /// (scalar_cost), and the running time after it with cost_time; with
@@ -632,7 +683,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
         if (command_line.report)
             detail::write_report(out, session);
         if (command_line.output.empty())
-            detail::write_solution(out, session);
+            detail::write_solution(out, session, session.solution());
         else if constexpr (session_type::supports_solution_saving)
             session.save_solution(command_line.output);
         else
@@ -640,6 +691,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
             err << "output: this problem cannot write solutions\n";
             return 2;
         }
+        detail::write_front(out, session, command_line.output);
     }
     catch (const std::exception& error)
     {

@@ -125,6 +125,8 @@ public:
     using move_type = typename neighborhood_type::move_type;
     /// The random generator of the session.
     using rng_type = std::mt19937_64;
+    /// The front of a run: its non-dominated solutions, with their costs.
+    using front_type = std::vector<pareto_point<solution_type, cost_type>>;
 
     /// Whether the SolutionManager has initial_solution().
     static constexpr bool supports_initial_solution =
@@ -342,6 +344,7 @@ public:
 
         clear_solution_state();
         last_run_effort_.reset();
+        last_run_front_.clear();
         bound_.reset();
         input_ = std::move(new_input);
         bound_ = std::move(new_bound);
@@ -616,8 +619,10 @@ public:
             throw std::invalid_argument{
                 "run: the current solution is not valid for the Input"};
         }
-        // The effort is the last run's: none until this one completes.
+        // The effort and the front are the last run's: none until this one
+        // completes.
         last_run_effort_.reset();
+        last_run_front_.clear();
         const auto names = app_.runner_names();
         if (std::ranges::find(names, name) == names.end())
             return false;
@@ -637,6 +642,7 @@ public:
 
         solution_ = std::make_unique<solution_type>(std::move(result->solution));
         last_run_effort_ = result->effort;
+        last_run_front_ = std::move(result->front);
         clear_move_state();
         return true;
     }
@@ -648,6 +654,17 @@ public:
     const std::optional<run_effort>& last_run_effort() const noexcept
     {
         return last_run_effort_;
+    }
+
+    /// The front of the last run: the non-dominated solutions it reached, with
+    /// their costs, ordered by their objectives, with a cost::pareto cost.
+    ///
+    /// Empty when the cost has no front, before the first run, after a run that
+    /// did not complete (an unknown name, an exception) and after a new Input.
+    [[nodiscard]]
+    const front_type& last_run_front() const noexcept
+    {
+        return last_run_front_;
     }
 
     /// Whether a move is selected.
@@ -1175,6 +1192,7 @@ private:
     std::unique_ptr<bound_app_type> bound_;
     std::unique_ptr<solution_type> solution_;
     std::optional<run_effort> last_run_effort_;
+    front_type last_run_front_;
     std::optional<move_type> move_;
     std::optional<std::size_t> deterministic_move_index_;
     rng_type rng_;

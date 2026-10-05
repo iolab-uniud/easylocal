@@ -33,18 +33,17 @@ design would start from the needs of two real users.
 ## The Pareto front in the frontends
 
 **Why.** A run with a `cost::pareto` cost returns the non-dominated solutions
-it reached, and `app.run("name", ...)` carries them in
-`named_run_result.front`. The Session, `cli::run`, the REST service and the
-TextUI still keep one solution, the first of the front, so a multi-objective
-app shows a single trade-off.
+it reached: `app.run("name", ...)` carries them in `named_run_result.front`,
+the Session keeps them (`last_run_front()`), `cli::run` prints them and REST
+returns them with the solution. The TextUI still shows one solution, the
+current one, so a multi-objective app shows a single trade-off there.
 
-**What.** The Session keeps the front of its last run; `cli::run` prints
-`front N` followed by the solutions and their costs; REST adds a `front` array
-to a finished run; the TextUI gets a page that lists the front and makes one of
-its solutions the current one.
+**What.** A TextUI page that lists the front of the last run, each point with
+its cost, and makes one of its solutions the current one.
 
-**When.** The Session, the command line and REST next, as one change; the
-TextUI page after them.
+**When.** Next, as a change of its own: the other frontends already show the
+front.
+
 ## A failed run in the trace and in the result
 
 **Why.** An exception thrown in the middle of a run, by a hook of the problem

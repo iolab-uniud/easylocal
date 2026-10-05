@@ -281,7 +281,7 @@ The generic surface under a chosen prefix is:
 | `GET` | `/assignment/parameters` | the app's parameters: `path`, `description`, `value` (as text), `kind` (`boolean`, `integer`, `real`, `limit`, `text`, `path`, `list`), `domain` (as text, such as `[1, unlimited)`; absent when none is declared), `active` (whether its condition holds) and `condition` (as text, with full paths; absent when it has none) |
 | `POST` | `/assignment/runners/<runner>/runs` | enqueue a run |
 | `GET` | `/assignment/runs/<id>` | inspect status/progress |
-| `GET` | `/assignment/runs/<id>/solution` | retrieve terminal solution and cost |
+| `GET` | `/assignment/runs/<id>/solution` | retrieve terminal solution and cost (and the front, with a Pareto cost) |
 | `POST` | `/assignment/runs/<id>/cancel` | request cooperative cancellation |
 | `DELETE` | `/assignment/runs/<id>` | forget a terminal run |
 
@@ -345,6 +345,26 @@ has succeeded, or was cancelled with a partial solution, the status also gives
   "cost": { "...": "..." }
 }
 ```
+
+With a `cost::pareto` cost the result also has `front`, the non-dominated
+solutions the run reached, ordered by their objectives, each with its cost,
+encoded as `cost` and `solution` are (by the codec or the text hooks):
+
+```json
+{
+  "id": "42",
+  "runner": "plahc",
+  "status": "succeeded",
+  "solution": { "...": "..." },
+  "cost": "[0, 9]",
+  "front": [
+    { "cost": "[0, 9]", "solution": { "...": "..." } },
+    { "cost": "[1, 8]", "solution": { "...": "..." } }
+  ]
+}
+```
+
+A result without a front, with any other cost, has no `front` field.
 
 A cooperatively cancelled run may expose the same result shape with
 `"status": "cancelled"`; the solution is then the valid partial solution

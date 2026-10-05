@@ -112,8 +112,15 @@ reviewed by hand before tagging.
   that maximizes, Pareto Late Acceptance returned the worst point of its
   front.
 - `named_run_result` has the `front` of a run with a `cost::pareto` cost, so
-  `app.run("name", ...)` no longer drops it; the Session, `cli::run`, REST and
-  the TextUI do not show it yet.
+  `app.run("name", ...)` no longer drops it; the TextUI does not show it yet.
+- The front of a run with a `cost::pareto` cost reaches the tools: the
+  Session keeps the front of its last run (`last_run_front()`, a `front_type`
+  of `pareto_point{solution, cost}`, empty when `last_run_effort()` is);
+  `cli::run` writes `front <n>` after the solution, then each point as
+  `point <i> cost <cost>` followed by its solution, or with `--output
+  best.txt` saves the solutions to `best.1.txt`, `best.2.txt`, ...; the REST
+  solution resource has a `front` array of `{cost, solution}`, encoded as the
+  run's cost and solution are.
 ### Added
 
 - `trace::event::run_context`, a core event without a cost (ELTR tag 12): the

@@ -384,10 +384,10 @@ inline void collect_parameters(
 ///
 /// Its routes list the runners and the parameters, submit a run of a runner
 /// (each on its own Session, with optional seed, parameter overrides, target
-/// and initial solution), report its state, progress and solution, cancel it
-/// and forget it. It is neither copyable nor movable, since its routes refer
-/// to it: keep it alive as long as the Crow app uses its blueprint. Calls to
-/// the codec are serialized.
+/// and initial solution), report its state, progress and solution (with a
+/// cost::pareto cost, its front too), cancel it and forget it. It is neither
+/// copyable nor movable, since its routes refer to it: keep it alive as long as
+/// the Crow app uses its blueprint. Calls to the codec are serialized.
 ///
 /// Each value goes through the codec when it has the member, or else through
 /// the problem's text hook, as a JSON string: the Input by `decode_input(json)`
@@ -507,6 +507,7 @@ private:
         run_state state{run_state::queued};
         std::optional<solution_type> solution;
         std::optional<cost_type> cost;
+        typename session_type::front_type front; // with a cost::pareto cost
         std::string error;
         easylocal::shared_run_progress progress;
     };
@@ -1065,6 +1066,7 @@ private:
                         {
                             record->solution.emplace(session.solution());
                             record->cost.emplace(session.evaluate());
+                            record->front = session.last_run_front();
                             record->state = record->stop_source.stop_requested()
                                 ? run_state::cancelled
                                 : run_state::succeeded;
@@ -1182,6 +1184,19 @@ private:
         body["solution"] = encode_solution(
             *record->input,
             *record->solution);
+        if (!record->front.empty())
+        {
+            crow::json::wvalue::list front;
+            front.reserve(record->front.size());
+            for (const auto& point : record->front)
+            {
+                crow::json::wvalue entry;
+                entry["cost"] = encode_cost(point.cost);
+                entry["solution"] = encode_solution(*record->input, point.solution);
+                front.push_back(std::move(entry));
+            }
+            body["front"] = std::move(front);
+        }
         return detail::json_response(200, std::move(body));
     }
 

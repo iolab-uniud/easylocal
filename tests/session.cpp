@@ -3,13 +3,16 @@
 #include "../examples/assignment/neighborhood_explorer.hpp"
 #include "../examples/assignment/solution_manager.hpp"
 #include "support/assignment_capacity_delta.hpp"
+#include "support/pareto_grid.hpp"
 
 #include <easylocal/app/app.hpp>
 #include <easylocal/app/session.hpp>
 #include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/runners/pareto_late_acceptance_hill_climbing.hpp>
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/utils/generator.hpp>
 
+#include <algorithm>
 #include <cassert>
 #include <concepts>
 #include <cstddef>
@@ -705,6 +708,7 @@ void session_runs_a_named_runner_on_the_current_solution()
     assert(session.evaluate().soft() == 1);
     assert(session.solution().assignment[0] == 1);
     assert(session.solution().assignment[1] == 0);
+    assert(session.last_run_front().empty()); // a cost without a front
 }
 
 void session_distinguishes_same_tag_runners_by_name()
@@ -779,6 +783,41 @@ void session_forgets_the_effort_of_a_previous_run()
     assert(session.last_run_effort());
     session.set_input(make_input(3));
     assert(!session.last_run_effort());
+}
+
+// A run with a cost::pareto cost leaves its front in the session, until the
+// next run or a new Input.
+void session_keeps_the_front_of_its_last_run()
+{
+    using namespace pareto_grid;
+    auto application = easylocal::app("grid") | grid_solution_manager()
+        | easylocal::neighborhood<StepNeighborhood>()
+        | easylocal::runner<easylocal::runners::ParetoLateAcceptanceHillClimbing>(
+            "plahc");
+    easylocal::Session session{std::move(application), Grid{}, 11};
+    session.set_solution(Point{4, 9});
+    assert(session.last_run_front().empty()); // no run yet
+
+    assert(session.run("plahc"));
+    const auto& front = session.last_run_front();
+    assert(front.size() >= 2);
+    assert(std::ranges::all_of(front, [](const auto& point) {
+        return point.solution.y == 0;
+    }));
+    assert(std::ranges::is_sorted(front, {}, [](const auto& point) {
+        return point.cost.template get<0>();
+    }));
+    assert(std::ranges::any_of(front, [&](const auto& point) {
+        return point.solution == session.solution();
+    }));
+
+    assert(!session.run("missing"));
+    assert(session.last_run_front().empty());
+
+    assert(session.run("plahc"));
+    assert(!session.last_run_front().empty());
+    session.set_input(Grid{});
+    assert(session.last_run_front().empty());
 }
 
 void app_copy_preserves_graph_configuration()
@@ -908,4 +947,5 @@ int main()
     session_reports_unknown_runner_without_changing_solution();
     session_rejects_a_run_from_an_invalid_solution();
     session_forgets_the_effort_of_a_previous_run();
+    session_keeps_the_front_of_its_last_run();
 }

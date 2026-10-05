@@ -108,8 +108,9 @@ algorithm, built-in or your own, each with its own result type. `effort` is a
 members, as `search_result` does, and empty otherwise. `front` holds the
 non-dominated solutions of a run with a `cost::pareto` cost, as
 `pareto_search_result` does (see [Runners](runners.md#results)), and is empty
-otherwise. The Session, `cli::run`, REST and the TextUI still keep one
-solution: they do not show the front yet.
+otherwise. The Session keeps the front of its last run
+(`last_run_front()`), `cli::run` prints it and REST returns it with the
+solution; the TextUI does not show it yet.
 
 ## Tools
 
@@ -171,6 +172,12 @@ has `random_solution`, `initial` otherwise), runs the runner by name, with
 the session's `cost_report()` (a line `component <name> <value>` for each
 component, followed by its description, indented), and the solution
 (or saves it to `--output`) to `options.out`; errors go to `options.err`.
+After a run with a front (a `cost::pareto` cost) it writes a line `front <n>`,
+then for each point, in the order of the front, a line `point <i> cost <cost>`,
+from 1, followed by its solution. With `--output` the solutions of the front
+go instead to numbered files next to it, one solution per file as
+`save_solution` writes it, which `--solution` reads back:
+`--output best.txt` gives `best.1.txt`, `best.2.txt`, ...
 With `--trace <file>` the run is recorded, with timestamps and with the
 program and its parameters as metadata, by a `jsonl_recorder` for a `.jsonl`
 name and a `binary_recorder` otherwise ([Tracing](../tracing.md#from-the-command-line));
@@ -339,7 +346,7 @@ flowchart TB
 | Solution | `use_initial_solution`, `use_random_solution(rng)`, `set_solution`, `load_solution`, `save_solution`, `solution`, `is_valid`, `evaluate`, `check()` |
 | Move | select with `use_first_move`, `use_next_move`, `use_first_improving_move`, `use_best_move`, `use_random_move(rng)` or `set_move`; then `move_is_valid`, `evaluate_move`, `evaluate_move_fully`, `move_evaluation_matches_full([tolerance])`, `apply_move` |
 | Neighborhood | `neighborhood_preview`, `neighborhood_statistics`, `check_neighborhood_costs([tolerance])` (the delta and the full costs agree by `equivalent` or within a `cost::tolerance`, 1e-9 by default), `check_move_independence` (needs `Solution::operator==`), `check_random_move_distribution(rng)` (needs `Move::operator==`) |
-| Runners | `runner_names` (the runners and pipelines), `run("name", options...)` (replaces the current solution; the options are run options: `with(control, tracer)`, `stop_at`, `timeout`, `max_evaluations`), `last_run_effort()`: the evaluations, iterations and termination of the last run, when its algorithm reports them (empty after a new Input or a run that did not complete) |
+| Runners | `runner_names` (the runners and pipelines), `run("name", options...)` (replaces the current solution; the options are run options: `with(control, tracer)`, `stop_at`, `timeout`, `max_evaluations`), `last_run_effort()`: the evaluations, iterations and termination of the last run, when its algorithm reports them (empty after a new Input or a run that did not complete); `last_run_front()`: with a `cost::pareto` cost, the front of the last run, a vector of `pareto_point{solution, cost}` (`front_type`), empty in the same cases |
 | Costs | `read_cost(text)`: a cost written as text, such as a target, by the problem's `read_cost` or `cost::from_text`; `cost_report()`: each cost component on the current solution, in the order of the recipe, as `component_report{name, value, description}`: its `name()` or `#<position>`, its own value without weights, and its `describe(solution)` text, empty without it |
 | Parameters | `configuration()`, the app's; `configure(text_overrides)` applies them all or none and, when the cost or the neighborhood changes, rebuilds the bound services |
 

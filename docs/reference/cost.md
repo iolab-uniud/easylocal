@@ -149,7 +149,11 @@ dominates it. The Pareto front is the set of the points that no other
 dominates, and a search with a pareto cost keeps the non-dominated solutions it
 reaches in its archive and returns them as its front (see
 [Runners](runners.md#results)). Pareto Late Acceptance Hill Climbing explores
-from several solutions at once to spread over the front.
+from several solutions at once to spread over the front. An app run by name
+carries the front in `named_run_result.front`, the Session keeps it
+(`last_run_front()`), `cli::run` prints it and REST returns it with the
+solution (see [Apps and tools](app-and-tools.md)); the TextUI shows only the
+current solution.
 
 The runners whose acceptance only compares costs accept a pareto cost: First
 and Best Improvement, Hill Climbing, Late Acceptance, Pareto Late Acceptance
