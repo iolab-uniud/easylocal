@@ -137,7 +137,9 @@ types made of several values:
   matters only between costs whose first one is equal, and so on;
 - `cost::hierarchical<Hard, Soft>` gives the hard branch strict priority over
   the soft one: no improvement of the soft cost can make up for a worse hard
-  cost.
+  cost. Each branch is compared with its `operator<=>`, or else with `<`
+  and `==` alone; the hierarchical cost then has all the comparisons, `<=`
+  included.
 
 You rarely write these types: the cost expressions `cost::in_order` and
 `cost::hard_soft` build them from the component values. Two examples on the
@@ -264,9 +266,10 @@ auto excess_sm = el::solution_manager<TourManager>()
 ```
 
 - **The struct is the cost** (`long_edges_sm`). Algorithms compare costs, so
-  the struct must be ordered: `better` and `equivalent` default to `<` and
-  `==` (see [Cost semantics](#cost-semantics) below). The defaulted
-  `operator<=>` provides both, comparing the members in declaration order:
+  the struct must be ordered: `better`, `equivalent` and
+  `better_or_equivalent` default to `<`, `==` and `<=` (see
+  [Cost semantics](#cost-semantics) below). The defaulted
+  `operator<=>` provides them all, comparing the members in declaration order:
   first `excess`, then `count`. Without it, the runner does not compile.
 - **A function turns it into a number** (`excess_sm`). `cost::apply` maps the
   struct to its `excess`, a number that is then the hard cost. Here the

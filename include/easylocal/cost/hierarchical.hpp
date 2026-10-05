@@ -15,11 +15,25 @@
 #include <compare>
 #include <concepts>
 #include <limits>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 
 namespace easylocal::cost
 {
+
+namespace detail
+{
+
+// A cost that compares with <=>, or else with < (both ways) alone, as
+// std::tuple compares its elements.
+template<class T>
+concept synth_three_way_comparable =
+    std::three_way_comparable<T> || requires(const T& lhs, const T& rhs) {
+        { lhs < rhs } -> std::convertible_to<bool>;
+    };
+
+} // namespace detail
 
 /// A hierarchical cost: the hard cost has strict priority, the soft cost is
 /// compared only when the hard costs are equivalent (neither is less).
@@ -63,7 +77,19 @@ public:
         return soft_;
     }
 
-    auto operator<=>(const hierarchical&) const = default;
+    /// The order of the costs: by the hard costs, then by the soft costs; each
+    /// branch compares with its `<=>`, or else with its `<`.
+    [[nodiscard]]
+    friend constexpr auto operator<=>(const hierarchical& lhs, const hierarchical& rhs)
+        requires detail::synth_three_way_comparable<HardCost>
+        && detail::synth_three_way_comparable<SoftCost>
+    {
+        return std::tie(lhs.hard_, lhs.soft_) <=> std::tie(rhs.hard_, rhs.soft_);
+    }
+
+    /// Whether the hard and the soft costs are equal.
+    [[nodiscard]]
+    friend constexpr bool operator==(const hierarchical&, const hierarchical&) = default;
 
     /// `delta(candidate, current)`, when the soft cost has a delta.
     [[nodiscard]]

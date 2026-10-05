@@ -64,6 +64,9 @@ reviewed by hand before tagging.
   backslashes of a text; `text_with`'s second parameter is now `r_syntax`.
 - The weights of a `cost::sum` must be finite: a configuration that sets one
   to NaN or infinity is rejected (a negative weight is still accepted).
+- `cost::hierarchical` compares a branch that has only `<` and `==`, as its
+  `delta` already accepted: its `operator<=>` was deleted for such a hard
+  cost.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

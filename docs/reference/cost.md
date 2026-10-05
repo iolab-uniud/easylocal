@@ -73,7 +73,7 @@ solution_manager<SM>()
 | arithmetic (`cost::arithmetic`: signed integers and floating point) | `<` | `candidate - current` |
 | `cost::lexicographic<Ts...>` | lexicographic over the values | none |
 | `cost::pareto<Ts...>` | Pareto dominance (a partial order) | none |
-| `cost::hierarchical<Hard, Soft>` | hard first, soft when hard is equivalent | hard better: `-∞`, hard worse: `+∞`, else the soft delta |
+| `cost::hierarchical<Hard, Soft>` | hard first, soft when hard is equivalent; each branch by its `<=>`, or else by `<` and `==` | hard better: `-∞`, hard worse: `+∞`, else the soft delta |
 
 The structured types are constructed directly, with deduced types:
 `cost::hierarchical{hard, soft}`, `cost::lexicographic{a, b}`,

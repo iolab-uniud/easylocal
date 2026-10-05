@@ -108,6 +108,21 @@ auto evaluate(Expression expression)
         .evaluate(Solution{});
 }
 
+// A hard cost with only < and ==, as delta() accepts it.
+struct Violations
+{
+    int count{0};
+
+    [[nodiscard]]
+    friend constexpr bool operator<(const Violations& lhs, const Violations& rhs) noexcept
+    {
+        return lhs.count < rhs.count;
+    }
+
+    [[nodiscard]]
+    friend constexpr bool operator==(const Violations&, const Violations&) = default;
+};
+
 template<class Expression>
 using manager_t = typename decltype(
     easylocal::solution_manager<SolutionManager>()
@@ -151,6 +166,19 @@ int main()
     static_assert(hierarchical_b < hierarchical_c);
     static_assert(hierarchical_a.hard() == hard_a);
     static_assert(hierarchical_a.soft() == 100L);
+
+    // A hard cost with only < and == compares too, as delta() takes it.
+    using ViolationsCost = cost::hierarchical<Violations, double>;
+    static_assert(std::three_way_comparable<ViolationsCost>);
+    static_assert(easylocal::cost::has_delta<ViolationsCost>);
+    static_assert(
+        ViolationsCost{Violations{0}, 5.0} < ViolationsCost{Violations{1}, 0.0});
+    static_assert(
+        ViolationsCost{Violations{1}, 0.0} < ViolationsCost{Violations{1}, 2.0});
+    static_assert(
+        ViolationsCost{Violations{1}, 2.0} == ViolationsCost{Violations{1}, 2.0});
+    static_assert(
+        ViolationsCost{Violations{1}, 2.0} >= ViolationsCost{Violations{0}, 9.0});
 
     bool ok = true;
 
