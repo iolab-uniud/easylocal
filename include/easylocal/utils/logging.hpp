@@ -1,10 +1,14 @@
 #pragma once
 
 /// \file
-/// Logging (easylocal::logging): records with a level and an origin
-/// (framework or application) sent to one process-wide sink, stderr unless
-/// set_sink replaces it (docs/logging.md).
+/// Logging (easylocal::logging): records with a level and an origin sent to
+/// one process-wide sink, stderr unless set_sink replaces it
+/// (docs/logging.md).
+///
+/// Experimental: the library itself emits no records yet.
 
+#include <algorithm>
+#include <array>
 #include <atomic>
 #include <cstdint>
 #include <cstdio>
@@ -81,7 +85,8 @@ constexpr std::string_view level_name(const level severity) noexcept
 }
 
 /// The default sink: writes warnings and errors to stderr, as
-/// `EasyLocal <level>: <message>`, and ignores the other records.
+/// `EasyLocal <level>: <message>`, one write per record, and ignores the
+/// other records.
 inline void stderr_sink(const record& entry) noexcept
 {
     if (entry.severity < level::warning)
@@ -90,6 +95,22 @@ inline void stderr_sink(const record& entry) noexcept
     }
 
     const auto severity = level_name(entry.severity);
+    // The line in one write, which the records of other threads do not split;
+    // a message too long for the buffer goes piece by piece.
+    static constexpr std::string_view prefix{"EasyLocal "};
+    std::array<char, 1024> line{};
+    const auto size = prefix.size() + severity.size() + 2 + entry.message.size() + 1;
+    if (size <= line.size())
+    {
+        auto* end = std::ranges::copy(prefix, line.data()).out;
+        end = std::ranges::copy(severity, end).out;
+        *end++ = ':';
+        *end++ = ' ';
+        end = std::ranges::copy(entry.message, end).out;
+        *end = '\n';
+        std::fwrite(line.data(), sizeof(char), size, stderr);
+        return;
+    }
     std::fputs("EasyLocal ", stderr);
     std::fwrite(severity.data(), sizeof(char), severity.size(), stderr);
     std::fputs(": ", stderr);
@@ -117,7 +138,6 @@ inline sink current_sink() noexcept
 
 /// Replaces the active sink, and returns the previous one; `nullptr` disables
 /// dispatch.
-[[nodiscard]]
 inline sink set_sink(const sink target) noexcept
 {
     return detail::active_sink.exchange(target, std::memory_order_acq_rel);

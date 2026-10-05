@@ -137,6 +137,10 @@ reviewed by hand before tagging.
 
 ### Changed
 
+- The logging API (`<easylocal/utils/logging.hpp>`) is Experimental, since the
+  library emits no records yet; the documentation no longer presents it as
+  framework diagnostics. `stderr_sink` writes a record in one write (up to 1
+  KiB), and `set_sink` is no longer `[[nodiscard]]`.
 - **Breaking:** `trace::jsonl_recorder` starts with a header line,
   `{"event":"trace","version":1,"metadata":{...}}`, the first line of
   `eltr.py`'s JSONL output without the cost layout; the new
