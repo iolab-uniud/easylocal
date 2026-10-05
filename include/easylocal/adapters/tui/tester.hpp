@@ -578,11 +578,24 @@ template<class Solution>
 struct async_runner_result
 {
     bool cancelled{};
-    bool timed_out{};
-    bool budget_exhausted{};
+    // Why the run ended and its evaluations, when the runner reports them.
+    std::optional<easylocal::run_effort> effort;
     std::optional<Solution> solution;
     std::string error;
 };
+
+// How a run ended, for the Last run box: " (target reached, 12 evaluations)";
+// " (stopped)" for a cancelled run without an effort, empty otherwise.
+[[nodiscard]] inline std::string run_ending(
+    const std::optional<easylocal::run_effort>& effort,
+    const bool cancelled)
+{
+    if (!effort)
+        return cancelled ? " (stopped)" : "";
+    return " (" + std::string{easylocal::to_string(effort->termination)}
+    + ", " + std::to_string(effort->evaluations)
+        + (effort->evaluations == 1 ? " evaluation)" : " evaluations)");
+}
 
 // A number of seconds as text: empty when it is not a non-negative number.
 [[nodiscard]] inline std::optional<double> seconds_text(const std::string_view text)
@@ -2314,7 +2327,6 @@ private:
                     }
                 }
             }
-            run_target_ = target;
             std::optional<double> seconds;
             if (timeout_text_.find_first_not_of(" \t") != std::string::npos)
             {
@@ -2430,13 +2442,7 @@ private:
                         {
                             completion.solution.emplace(std::move(result->solution));
                             completion.cancelled = stop_token.stop_requested();
-                            completion.timed_out = result->effort
-                                && result->effort->termination
-                                    == easylocal::termination_reason::time_limit_reached;
-                            completion.budget_exhausted = result->effort
-                                && result->effort->termination
-                                    == easylocal::termination_reason::
-                                        evaluation_budget_exhausted;
+                            completion.effort = result->effort;
                         }
                     }
                     catch (const std::exception& error)
@@ -2728,22 +2734,15 @@ private:
         if (completion.cancelled)
         {
             const auto after = tester_.evaluate();
-            last_run_result_ =
-                run_name_ + ": " + run_before_ + " -> " + value_text(after) +
-                " (stopped)";
+            last_run_result_ = run_name_ + ": " + run_before_ + " -> " + value_text(after)
+                + detail::run_ending(completion.effort, true);
             set_status(status_kind::warning, "Runner stopped: " + last_run_result_);
             return;
         }
 
         const auto after = tester_.evaluate();
-        last_run_result_ =
-            run_name_ + ": " + run_before_ + " -> " + value_text(after);
-        if (run_target_ && !(*run_target_ < after))
-            last_run_result_ += " (target " + value_text(*run_target_) + " reached)";
-        else if (completion.timed_out)
-            last_run_result_ += " (time limit reached)";
-        else if (completion.budget_exhausted)
-            last_run_result_ += " (evaluation budget exhausted)";
+        last_run_result_ = run_name_ + ": " + run_before_ + " -> " + value_text(after)
+            + detail::run_ending(completion.effort, false);
         set_status(status_kind::success, "Runner completed: " + last_run_result_);
     }
 
@@ -3472,7 +3471,6 @@ private:
     std::shared_ptr<easylocal::shared_run_progress> run_progress_state_;
     std::string run_name_;
     std::string run_before_;
-    std::optional<typename tester_type::cost_type> run_target_;
     bool input_visible_{};
     detail::text_viewer input_viewer_;
     bool solution_visible_{};

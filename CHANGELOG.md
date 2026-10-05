@@ -219,6 +219,10 @@ reviewed by hand before tagging.
 - TextUI: however its event loop ends, an exception included, the tester
   stops and joins a running search before the loop's screen is destroyed,
   which the search posts its progress to.
+- TextUI: the result of a run says why the run ended, by the runner's own
+  termination, and its evaluations ("(target reached, 1 evaluation)"),
+  instead of comparing the cost with the target by `<`, which is wrong for a
+  Pareto cost or a custom `better()`.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 

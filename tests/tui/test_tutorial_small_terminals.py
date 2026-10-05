@@ -84,4 +84,4 @@ def test_the_focus_scrolls_to_the_target_field(terminal):
     tui.select("fi", key=UP)
     run_selected(tui)
     assert_framed(tui)
-    tui.expect(f"fi: {INITIAL_COST} -> {INITIAL_COST} (target {INITIAL_COST} reached)")
+    tui.expect(f"fi: {INITIAL_COST} -> {INITIAL_COST} (target reached, 1 evaluation)")

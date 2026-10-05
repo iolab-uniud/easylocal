@@ -67,7 +67,7 @@ def test_a_target_cost_stops_the_run(tui):
     tui.press("G")
     tui.expect("Parameters of fi")
     tui.press(ENTER)
-    tui.expect(f"fi: {INITIAL_COST} -> {INITIAL_COST} (target {INITIAL_COST} reached)")
+    tui.expect(f"fi: {INITIAL_COST} -> {INITIAL_COST} (target reached, 1 evaluation)")
 
 
 def test_an_invalid_target_runs_nothing(tui):
@@ -91,7 +91,7 @@ def test_a_time_limit_stops_the_run(tui):
     tui.press("G")
     tui.expect("Parameters of fi")
     tui.press(ENTER)
-    tui.expect(f"fi: {INITIAL_COST} -> {INITIAL_COST} (time limit reached)")
+    tui.expect(f"fi: {INITIAL_COST} -> {INITIAL_COST} (time limit reached, ")
 
 
 def test_an_invalid_time_limit_runs_nothing(tui):
@@ -118,4 +118,4 @@ def test_an_evaluation_budget_stops_the_run(tui):
     tui.press("G")
     tui.expect("Parameters of fi")
     tui.press(ENTER)
-    tui.expect(f"fi: {INITIAL_COST} -> {INITIAL_COST} (evaluation budget exhausted)")
+    tui.expect(f"fi: {INITIAL_COST} -> {INITIAL_COST} (evaluation budget exhausted, 1 evaluation)")

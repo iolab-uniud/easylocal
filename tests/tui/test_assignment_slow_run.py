@@ -25,7 +25,7 @@ def test_a_slow_run_shows_its_progress_and_stops(slow_runner):
 
         tui.press("X")
         tui.expect("Runner stopped: slow-fi", timeout=20)
-        final = tui.expect(re.compile(r"slow-fi: .* -> (.*) \(stopped\)")).group(1)
+        final = tui.expect(re.compile(r"slow-fi: .* -> (.*) \(cancelled, \d+ evaluations?\)")).group(1)
         assert f"COST {final}" in tui.text()  # the current solution is where it stopped
 
         tui.press("q")
