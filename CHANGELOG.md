@@ -256,6 +256,13 @@ reviewed by hand before tagging.
   algorithm stages (`stage<A>(...)`, one on its own neighborhood, the first
   restarted from random tours), and chapter 8 and the solvers reference
   describe them.
+- The API reference has a page for each overload of a function
+  (`make_runner`, `check`, `timeout`, the `|` operators...), which MrDocs
+  dropped when it grouped them, and comments on the members of `Runner`, on
+  the special members and on the trait specializations. Its build fails on a
+  public declaration without a comment, read from the XML that MrDocs writes
+  (class template specializations included), and on a link to a missing
+  page; an adapter enabled in the build is always in it.
 
 ### Changed
 

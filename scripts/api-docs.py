@@ -2,16 +2,21 @@
 """Generate the API reference with MrDocs, into build/site-api.
 
 MrDocs reads the headers through a compilation database. The script writes one
-with a single translation unit that includes every public header: an adapter
-(TOML, TUI, REST) only when its dependency is on the include path. The flags
-are the include paths and definitions of the compilation database of a
-configured build, so that the adapters' dependencies are found; configure it
-with every optional component for a complete reference:
+with a single translation unit that includes every public header, and the
+adapters (TOML, TUI, REST) enabled in the build's CMakeCache.txt. The flags
+are the include paths and definitions of the compilation database of that
+build, so that the adapters' dependencies are found; configure it with every
+optional component for a complete reference:
 
     cmake --preset dev -B build/api -DEASYLOCAL_ENABLE_CONFIG_TOML=ON \\
         -DEASYLOCAL_ENABLE_TUI=ON -DEASYLOCAL_ENABLE_REST=ON \\
         -DEASYLOCAL_FETCH_DEPENDENCIES=ON
     uv run scripts/api-docs.py build/api
+
+The build fails on a MrDocs warning (a malformed comment), on a public
+declaration without a comment (read from the XML that MrDocs writes with the
+pages, which also covers the members of class template specializations) and
+on a link to a page that was not generated.
 
 With --undocumented it writes no pages but lists the public declarations
 without a comment, as file:line, kind and name, optionally only those of the
@@ -36,14 +41,15 @@ import shlex
 import shutil
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 INCLUDE = ROOT / "include"
-# adapter header -> the dependency header it needs
+# adapter header -> the CMake option that enables it
 ADAPTERS = {
-    "easylocal/adapters/toml.hpp": "toml++/toml.hpp",
-    "easylocal/adapters/tui.hpp": "ftxui/ftxui.hpp",
-    "easylocal/adapters/rest.hpp": "crow.h",
+    "easylocal/adapters/toml.hpp": "EASYLOCAL_ENABLE_CONFIG_TOML",
+    "easylocal/adapters/tui.hpp": "EASYLOCAL_ENABLE_TUI",
+    "easylocal/adapters/rest.hpp": "EASYLOCAL_ENABLE_REST",
 }
 
 
@@ -56,11 +62,20 @@ def public_headers():
         yield relative
 
 
-def translation_unit():
-    lines = [f"#include <{header}>" for header in public_headers()]
-    for adapter, dependency in ADAPTERS.items():
-        lines += [f"#if __has_include(<{dependency}>)", f"#include <{adapter}>", "#endif"]
-    return "\n".join(lines) + "\n"
+def enabled_adapters(build):
+    """The adapter headers whose option is ON in the build's CMakeCache.txt."""
+    cache = build / "CMakeCache.txt"
+    options = {}
+    if cache.is_file():
+        for line in cache.read_text().splitlines():
+            match = re.match(r"(\w+):BOOL=(.*)$", line)
+            if match:
+                options[match[1]] = match[2].upper() in ("ON", "TRUE", "1", "YES")
+    return [adapter for adapter, option in ADAPTERS.items() if options.get(option)]
+
+
+def translation_unit(adapters):
+    return "".join(f"#include <{header}>\n" for header in [*public_headers(), *adapters])
 
 
 def build_flags(database):
@@ -85,26 +100,55 @@ def build_flags(database):
     return [argument for flag in flags for argument in flag]
 
 
-UNDOCUMENTED = re.compile(
-    r"^(?P<path>/\S+?\.hpp):(?P<line>\d+):\d+:\s*\n\s*1\) (?P<name>.+?): "
-    r"(?:(?P<kind>\w+) is undocumented|Missing documentation for (?P<what>enum value))",
-    re.M)
+def location(element):
+    """The header (relative to include/easylocal) and line of a symbol."""
+    for loc in element.iterfind("loc//sourcePath/.."):
+        path = loc.findtext("sourcePath")
+        if path.startswith("easylocal/"):
+            return path[len("easylocal/"):], int(loc.findtext("lineNumber") or 0)
+    return "", 0
 
 
-def undocumented(log, only):
-    """The declarations without a comment that MrDocs reported in log."""
-    log = re.sub(r"\x1b\[[0-9;]*m", "", log)
-    prefix = (INCLUDE / "easylocal").as_posix() + "/"
+def undocumented(reference, only):
+    """The public symbols of the XML reference without a comment.
+
+    Namespaces are left out: they have no page of their own to describe."""
+    symbols = {element.findtext("id"): element for element in reference.getroot()}
+
+    def qualified(element):
+        names = []
+        while element is not None and element.findtext("name"):
+            names.append(element.findtext("name"))
+            element = symbols.get(element.findtext("parent"))
+        return "::".join(reversed(names))
+
     found = set()
-    for match in UNDOCUMENTED.finditer(log):
-        path = match["path"]
-        if not path.startswith(prefix):
+    for element in symbols.values():
+        if (element.tag == "namespace" or element.find("doc") is not None
+                or element.findtext("extraction") != "regular"
+                or element.findtext("access") in ("private", "protected")):
             continue
-        relative = path[len(prefix):]
-        if only and not relative.startswith(only):
+        path, line = location(element)
+        if not path or "/detail/" in path or not path.startswith(only):
             continue
-        found.add((relative, int(match["line"]), match["kind"] or match["what"],
-                   match["name"]))
+        kind = element.findtext("funcClass") or ""
+        kind = element.tag if kind in ("", "normal") else kind
+        found.add((path, line, kind, qualified(element)))
+    return sorted(found)
+
+
+def broken_links(pages):
+    """The links of the pages to a page under pages that does not exist."""
+    found = set()
+    for page in sorted(pages.rglob("*.html")):
+        for href in re.findall(r'href="([^"#?]*)', page.read_text()):
+            if not href or re.match(r"[a-z][a-z0-9+.-]*:", href):
+                continue
+            target = (page.parent / href).resolve()
+            # links out of the pages go to the documentation site
+            if target.is_relative_to(pages) and not target.exists():
+                found.add((page.relative_to(pages).as_posix(),
+                           target.relative_to(pages).as_posix()))
     return sorted(found)
 
 
@@ -122,42 +166,70 @@ def main():
         help="with --undocumented, the headers under this path of include/easylocal")
     args = parser.parse_args()
 
-    database = args.build.resolve() / "compile_commands.json"
+    build = args.build.resolve()
+    database = build / "compile_commands.json"
     if not database.is_file():
         sys.exit(f"{database} not found: configure the build first")
     mrdocs = os.environ.get("MRDOCS") or shutil.which("mrdocs")
     if not mrdocs:
         sys.exit("mrdocs not found: set MRDOCS or put it on the PATH")
 
-    work = args.build.resolve() / "api-docs"
+    adapters = enabled_adapters(build)
+    for adapter, option in ADAPTERS.items():
+        if adapter not in adapters:
+            print(f"note: {option} is not ON in {build}: no {adapter} in the reference",
+                  file=sys.stderr)
+
+    work = build / "api-docs"
     work.mkdir(parents=True, exist_ok=True)
     source = work / "easylocal_api.cpp"
-    source.write_text(translation_unit())
+    source.write_text(translation_unit(adapters))
     arguments = ["clang++", "-std=c++23", *build_flags(database), "-c", str(source)]
     (work / "compile_commands.json").write_text(json.dumps(
         [{"directory": str(work), "file": str(source), "arguments": arguments}], indent=1))
 
+    generated = work / "generated"
+    shutil.rmtree(generated, ignore_errors=True)
     command = [
         mrdocs,
         f"--config={ROOT / 'docs' / 'mrdocs.yml'}",
         f"--compilation-database={work / 'compile_commands.json'}",
+        f"--output={generated}",
+        "--generator=html,xml",
     ]
     if args.undocumented:
-        listing = work / "undocumented"
-        shutil.rmtree(listing, ignore_errors=True)
-        log = subprocess.run(
-            [*command, f"--output={listing}", "--warn-if-undocumented=true",
-             "--warn-if-undoc-enum-val=true", "--warn-as-error=false"],
-            capture_output=True, text=True)
-        found = undocumented(log.stdout + log.stderr, args.only)
-        for path, line, kind, name in found:
-            print(f"{path}:{line}\t{kind}\t{name}")
-        print(f"{len(found)} undocumented declarations", file=sys.stderr)
+        command.append("--warn-as-error=false")
+    log = subprocess.run(command, capture_output=True, text=True)
+    if log.returncode != 0:
+        sys.stdout.write(log.stdout)
+        sys.stderr.write(log.stderr)
+        print(f"MrDocs failed with exit status {log.returncode}", file=sys.stderr)
         return log.returncode
+
+    found = undocumented(ET.parse(generated / "xml" / "reference.xml"), args.only)
+    for path, line, kind, name in found:
+        print(f"{path}:{line}\t{kind}\t{name}")
+    if args.undocumented:
+        print(f"{len(found)} undocumented declarations", file=sys.stderr)
+        return 0
+    if found:
+        print(f"{len(found)} public declarations without a comment", file=sys.stderr)
+        return 1
+
+    pages = generated / "html"
+    links = broken_links(pages)
+    for page, target in links:
+        print(f"{page}: link to the missing page {target}", file=sys.stderr)
+    if links:
+        print(f"{len(links)} links to missing pages", file=sys.stderr)
+        return 1
 
     output = args.output.resolve()
     shutil.rmtree(output, ignore_errors=True)
-    return subprocess.call([*command, f"--output={output}"])
+    shutil.move(pages, output)
+    count = sum(1 for _ in output.rglob("*.html"))
+    print(f"{count} pages in {output}")
+    return 0
 
 
 if __name__ == "__main__":

@@ -15,6 +15,13 @@ exclude-symbols:
   - 'easylocal::detail::**'
   - 'easylocal::**::detail'
   - 'easylocal::**::detail::**'
+# MrDocs 0.8.0 drops every function of an overload set from the pages when it
+# groups them: each overload has a page of its own.
+overloads: false
+# The members of a base class are not copied to the pages of the derived
+# classes: the public classes derive only from classes of detail (whose
+# members they re-export with a documented using-declaration) and of std.
+inherit-base-members: never
 generator: html
 multipage: true
 # The look of the documentation site: mrdocs/ overrides the page layout and
@@ -35,3 +42,6 @@ warn-if-doc-error: true
 warn-if-undocumented: true
 warn-no-paramdoc: false
 warn-if-undoc-enum-val: true
+# No comment written by MrDocs for special members: a constructor, an
+# assignment or a deleted member without its own comment fails the build.
+auto-function-metadata: false

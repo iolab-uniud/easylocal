@@ -138,10 +138,15 @@ The generated API reference (`scripts/api-docs.py`, MrDocs) is made of the
   or MrDocs reads them as HTML; a code example is a paragraph indented by four
   spaces.
 - Every public declaration has a comment: types, concepts, enums and their
-  values, aliases, functions, members and public fields. One without a comment
+  values, aliases, functions, members and public fields, the members of a
+  class template specialization, special members (constructors, assignments,
+  destructors) and the overloads of a function each. One without a comment
   fails the API build, in CI as with `uv run scripts/api-docs.py
-  build/<preset>`; `--undocumented [--only <dir>/]` lists them. Parameters and return values are explained in the
-  text, not with their own commands.
+  build/<preset>`; `--undocumented [--only <dir>/]` lists them. Parameters and
+  return values are explained in the text, not with their own commands.
+- A deleted member says why, each one of a group: "Not copyable or movable:
+  its services refer to each other."; "Deleted: the BoundRunner borrows the
+  Input, which a temporary would leave dangling."
 - Repeated members have the same comment everywhere: `parameter_schema()`,
   "The names, members and descriptions of the parameters."; `validate()`,
   "Whether the parameters are valid, and why not."; `parameters_type`, "The
