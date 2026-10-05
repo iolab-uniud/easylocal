@@ -672,6 +672,9 @@ else()
     set(_easylocal_rest_asio_bundled OFF)
 endif()
 
+# A list is one argument of the test: $<SEMICOLON> keeps add_test from
+# splitting a CMAKE_PREFIX_PATH of several entries.
+string(REPLACE ";" "$<SEMICOLON>" _easylocal_prefix_path "${CMAKE_PREFIX_PATH}")
 add_test(
     NAME easylocal.installed-package-consumer
     COMMAND
@@ -684,7 +687,7 @@ add_test(
         "-DEASYLOCAL_REST_ENABLED=${_easylocal_rest_enabled}"
         "-DEASYLOCAL_REST_BUNDLED=${_easylocal_rest_bundled}"
         "-DEASYLOCAL_REST_ASIO_BUNDLED=${_easylocal_rest_asio_bundled}"
-        "-DEASYLOCAL_DEPENDENCY_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
+        "-DEASYLOCAL_DEPENDENCY_PREFIX_PATH=${_easylocal_prefix_path}"
         "-DEASYLOCAL_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
         "-DEASYLOCAL_CONFIG=$<CONFIG>"
         "-DEASYLOCAL_CONSUMER_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/package_consumer"

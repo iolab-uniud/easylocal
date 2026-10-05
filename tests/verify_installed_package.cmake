@@ -14,9 +14,11 @@ foreach(_required IN ITEMS
     endif()
 endforeach()
 
-function(easylocal_run_checked description)
+# Runs the command held in the list variable command_variable: passed by name,
+# so that an element with an escaped semicolon (a list) stays one argument.
+function(easylocal_run_checked description command_variable)
     execute_process(
-        COMMAND ${ARGN}
+        COMMAND ${${command_variable}}
         RESULT_VARIABLE _result
         COMMAND_ECHO STDOUT
     )
@@ -46,8 +48,8 @@ function(easylocal_configure_build_test_consumer name use_core_component use_con
     )
     if(DEFINED EASYLOCAL_DEPENDENCY_PREFIX_PATH
             AND NOT "${EASYLOCAL_DEPENDENCY_PREFIX_PATH}" STREQUAL "")
-        list(APPEND _configure_command
-            "-DCMAKE_PREFIX_PATH=${EASYLOCAL_DEPENDENCY_PREFIX_PATH}")
+        string(REPLACE ";" "\\;" _prefix_path "${EASYLOCAL_DEPENDENCY_PREFIX_PATH}")
+        list(APPEND _configure_command "-DCMAKE_PREFIX_PATH=${_prefix_path}")
     endif()
     if(DEFINED EASYLOCAL_GENERATOR_PLATFORM
             AND NOT "${EASYLOCAL_GENERATOR_PLATFORM}" STREQUAL "")
@@ -69,7 +71,7 @@ function(easylocal_configure_build_test_consumer name use_core_component use_con
     endif()
     easylocal_run_checked(
         "configuring the ${name} installed-package consumer"
-        ${_configure_command}
+        _configure_command
     )
 
     set(
@@ -82,7 +84,7 @@ function(easylocal_configure_build_test_consumer name use_core_component use_con
     endif()
     easylocal_run_checked(
         "building the ${name} installed-package consumer"
-        ${_build_command}
+        _build_command
     )
 
     set(
@@ -96,7 +98,7 @@ function(easylocal_configure_build_test_consumer name use_core_component use_con
     endif()
     easylocal_run_checked(
         "running the ${name} installed-package consumer"
-        ${_ctest_command}
+        _ctest_command
     )
 endfunction()
 
@@ -115,7 +117,7 @@ set(
 if(DEFINED EASYLOCAL_CONFIG AND NOT "${EASYLOCAL_CONFIG}" STREQUAL "")
     list(APPEND _install_command --config "${EASYLOCAL_CONFIG}")
 endif()
-easylocal_run_checked("installing EasyLocal" ${_install_command})
+easylocal_run_checked("installing EasyLocal" _install_command)
 
 if(NOT EXISTS "${_package_dir}/EasyLocalConfig.cmake")
     message(FATAL_ERROR
