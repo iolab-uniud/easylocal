@@ -10,7 +10,8 @@ move is valid and how it changes a solution.
 
 | Member | Required | Used by |
 | --- | --- | --- |
-| `input_type`, `solution_type`, `move_type` | yes | everything |
+| `input_type`, `solution_type`, `move_type` | yes (`input_type` and `solution_type` those of the SolutionManager) | everything |
+| `input() const -> const Input&` | yes | the check that the explorer was built for the runner's Input, unions |
 | `is_valid(const Solution&, const Move&) const -> bool` | yes | debug assertions, checks |
 | `make_move(Solution&, const Move&) const` | yes; the Solution by reference, which it changes | every runner |
 | `input() const -> const Input&` | no (`neighborhood_explorer_base` gives it) | the checks that the services share the Input |
@@ -20,6 +21,11 @@ move is valid and how it changes a solution.
 | `name() -> std::string_view` | no | TextUI display |
 | `inverse(const Solution&, const Move& move, const Move& tabu_move) const -> bool` | for tabu search | Tabu Search: whether `move` is forbidden by `tabu_move`, applied earlier |
 | `tabu_attribute(const Move&) const` → value with `std::hash` and `==` | no (default: the move, if hashable) | frequency-based tabu memory |
+
+`neighborhood_explorer_for<NHE, SM>` checks the first four rows, so an explorer
+without them is rejected where it is composed, not deep in a debug assertion
+or a union. `neighborhood_explorer_base<SM, Move>` provides the types and `input()`, from
+the SolutionManager it is constructed with.
 
 Concepts: `neighborhood_explorer_for<NHE, SM>`, `cursor_neighborhood_for`,
 `native_moves_neighborhood_for`, `deterministic_neighborhood_for`,

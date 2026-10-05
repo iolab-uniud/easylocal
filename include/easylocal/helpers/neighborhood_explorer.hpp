@@ -64,8 +64,12 @@ concept move_input_range_for =
 template<class Result, class Move>
 concept move_optional_for = detail::move_optional_for_impl<Result, Move>;
 
-/// A NeighborhoodExplorer for the SolutionManager `SM`: it declares `move_type`
-/// and has `is_valid(solution, move)` and `make_move(solution, move)`.
+/// A NeighborhoodExplorer for the SolutionManager `SM`: it declares
+/// `input_type`, `solution_type` (those of `SM`) and `move_type`, and has
+/// `input()`, `is_valid(solution, move)` and `make_move(solution, move)`.
+///
+/// input() returns the Input the explorer was built for, which a runner checks
+/// is its own; neighborhood_explorer_base provides it and the two types.
 template<class NHE, class SM>
 concept neighborhood_explorer_for =
     requires(
@@ -76,7 +80,13 @@ concept neighborhood_explorer_for =
     {
         typename SM::input_type;
         typename SM::solution_type;
+        typename NHE::input_type;
+        typename NHE::solution_type;
         typename NHE::move_type;
+        requires std::same_as<typename NHE::input_type, typename SM::input_type>;
+        requires std::same_as<typename NHE::solution_type, typename SM::solution_type>;
+
+        { neighborhood.input() } -> std::convertible_to<const typename SM::input_type&>;
 
         {
             neighborhood.is_valid(solution, move)
@@ -400,7 +410,9 @@ using tabu_attribute_t = decltype(easylocal::tabu_attribute(
 /// A base for an explorer, which gives it the associated types, the
 /// SolutionManager it is built from and input().
 ///
-/// It is optional and non-virtual: the concepts above do not require it.
+/// It is optional and non-virtual: it provides the types and input() that
+/// neighborhood_explorer_for requires, which an explorer may also declare
+/// itself.
 template<class SolutionManager, class Move>
 class neighborhood_explorer_base
 {

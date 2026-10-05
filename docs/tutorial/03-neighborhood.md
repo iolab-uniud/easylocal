@@ -5,12 +5,15 @@ move is valid and how it changes a solution.
 
 ## Only what your algorithms use
 
-An explorer has two required members, `is_valid(solution, move)` and
-`make_move(solution, move)`. Everything else is optional, and you write it only
-if an algorithm or a tool you use needs it:
+An explorer has two required members of its own, `is_valid(solution, move)` and
+`make_move(solution, move)`, besides its types and the Input it was built for
+(`input_type`, `solution_type`, `move_type` and `input()`), which
+`neighborhood_explorer_base` provides from the SolutionManager. Everything else
+is optional, and you write it only if an algorithm or a tool you use needs it:
 
 | Member | Needed by |
 | --- | --- |
+| `input_type`, `solution_type`, `move_type`, `input()` | every algorithm (from `neighborhood_explorer_base`) |
 | `is_valid`, `make_move` | every algorithm |
 | `moves(solution)`, or the cursor `first_move` / `next_move` | algorithms that scan the neighborhood: First Improvement, Best Improvement, Tabu Search |
 | `random_move(solution, rng)` | algorithms that sample it: Simulated Annealing, Hill Climbing, Late Acceptance Hill Climbing, Great Deluge, Pareto Late Acceptance Hill Climbing |

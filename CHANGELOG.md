@@ -404,6 +404,10 @@ reviewed by hand before tagging.
   `restart(initialization::random)`: its attempts repeated the same run. A
   later stage is checked when the pipeline is built, the first one when it
   runs from a fixed start.
+- **Breaking:** `neighborhood_explorer_for<NHE, SM>` requires what the library
+  used: `input_type` and `solution_type`, those of the SolutionManager, and
+  `input()`, which debug builds and unions called. An explorer without them is
+  rejected where it is composed; `neighborhood_explorer_base` provides them.
 
 ### Added
 

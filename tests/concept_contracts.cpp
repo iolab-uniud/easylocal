@@ -92,6 +92,23 @@ private:
     Instance instance_;
 };
 
+// is_valid and make_move without input(): not an explorer, since a runner
+// checks that its explorer was built for its Input.
+class InputlessNeighborhood
+{
+public:
+    using input_type = Instance;
+    using solution_type = Solution;
+    using move_type = Move;
+
+    [[nodiscard]] static auto is_valid(const Solution&, const Move&) noexcept -> bool
+    {
+        return true;
+    }
+
+    static void make_move(Solution&, const Move&) noexcept {}
+};
+
 // Moves computed once and kept: moves() returns a reference to them.
 class PrecomputedNeighborhood : public GoodNeighborhood
 {
@@ -265,6 +282,9 @@ private:
 
 int main()
 {
+    static_assert(!easylocal::neighborhood_explorer_for<
+        InputlessNeighborhood,
+        ComposedSolutionManager>);
     // The moves an explorer keeps are not copied at each iteration.
     static_assert(std::is_lvalue_reference_v<decltype(easylocal::moves(
             std::declval<const PrecomputedNeighborhood&>(),
