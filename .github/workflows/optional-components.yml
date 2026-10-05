@@ -65,6 +65,7 @@ jobs:
           cmake -S . -B "$build_dir" -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_COMPILER="$CXX" \
+            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             -DEASYLOCAL_BUILD_EXAMPLES=ON \
             -DEASYLOCAL_BUILD_TESTS=ON \
             -DEASYLOCAL_WARNINGS_AS_ERRORS=ON \
@@ -92,6 +93,11 @@ jobs:
           ctest --test-dir "$build_dir" --output-on-failure -j \
             --output-junit "$PWD/${build_dir}.junit.xml" \
             2>&1 | tee "${build_dir}.ctest.log"
+
+      # The examples of the optional components (TOML, TextUI, REST), which
+      # the lint job of ci.yml does not compile.
+      - name: Lint the examples
+        run: scripts/tidy.sh build/optional-fetch
 
       - name: Upload diagnostics
         if: ${{ always() && !env.ACT }}
