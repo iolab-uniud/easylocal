@@ -138,7 +138,10 @@ auto same_solution_of(const Owner& owner) noexcept
                       })
             return easylocal::solutions_equal(owner.solution_manager(), lhs, rhs);
         else
+        {
+            static_cast<void>(owner); // used only by problems with equality
             return true;
+        }
     };
 }
 
