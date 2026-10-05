@@ -25,6 +25,7 @@
 #include <easylocal/runners/search_run.hpp>
 #include <easylocal/solvers/initialization.hpp>
 #include <easylocal/solvers/solver.hpp>
+#include <easylocal/utils/detail/attributes.hpp>
 
 #include <algorithm>
 #include <chrono>
@@ -348,8 +349,28 @@ private:
     std::optional<easylocal::detail::initialization_kind> restart_;
 };
 
+namespace detail
+{
+
+// A complete runner, which a stage binds to its Input.
+template<class Runner>
+concept stage_runner =
+    requires(const Runner& runner, const typename Runner::input_type& input) {
+        runner.bind(input);
+    };
+
+// An algorithm an app builds from its parameters: a parameters_type, default
+// constructible, from which the algorithm is constructed.
+template<class Algorithm>
+concept stage_algorithm = requires { typename Algorithm::parameters_type; }
+    && std::default_initializable<typename Algorithm::parameters_type>
+    && std::constructible_from<Algorithm, typename Algorithm::parameters_type>;
+
+} // namespace detail
+
 /// The stage `name` of a pipeline, running `runner`.
 template<class Runner>
+    requires detail::stage_runner<Runner>
 [[nodiscard]]
 pipeline_stage<Runner> stage(std::string name, Runner runner)
 {
@@ -360,6 +381,8 @@ pipeline_stage<Runner> stage(std::string name, Runner runner)
 template<class Cost>
 struct stage_target
 {
+    /// Marks a stage option an algorithm stage applies when it is built.
+    using stage_option_tag = void;
     /// The target, converted to the stage's cost.
     Cost cost;
 };
@@ -381,6 +404,8 @@ struct stage_until_feasible
 template<class Initialization>
 struct stage_restart
 {
+    /// Marks a stage option an algorithm stage applies when it is built.
+    using stage_option_tag = void;
     /// How the new solutions are built: initialization::initial, random or
     /// automatic.
     Initialization initialization;
@@ -497,6 +522,221 @@ using easylocal::max_evaluations;
 /// a stage: `stage & timeout(10s)`.
 using easylocal::timeout;
 
+/// A stage of a pipeline registered in an app, which runs Algorithm on the
+/// app's recipes: its SolutionManager, with the app's cost, and the app's
+/// neighborhood or its own.
+///
+/// stage<Algorithm>(name, parameters[, neighborhood]) builds it, and `&` the
+/// stage options, as for a stage of a runner. Registered in an app with
+/// easylocal::pipeline, it becomes a stage of the runner of Algorithm on the
+/// app's recipes when the pipeline runs, so the app's `cost.*` parameters
+/// apply to it. Its parameters are those of the stage (`attempts`, `timeout`,
+/// `max_evaluations`), the algorithm's (`search.*`) and those of its own
+/// neighborhood (`neighborhood.*`). Requires an algorithm with a
+/// default-constructible parameters_type, constructible from it.
+template<
+    class Algorithm,
+    class NeighborhoodSpec = easylocal::detail::unconfigured_t,
+    class... Modifiers>
+    requires detail::stage_algorithm<Algorithm>
+class algorithm_stage
+{
+public:
+    /// The algorithm the stage runs.
+    using algorithm_type = Algorithm;
+    /// The parameter block of the algorithm.
+    using parameters_type = typename Algorithm::parameters_type;
+    /// The recipe of its own neighborhood, or unconfigured when it runs on the
+    /// app's.
+    using neighborhood_spec_type = NeighborhoodSpec;
+
+    /// Whether the stage brings its own neighborhood.
+    static constexpr bool has_own_neighborhood =
+        !std::same_as<NeighborhoodSpec, easylocal::detail::unconfigured_t>;
+
+    /// The stage `name` running Algorithm with `parameters`, on `neighborhood`
+    /// when it has its own, with the options `modifiers` applied in order when
+    /// the stage is built, and its own parameters `stage_parameters`.
+    algorithm_stage(
+        std::string name,
+        parameters_type parameters,
+        NeighborhoodSpec neighborhood = {},
+        std::tuple<Modifiers...> modifiers = {},
+        StageParameters stage_parameters = {})
+        : name_{std::move(name)},
+          algorithm_parameters_{std::move(parameters)},
+          neighborhood_{std::move(neighborhood)},
+          modifiers_{std::move(modifiers)},
+          parameters_{stage_parameters}
+    {
+    }
+
+    /// The stage's name, which prefixes its parameters.
+    [[nodiscard]]
+    const std::string& name() const noexcept
+    {
+        return name_;
+    }
+
+    /// The stage's own parameters (attempts, timeout, max_evaluations).
+    template<class Self>
+    [[nodiscard]]
+    auto& parameters(this Self&& self) noexcept
+    {
+        return self.parameters_;
+    }
+
+    /// The parameters of the algorithm, from which each run builds it.
+    template<class Self>
+    [[nodiscard]]
+    auto& algorithm_parameters(this Self&& self) noexcept
+    {
+        return self.algorithm_parameters_;
+    }
+
+    /// The recipe of its own neighborhood.
+    template<class Self>
+    [[nodiscard]]
+    auto& neighborhood(this Self&& self) noexcept
+        requires has_own_neighborhood
+    {
+        return self.neighborhood_;
+    }
+
+    /// The same stage with one more option, applied after the others: a
+    /// target, until_feasible() or a restart.
+    template<class Modifier>
+    [[nodiscard]]
+    algorithm_stage<Algorithm, NeighborhoodSpec, Modifiers..., Modifier> with_modifier(
+        Modifier modifier) &&
+    {
+        return {
+            std::move(name_),
+            std::move(algorithm_parameters_),
+            std::move(neighborhood_),
+            std::tuple_cat(
+                std::move(modifiers_),
+                std::tuple<Modifier>{std::move(modifier)}),
+            parameters_,
+        };
+    }
+
+    /// The stage of the runner of Algorithm on the recipes `solution_manager`
+    /// and `app_neighborhood` (or its own), with its parameters and options.
+    ///
+    /// Throws `std::invalid_argument` when the algorithm's parameters are not
+    /// valid.
+    template<class SMSpec, class NHESpec>
+    [[nodiscard]]
+    auto on(const SMSpec& solution_manager, const NHESpec& app_neighborhood) const
+    {
+        auto runner = [&] {
+            auto partial = easylocal::make_runner<Algorithm>(algorithm_parameters_)
+                | solution_manager;
+            if constexpr (has_own_neighborhood)
+                return std::move(partial) | neighborhood_;
+            else
+                return std::move(partial) | app_neighborhood;
+        }();
+        pipeline_stage<decltype(runner)> stage{name_, std::move(runner)};
+        stage.parameters() = parameters_;
+        return std::apply(
+            [&stage](const auto&... modifier) {
+                return (std::move(stage) & ... & modifier);
+            },
+            modifiers_);
+    }
+
+private:
+    std::string name_;
+    parameters_type algorithm_parameters_;
+    EASYLOCAL_NO_UNIQUE_ADDRESS NeighborhoodSpec neighborhood_;
+    std::tuple<Modifiers...> modifiers_;
+    StageParameters parameters_;
+};
+
+/// The stage `name` of a pipeline registered in an app, running Algorithm with
+/// `parameters` on the app's recipes: `stage<FirstImprovement>("descent")`.
+///
+/// Requires an algorithm with a default-constructible parameters_type,
+/// constructible from it.
+template<class Algorithm>
+    requires detail::stage_algorithm<Algorithm>
+[[nodiscard]]
+algorithm_stage<Algorithm> stage(
+    std::string name,
+    typename Algorithm::parameters_type parameters = {})
+{
+    return {std::move(name), std::move(parameters)};
+}
+
+/// The stage `name` of a pipeline registered in an app, running Algorithm with
+/// `parameters` on its own neighborhood, built from the recipe `neighborhood`
+/// over the app's SolutionManager: `stage<SA>("anneal", {...},
+/// neighborhood<Swap>())`.
+///
+/// Requires an algorithm with a default-constructible parameters_type,
+/// constructible from it, and a neighborhood recipe.
+template<class Algorithm, class Spec>
+    requires detail::stage_algorithm<Algorithm>
+    && easylocal::detail::is_neighborhood_spec_v<std::remove_cvref_t<Spec>>
+[[nodiscard]]
+algorithm_stage<Algorithm, std::remove_cvref_t<Spec>> stage(
+    std::string name,
+    typename Algorithm::parameters_type parameters,
+    Spec&& neighborhood)
+{
+    return {std::move(name), std::move(parameters), std::forward<Spec>(neighborhood)};
+}
+
+/// The algorithm stage with a number of attempts, as a stage of a runner.
+///
+/// Throws `std::invalid_argument` when the count is 0.
+template<class Algorithm, class Spec, class... Modifiers>
+[[nodiscard]]
+algorithm_stage<Algorithm, Spec, Modifiers...> operator&(
+    algorithm_stage<Algorithm, Spec, Modifiers...> stage,
+    const stage_attempts attempts)
+{
+    stage.parameters().attempts = attempts.count;
+    if (const auto valid = stage.parameters().validate(); !valid)
+        throw std::invalid_argument{std::string{valid.message}};
+    return stage;
+}
+
+/// The algorithm stage with a time limit or an evaluation budget, as a stage
+/// of a runner: `stage<A>("a") & timeout(10s)`.
+template<class Algorithm, class Spec, class... Modifiers>
+[[nodiscard]]
+algorithm_stage<Algorithm, Spec, Modifiers...> operator&(
+    algorithm_stage<Algorithm, Spec, Modifiers...> stage,
+    const run_options<trace::null_tracer>& options)
+{
+    if (options.time_limit)
+    {
+        stage.parameters().timeout =
+            std::chrono::duration<double>{*options.time_limit}.count();
+    }
+    if (!options.evaluation_limit.is_unlimited())
+        stage.parameters().max_evaluations = options.evaluation_limit;
+    return stage;
+}
+
+/// The algorithm stage with a target, until_feasible() or a restart, applied
+/// when the stage is built on the app's recipes, in the order they are given.
+///
+/// until_feasible() requires the app's cost to be hierarchical
+/// (`cost::hierarchical`); a target is written in the stage's cost, and a
+/// restart checked against the app's SolutionManager.
+template<class Algorithm, class Spec, class... Modifiers, class Modifier>
+    requires std::same_as<Modifier, stage_until_feasible>
+    || requires { typename Modifier::stage_option_tag; }
+[[nodiscard]]
+auto operator&(algorithm_stage<Algorithm, Spec, Modifiers...> stage, Modifier modifier)
+{
+    return std::move(stage).with_modifier(std::move(modifier));
+}
+
 /// What one stage of a pipeline did.
 struct stage_report
 {
@@ -534,6 +774,76 @@ inline constexpr bool is_pipeline_stage_v = false;
 
 template<class Runner>
 inline constexpr bool is_pipeline_stage_v<pipeline_stage<Runner>> = true;
+
+template<class T>
+inline constexpr bool is_algorithm_stage_v = false;
+
+template<class Algorithm, class Spec, class... Modifiers>
+inline constexpr bool
+    is_algorithm_stage_v<algorithm_stage<Algorithm, Spec, Modifiers...>> = true;
+
+// A stage of a pipeline: of a runner, or of an algorithm on an app's recipes.
+template<class Stage>
+concept any_stage = is_pipeline_stage_v<Stage> || is_algorithm_stage_v<Stage>;
+
+// Adds the parameters of a stage under its name: its own, and its runner's
+// (`search.*`, `cost.*`, `neighborhood.*`) or, for an algorithm stage, its
+// algorithm's (`search.*`) and its own neighborhood's (`neighborhood.*`).
+// Read-only when the stage is const.
+template<class Stage>
+void add_stage_configuration(config::parameter_set& parameters, Stage& stage)
+{
+    using stage_type = std::remove_const_t<Stage>;
+    parameters.add(stage.name(), stage.parameters());
+    if constexpr (is_pipeline_stage_v<stage_type>)
+        config::add_configuration(parameters, stage.name(), stage.runner());
+    else
+    {
+        if constexpr (config::parameter_block<typename stage_type::parameters_type>)
+            parameters.add(stage.name() + ".search", stage.algorithm_parameters());
+        if constexpr (stage_type::has_own_neighborhood)
+        {
+            config::add_configuration(
+                parameters,
+                stage.name() + ".neighborhood",
+                stage.neighborhood());
+        }
+    }
+}
+
+// Throws std::invalid_argument when two stages have the same name, or one has
+// none.
+template<class... Stages>
+void check_stage_names(const Stages&... stages)
+{
+    const std::vector<std::string_view> names{std::string_view{stages.name()}...};
+    std::set<std::string_view> seen;
+    for (const auto name : names)
+    {
+        if (name.empty())
+            throw std::invalid_argument{"a pipeline stage needs a name"};
+        if (!seen.insert(name).second)
+        {
+            throw std::invalid_argument{
+                "two pipeline stages are named '" + std::string{name} + "'"};
+        }
+    }
+}
+
+// The stage of a runner a stage is on an app's recipes: itself, or the
+// algorithm's stage built on them.
+template<class Stage, class SMSpec, class NHESpec>
+[[nodiscard]]
+auto stage_on(
+    const Stage& stage,
+    const SMSpec& solution_manager,
+    const NHESpec& neighborhood)
+{
+    if constexpr (is_pipeline_stage_v<Stage>)
+        return stage;
+    else
+        return stage.on(solution_manager, neighborhood);
+}
 
 // Why a run ends the attempts of its stage, if it does: it was cancelled, ran
 // out of time or reached the target (by its termination, or by its cost for
@@ -724,7 +1034,7 @@ public:
         config::parameter_set parameters;
         std::apply(
             [&parameters](auto&... stage) {
-                (add_stage_configuration(parameters, stage), ...);
+                (detail::add_stage_configuration(parameters, stage), ...);
             },
             self.stages_);
         return parameters;
@@ -742,31 +1052,11 @@ private:
     {
     }
 
-    template<class Stage>
-    static void add_stage_configuration(config::parameter_set& parameters, Stage& stage)
-    {
-        parameters.add(stage.name(), stage.parameters());
-        config::add_configuration(parameters, stage.name(), stage.runner());
-    }
-
     void check_names() const
     {
-        const auto names = std::apply(
-            [](const auto&... stage) {
-                return std::vector<std::string_view>{stage.name()...};
-            },
+        std::apply(
+            [](const auto&... stage) { detail::check_stage_names(stage...); },
             stages_);
-        std::set<std::string_view> seen;
-        for (const auto name : names)
-        {
-            if (name.empty())
-                throw std::invalid_argument{"a pipeline stage needs a name"};
-            if (!seen.insert(name).second)
-            {
-                throw std::invalid_argument{
-                    "two pipeline stages are named '" + std::string{name} + "'"};
-            }
-        }
     }
 
     // The stages from the first one, whose attempts start from

@@ -68,7 +68,15 @@ auto application = app("tsp") | sm | nhe
 // or pipeline("cascade", (stage(...) & ...) | stage(...)), or .with_pipeline(...)
 ```
 
-Each stage is a runner with its own recipes; the stages must have the app's
+A stage may also be an algorithm, `stage<FirstImprovement>("descent", {...})`
+(or with its own neighborhood, `stage<A>("a", {...}, neighborhood<Swap>())`),
+which runs on the app's recipes: the app's SolutionManager and cost, so
+`cost.*` apply to it, and the app's neighborhood or its own. Its parameters
+are `runners.<name>.<stage>.search.*`, `attempts`, `timeout`,
+`max_evaluations` and, with its own neighborhood, `.neighborhood.*`; a stage
+whose own neighborhood does not fit is rejected at compile time.
+
+A stage of a runner keeps its own recipes; the stages must have the app's
 Input and Solution, and the last one the app's cost (checked at compile time).
 For every tool a pipeline is one more runner: it is listed among the runners,
 run by name from the current solution (`pipeline.run(input, solution, rng)`,

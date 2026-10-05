@@ -46,6 +46,14 @@ reviewed by hand before tagging.
   it), and `check(app, ...)` checks it. Runners on different neighborhoods
   no longer need two apps: the TSP example's `two_apps.cpp` becomes
   `two_neighborhoods.cpp`, the runners of one app.
+- A pipeline registered in an app may have algorithm stages,
+  `stage<FirstImprovement>("descent", {...}[, neighborhood])`, which run on
+  the app's recipes: its SolutionManager and cost (so the app's `cost.*`
+  apply to every stage, instead of a copy per stage), and the app's
+  neighborhood or their own. Their parameters are
+  `runners.<pipeline>.<stage>.search.*`, the stage's own `attempts`,
+  `timeout` and `max_evaluations`, and `.neighborhood.*` for their own
+  neighborhood; stages of runners stay, with their own recipes.
 - **Breaking:** a `BoundApp` holds the Input, its services and a copy of the
   registrations, and builds the algorithm of each run from the registration's
   parameters: it no longer builds an instance of every registered algorithm

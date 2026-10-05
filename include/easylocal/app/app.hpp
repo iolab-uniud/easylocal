@@ -87,23 +87,39 @@ struct app_runner_registration
     EASYLOCAL_NO_UNIQUE_ADDRESS NeighborhoodSpec neighborhood;
 };
 
-// A pipeline registered in an app: run by name from the current solution, its
-// stages' parameters under runners.<name>.
-template<class Pipeline>
+// A pipeline registered in an app: its stages, of runners or of algorithms on
+// the app's recipes, run by name from the current solution, their parameters
+// under runners.<name>.
+template<class... Stages>
 struct app_pipeline_registration
 {
-    using pipeline_type = Pipeline;
-
     std::string name;
-    Pipeline pipeline;
+    std::tuple<Stages...> stages;
 };
 
 template<class Registration>
 inline constexpr bool is_pipeline_registration_v = false;
 
-template<class Pipeline>
-inline constexpr bool is_pipeline_registration_v<app_pipeline_registration<Pipeline>> =
+template<class... Stages>
+inline constexpr bool is_pipeline_registration_v<app_pipeline_registration<Stages...>> =
     true;
+
+// The pipeline of a registration on an app's recipes: its stages of runners,
+// and those of its algorithms built on the recipes.
+template<class... Stages, class SMSpec, class NHESpec>
+[[nodiscard]]
+auto pipeline_on(
+    const app_pipeline_registration<Stages...>& registration,
+    const SMSpec& solution_manager,
+    const NHESpec& neighborhood)
+{
+    return std::apply(
+        [&](const auto&... stage) {
+            return solvers::pipeline(
+                solvers::detail::stage_on(stage, solution_manager, neighborhood)...);
+        },
+        registration.stages);
+}
 
 // Whether a registration brings its own neighborhood recipe.
 template<class Registration>
@@ -122,8 +138,8 @@ struct registration_algorithm
     using type = typename Registration::algorithm_type;
 };
 
-template<class Pipeline>
-struct registration_algorithm<app_pipeline_registration<Pipeline>>
+template<class... Stages>
+struct registration_algorithm<app_pipeline_registration<Stages...>>
 {
     using type = void;
 };
@@ -443,8 +459,9 @@ public:
     /// returns its result; empty when nothing has that name.
     ///
     /// A runner runs on these services, with its own neighborhood when it has
-    /// one, and gets rng when its algorithm takes one; a pipeline runs with its
-    /// stages' own recipes and rng. The options are run options, such as
+    /// one, and gets rng when its algorithm takes one; a pipeline runs with rng,
+    /// its stages of runners on their own recipes, those of algorithms on the
+    /// app's. The options are run options, such as
     /// with(control, tracer). The solution must be valid for the Input.
     template<std::uniform_random_bit_generator RNG, class... Options>
     [[nodiscard]]
@@ -463,7 +480,11 @@ public:
             auto result = [&] {
                 if constexpr (detail::is_pipeline_registration_v<
                                   std::remove_cvref_t<decltype(registration)>>)
-                    return registration.pipeline.run(input_, solution, rng, options...);
+                    return detail::pipeline_on(
+                        registration,
+                        solution_manager_spec_,
+                        neighborhood_spec_)
+                        .run(input_, solution, rng, options...);
                 else
                     return runner_at<Index>().run_with_rng(
                         std::move(solution),
@@ -523,6 +544,8 @@ private:
         const std::tuple<Registrations...>& registrations,
         std::index_sequence<Index...>)
         : input_{input},
+          solution_manager_spec_{solution_manager_spec},
+          neighborhood_spec_{neighborhood_spec},
           solution_manager_{solution_manager_spec.construct(input_)},
           neighborhood_{neighborhood_spec.construct(solution_manager_)},
           own_neighborhoods_{
@@ -567,6 +590,9 @@ private:
     }
 
     const input_type& input_;
+    // The recipes as they were at bind, for the algorithm stages of pipelines.
+    EASYLOCAL_NO_UNIQUE_ADDRESS SMSpec solution_manager_spec_;
+    EASYLOCAL_NO_UNIQUE_ADDRESS NHESpec neighborhood_spec_;
     solution_manager_type solution_manager_;
     neighborhood_explorer_type neighborhood_;
     std::tuple<detail::own_neighborhood_slot<Registrations, solution_manager_type>...>
@@ -753,15 +779,21 @@ public:
     /// The app with a pipeline registration, made by easylocal::pipeline: the
     /// method spelling of `app | pipeline(name, ...)`.
     ///
-    /// Requires a pipeline with the app's Input and Solution, and its last
-    /// stage with the app's cost.
-    template<class Pipeline>
+    /// A stage of an algorithm is checked at compile time on the app's recipes,
+    /// as a runner registration is. Requires a pipeline with the app's Input
+    /// and Solution, and its last stage with the app's cost.
+    template<class... Stages>
         requires(!std::same_as<SMSpec, detail::unconfigured_t>)
         && (!std::same_as<NHESpec, detail::unconfigured_t>)
     [[nodiscard]]
-    auto with_pipeline(detail::app_pipeline_registration<Pipeline> registration) &&
+    auto with_pipeline(detail::app_pipeline_registration<Stages...> registration) &&
     {
         using solution_manager_type = detail::service_t<SMSpec>;
+        static_assert((validate_stage<Stages>() && ...));
+        using Pipeline = decltype(detail::pipeline_on(
+            registration,
+            solution_manager_spec_,
+            neighborhood_spec_));
         static_assert(
             std::same_as<
                 typename Pipeline::input_type,
@@ -776,7 +808,7 @@ public:
                 typename solution_manager_type::cost_type>,
             "the last stage of a pipeline registered in an app must have the app's "
             "cost");
-        using registration_type = detail::app_pipeline_registration<Pipeline>;
+        using registration_type = detail::app_pipeline_registration<Stages...>;
         auto registrations = std::tuple_cat(
             std::move(registrations_),
             std::tuple<registration_type>{std::move(registration)});
@@ -1004,11 +1036,11 @@ public:
     }
 
     /// Registers a pipeline in the app: `app | pipeline(name, ...)`.
-    template<class Pipeline>
+    template<class... Stages>
     [[nodiscard]]
     friend auto operator|(
         App builder,
-        detail::app_pipeline_registration<Pipeline> registration)
+        detail::app_pipeline_registration<Stages...> registration)
     {
         return std::move(builder).with_pipeline(std::move(registration));
     }
@@ -1024,9 +1056,14 @@ private:
         using registration_type = std::remove_const_t<Registration>;
         if constexpr (detail::is_pipeline_registration_v<registration_type>)
         {
-            parameters.add(
-                "runners." + registration.name,
-                registration.pipeline.configuration());
+            config::parameter_set stages;
+            std::apply(
+                [&stages](auto&... stage) {
+                    solvers::detail::check_stage_names(stage...);
+                    (solvers::detail::add_stage_configuration(stages, stage), ...);
+                },
+                registration.stages);
+            parameters.add("runners." + registration.name, stages);
         }
         else
         {
@@ -1041,6 +1078,24 @@ private:
                     registration.neighborhood);
             }
         }
+    }
+
+    // The checks of a stage of a pipeline registration: one of an algorithm on
+    // its own neighborhood is checked as a runner registration is.
+    template<class Stage>
+    static consteval bool validate_stage()
+    {
+        if constexpr (solvers::detail::is_algorithm_stage_v<Stage>)
+        {
+            if constexpr (Stage::has_own_neighborhood)
+            {
+                return detail::validate_app_runner<
+                    typename Stage::algorithm_type,
+                    detail::service_t<SMSpec>,
+                    typename Stage::neighborhood_spec_type>();
+            }
+        }
+        return true;
     }
 
     // The standalone Runner of a runner registration.
@@ -1214,30 +1269,43 @@ detail::app_runner_registration<Algorithm, std::remove_cvref_t<Spec>> runner(
     };
 }
 
-/// A pipeline registration for an app, of a pipeline already built:
-/// `pipeline("cascade", (stage(...) & until_feasible()) | stage(...))`.
+/// A pipeline registration for an app, of the stages of a pipeline already
+/// built: `pipeline("cascade", (stage("a", runner) & until_feasible()) |
+/// stage("b", runner))`. The app runs it with its own RNG.
 template<std::uniform_random_bit_generator RNG, class... Stages>
 [[nodiscard]]
-detail::app_pipeline_registration<solvers::Pipeline<RNG, Stages...>> pipeline(
+detail::app_pipeline_registration<Stages...> pipeline(
     std::string name,
     solvers::Pipeline<RNG, Stages...> pipeline)
 {
-    return {.name = std::move(name), .pipeline = std::move(pipeline)};
+    return [&]<std::size_t... Index>(std::index_sequence<Index...>) {
+        return detail::app_pipeline_registration<Stages...>{
+            .name = std::move(name),
+            .stages =
+                std::tuple<Stages...>{std::move(pipeline.template stage<Index>())...},
+        };
+    }(std::index_sequence_for<Stages...>{});
 }
 
 /// A pipeline registration for an app, run by name from the current solution
-/// like a runner: `app("tsp") | sm | nhe | pipeline("cascade", stage(...),
-/// stage(...))`.
+/// like a runner: `app("tsp") | sm | nhe | pipeline("cascade",
+/// stage<FirstImprovement>("descent") & until_feasible(),
+/// stage<SimulatedAnnealing<Classic>>("anneal", {...}))`.
 ///
-/// Its parameters are its stages' under `runners.<name>`. Requires stages with
-/// the app's Input and Solution, the last one with the app's cost.
+/// A stage of an algorithm, `stage<A>(name, parameters[, neighborhood])`,
+/// runs on the app's recipes: its SolutionManager and cost, so the app's
+/// `cost.*` apply to it, and the app's neighborhood or its own. A stage of a
+/// runner, `stage(name, runner)`, runs on the runner's own recipes. The
+/// parameters are each stage's under `runners.<name>.<stage>`. Requires stages
+/// with the app's Input and Solution, the last one with the app's cost.
 template<class... Stages>
-    requires(sizeof...(Stages) > 0)
-    && (solvers::detail::is_pipeline_stage_v<Stages> && ...)
+    requires(sizeof...(Stages) > 0) && (solvers::detail::any_stage<Stages> && ...)
 [[nodiscard]]
-auto pipeline(std::string name, Stages... stages)
+detail::app_pipeline_registration<Stages...> pipeline(std::string name, Stages... stages)
 {
-    return easylocal::pipeline(std::move(name), solvers::pipeline(std::move(stages)...));
+    return {
+        .name = std::move(name),
+        .stages = std::tuple<Stages...>{std::move(stages)...}};
 }
 
 } // namespace easylocal

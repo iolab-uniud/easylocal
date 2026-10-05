@@ -382,6 +382,24 @@ void pipelines_are_registered_and_run_by_name()
     assert(session.run("cascade"));
     assert(session.last_run_effort().has_value());
 
+    // Algorithm stages run on the app's recipes: the same pipeline as the one
+    // of runners, with the app's cost.* and no cost.* of their own.
+    auto algorithms = easylocal::app("algorithms") | sm | nhe
+        | easylocal::pipeline(
+            "cascade",
+            solvers::stage<FirstImprovement>("feasible", {.max_evaluations = 100})
+                & solvers::until_feasible() & solvers::attempts(3),
+            solvers::stage<BestImprovement>("best", {.max_evaluations = 100}));
+    std::mt19937_64 algorithm_rng{3};
+    const auto by_algorithm = algorithms.run("cascade", instance, initial, algorithm_rng);
+    assert(by_algorithm && by_algorithm->solution == direct.solution);
+    assert(by_algorithm->effort->evaluations == direct.evaluations);
+    const auto algorithm_parameters = algorithms.configuration();
+    assert(has(algorithm_parameters, "runners.cascade.feasible.attempts"));
+    assert(has(algorithm_parameters, "runners.cascade.best.search.max_evaluations"));
+    for (const auto& parameter : algorithm_parameters.parameters())
+        assert(!parameter.path.starts_with("runners.cascade.best.cost"));
+
     // An app with a pipeline only.
     auto only = easylocal::app("only") | sm | nhe
         | easylocal::pipeline(

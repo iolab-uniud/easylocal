@@ -122,6 +122,11 @@ auto application = el::app("tsp") | sm | two_opt
           stage("climb", climbing));
 ```
 
+Here each stage carries its own recipes, and its own `cost.*` parameters. A
+stage of an algorithm, `stage<runners::FirstImprovement>("feasible")`, runs on
+the app's recipes instead, so the app's cost and its parameters are shared by
+every stage.
+
 The command line (`--runner cascade`), the TextUI and the REST service then run
 it by name from the current solution, as they run a runner, and configure its
 stages under `runners.cascade.*` ([Apps and tools](../reference/app-and-tools.md#pipelines)).
