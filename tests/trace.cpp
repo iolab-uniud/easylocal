@@ -15,6 +15,7 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <variant>
 #include <vector>
 
 namespace
@@ -954,6 +955,41 @@ int main()
                    "{\"event\":\"run_context\",\"stage\":\"a \\\"b\\\"\\u000a\","
                    "\"stage_index\":2,\"attempt\":3}\n",
             "a run_context is recorded and written as JSON");
+    }
+
+    // trace::without hides event templates, or event types, from a tracer;
+    // the wrappers combine.
+    {
+        namespace event = easylocal::trace::event;
+        easylocal::trace::memory_recorder<int> memory;
+        auto unvisited = easylocal::trace::without<event::solution_visited>(memory);
+        auto quiet =
+            easylocal::trace::without<event::neighborhood_selection, event::tabu_escape>(
+                unvisited);
+        using quiet_type = decltype(quiet);
+        static_assert(easylocal::trace::observes<quiet_type, event::run_started<int>>);
+        static_assert(easylocal::trace::observes<quiet_type, event::tabu_tenure_changed>);
+        static_assert(
+            !easylocal::trace::observes<quiet_type, event::solution_visited<int>>);
+        static_assert(
+            !easylocal::trace::observes<quiet_type, event::neighborhood_selection>);
+        static_assert(!easylocal::trace::observes<quiet_type, event::tabu_escape>);
+
+        easylocal::trace::emit(quiet, event::run_started<int>{3});
+        easylocal::trace::emit(quiet, event::solution_visited<int>{0, 0, 7, 3});
+        easylocal::trace::emit(quiet, event::neighborhood_selection{});
+        easylocal::trace::emit(quiet, event::tabu_escape{});
+        easylocal::trace::emit(quiet, event::tabu_tenure_changed{});
+        ok &= expect(
+            memory.records().size() == 2
+                && std::holds_alternative<
+                    easylocal::trace::memory_recorder<int>::run_started_record>(
+                    memory.records()[0])
+                && std::holds_alternative<
+                    easylocal::trace::memory_recorder<int>::tabu_tenure_changed_record>(
+                    memory.records()[1])
+                && &quiet.tracer() == &unvisited && &unvisited.tracer() == &memory,
+            "trace::without forwards only the events it does not hide");
     }
 
     return ok ? 0 : 1;

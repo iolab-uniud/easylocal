@@ -53,6 +53,11 @@ auto trace = easylocal::trace::without<easylocal::trace::event::solution_visited
 runner.run(solution, rng, easylocal::with(trace));
 ```
 
+The events without a cost, which are types rather than templates, are hidden
+by their type, `without<event::neighborhood_selection, event::tabu_escape>(recorder)`;
+a wrapper is itself a tracer, so the two forms combine by wrapping one in the
+other.
+
 A run that an exception ends, thrown by a hook of the problem (a cost
 component, a move, the Input) or by a tracer, emits no `run_finished`: the
 recorder keeps what it received, a binary recorder writes its pending block

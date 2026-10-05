@@ -253,6 +253,11 @@ reviewed by hand before tagging.
   `elapsed_ns`, the nanoseconds since the recorder was constructed (a `u64`
   field of the ELTR schemas, a field of the JSONL line), for anytime and
   time-to-target analyses. Without it, no clock is read.
+- `trace::without<Types...>(tracer)`, with the new `trace::without_event_types`,
+  hides events by their type: the events without a cost
+  (`neighborhood_selection`, `tabu_escape`, `tabu_tenure_changed`,
+  `run_context`) and application events, which the template form
+  (`without<event::solution_visited>`) could not name.
 
 ### Platforms
 
