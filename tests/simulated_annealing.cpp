@@ -417,6 +417,71 @@ int main()
     }
 
     {
+        // Without acceptances both spend their budget of 12 proposals: Cutoff,
+        // which cools on acceptances only, stays at its initial temperature;
+        // Hybrid runs its three levels of 4 proposals, 8, 4 and 2.
+        const auto run_to_end = [](auto policy) {
+            std::size_t proposals = 0;
+            while (!policy.finished() && proposals < 100)
+            {
+                policy.on_iteration(false);
+                ++proposals;
+            }
+            return std::pair{proposals, policy.temperature()};
+        };
+        const auto cutoff_end = run_to_end(
+            temperature::Cutoff{temperature::CutoffParameters{
+                .initial_temperature = 8.0,
+                .final_temperature = 1.0,
+                .cooling_rate = 0.5,
+                .allowed_iterations = 12,
+                .accepted_ratio = 0.5,
+            }});
+        const auto hybrid_end = run_to_end(
+            temperature::Hybrid{temperature::HybridParameters{
+                .initial_temperature = 8.0,
+                .final_temperature = 1.0,
+                .cooling_rate = 0.5,
+                .allowed_iterations = 12,
+                .accepted_ratio = 0.5,
+            }});
+        ok &= expect(
+            cutoff_end == std::pair{std::size_t{12}, 8.0},
+            "cutoff spends its budget, without cooling when nothing is accepted");
+        ok &= expect(
+            hybrid_end == std::pair{std::size_t{12}, 2.0},
+            "hybrid spends its budget over its levels");
+    }
+
+    {
+        // A reheated time-based schedule: each descent runs on the clock,
+        // the first for half the time, the reheat for the rest.
+        using timed_descent = temperature::BasicTimeBased<ManualClock>;
+        temperature::Reheating<timed_descent> timed{
+            {.descent =
+                    {.initial_temperature = 8.0,
+                        .final_temperature = 1.0,
+                        .cooling_rate = 0.5,
+                        .allowed_running_time = 4.0},
+                .allowed_reheats = 1,
+                .reheat_ratio = 0.5,
+                .first_descent_share = 0.5}};
+        ManualClock::advance(std::chrono::milliseconds{1});
+        timed.on_iteration(false);
+        const bool first_running = !timed.finished() && timed.reheats() == 0;
+        ManualClock::advance(std::chrono::milliseconds{2100});
+        timed.on_iteration(false);
+        const bool reheated =
+            timed.reheats() == 1 && !timed.finished() && timed.temperature() == 4.0;
+        ManualClock::advance(std::chrono::milliseconds{2100});
+        timed.on_iteration(false);
+        ok &= expect(
+            first_running && reheated && timed.finished(),
+            "a reheated time-based schedule reheats when its first descent's time "
+            "is over, and ends with the second's");
+    }
+
+    {
         temperature::Hybrid policy{temperature::HybridParameters{
             .initial_temperature = 8.0,
             .final_temperature = 1.0,
@@ -774,6 +839,25 @@ int main()
                     TimeBasedParameters{.calibration_samples = 10, .initial_acceptance = 0.0}
                         .validate(),
             "calibrating policies reject an initial acceptance outside (0, 1)");
+    }
+
+    {
+        // A worsening by delta at temperature T is accepted with probability
+        // exp(-delta / T): measured over many draws.
+        MetropolisAcceptance metropolis;
+        std::mt19937_64 rng{2026U};
+        const auto rate = [&](const int worse, const double temperature) {
+            constexpr int draws = 200'000;
+            int accepted = 0;
+            for (int draw = 0; draw < draws; ++draw)
+                accepted += metropolis.accept(10 + worse, 10, temperature, rng) ? 1 : 0;
+            return static_cast<double>(accepted) / draws;
+        };
+        ok &= expect(
+            std::abs(rate(1, 1.0) - std::exp(-1.0)) < 0.005
+                && std::abs(rate(2, 1.0) - std::exp(-2.0)) < 0.005
+                && std::abs(rate(1, 4.0) - std::exp(-0.25)) < 0.005,
+            "Metropolis accepts a worsening move with probability exp(-delta / T)");
     }
 
     {
