@@ -1,5 +1,6 @@
 #include "../examples/tutorial/tsp.hpp"
 #include "support/pareto_grid.hpp"
+#include "support/throwing_runner.hpp"
 
 #include <easylocal/app/app.hpp>
 #include <easylocal/app/cli.hpp>
@@ -469,6 +470,33 @@ int main()
             {.out = &out, .err = &err});
         assert(status == 1);
         assert(err.str() == "error: unknown exception\n");
+    }
+
+    // A runner that throws mid-run: exit status 1 with its message, and the
+    // trace of the run up to the failure, without run_finished.
+    {
+        using namespace tutorial;
+        auto failing = easylocal::app("tsp")
+            | (easylocal::solution_manager<TourManager>()
+                | easylocal::component<TourLength>())
+            | easylocal::neighborhood<TwoOptExplorer>()
+            | easylocal::runner<throwing::ThrowingRunner>("throwing");
+        const auto trace_file = directory / "easylocal_cli_run_throwing.jsonl";
+        const auto failed = run_app(
+            std::move(failing),
+            {"--instance", instance, "--trace", trace_file.string()});
+        assert(failed.status == 1);
+        assert(failed.err == "error: " + std::string{throwing::failure} + "\n");
+        assert(failed.out.empty());
+        std::ifstream jsonl{trace_file};
+        const std::string events{
+            std::istreambuf_iterator<char>{jsonl},
+            std::istreambuf_iterator<char>{}};
+        assert(events.find("\"event\":\"run_started\"") != std::string::npos);
+        assert(occurrences(events, "\"event\":\"move_accepted\"") == 3);
+        assert(events.find("\"event\":\"run_finished\"") == std::string::npos);
+        jsonl.close();
+        std::filesystem::remove(trace_file);
     }
 
     // The app's and the program's parameters are on the same command line.

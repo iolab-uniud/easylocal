@@ -1,4 +1,5 @@
 #include "support/expect.hpp"
+#include "support/throwing_runner.hpp"
 
 #include <easylocal/cost.hpp>
 #include <easylocal/trace.hpp>
@@ -11,6 +12,7 @@
 #include <iostream>
 #include <limits>
 #include <locale>
+#include <random>
 #include <sstream>
 #include <stdexcept>
 #include <streambuf>
@@ -1009,6 +1011,42 @@ int main()
         ok &= expect(
             !live_stream.str().empty() && live_stream.str() == replayed_stream.str(),
             "a replay into a binary recorder writes the trace of the run");
+    }
+
+    // A run that throws mid-run: the JSON Lines trace ends with the last event
+    // before the failure, a whole line, without run_finished.
+    {
+        std::ostringstream stream;
+        bool thrown = false;
+        {
+            easylocal::trace::jsonl_recorder<int> json{stream};
+            const throwing::Counter input{};
+            const auto bound = throwing::counter_runner().bind(input);
+            try
+            {
+                std::mt19937_64 rng{1};
+                static_cast<void>(
+                    bound.run(throwing::Count{10}, rng, easylocal::with(json)));
+            }
+            catch (const std::runtime_error& error)
+            {
+                thrown = error.what() == throwing::failure;
+            }
+        }
+        const auto text = stream.str();
+        std::size_t lines = 0;
+        std::size_t accepted = 0;
+        std::istringstream in{text};
+        for (std::string line; std::getline(in, line);)
+        {
+            ++lines;
+            accepted += line.starts_with("{\"event\":\"move_accepted\"");
+        }
+        ok &= expect(
+            thrown && text.ends_with("}\n") && lines > 2 && accepted == 3
+                && text.find("\"event\":\"run_started\"") != std::string::npos
+                && text.find("\"event\":\"run_finished\"") == std::string::npos,
+            "the trace of a run that throws ends at the failure, without run_finished");
     }
 
     return ok ? 0 : 1;

@@ -1,6 +1,8 @@
 #include "support/expect.hpp"
+#include "support/throwing_runner.hpp"
 
 #include <easylocal/solvers.hpp>
+#include <easylocal/trace/memory_recorder.hpp>
 
 #include <algorithm>
 #include <concepts>
@@ -8,6 +10,9 @@
 #include <cstdint>
 #include <random>
 #include <stdexcept>
+#include <string>
+#include <string_view>
+#include <variant>
 #include <vector>
 
 namespace
@@ -180,6 +185,43 @@ int main()
     ok &= expect(
         tracer.attempts == std::vector<std::size_t>{0, 1, 2, 3, 4} && !tracer.staged,
         "MultiStart emits the run_context of every start");
+
+    // A start whose runner throws mid-run: the exception leaves solve(), and
+    // a recorder has the start's run up to the failure, without its end.
+    {
+        using recorder_type = trace::memory_recorder<int>;
+        auto failing = make_solver<solvers::MultiStart>(
+            throwing::counter_runner(),
+            solvers::MultiStartParameters{.starts = 3})
+                           .initialization(initialization::initial);
+        recorder_type recorder;
+        std::string message;
+        try
+        {
+            static_cast<void>(failing.solve(throwing::Counter{}, with(recorder)));
+        }
+        catch (const std::runtime_error& error)
+        {
+            message = error.what();
+        }
+        std::size_t contexts = 0;
+        std::size_t started = 0;
+        std::size_t accepted = 0;
+        std::size_t finished = 0;
+        for (const auto& record : recorder.records())
+        {
+            contexts += std::holds_alternative<recorder_type::run_context_record>(record);
+            started += std::holds_alternative<recorder_type::run_started_record>(record);
+            accepted +=
+                std::holds_alternative<recorder_type::move_accepted_record>(record);
+            finished +=
+                std::holds_alternative<recorder_type::run_finished_record>(record);
+        }
+        ok &= expect(
+            message == throwing::failure && contexts == 1 && started == 1 && accepted == 3
+                && finished == 0,
+            "a start that throws ends the solve, its run recorded up to the failure");
+    }
 
     return ok ? 0 : 1;
 }

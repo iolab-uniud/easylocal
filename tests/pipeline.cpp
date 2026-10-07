@@ -1,6 +1,7 @@
 // solvers::Pipeline: stages in sequence, their targets and attempts, the
 // effort and report of each stage, cancellation and parameters.
 #include "support/expect.hpp"
+#include "support/throwing_runner.hpp"
 
 #include <easylocal/app/app.hpp>
 #include <easylocal/cost.hpp>
@@ -975,6 +976,45 @@ int main()
     ok &= expect(
         *cancelled_countdown.runs == 1 && cancelled.stages[0].attempts == 1,
         "after a cancellation a stage makes no further attempt");
+
+    // A later stage that throws mid-run: the exception leaves solve(), after
+    // the first stage's run and the start of the second one.
+    {
+        using recorder_type = el::trace::memory_recorder<int>;
+        auto failing = solvers::pipeline(
+            solvers::stage(
+                "descend",
+                throwing::counter_runner({.fail_after = el::unlimited}))
+                & solvers::max_evaluations(5),
+            solvers::stage("fail", throwing::counter_runner()));
+        recorder_type recorder;
+        std::string message;
+        try
+        {
+            static_cast<void>(failing.initialization(el::initialization::initial)
+                    .solve(throwing::Counter{}, el::with(recorder)));
+        }
+        catch (const std::runtime_error& error)
+        {
+            message = error.what();
+        }
+        std::vector<std::string> events;
+        for (const auto& record : recorder.records())
+            if (const auto* context =
+                    std::get_if<recorder_type::run_context_record>(&record))
+                events.push_back(context->stage);
+            else if (std::holds_alternative<recorder_type::run_started_record>(record))
+                events.emplace_back("started");
+            else if (const auto* end =
+                         std::get_if<recorder_type::run_finished_record>(&record))
+                events.push_back("finished " + std::to_string(end->cost));
+        ok &= expect(
+            message == throwing::failure
+                && events
+                    == std::vector<std::
+                            string>{"descend", "started", "finished 6", "fail", "started"},
+            "a stage that throws ends the solve after the runs before it");
+    }
 
     // The parameters: each stage's own, and its runner's, under its name.
     auto annealing =

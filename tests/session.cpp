@@ -4,6 +4,7 @@
 #include "../examples/assignment/solution_manager.hpp"
 #include "support/assignment_capacity_delta.hpp"
 #include "support/pareto_grid.hpp"
+#include "support/throwing_runner.hpp"
 
 #include <easylocal/app/app.hpp>
 #include <easylocal/app/session.hpp>
@@ -397,6 +398,46 @@ void session_runs_pass_options_to_the_runner()
     const auto ran = session.run("deep", easylocal::with(control));
     assert(ran);
     assert(session.solution() == initial);
+}
+
+// A run whose runner throws mid-run: the exception leaves run(), the solution
+// is the one before it, the last run's effort is cleared, and the session runs
+// again.
+void a_run_that_throws_leaves_the_session_as_it_was()
+{
+    auto application =
+        easylocal::app("assignment-throwing")
+            .with_solution_manager(
+                easylocal::solution_manager<AssignmentSolutionManager>()
+                | assignment::assignment_cost())
+            .with_neighborhood(
+                easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
+                | easylocal::delta<
+                    CapacityCostComponent,
+                    ReassignCapacityDeltaEvaluator>())
+            .with_runner<easylocal::runners::FirstImprovement>("fi")
+            .with_runner<throwing::ThrowingRunner>("throwing");
+    easylocal::Session session{std::move(application), make_input(3), 1};
+    session.use_initial_solution();
+    assert(session.run("fi"));
+    assert(session.last_run_effort());
+    const auto before = session.solution();
+
+    bool thrown = false;
+    try
+    {
+        static_cast<void>(session.run("throwing"));
+    }
+    catch (const std::runtime_error& error)
+    {
+        thrown = error.what() == throwing::failure;
+    }
+    assert(thrown);
+    assert(session.solution() == before);
+    assert(!session.last_run_effort());
+
+    assert(session.run("fi"));
+    assert(session.last_run_effort());
 }
 
 void session_owns_input_and_builds_instance_from_it()
@@ -1075,6 +1116,7 @@ int main()
     session_takes_its_input_and_seed_at_construction();
     session_shares_an_input_it_does_not_copy();
     session_runs_pass_options_to_the_runner();
+    a_run_that_throws_leaves_the_session_as_it_was();
     session_owns_input_and_builds_instance_from_it();
     replacing_input_rebuilds_the_bound_app();
     session_exposes_initial_solution_as_an_explicit_choice();
