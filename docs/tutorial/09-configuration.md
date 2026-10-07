@@ -231,7 +231,7 @@ static consteval auto parameter_schema()
   (infinity included, unless `.open_high()`), `config::one_of("fixed",
   "random")`, or `easylocal::unlimited` for any value
   (a seed, a file name). Every field declares one, a boolean excepted:
-  `check(app, ...)` (chapter 13) fails for a parameter without a domain.
+  `check(app, ...)` (chapter 14) fails for a parameter without a domain.
 - A **condition**, `.only_if(...)`, says when a field matters: the initial
   acceptance is used only to estimate the initial temperature, from
   `calibration_samples` moves. When the condition is false, the field's
@@ -256,7 +256,7 @@ config::validation_result validate() const
 }
 ```
 
-Automatic configurators read the same declarations: irace (chapter 11) tunes
+Automatic configurators read the same declarations: irace (chapter 12) tunes
 the fields with a domain, only when their condition holds, and never proposes
 values that break a requirement.
 

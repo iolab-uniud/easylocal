@@ -84,10 +84,11 @@ nav:
       - tutorial/09-configuration.md
       - tutorial/10-testing.md
       - tutorial/11-apps-and-tools.md
-      - tutorial/12-tester.md
-      - tutorial/13-checking.md
-      - tutorial/14-rest.md
-      - tutorial/15-observing-and-controlling.md
+      - tutorial/12-tuning.md
+      - tutorial/13-tester.md
+      - tutorial/14-checking.md
+      - tutorial/15-rest.md
+      - tutorial/16-observing-and-controlling.md
   - Coming from EasyLocal 3: from-easylocal-3.md
   - Reference:
       - reference/README.md

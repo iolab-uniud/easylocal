@@ -55,7 +55,7 @@ auto nhe =
   `operator+(Value, Delta)`.
 - With floating-point values the law holds up to rounding: the length of a
   tour with decimal distances, updated by deltas, drifts from its full
-  evaluation in the last bits. The checks of chapters 10 and 13 forgive it,
+  evaluation in the last bits. The checks of chapters 10 and 14 forgive it,
   within a tolerance; the search compares the costs exactly, unless the cost
   expression is `cost::approximately(...)` (chapter 2).
 - Deltas are **per component and per neighborhood**. The cost of a move is
@@ -146,7 +146,7 @@ Chapter 10 shows how to check that a delta agrees with the full evaluation.
 ## Checking the deltas during a run
 
 A delta that is wrong only on some solutions may pass the checks of chapters
-10 and 13 and still mislead a long search. Defining `EASYLOCAL_VERIFY_DELTAS`
+10 and 14 and still mislead a long search. Defining `EASYLOCAL_VERIFY_DELTAS`
 (`-DEASYLOCAL_VERIFY_DELTAS`, or `target_compile_definitions`) makes every
 search re-evaluate the solution after each move it keeps and compare the value
 of each component with the one its delta gave; at the first disagreement the

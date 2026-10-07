@@ -104,7 +104,7 @@ from them when it is bound, and gives them as `search.*` to the command line,
 configuration files and the interactive tester; an app (chapter 11) gives them
 as `runners.<name>.*`. An algorithm whose `parameters_type` is not a block
 still runs in an app, but no frontend can change its parameters, and
-`check(app, ...)` (chapter 13) reports it.
+`check(app, ...)` (chapter 14) reports it.
 
 ## See also
 

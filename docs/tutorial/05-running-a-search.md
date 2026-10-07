@@ -227,7 +227,7 @@ std::cout << "from file " << el::describe(file_result.solution) << '\n';
 They throw `std::runtime_error` when a stream fails, and the file functions
 name the file. Each hook is needed only where it is used: a program that
 builds its Input in code, as the rest of this tutorial does, needs no
-`read_input`. The Session (chapter 11) and the interactive tester (chapter 12)
+`read_input`. The Session (chapter 11) and the interactive tester (chapter 13)
 use the same hooks.
 
 ## See also

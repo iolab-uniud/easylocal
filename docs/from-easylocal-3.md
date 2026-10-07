@@ -307,7 +307,7 @@ struct TwoOpt
 - **No operator is required**, but the ones you have can stay, and are used
   when present:
   - `operator==` by the neighborhood checks of a Session
-    ([chapter 13](tutorial/13-checking.md));
+    ([chapter 14](tutorial/14-checking.md));
   - `operator<<`, or `describe(move)`, for the text the tester shows;
   - `operator<` and `operator!=` are not used: remove them if nothing else
     needs them.
@@ -539,7 +539,7 @@ private:
   change is computed on a copy of the solution with the move applied.
 
 To check a delta against the full evaluation, as the `MoveTester`'s "check
-neighborhood costs" did, use the Session ([chapter 13](tutorial/13-checking.md)):
+neighborhood costs" did, use the Session ([chapter 14](tutorial/14-checking.md)):
 
 <!-- snippet: tutorial/main.cpp:session-checks -->
 ```cpp title="EasyLocal 4"
@@ -870,7 +870,7 @@ MAIN MENU:
 ```
 
 In EasyLocal 4 the tester is the TextUI, an interactive terminal interface
-built on FTXUI in the optional `TUI` component ([chapter 12](tutorial/12-tester.md)).
+built on FTXUI in the optional `TUI` component ([chapter 13](tutorial/13-tester.md)).
 It takes the same app as `cli::run`: no tester object, no move tester to
 register, since the app already names the neighborhood and the runners:
 
@@ -908,7 +908,7 @@ An EasyLocal 3 tester could hold several move testers, one per explorer, on
 the same state. The moves an EasyLocal 4 tester shows are those of its app's
 neighborhood (a runner may bring its own, for searching), so the counterpart
 is a launcher of apps, one per neighborhood, which share the Input and the
-current solution ([chapter 12](tutorial/12-tester.md#several-apps-on-the-same-problem)):
+current solution ([chapter 13](tutorial/13-tester.md#several-apps-on-the-same-problem)):
 
 ```cpp title="EasyLocal 3"
 MoveTester<Input, Tour, TwoOpt, CostStructure> two_opt_test(in, sm, two_opt_nhe, "2-opt", tester);

@@ -304,7 +304,7 @@ public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
     // [two-opt-name]
-    // The name of the neighborhood in the interactive tester (chapter 12).
+    // The name of the neighborhood in the interactive tester (chapter 13).
     static std::string_view name()
     {
         return "2-opt";
@@ -491,7 +491,7 @@ private:
 
 // [equality] ---------------------------------------------------------------
 // Equality of solutions and moves, for the neighborhood checks of a Session
-// (chapter 13).
+// (chapter 14).
 inline bool operator==(const Tour& a, const Tour& b)
 {
     return a.order == b.order;

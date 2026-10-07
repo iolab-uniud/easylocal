@@ -141,12 +141,14 @@ snippets write `Tour` for `tutorial::Tour`.
    files.
 10. [Testing your components](10-testing.md): contract checks.
 11. [Applications](11-apps-and-tools.md): the app, a problem and its runners,
-    and the Session that runs it on an Input.
-12. [The interactive tester](12-tester.md): the TextUI.
-13. [Checking a composed problem](13-checking.md): `check`, and the
+    the Session that runs it on an Input, and a command-line program.
+12. [Tuning with irace](12-tuning.md): the parameters of a program, tuned
+    on its instances.
+13. [The interactive tester](13-tester.md): the TextUI.
+14. [Checking a composed problem](14-checking.md): `check`, and the
     neighborhood checks of a Session.
-14. [A REST service](14-rest.md): searches over HTTP.
-15. [Observing and controlling a run](15-observing-and-controlling.md):
+15. [A REST service](15-rest.md): searches over HTTP.
+16. [Observing and controlling a run](16-observing-and-controlling.md):
     progress, cancellation, tracing.
 
 Porting an EasyLocal 3 program? [Coming from EasyLocal 3](../from-easylocal-3.md)

@@ -507,6 +507,9 @@ reviewed by hand before tagging.
 
 ### Documentation and examples
 
+- Tuning with irace is a tutorial chapter of its own, chapter 12, after the
+  applications of chapter 11; the interactive tester, the checks, the REST
+  service and the observation of a run are now chapters 13 to 16.
 - Chapter 5 lists the algorithms with their header and needs, linking the
   runners reference for their parameters, with Pareto Late Acceptance and
   `time_limit_reached`; chapters 9 and 11 show `RunParameters`, the checks of

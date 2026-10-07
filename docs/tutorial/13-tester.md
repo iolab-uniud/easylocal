@@ -1,9 +1,9 @@
-# 12. The interactive tester
+# 13. The interactive tester
 
 The **interactive tester** (the TextUI) is a Session with a terminal interface:
 load an Input and a Solution, browse, evaluate and apply moves, run the
 registered runners in the background with live progress and cancellation, and
-run the checks of chapter 13. It is the optional `TUI` component (FTXUI):
+run the checks of chapter 14. It is the optional `TUI` component (FTXUI):
 
 ```cmake
 find_package(EasyLocal CONFIG REQUIRED COMPONENTS Core TUI)
@@ -42,7 +42,7 @@ The tester has three pages, switched with F3, F4 and F5; the header shows the
 instance, the current seed and the cost of the current solution.
 
 On the **Input/Output** page, `I` creates the initial solution and `C` runs the
-app check of chapter 13:
+app check of chapter 14:
 
 ![The Input/Output page after creating the initial solution and running the check](images/tui-check.svg)
 
@@ -110,7 +110,7 @@ member of `TwoOptExplorer`:
 
 <!-- snippet: tutorial/tsp.hpp:two-opt-name -->
 ```cpp
-// The name of the neighborhood in the interactive tester (chapter 12).
+// The name of the neighborhood in the interactive tester (chapter 13).
 static std::string_view name()
 {
     return "2-opt";
@@ -229,5 +229,5 @@ shows the current seed.
 
 ## Next steps
 
-[Chapter 13](13-checking.md) checks the composed problem, from code and from
+[Chapter 14](14-checking.md) checks the composed problem, from code and from
 the tester.

@@ -78,7 +78,7 @@ and aborts. It costs a full evaluation per accepted move, so it belongs to
 debugging builds.
 
 For a whole composed problem, `easylocal::check(app, input)` runs the same
-checks against an app ([chapter 13](13-checking.md)).
+checks against an app ([chapter 14](14-checking.md)).
 
 ## See also
 

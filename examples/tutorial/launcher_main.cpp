@@ -1,5 +1,5 @@
 // The tutorial's TSP in a launcher of two apps, one per neighborhood, which
-// share the Input and the current solution (TUI component, chapter 12).
+// share the Input and the current solution (TUI component, chapter 13).
 #include "tsp.hpp"
 
 #include <easylocal/adapters/tui/launcher.hpp>

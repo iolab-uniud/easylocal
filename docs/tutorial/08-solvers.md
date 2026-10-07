@@ -48,7 +48,7 @@ The built-in solvers live in `easylocal::solvers`:
 - `make_solver<Solver>(runner[, parameters])` deduces the solver type from the
   runner, as `solvers::MultiStart{runner, {...}}` does.
 - `solver.solve(input, el::with(control, tracer))` cancels and traces a solve
-  like a run ([chapter 15](15-observing-and-controlling.md)); the result counts
+  like a run ([chapter 16](16-observing-and-controlling.md)); the result counts
   the evaluations and iterations of all the runs.
 
 ## Hard and soft costs

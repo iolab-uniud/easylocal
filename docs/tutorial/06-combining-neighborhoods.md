@@ -40,7 +40,7 @@ auto union_sa =
   child; a child that cannot produce a move is excluded and another one is
   drawn. The biases are configurable through `NeighborhoodUnionParameters`.
 - Unions nest, and traces report the route of every move through the nesting
-  (chapter 15).
+  (chapter 16).
 
 Algorithms need no change to use a union: it is just another neighborhood.
 

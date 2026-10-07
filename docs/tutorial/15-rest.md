@@ -1,4 +1,4 @@
-# 14. A REST service
+# 15. A REST service
 
 The **REST** adapter exposes an app as an HTTP API: clients submit runs, poll
 their status and progress, cancel them and fetch the solutions. Runs execute on
@@ -182,5 +182,5 @@ stops the run as soon as its cost is at least as good: for the tutorial's
 
 ## Next steps
 
-[Chapter 15](15-observing-and-controlling.md) watches and stops a run from your
+[Chapter 16](16-observing-and-controlling.md) watches and stops a run from your
 own code.

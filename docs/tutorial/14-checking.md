@@ -1,4 +1,4 @@
-# 13. Checking a composed problem
+# 14. Checking a composed problem
 
 Chapter 10 checked each component on its own. Once the components are composed
 into an app, two further levels of checking are available.
@@ -89,7 +89,7 @@ if (costs.mismatches != 0 || costs.invalid != 0 || sampling.out_of_neighborhood 
 All three need the moves to be enumerable; the last one also needs
 `random_move`. `check_neighborhood_costs(tolerance)` compares the costs within
 a `cost::tolerance` (1e-9 relative and absolute by default; `{0, 0}` compares
-exactly). The interactive tester of chapter 12 runs the same checks from
+exactly). The interactive tester of chapter 13 runs the same checks from
 its Move page: `C`, `D` and `U`.
 
 The last two compare values: `check_move_independence` compares the solution
@@ -106,7 +106,7 @@ offer them (`D` and `U`), while its other neighborhood diagnostics stay.
 <!-- snippet: tutorial/tsp.hpp:equality -->
 ```cpp
 // Equality of solutions and moves, for the neighborhood checks of a Session
-// (chapter 13).
+// (chapter 14).
 inline bool operator==(const Tour& a, const Tour& b)
 {
     return a.order == b.order;
@@ -134,4 +134,4 @@ also work for types you cannot change. C++20 derives `!=` from `==`.
 
 ## Next steps
 
-[Chapter 14](14-rest.md) offers the same searches over HTTP.
+[Chapter 15](15-rest.md) offers the same searches over HTTP.

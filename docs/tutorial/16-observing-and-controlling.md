@@ -1,4 +1,4 @@
-# 15. Observing and controlling a run
+# 16. Observing and controlling a run
 
 A run accepts a control and a tracer as its trailing argument:
 
