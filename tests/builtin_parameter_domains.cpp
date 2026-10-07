@@ -2,7 +2,8 @@
 // or easylocal::unlimited for any value (booleans have true and false). A new
 // parameter without one fails this test, as check(app) fails for an app. The
 // rules between parameters are requirements of the schemas, which an irace
-// scenario writes as forbidden configurations.
+// scenario writes as forbidden configurations. A real parameter with no upper
+// bound excludes infinity.
 #include <easylocal/app/cli.hpp>
 #include <easylocal/app/run_parameters.hpp>
 #include <easylocal/app/tuning.hpp>
@@ -23,7 +24,9 @@
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
+#include <limits>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace
@@ -60,6 +63,35 @@ void expect_requirement(const std::string& name, Block block)
             return !rule.satisfied;
         }))
         unlisted.push_back(name);
+}
+
+std::vector<std::string> infinite;
+
+// A block whose real parameter `field` is infinite is out of the domain of
+// that field, which excludes infinity: the block and a configuration name it.
+template<class Block, class Set>
+void expect_finite(
+    const std::string& name,
+    const std::string_view field,
+    Set set_infinite)
+{
+    Block block{};
+    set_infinite(block, std::numeric_limits<double>::infinity());
+    const auto validation = block.validate();
+    const std::string expected = std::string{field} + " is out of its range";
+    bool rejected = !validation && validation.message.ends_with(expected);
+    config::parameter_set set;
+    set.add(name, block);
+    const auto diagnostics = set.validate().diagnostics;
+    rejected = rejected
+        && std::ranges::any_of(
+            diagnostics,
+            [&](const config::configuration_validation_diagnostic& diagnostic) {
+                return diagnostic.path.ends_with(field)
+                    && diagnostic.message.starts_with("expected a value in");
+            });
+    if (!rejected)
+        infinite.push_back(name + "." + std::string{field});
 }
 
 template<class... Lists>
@@ -159,9 +191,80 @@ int main()
             .allowed_reheats = 3,
             .first_descent_share = 0.9});
 
+    expect_finite<runners::GreatDelugeParameters>(
+        "great_deluge",
+        "initial_level",
+        [](auto& block, const double value) { block.initial_level = value; });
+    expect_finite<runners::GreatDelugeParameters>(
+        "great_deluge",
+        "min_level",
+        [](auto& block, const double value) { block.min_level = value; });
+    expect_finite<sa::ClassicParameters>(
+        "classic",
+        "initial_temperature",
+        [](auto& block, const double value) { block.initial_temperature = value; });
+    expect_finite<sa::FixedLengthParameters>(
+        "fixed_length",
+        "initial_temperature",
+        [](auto& block, const double value) { block.initial_temperature = value; });
+    expect_finite<sa::CutoffParameters>(
+        "cutoff",
+        "initial_temperature",
+        [](auto& block, const double value) { block.initial_temperature = value; });
+    expect_finite<sa::FixedTemperatureParameters>(
+        "fixed_temperature",
+        "temperature",
+        [](auto& block, const double value) { block.temperature = value; });
+    expect_finite<sa::TimeBasedParameters>(
+        "time_based",
+        "initial_temperature",
+        [](auto& block, const double value) { block.initial_temperature = value; });
+    expect_finite<sa::TimeBasedParameters>(
+        "time_based",
+        "allowed_running_time",
+        [](auto& block, const double value) { block.allowed_running_time = value; });
+    expect_finite<sa::ReheatingParameters<sa::ClassicParameters>>(
+        "reheating",
+        "reheat_ratio",
+        [](auto& block, const double value) {
+            block.allowed_reheats = 1;
+            block.reheat_ratio = value;
+        });
+    expect_finite<sa::ReheatingParameters<sa::FixedLengthParameters>>(
+        "reheating",
+        "first_descent_share",
+        [](auto& block, const double value) {
+            block.allowed_reheats = 1;
+            block.first_descent_share = value;
+        });
+    expect_finite<tabu::ReactiveParameters>(
+        "reactive",
+        "increase",
+        [](auto& block, const double value) { block.increase = value; });
+    expect_finite<tabu::FooParameters>(
+        "foo",
+        "fluctuation",
+        [](auto& block, const double value) { block.fluctuation = value; });
+    expect_finite<tabu::RandomFooParameters>(
+        "random_foo",
+        "max_fluctuation",
+        [](auto& block, const double value) { block.max_fluctuation = value; });
+    expect_finite<runners::candidates::AspirationPlusParameters>(
+        "aspiration_plus",
+        "aspiration_level",
+        [](auto& block, const double value) { block.aspiration_level = value; });
+    expect_finite<runners::candidates::EliteListParameters>(
+        "elite_list",
+        "quality",
+        [](auto& block, const double value) { block.quality = value; });
+
     for (const auto& path : missing)
         std::cerr << path << " declares no domain\n";
+    for (const auto& path : infinite)
+        std::cerr << path << ": infinity is not out of its domain\n";
     for (const auto& name : unlisted)
         std::cerr << name << ": a rule between parameters is not a requirement\n";
-    return missing.empty() && unlisted.empty() ? EXIT_SUCCESS : EXIT_FAILURE;
+    return missing.empty() && unlisted.empty() && infinite.empty()
+        ? EXIT_SUCCESS
+        : EXIT_FAILURE;
 }

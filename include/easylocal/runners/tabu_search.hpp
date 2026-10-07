@@ -744,7 +744,7 @@ struct ReactiveParameters
         return config::fields(
             config::field<"increase", &self::increase>(
                 "Factor of the tenure when a solution is revisited within cycle_length",
-                config::range(1.0, easylocal::unlimited).open_low()),
+                config::range(1.0, easylocal::unlimited).open()),
             config::field<"decrease", &self::decrease>(
                 "Factor of the tenure when no cycle is seen for the average cycle length",
                 config::range(0.0, 1.0).open()),
@@ -768,12 +768,7 @@ struct ReactiveParameters
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        // Its domain has no upper bound: it lets infinity through.
-        if (!std::isfinite(increase))
-            return config::validation_result::failure("increase must be finite");
-        return config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 
@@ -1436,19 +1431,14 @@ struct FooParameters
                 config::range(1, easylocal::unlimited)),
             config::field<"fluctuation", &self::fluctuation>(
                 "Spread of the costs in a window below which the tenure grows",
-                config::range(0.0, easylocal::unlimited)));
+                config::range(0.0, easylocal::unlimited).open_high()));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        // Its domain has no upper bound: it lets infinity through.
-        if (!std::isfinite(fluctuation))
-            return config::validation_result::failure("fluctuation must be finite");
-        return config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 
@@ -1576,10 +1566,10 @@ struct RandomFooParameters
                 config::range(1, easylocal::unlimited)),
             config::field<"min_fluctuation", &self::min_fluctuation>(
                 "Smallest fluctuation threshold",
-                config::range(0.0, easylocal::unlimited)),
+                config::range(0.0, easylocal::unlimited).open_high()),
             config::field<"max_fluctuation", &self::max_fluctuation>(
                 "Largest fluctuation threshold",
-                config::range(0.0, easylocal::unlimited)),
+                config::range(0.0, easylocal::unlimited).open_high()),
             config::require(
                 config::value<"min_window"> <= config::value<"max_window">,
                 "min_window must not be above max_window"),
@@ -1595,12 +1585,7 @@ struct RandomFooParameters
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        // Their domains have no upper bound: they let infinity through.
-        if (!std::isfinite(min_fluctuation) || !std::isfinite(max_fluctuation))
-            return config::validation_result::failure("the fluctuations must be finite");
-        return config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 
@@ -1831,7 +1816,7 @@ struct AspirationPlusParameters
                 config::range(0, easylocal::unlimited)),
             config::field<"aspiration_level", &self::aspiration_level>(
                 "The aspiration level, as a factor of the best cost",
-                config::range(1.0, easylocal::unlimited)),
+                config::range(1.0, easylocal::unlimited).open_high()),
             config::require(
                 config::value<"min_moves"> <= config::value<"max_moves">,
                 "min_moves must not be above max_moves"));
@@ -1841,12 +1826,7 @@ struct AspirationPlusParameters
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        // Its domain has no upper bound: it lets infinity through.
-        if (!std::isfinite(aspiration_level))
-            return config::validation_result::failure("aspiration_level must be finite");
-        return config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 
@@ -1871,19 +1851,14 @@ struct EliteListParameters
                 config::range(1, easylocal::unlimited)),
             config::field<"quality", &self::quality>(
                 "Cost, as a factor of the best, up to which a kept move is applied",
-                config::range(1.0, easylocal::unlimited)));
+                config::range(1.0, easylocal::unlimited).open_high()));
     }
 
     /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        // Its domain has no upper bound: it lets infinity through.
-        if (!std::isfinite(quality))
-            return config::validation_result::failure("quality must be finite");
-        return config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 

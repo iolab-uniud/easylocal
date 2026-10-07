@@ -12,7 +12,6 @@
 #include <easylocal/utils/limit.hpp>
 
 #include <cassert>
-#include <cmath>
 #include <concepts>
 #include <cstddef>
 #include <random>
@@ -44,10 +43,10 @@ struct GreatDelugeParameters
         return config::fields(
             config::field<"initial_level", &GreatDelugeParameters::initial_level>(
                 "Initial water level, as a factor of the initial cost",
-                config::range(0.0, easylocal::unlimited).open_low()),
+                config::range(0.0, easylocal::unlimited).open()),
             config::field<"min_level", &GreatDelugeParameters::min_level>(
                 "Final water level, as a factor of the best cost",
-                config::range(0.0, easylocal::unlimited).open_low()),
+                config::range(0.0, easylocal::unlimited).open()),
             config::field<"level_rate", &GreatDelugeParameters::level_rate>(
                 "Multiplicative decrease of the water level",
                 config::range(0.0, 1.0).open()),
@@ -66,12 +65,7 @@ struct GreatDelugeParameters
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        // The domains have no upper bound: they let an infinite level through.
-        if (!std::isfinite(initial_level) || !std::isfinite(min_level))
-            return config::validation_result::failure("the levels must be finite");
-        return config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 

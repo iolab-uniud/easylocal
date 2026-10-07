@@ -27,7 +27,10 @@ Debug ones, wherever they enter: the constructors of the built-in algorithms
 and of their policies (temperature schedules, tabu lists), `make_runner`, and
 `bind` after a change through `parameters()`. The message names the field,
 `temperature.cooling_rate: expected a value in (0, 1), got 2`, or gives the
-requirement that does not hold. A custom algorithm gets the same check from
+requirement that does not hold. A real parameter with no upper bound (a
+temperature, a water level, a factor of the best cost) excludes infinity,
+`(0, unlimited)`, so its domain rejects it as any other value out of range.
+A custom algorithm gets the same check from
 `config::require_valid(parameters)`. Inside a run, the remaining contracts are
 asserts.
 

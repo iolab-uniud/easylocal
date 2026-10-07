@@ -123,10 +123,10 @@ consteval auto cooling_fields()
     return config::fields(
         config::field<"initial_temperature", &Block::initial_temperature>(
             "Initial annealing temperature",
-            config::range(0.0, easylocal::unlimited).open_low()),
+            config::range(0.0, easylocal::unlimited).open()),
         config::field<"final_temperature", &Block::final_temperature>(
             "Final annealing temperature",
-            config::range(0.0, easylocal::unlimited).open_low()),
+            config::range(0.0, easylocal::unlimited).open()),
         config::field<"cooling_rate", &Block::cooling_rate>(
             "Multiplicative cooling factor",
             config::range(0.0, 1.0).open()));
@@ -156,19 +156,6 @@ consteval auto calibration_fields()
             "estimated initial temperature",
             config::range(0.0, 1.0).open())
             .only_if(config::value<"calibration_samples"> > 0));
-}
-
-// What the schemas cannot say: their domains have no upper bound, and let an
-// infinite value through. The message is a literal, which a validation result
-// refers to.
-[[nodiscard]]
-constexpr config::validation_result validate_finite(
-    const double value,
-    const std::string_view message) noexcept
-{
-    if (!std::isfinite(value))
-        return config::validation_result::failure(message);
-    return config::validation_result::success();
 }
 
 // The initial temperature at which a worsening move of average size is
@@ -256,14 +243,7 @@ struct ClassicParameters
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        if (const auto finite = detail::validate_finite(
-                initial_temperature,
-                "initial_temperature must be finite");
-            !finite)
-            return finite;
-        return config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 
@@ -399,11 +379,7 @@ struct FixedLengthParameters
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        return detail::validate_finite(
-            initial_temperature,
-            "initial_temperature must be finite");
+        return config::check_schema(*this);
     }
 };
 
@@ -555,11 +531,7 @@ struct CutoffParameters
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        return detail::validate_finite(
-            initial_temperature,
-            "initial_temperature must be finite");
+        return config::check_schema(*this);
     }
 };
 
@@ -856,7 +828,7 @@ struct FixedTemperatureParameters
             config::fields(
                 config::field<"temperature", &FixedTemperatureParameters::temperature>(
                     "Constant annealing temperature",
-                    config::range(0.0, easylocal::unlimited).open_low()),
+                    config::range(0.0, easylocal::unlimited).open()),
                 config::field<
                     "allowed_iterations",
                     &FixedTemperatureParameters::allowed_iterations>(
@@ -872,9 +844,7 @@ struct FixedTemperatureParameters
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        return detail::validate_finite(temperature, "temperature must be finite");
+        return config::check_schema(*this);
     }
 };
 
@@ -994,7 +964,7 @@ struct TimeBasedParameters
                     "allowed_running_time",
                     &TimeBasedParameters::allowed_running_time>(
                     "Running time of the annealing, in seconds",
-                    config::range(0.0, easylocal::unlimited).open_low()),
+                    config::range(0.0, easylocal::unlimited).open()),
                 config::field<
                     "accepted_per_temperature",
                     &TimeBasedParameters::accepted_per_temperature>(
@@ -1008,16 +978,7 @@ struct TimeBasedParameters
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        if (const auto finite = detail::validate_finite(
-                initial_temperature,
-                "initial_temperature must be finite");
-            !finite)
-            return finite;
-        return detail::validate_finite(
-            allowed_running_time,
-            "allowed_running_time must be finite");
+        return config::check_schema(*this);
     }
 };
 
@@ -1253,7 +1214,7 @@ struct ReheatingParameters
                 config::range(0, easylocal::unlimited)),
             config::field<"reheat_ratio", &ReheatingParameters::reheat_ratio>(
                 "Restart temperature of a reheat, as a factor of the initial one",
-                config::range(0.0, easylocal::unlimited).open_low())
+                config::range(0.0, easylocal::unlimited).open())
                 .only_if(config::value<"allowed_reheats"> > 0),
             config::field<
                 "first_descent_share",
@@ -1302,28 +1263,7 @@ struct ReheatingParameters
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        const auto schedule = descent.validate();
-        if (!schedule)
-            return schedule;
-        if (allowed_reheats == 0)
-            return config::validation_result::success();
-        // Its domain has no upper bound: it lets infinity through.
-        if (!std::isfinite(reheat_ratio))
-            return config::validation_result::failure("reheat_ratio must be finite");
-        if constexpr (detail::iteration_budget<DescentParameters>
-            || detail::time_budget<DescentParameters>)
-        {
-            if (!std::isfinite(first_descent_share) || first_descent_share <= 0.0
-                || first_descent_share >= 1.0)
-            {
-                return config::validation_result::failure(
-                    "first_descent_share must be in the open interval (0, 1) when "
-                    "there are reheats");
-            }
-        }
-        return config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 

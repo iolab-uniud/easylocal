@@ -283,6 +283,14 @@ reviewed by hand before tagging.
 
 ### Runners and solvers
 
+- The real parameters of Great Deluge, Simulated Annealing and the tabu
+  searches with no upper bound (the levels, the temperatures, the running
+  time of `TimeBased`, `reheat_ratio`, `increase`, the fluctuations,
+  `aspiration_level`, `quality`) exclude infinity in their domains
+  (`(0, unlimited)`, `[1, unlimited)`), instead of a check of their own in
+  `validate()`: an infinite value is reported as out of its range, by the
+  block and by a configuration (`expected a value in (0, unlimited), got
+  inf`), and `--help` lists the domain as it is.
 - **Breaking:** the Pareto archive keeps one point per non-dominated cost by
   default, the first reached: it kept every distinct solution of equal cost,
   an unbounded front that made each offer scan a whole plateau (Hill Climbing
