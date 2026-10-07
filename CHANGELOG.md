@@ -326,7 +326,7 @@ reviewed by hand before tagging.
   time of `TimeBased`, `reheat_ratio`, `increase`, the fluctuations,
   `aspiration_level`, `quality`) exclude infinity in their domains
   (`(0, unlimited)`, `[1, unlimited)`), instead of a check of their own in
-  `validate()`: an infinite value is reported as out of its range, by the
+  `validate()`: an infinite value is reported as out of its domain, by the
   block and by a configuration (`expected a value in (0, unlimited), got
   inf`), and `--help` lists the domain as it is.
 - The best cost of a run in progress:

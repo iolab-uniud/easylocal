@@ -78,8 +78,8 @@ void expect_finite(
     Block block{};
     set_infinite(block, std::numeric_limits<double>::infinity());
     const auto validation = block.validate();
-    const std::string expected = std::string{field} + " is out of its range";
-    bool rejected = !validation && validation.message.ends_with(expected);
+    const std::string expected = std::string{field} + ": expected a value in";
+    bool rejected = !validation && validation.message.contains(expected);
     config::parameter_set set;
     set.add(name, block);
     const auto diagnostics = set.validate().diagnostics;
