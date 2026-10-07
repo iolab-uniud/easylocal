@@ -179,11 +179,11 @@ reports them. In a terminal too small for a page, the page scrolls to the
 focused control (Tab, arrows).
 
 `cli::run` parses the command line and a `--config` file with
-`config::load_and_apply`: its own block `cli::parameters` at the root
+`config::load_and_apply`: its own block `cli::CommandLineParameters` at the root
 (`instance`, `seed`, `runner`, `start`, `solution`, `output`, `target`,
 `timeout`, `max_evaluations`, `report`, `trace`), the
-app's `configuration()`, and `options.parameters`, the program's own set;
-`options.defaults`, a `cli::parameters`, gives the values of its switches
+app's `configuration()`, and `options.program_parameters`, the program's own set;
+`options.defaults`, a `cli::CommandLineParameters`, gives the values of its switches
 before the command line, and `options.read_config` reads the `--config` file:
 `config::load_config_file` by default, `config::load_toml_file` for a TOML
 file (TOML adapter). It
@@ -231,7 +231,7 @@ corresponding switches are used.
 `options.tuning`, a vector of `tuning_range{path, domain}`, gives the values
 to try for parameters instead of the domains of their schemas; a range must
 lie within the declared domain and name a parameter of the app or of
-`options.parameters`, or the export fails with status 2.
+`options.program_parameters`, or the export fails with status 2.
 
 `write_irace_stub(irace_stub) -> irace_stub_result` writes the scenario:
 
@@ -310,7 +310,7 @@ session.run("sa", run.options<Cost>(session.input()));
 are set, added to `base` (such as `with(control)`); `run.target_cost<Cost>(input)`
 gives the target alone as a `std::optional<Cost>`, empty when none is set, for
 programs that run a runner or a solver directly. Their errors name the field.
-`cli::parameters::run_parameters()` gives the block of `cli::run`'s switches.
+`cli::CommandLineParameters::run_parameters()` gives the block of `cli::run`'s switches.
 
 The target stays text until the Input is known, because a problem may read
 its costs with its own `read_cost`. A program that runs a runner without a

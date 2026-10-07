@@ -149,7 +149,7 @@ Captured run_app(
     App application,
     std::initializer_list<std::string> arguments,
     easylocal::config::parameter_set own = {},
-    easylocal::cli::parameters defaults = {})
+    easylocal::cli::CommandLineParameters defaults = {})
 {
     std::vector<std::string> storage{"cli_run"};
     storage.insert(storage.end(), arguments);
@@ -165,7 +165,7 @@ Captured run_app(
         static_cast<int>(argv.size()),
         argv.data(),
         {.defaults = std::move(defaults),
-            .parameters = std::move(own),
+            .program_parameters = std::move(own),
             .out = &out,
             .err = &err});
     captured.out = out.str();
@@ -176,7 +176,7 @@ Captured run_app(
 Captured run(
     std::initializer_list<std::string> arguments,
     easylocal::config::parameter_set own = {},
-    easylocal::cli::parameters defaults = {})
+    easylocal::cli::CommandLineParameters defaults = {})
 {
     return run_app(tsp_app(), arguments, std::move(own), std::move(defaults));
 }

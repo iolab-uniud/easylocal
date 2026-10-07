@@ -156,7 +156,7 @@ int main()
 
     expect_domains<easylocal::RunParameters>("run");
     expect_domains<easylocal::TuningParameters>("tuning");
-    expect_domains<easylocal::cli::parameters>("cli");
+    expect_domains<easylocal::cli::CommandLineParameters>("cli");
 
     expect_requirement(
         "random_tenure",

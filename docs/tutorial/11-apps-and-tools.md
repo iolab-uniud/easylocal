@@ -223,10 +223,10 @@ termination completed
   a missing instance) and 1 when the run fails, for example on an unreadable
   file.
 - Parameters of the program's own take part as a parameter set, parsed with
-  the others: `el::cli::run(application, argc, argv, {.parameters = own})`,
+  the others: `el::cli::run(application, argc, argv, {.program_parameters = own})`,
   where `own` holds blocks that outlive the call (chapter 9).
 - The values of the switches when the command line does not give them come
-  from `defaults`, a `cli::parameters`: the examples of `examples/` start
+  from `defaults`, a `cli::CommandLineParameters`: the examples of `examples/` start
   from their own instance with
   `{.defaults = {.instance = "...", .seed = 2026, .start = "initial"}}`.
 - A program that needs more, such as several runs or a solver, builds the same

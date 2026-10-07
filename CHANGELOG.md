@@ -21,6 +21,12 @@ reviewed by hand before tagging.
   functions of `<easylocal/app/io.hpp>`: `read_input(in)`, `read_solution(in)`
   and `write_solution(out)` replace the stream overloads of `load_input`,
   `load_solution` and `save_solution`, which take only a file path.
+- **Breaking:** the block of `cli::run`'s switches, `cli::parameters`, is
+  `cli::CommandLineParameters`, named as the other parameter blocks, and the
+  program's own parameter set in `cli::options` is `program_parameters`
+  (formerly `parameters`): `cli::run(app, argc, argv,
+  {.program_parameters = own})`. The stability page says
+  that `cli::options` is Stable but for its Experimental `tuning`.
 
 ### Checking tools
 

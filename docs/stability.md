@@ -25,9 +25,10 @@ release).
 | **Experimental** | The optional adapters, `adapters/` (TOML, TextUI, REST): their headers, the TextUI options and layout, the REST routes and JSON envelopes. Tracing beyond the tracer protocol, `trace/`: the events and their fields, the recorders, the JSONL and ELTR formats, `scripts/eltr.py` and its output. The export to irace (`app/tuning.hpp`: `--tuning.irace`, `--tuning.print`, `TuningParameters`, `tuning_range`, and so `cli::options::tuning`) and the files it writes. Logging (`utils/logging.hpp`), which the library does not use yet. The `with_*` spellings of the composition (`with_timeout`, `with_attempts`, ...), which are to leave the public API before 4.0.0. | May change in a minor release, always noted in the [changelog](https://github.com/iolab-uniud/easylocal/blob/main/CHANGELOG.md). |
 | **Internal** | `detail` namespaces, `*/detail/` headers, `EASYLOCAL_DETAIL_*` macros, anything not documented. | None. |
 
-A Stable declaration that uses an Experimental one, such as
-`cli::options::tuning`, a list of `tuning_range`, is as stable as the
-Experimental one. The levels are reviewed once more before 4.0.0, which may
+A Stable declaration that uses an Experimental one is as stable as the
+Experimental one: `cli::options` and `cli::CommandLineParameters` are Stable,
+but the field `cli::options::tuning`, a list of `tuning_range`, is
+Experimental, like the export to irace. The levels are reviewed once more before 4.0.0, which may
 still move parts from one to another.
 
 Adding members to stable types, overloads, concepts' optional capabilities,

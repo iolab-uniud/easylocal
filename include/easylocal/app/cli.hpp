@@ -48,14 +48,14 @@
 namespace easylocal::cli
 {
 
-/// The command line of cli::run: --instance, --seed, --runner, --start,
-/// --solution, --output, --target, --timeout, --max_evaluations, --report and
-/// --trace.
+/// The parameters of the command line of cli::run: --instance, --seed,
+/// --runner, --start, --solution, --output, --target, --timeout,
+/// --max_evaluations, --report and --trace.
 ///
 /// The app's parameters come next to them: `--runners.<name>.*`, `--cost.*` and
 /// `--neighborhood.*`. Every field has an initializer, so that designated
 /// initializers, as in options::defaults, may name only some of them.
-struct parameters
+struct CommandLineParameters
 {
     /// The Input file; it must be set to run, not to write a tuning scenario.
     std::filesystem::path instance{};
@@ -92,42 +92,42 @@ struct parameters
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"instance", &parameters::instance>(
+            config::field<"instance", &CommandLineParameters::instance>(
                 "Input file",
                 easylocal::unlimited),
-            config::field<"seed", &parameters::seed>(
+            config::field<"seed", &CommandLineParameters::seed>(
                 "Seed of the random generator",
                 easylocal::unlimited),
-            config::field<"runner", &parameters::runner>(
+            config::field<"runner", &CommandLineParameters::runner>(
                 "Name of the runner (empty: the first registered)",
                 easylocal::unlimited),
-            config::field<"start", &parameters::start>(
+            config::field<"start", &CommandLineParameters::start>(
                 "Starting solution: random or initial (empty: random when the "
                 "problem has random solutions)",
                 config::one_of("", "random", "initial")),
-            config::field<"solution", &parameters::solution>(
+            config::field<"solution", &CommandLineParameters::solution>(
                 "Starting solution read from this file, instead of start",
                 easylocal::unlimited),
-            config::field<"output", &parameters::output>(
+            config::field<"output", &CommandLineParameters::output>(
                 "Solution file, with the points of a front in numbered files next "
                 "to it (empty: standard output)",
                 easylocal::unlimited),
-            config::field<"target", &parameters::target>(
+            config::field<"target", &CommandLineParameters::target>(
                 "Stop when the solution reaches this cost, such as 0 or "
                 "[0, 120] (empty: no target); a pipeline gives it to its last "
                 "stage, unless that stage has a target of its own",
                 easylocal::unlimited),
-            config::field<"timeout", &parameters::timeout>(
+            config::field<"timeout", &CommandLineParameters::timeout>(
                 "Stop the run after this many seconds, such as 10 or 2.5 (empty: no "
                 "limit)",
                 easylocal::unlimited),
-            config::field<"max_evaluations", &parameters::max_evaluations>(
+            config::field<"max_evaluations", &CommandLineParameters::max_evaluations>(
                 "Stop the run after this many evaluations (unlimited: no budget "
                 "beyond the runner's own)",
                 config::range(0, easylocal::unlimited)),
-            config::field<"report", &parameters::report>(
+            config::field<"report", &CommandLineParameters::report>(
                 "Print the value of each cost component, and its description"),
-            config::field<"trace", &parameters::trace>(
+            config::field<"trace", &CommandLineParameters::trace>(
                 "Record the trace of the run to this file, JSON Lines for a .jsonl "
                 "name, ELTR otherwise (empty: no trace)",
                 easylocal::unlimited));
@@ -160,11 +160,11 @@ struct options
 {
     /// The values of the switches before the command line, such as an
     /// instance or a runner to use when none is given.
-    cli::parameters defaults{};
+    CommandLineParameters defaults{};
 
     /// The program's own parameters, parsed with the others; they refer to
     /// blocks that must outlive the call.
-    config::parameter_set parameters{};
+    config::parameter_set program_parameters{};
     /// The values to try for parameters when tuning, by path, instead of the
     /// domains of their schemas: what --tuning.irace writes as their ranges.
     std::vector<tuning_range> tuning{};
@@ -370,7 +370,7 @@ inline int write_irace(
     std::ostream& out,
     std::ostream& err,
     const std::string_view program,
-    const parameters& command_line,
+    const CommandLineParameters& command_line,
     const TuningParameters& tuning,
     const options& settings,
     const std::vector<config::parameter_info>& defaults,
@@ -487,12 +487,12 @@ int run(App application, const int argc, char* argv[], options settings = {})
     auto& out = *settings.out;
     auto& err = *settings.err;
 
-    parameters command_line = settings.defaults;
+    CommandLineParameters command_line = settings.defaults;
     TuningParameters tuning;
     config::parameter_set configuration;
     configuration.add(command_line);
     configuration.add(application.configuration());
-    configuration.add(settings.parameters);
+    configuration.add(settings.program_parameters);
     configuration.add("tuning", tuning);
     const auto defaults = configuration.parameters();
 
@@ -518,11 +518,11 @@ int run(App application, const int argc, char* argv[], options settings = {})
         // write_irace_stub leaves out the cost's and the read-only ones.
         for (auto& info : application.configuration().parameters())
             tunable.push_back(std::move(info));
-        for (auto& info : settings.parameters.parameters())
+        for (auto& info : settings.program_parameters.parameters())
             tunable.push_back(std::move(info));
         for (auto& requirement : application.configuration().requirements())
             requirements.push_back(std::move(requirement));
-        for (auto& requirement : settings.parameters.requirements())
+        for (auto& requirement : settings.program_parameters.requirements())
             requirements.push_back(std::move(requirement));
     }
     // The set refers to the app, which moves into the session below.

@@ -286,7 +286,7 @@ Captured run(
         tsp_app(),
         static_cast<int>(argv.size()),
         argv.data(),
-        {.parameters = std::move(own),
+        {.program_parameters = std::move(own),
             .tuning = std::move(ranges),
             .out = &out,
             .err = &err});

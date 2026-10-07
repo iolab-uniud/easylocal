@@ -840,7 +840,7 @@ termination local optimum
 
 Parameters of the program's own, such as the biases of EasyLocal 3 programs
 that were not runner parameters, are given to `cli::run` as a parameter set,
-`el::cli::run(application, argc, argv, {.parameters = own})`, and parsed with
+`el::cli::run(application, argc, argv, {.program_parameters = own})`, and parsed with
 the others ([chapter 11](tutorial/11-apps-and-tools.md)).
 
 The branch that opened the tester, `tester.RunMainMenu()`, is the subject of
