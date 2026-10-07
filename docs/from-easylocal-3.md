@@ -468,8 +468,8 @@ private:
   This changes what the stochastic runners accept. In EasyLocal 3 the hard
   cost was weighted into one number, so Simulated Annealing accepted, now and
   then, a move that worsened the hard cost for a soft gain, and crossed
-  infeasible regions; with `hard_soft` every hard degradation is worse than
-  any soft one, and is accepted only with the probability of its own size.
+  infeasible regions; with `hard_soft` the delta of a hard degradation is
+  infinite, and the Metropolis criterion never accepts it.
   To keep EasyLocal 3's behaviour, write the cost as one weighted sum,
   `el::cost::sum(el::component<H1>() * 1000, ..., el::component<S1>())`,
   and check that the result is feasible.

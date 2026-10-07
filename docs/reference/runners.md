@@ -278,7 +278,12 @@ iterations. A custom policy opts in by modelling
 `calibrate(std::span<const double> deltas)`.
 
 `runners::MetropolisAcceptance` (the default) requires `cost::delta` (see
-[Cost](cost.md)). Another acceptance criterion is a value with
+[Cost](cost.md)). On a `cost::hard_soft` cost the delta of a move that worsens
+the hard cost is infinite, so Simulated Annealing never accepts it, at any
+temperature, and cannot cross an infeasible region as EasyLocal 3's
+`HARD_WEIGHT` let it do. To cross one, write the cost as a single weighted sum,
+`cost::sum(component<H>() * 1000, component<S>())`, and check that the result
+is feasible. Another acceptance criterion is a value with
 `accept(candidate, current, temperature, rng) -> bool`, which
 `acceptance_policy_for<Acceptance, Cost, RNG>` checks. The parameters of `SimulatedAnnealing<Policy>` are
 `SimulatedAnnealingParameters<Policy::parameters_type>`, the policy's under the

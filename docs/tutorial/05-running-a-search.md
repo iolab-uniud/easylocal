@@ -116,7 +116,12 @@ const auto annealed = sa_search.run(sa_search.initial_solution(), rng);
 
 Metropolis acceptance needs the numeric difference of two costs,
 `cost::delta(candidate, current)`: arithmetic costs and `cost::hierarchical`
-provide it, `cost::lexicographic` deliberately does not.
+provide it, `cost::lexicographic` deliberately does not. The delta of a
+`cost::hard_soft` cost is infinite when the hard cost worsens, so Simulated
+Annealing never accepts such a move: the hard cost of its current solution
+never increases. To let it cross infeasible regions, as EasyLocal 3's
+`HARD_WEIGHT` did, write the cost as one weighted sum,
+`cost::sum(component<Hard>() * 1000, component<Soft>())`.
 
 ## Results
 
