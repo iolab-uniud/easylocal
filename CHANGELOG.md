@@ -9,6 +9,8 @@ reviewed by hand before tagging.
 
 ## [Unreleased]
 
+## [4.0.0-alpha.3] — not yet released
+
 ## [4.0.0-alpha.2] — 2026-10-07
 
 ### Problem model
