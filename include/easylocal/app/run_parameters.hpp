@@ -16,6 +16,7 @@
 
 #include <cmath>
 #include <concepts>
+#include <cstddef>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -154,11 +155,12 @@ struct RunParameters
             throw std::invalid_argument{
                 "timeout: '" + timeout + "' is not a non-negative number of seconds"};
         }
-        auto result = base.without_target();
-        if (*seconds)
-            result = result.timeout(**seconds);
-        if (!max_evaluations.is_unlimited())
-            result = result.max_evaluations(max_evaluations);
+        const auto result = detail::with_limits(
+            base.without_target(),
+            *seconds,
+            max_evaluations.is_unlimited()
+                ? std::nullopt
+                : std::optional<std::size_t>{max_evaluations});
         run_options<Tracer, Cost> options{
             .control = result.control,
             .tracer = result.tracer,

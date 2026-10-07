@@ -1843,14 +1843,15 @@ private:
                     try
                     {
                         // One run path, with or without a target.
-                        easylocal::run_options<
-                            easylocal::trace::null_tracer,
-                            typename tester_type::cost_type>
-                            options{.control = &control, .target = std::move(target)};
-                        if (seconds)
-                            options = options.timeout(*seconds);
-                        if (evaluations)
-                            options = options.max_evaluations(*evaluations);
+                        const auto options = easylocal::detail::with_limits(
+                            easylocal::run_options<
+                                easylocal::trace::null_tracer,
+                                typename tester_type::cost_type>{
+                                .control = &control,
+                                .target = std::move(target),
+                            },
+                            seconds,
+                            evaluations);
                         auto result =
                             application
                                 .run(name, *input, std::move(solution), run_rng, options);

@@ -1081,14 +1081,13 @@ private:
                                 session.use_random_solution(session.rng());
                         }
                         // One run path, with or without a target.
-                        easylocal::run_options<trace::null_tracer, cost_type> options{
-                            .control = &control,
-                            .target = record->target,
-                        };
-                        if (record->timeout)
-                            options = options.timeout(*record->timeout);
-                        if (record->max_evaluations)
-                            options = options.max_evaluations(*record->max_evaluations);
+                        const auto options = easylocal::detail::with_limits(
+                            easylocal::run_options<trace::null_tracer, cost_type>{
+                                .control = &control,
+                                .target = record->target,
+                            },
+                            record->timeout,
+                            record->max_evaluations);
                         // The runner exists: submit_run checked it on this app.
                         [[maybe_unused]] const bool ran = session.run(runner, options);
                         assert(ran);

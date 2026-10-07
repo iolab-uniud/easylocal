@@ -333,6 +333,27 @@ inline run_options<trace::null_tracer> timeout(const double seconds)
     return run_options<trace::null_tracer>{}.timeout(seconds);
 }
 
+namespace detail
+{
+
+// The options with the limits a frontend reads, each when it is set: a time
+// limit in seconds and an evaluation budget (the TextUI, REST, RunParameters).
+template<class Tracer, class Target>
+[[nodiscard]]
+run_options<Tracer, Target> with_limits(
+    run_options<Tracer, Target> options,
+    const std::optional<double> seconds,
+    const std::optional<std::size_t> evaluations)
+{
+    if (seconds)
+        options = options.timeout(*seconds);
+    if (evaluations)
+        options = options.max_evaluations(*evaluations);
+    return options;
+}
+
+} // namespace detail
+
 /// One execution of a search algorithm.
 ///
 /// search_run exposes the search context (neighborhood, evaluation, cost
