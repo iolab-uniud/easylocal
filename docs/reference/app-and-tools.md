@@ -363,12 +363,12 @@ flowchart TB
 | --- | --- |
 | `Session{app, input, seed}` | a session on `input`, which it owns; another Input is another session |
 | `Session{app, std::shared_ptr<const Input>, seed}` | a session on an Input it shares with other owners, without copying it |
-| `Session{app[, seed]}` | a session without an Input yet, for frontends that load one (`set_input`, `load_input`) |
+| `Session{app[, seed]}` | a session without an Input yet, for frontends that load one (`set_input`, `read_input`, `load_input`) |
 
 | Commands | |
 | --- | --- |
-| Input | `set_input`, `load_input` (the I/O hooks of [Problem model](problem-model.md#optional-hooks)), `input`, `has_input`, `input_handle` (the shared Input, null without one) |
-| Solution | `use_initial_solution`, `use_random_solution(rng)`, `set_solution`, `load_solution`, `save_solution`, `solution`, `has_solution`, `is_valid`, `evaluate`, `check()` |
+| Input | `set_input`, `read_input(in)` from a stream, `load_input(path)` from a file (the I/O hooks of [Problem model](problem-model.md#optional-hooks)), `input`, `has_input`, `input_handle` (the shared Input, null without one) |
+| Solution | `use_initial_solution`, `use_random_solution(rng)`, `set_solution`, `read_solution(in)` and `write_solution(out)` on streams, `load_solution(path)` and `save_solution(path)` on files, `solution`, `has_solution`, `is_valid`, `evaluate`, `check()` |
 | Move | select with `use_first_move`, `use_next_move`, `use_first_improving_move`, `use_best_move`, `use_random_move(rng)` or `set_move`; then `has_move`, `move`, `move_is_valid`, `evaluate_move`, `evaluate_move_fully`, `move_evaluation_matches_full([tolerance])`, `apply_move` |
 | RNG | `rng()`, the session's generator, and `set_seed(seed)`; each run draws its own generator from it |
 | Neighborhood | `neighborhood_preview`, `neighborhood_statistics`, `check_neighborhood_costs([tolerance])` (the delta and the full costs agree by `equivalent` or within a `cost::tolerance`, 1e-9 by default), `check_move_independence` (needs `solutions_equal`: the SolutionManager's `equal` or `Solution::operator==`), `check_random_move_distribution(rng)` (needs `Move::operator==`); with a totally ordered cost these two compare a value only with those of the same cost, about linear in the moves, otherwise with all of them, quadratic. Each takes a `std::stop_token` as its last argument (none by default), stops at the next move once it is requested, and says so in its result's `stopped` |

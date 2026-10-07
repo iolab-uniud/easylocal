@@ -782,7 +782,7 @@ void a_problem_with_text_hooks_needs_no_codec()
     session.use_random_solution(session.rng());
     assert(session.run("sa", easylocal::max_evaluations(200)));
     std::ostringstream session_tour;
-    session.save_solution(session_tour);
+    session.write_solution(session_tour);
     assert(session_tour.str() == annealed_once);
 }
 

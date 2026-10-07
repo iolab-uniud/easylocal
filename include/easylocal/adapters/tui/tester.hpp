@@ -2359,7 +2359,7 @@ private:
             if (rendered.starts_with("<not printable"))
             {
                 std::ostringstream out;
-                tester_.save_solution(out);
+                tester_.write_solution(out);
                 rendered = out.str();
             }
         }

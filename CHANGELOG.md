@@ -17,6 +17,10 @@ reviewed by hand before tagging.
   in a search run: `Session::neighborhood_type` is
   `Session::neighborhood_explorer_type`, and `BoundApp::neighborhood()` is
   `BoundApp::neighborhood_explorer()`.
+- **Breaking:** a Session reads and writes streams with the verbs of the free
+  functions of `<easylocal/app/io.hpp>`: `read_input(in)`, `read_solution(in)`
+  and `write_solution(out)` replace the stream overloads of `load_input`,
+  `load_solution` and `save_solution`, which take only a file path.
 
 ### Checking tools
 

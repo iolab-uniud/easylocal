@@ -397,17 +397,17 @@ void static_member_io_has_priority()
         make_io_application<static_io::Input, static_io::Solution>("static-io")};
 
     std::istringstream input_stream{"5"};
-    session.load_input(input_stream);
+    session.read_input(input_stream);
     assert(session.input().value == 5);
     assert(session.input().source == 1);
 
     std::istringstream solution_stream{"7"};
-    session.load_solution(solution_stream);
+    session.read_solution(solution_stream);
     assert(session.solution().value == 12);
     assert(session.solution().source == 1);
 
     std::ostringstream out;
-    session.save_solution(out);
+    session.write_solution(out);
     assert(out.str() == "member:5:12");
 }
 
@@ -417,17 +417,17 @@ void adl_io_has_priority_over_stream_operators()
         make_io_application<adl_io::Input, adl_io::Solution>("adl-io")};
 
     std::istringstream input_stream{"11"};
-    session.load_input(input_stream);
+    session.read_input(input_stream);
     assert(session.input().value == 11);
     assert(session.input().source == 2);
 
     std::istringstream solution_stream{"4"};
-    session.load_solution(solution_stream);
+    session.read_solution(solution_stream);
     assert(session.solution().value == 15);
     assert(session.solution().source == 2);
 
     std::ostringstream out;
-    session.save_solution(out);
+    session.write_solution(out);
     assert(out.str() == "adl:11:15");
 }
 
@@ -437,17 +437,17 @@ void stream_operators_are_supported_as_fallbacks()
         make_io_application<stream_io::Input, stream_io::Solution>("stream-io")};
 
     std::istringstream input_stream{"13"};
-    session.load_input(input_stream);
+    session.read_input(input_stream);
     assert(session.input().value == 13);
     assert(session.input().source == 3);
 
     std::istringstream solution_stream{"6"};
-    session.load_solution(solution_stream);
+    session.read_solution(solution_stream);
     assert(session.solution().value == 19);
     assert(session.solution().source == 3);
 
     std::ostringstream out;
-    session.save_solution(out);
+    session.write_solution(out);
     assert(out.str() == "stream:19");
 }
 
@@ -492,15 +492,15 @@ void failed_reads_do_not_replace_current_state()
         make_io_application<stream_io::Input, stream_io::Solution>("failure-io")};
 
     std::istringstream good_input{"21"};
-    session.load_input(good_input);
+    session.read_input(good_input);
     std::istringstream good_solution{"2"};
-    session.load_solution(good_solution);
+    session.read_solution(good_solution);
 
     bool input_failed = false;
     try
     {
         std::istringstream bad_input{"not-a-number"};
-        session.load_input(bad_input);
+        session.read_input(bad_input);
     }
     catch (const std::runtime_error&)
     {
@@ -514,7 +514,7 @@ void failed_reads_do_not_replace_current_state()
     try
     {
         std::istringstream bad_solution{"not-a-number"};
-        session.load_solution(bad_solution);
+        session.read_solution(bad_solution);
     }
     catch (const std::runtime_error&)
     {

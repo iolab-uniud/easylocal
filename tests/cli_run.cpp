@@ -531,7 +531,7 @@ int main()
         session.use_random_solution(session.rng());
         assert(session.run("sa", easylocal::max_evaluations(300)));
         std::ostringstream tour;
-        session.save_solution(tour);
+        session.write_solution(tour);
         assert(first.out.starts_with(
             "cost " + easylocal::detail::report_text(session.evaluate()) + "\n"));
         assert(first.out.find(tour.str()) != std::string::npos);

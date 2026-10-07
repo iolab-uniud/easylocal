@@ -377,7 +377,7 @@ public:
 
     /// Reads the Input from a stream with the problem's read hook, as
     /// set_input.
-    void load_input(std::istream& in)
+    void read_input(std::istream& in)
         requires supports_input_loading
     {
         set_input(easylocal::read_input<input_type>(in));
@@ -395,7 +395,7 @@ public:
         if (!in)
             throw std::runtime_error{
                 "failed to open Input file: " + easylocal::detail::utf8_text(path)};
-        load_input(in);
+        read_input(in);
     }
 
     /// The Input; the session must have one.
@@ -460,7 +460,7 @@ public:
     }
 
     /// Reads the current solution from a stream with the problem's read hook.
-    void load_solution(std::istream& in)
+    void read_solution(std::istream& in)
         requires supports_solution_loading
     {
         assert(input_);
@@ -476,11 +476,11 @@ public:
         if (!in)
             throw std::runtime_error{
                 "failed to open Solution file: " + easylocal::detail::utf8_text(path)};
-        load_solution(in);
+        read_solution(in);
     }
 
     /// Writes the current solution to a stream with the problem's write hook.
-    void save_solution(std::ostream& out) const
+    void write_solution(std::ostream& out) const
         requires supports_solution_saving
     {
         assert(input_);
