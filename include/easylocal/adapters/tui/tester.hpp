@@ -1569,6 +1569,7 @@ private:
                     .body = out.str(),
                     .kind = status_kind::success,
                     .status = "Neighborhood listed",
+                    .error = {},
                 };
             });
     }
@@ -1591,6 +1592,7 @@ private:
                         + "Invalid: " + std::to_string(result.invalid),
                     .kind = status_kind::success,
                     .status = "Neighborhood statistics computed",
+                    .error = {},
                 };
             });
     }
@@ -1614,6 +1616,7 @@ private:
                     .status = consistent
                         ? "Neighborhood costs consistent"
                         : "Neighborhood cost check found errors",
+                    .error = {},
                 };
             });
     }
@@ -1638,6 +1641,7 @@ private:
                         ? status_kind::success
                         : status_kind::warning,
                     .status = "Move independence check completed",
+                    .error = {},
                 };
             });
     }
@@ -1667,6 +1671,7 @@ private:
                         ? status_kind::success
                         : status_kind::warning,
                     .status = "Random move distribution sampled",
+                    .error = {},
                 };
             });
     }
