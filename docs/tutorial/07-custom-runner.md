@@ -75,7 +75,7 @@ and the trace events. The algorithm only describes its logic:
 | --- | --- |
 | `limit_evaluations(n)` | evaluation budget, including the initial evaluation: a count, or `easylocal::unlimited` |
 | `start(solution)` | first evaluation; emits `run_started`, reports progress |
-| `should_stop()` | true on cancellation or exhausted budget; records the reason |
+| `should_stop()` | true on cancellation, a reached target cost, an exhausted evaluation budget or a passed time limit; records the reason |
 | `moves(solution)`, `random_move(solution, rng)` | neighborhood access |
 | `evaluate_move(solution, current, move)` | counts, emits `move_evaluated`, reports progress |
 | `commit(solution, current, candidate, move)` | applies the move, emits `move_accepted` |

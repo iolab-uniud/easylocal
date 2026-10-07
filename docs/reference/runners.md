@@ -353,7 +353,7 @@ Extra `run` arguments (an RNG, for example) are passed through
 | `start(solution) -> evaluation` | first evaluation, `run_started`, progress |
 | `evaluate_solution(solution) -> evaluation` | another solution (a population, a history): counts, traced as visited, offered to the archive |
 | `front()` | with a `cost::pareto` cost, the archive of the non-dominated solutions reached |
-| `should_stop() -> bool` | cancellation, reached target or exhausted budget; the reason is recorded |
+| `should_stop() -> bool` | cancellation, a reached target cost, an exhausted evaluation budget or a passed time limit; the reason is recorded |
 | `moves(solution)`, `random_move(solution, rng)` | neighborhood access; unions emit selection events |
 | `evaluate_move(solution, current, move) -> candidate` | counts, `move_evaluated`, progress |
 | `commit(solution, current, candidate, move)` | applies, `move_accepted` |
