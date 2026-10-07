@@ -1104,6 +1104,28 @@ void session_reports_neighborhood_diagnostics()
     assert(distribution.out_of_neighborhood == 0);
     assert(distribution.unseen == 0);
     assert(distribution.min_frequency <= distribution.max_frequency);
+    assert(
+        !preview.stopped && !statistics.stopped && !costs.stopped && !independence.stopped
+        && !distribution.stopped);
+
+    // A stop request ends each scan before its next move: here before the
+    // first one.
+    std::stop_source stop;
+    stop.request_stop();
+    const auto stopped_preview = session.neighborhood_preview(1, stop.get_token());
+    assert(stopped_preview.stopped && stopped_preview.moves == 0);
+    assert(stopped_preview.entries.empty());
+    const auto stopped_statistics = session.neighborhood_statistics(stop.get_token());
+    assert(stopped_statistics.stopped && stopped_statistics.moves == 0);
+    const auto stopped_costs = session.check_neighborhood_costs({}, stop.get_token());
+    assert(stopped_costs.stopped && stopped_costs.moves == 0);
+    const auto stopped_independence = session.check_move_independence(stop.get_token());
+    assert(stopped_independence.stopped && stopped_independence.moves == 0);
+    const auto stopped_distribution =
+        session.check_random_move_distribution(rng, 8, stop.get_token());
+    assert(stopped_distribution.stopped);
+    assert(stopped_distribution.neighborhood_size == 0);
+    assert(stopped_distribution.samples == 0);
 }
 
 // A SolutionManager that identifies every two assignments, with a hash that

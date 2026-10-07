@@ -249,6 +249,16 @@ enum class file_target
     solution,
 };
 
+// The result of a Move-page diagnostic, which its worker computes: the text of
+// its window and the status line, or the error that stopped it.
+struct diagnostic_outcome
+{
+    std::string body;
+    status_kind kind{status_kind::success};
+    std::string status;
+    std::string error;
+};
+
 template<class Solution>
 struct async_runner_result
 {
@@ -407,12 +417,19 @@ public:
         root = Modal(root, input_viewer, &input_visible_);
         root = Modal(root, solution_viewer, &solution_visible_);
         root = Modal(root, parameters_window(), &parameters_visible_);
-        root = CatchEvent(root, [this, &app](const Event& event) {
+        const Component pages = root;
+        root = CatchEvent(pages, [this, &app, pages](const Event& event) {
             // Any event but a run's progress may change the session: the
             // next frame computes what it shows again.
             if (event != Event::Custom)
                 invalidate_view();
-            return handle_key(app, event);
+            if (!handle_key(app, event))
+                pages->OnEvent(event);
+            // A key or a click may leave the Move page, which stops its
+            // diagnostic.
+            if (diagnostic_future_.valid() && current_page() != tester_page::move)
+                cancel_diagnostic();
+            return true;
         });
 
         // The progress modal normally keeps the loop running until the run
@@ -437,6 +454,11 @@ private:
 
         ~worker_guard()
         {
+            if (frontend_.diagnostic_worker_.joinable())
+            {
+                frontend_.diagnostic_worker_.request_stop();
+                frontend_.diagnostic_worker_.join();
+            }
             if (frontend_.run_worker_.joinable())
             {
                 frontend_.run_worker_.request_stop();
@@ -838,6 +860,13 @@ private:
     bool handle_key(ftxui::App& app, const ftxui::Event& event)
     {
         using namespace ftxui;
+        if (event == Event::Custom && diagnostic_future_.valid()
+            && diagnostic_future_.wait_for(std::chrono::seconds{0})
+                == std::future_status::ready)
+        {
+            finish_diagnostic();
+            return true;
+        }
         if (event == Event::Custom && run_future_.valid())
         {
             // The next report may post again.
@@ -1521,25 +1550,29 @@ private:
     {
         if (!require_solution("List neighbors"))
             return;
-        perform("List neighbors", [this] {
-            const auto result = tester_.neighborhood_preview(
-                options_.max_diagnostic_entries);
-            std::ostringstream out;
-            out << "Neighbors: " << result.moves;
-            if (result.invalid > 0)
-                out << " (" << result.invalid << " invalid, not listed)";
-            for (const auto& entry : result.entries)
-            {
-                out << '\n' << value_text(entry.move) << " => " << value_text(entry.cost);
-            }
-            const auto valid = result.moves - result.invalid;
-            if (result.entries.size() < valid)
-            {
-                out << "\n... " << (valid - result.entries.size()) << " more";
-            }
-            show_diagnostic("Neighborhood list", out.str());
-            set_status(status_kind::success, "Neighborhood listed");
-        });
+        start_diagnostic(
+            "List neighbors",
+            "Neighborhood list",
+            [max_entries = options_.max_diagnostic_entries](
+                const tester_type& session,
+                const std::stop_token& stop) {
+                const auto result = session.neighborhood_preview(max_entries, stop);
+                std::ostringstream out;
+                out << "Neighbors: " << result.moves;
+                if (result.invalid > 0)
+                    out << " (" << result.invalid << " invalid, not listed)";
+                for (const auto& entry : result.entries)
+                    out << '\n'
+                        << value_text(entry.move) << " => " << value_text(entry.cost);
+                const auto valid = result.moves - result.invalid;
+                if (result.entries.size() < valid)
+                    out << "\n... " << (valid - result.entries.size()) << " more";
+                return diagnostic_outcome{
+                    .body = out.str(),
+                    .kind = status_kind::success,
+                    .status = "Neighborhood listed",
+                };
+            });
     }
 
     void neighborhood_statistics()
@@ -1547,17 +1580,21 @@ private:
     {
         if (!require_solution("Neighborhood statistics"))
             return;
-        perform("Neighborhood statistics", [this] {
-            const auto result = tester_.neighborhood_statistics();
-            show_diagnostic(
-                "Neighborhood statistics",
-                "Moves: " + std::to_string(result.moves) + "\n" +
-                    "Improving: " + std::to_string(result.improving) + "\n" +
-                    "Sideways: " + std::to_string(result.sideways) + "\n" +
-                    "Worsening: " + std::to_string(result.worsening) + "\n" +
-                    "Invalid: " + std::to_string(result.invalid));
-            set_status(status_kind::success, "Neighborhood statistics computed");
-        });
+        start_diagnostic(
+            "Neighborhood statistics",
+            "Neighborhood statistics",
+            [](const tester_type& session, const std::stop_token& stop) {
+                const auto result = session.neighborhood_statistics(stop);
+                return diagnostic_outcome{
+                    .body = "Moves: " + std::to_string(result.moves) + "\n"
+                        + "Improving: " + std::to_string(result.improving) + "\n"
+                        + "Sideways: " + std::to_string(result.sideways) + "\n"
+                        + "Worsening: " + std::to_string(result.worsening) + "\n"
+                        + "Invalid: " + std::to_string(result.invalid),
+                    .kind = status_kind::success,
+                    .status = "Neighborhood statistics computed",
+                };
+            });
     }
 
     void check_neighborhood_costs()
@@ -1565,21 +1602,22 @@ private:
     {
         if (!require_solution("Check neighborhood costs"))
             return;
-        perform("Check neighborhood costs", [this] {
-            const auto result = tester_.check_neighborhood_costs();
-            show_diagnostic(
-                "Neighborhood cost check",
-                "Moves: " + std::to_string(result.moves) + "\n" +
-                    "Mismatches: " + std::to_string(result.mismatches) + "\n" +
-                    "Invalid: " + std::to_string(result.invalid));
-            set_status(
-                result.mismatches == 0 && result.invalid == 0
-                    ? status_kind::success
-                    : status_kind::error,
-                result.mismatches == 0 && result.invalid == 0
-                    ? "Neighborhood costs consistent"
-                    : "Neighborhood cost check found errors");
-        });
+        start_diagnostic(
+            "Check neighborhood costs",
+            "Neighborhood cost check",
+            [](const tester_type& session, const std::stop_token& stop) {
+                const auto result = session.check_neighborhood_costs({}, stop);
+                const bool consistent = result.mismatches == 0 && result.invalid == 0;
+                return diagnostic_outcome{
+                    .body = "Moves: " + std::to_string(result.moves) + "\n"
+                        + "Mismatches: " + std::to_string(result.mismatches) + "\n"
+                        + "Invalid: " + std::to_string(result.invalid),
+                    .kind = consistent ? status_kind::success : status_kind::error,
+                    .status = consistent
+                        ? "Neighborhood costs consistent"
+                        : "Neighborhood cost check found errors",
+                };
+            });
     }
 
     void check_move_independence()
@@ -1587,20 +1625,23 @@ private:
     {
         if (!require_solution("Check move independence"))
             return;
-        perform("Check move independence", [this] {
-            const auto result = tester_.check_move_independence();
-            show_diagnostic(
-                "Move independence",
-                "Moves: " + std::to_string(result.moves) + "\n" +
-                    "Null moves: " + std::to_string(result.null_moves) + "\n" +
-                    "Repeated states: " + std::to_string(result.repeated_states) + "\n" +
-                    "Invalid: " + std::to_string(result.invalid));
-            set_status(
-                result.null_moves == 0 && result.repeated_states == 0 && result.invalid == 0
-                    ? status_kind::success
-                    : status_kind::warning,
-                "Move independence check completed");
-        });
+        start_diagnostic(
+            "Check move independence",
+            "Move independence",
+            [](const tester_type& session, const std::stop_token& stop) {
+                const auto result = session.check_move_independence(stop);
+                return diagnostic_outcome{
+                    .body = "Moves: " + std::to_string(result.moves) + "\n"
+                        + "Null moves: " + std::to_string(result.null_moves) + "\n"
+                        + "Repeated states: " + std::to_string(result.repeated_states)
+                        + "\n" + "Invalid: " + std::to_string(result.invalid),
+                    .kind = result.null_moves == 0 && result.repeated_states == 0
+                            && result.invalid == 0
+                        ? status_kind::success
+                        : status_kind::warning,
+                    .status = "Move independence check completed",
+                };
+            });
     }
 
     void check_random_distribution()
@@ -1608,25 +1649,113 @@ private:
     {
         if (!require_solution("Check random distribution"))
             return;
-        perform("Check random distribution", [this] {
-            const auto result = tester_.check_random_move_distribution(
-                tester_.rng(),
-                options_.random_distribution_rounds);
-            show_diagnostic(
-                "Random move distribution",
-                "Neighborhood size: " + std::to_string(result.neighborhood_size) + "\n" +
-                    "Samples: " + std::to_string(result.samples) + "\n" +
-                    "Frequency range: " + std::to_string(result.min_frequency) +
-                    ".." + std::to_string(result.max_frequency) + "\n" +
-                    "Unseen moves: " + std::to_string(result.unseen) + "\n" +
-                    "Outside neighborhood: " +
-                    std::to_string(result.out_of_neighborhood));
+        start_diagnostic(
+            "Check random distribution",
+            "Random move distribution",
+            [rounds = options_.random_distribution_rounds](
+                tester_type& session,
+                const std::stop_token& stop) {
+                const auto result =
+                    session.check_random_move_distribution(session.rng(), rounds, stop);
+                return diagnostic_outcome{
+                    .body = "Neighborhood size: "
+                        + std::to_string(result.neighborhood_size) + "\n" + "Samples: "
+                        + std::to_string(result.samples) + "\n" + "Frequency range: "
+                        + std::to_string(result.min_frequency) + ".."
+                        + std::to_string(result.max_frequency) + "\n" + "Unseen moves: "
+                        + std::to_string(result.unseen) + "\n" + "Outside neighborhood: "
+                        + std::to_string(result.out_of_neighborhood),
+                    .kind = result.out_of_neighborhood == 0 && result.unseen == 0
+                        ? status_kind::success
+                        : status_kind::warning,
+                    .status = "Random move distribution sampled",
+                };
+            });
+    }
+
+    // Runs scan(session, stop token) on a worker, on a session of its own with
+    // the current solution and an RNG seeded from the tester's, while the
+    // event loop goes on; its window opens when it ends. Another diagnostic,
+    // a move applied or leaving the Move page stops it.
+    template<class Scan>
+    void start_diagnostic(std::string label, std::string title, Scan scan)
+    {
+        cancel_diagnostic();
+        try
+        {
+            auto application = tester_.app();
+            auto input = tester_.input_handle();
+            auto solution = tester_.solution();
+            const auto seed = tester_.rng()();
+            std::promise<diagnostic_outcome> promise;
+            diagnostic_future_ = promise.get_future();
+            auto* event_app = event_app_;
+            diagnostic_worker_ = std::jthread(
+                [application = std::move(application),
+                    input = std::move(input),
+                    solution = std::move(solution),
+                    seed,
+                    scan = std::move(scan),
+                    promise = std::move(promise),
+                    event_app](std::stop_token stop_token) mutable {
+                    diagnostic_outcome outcome;
+                    try
+                    {
+                        tester_type
+                            session{std::move(application), std::move(input), seed};
+                        session.set_solution(std::move(solution));
+                        outcome = scan(session, stop_token);
+                    }
+                    catch (const std::exception& error)
+                    {
+                        outcome.error = error.what();
+                    }
+                    catch (...)
+                    {
+                        outcome.error = "unknown error";
+                    }
+                    promise.set_value(std::move(outcome));
+                    if (event_app != nullptr)
+                        event_app->PostEvent(ftxui::Event::Custom);
+                });
+            diagnostic_label_ = std::move(label);
+            diagnostic_pending_title_ = std::move(title);
             set_status(
-                result.out_of_neighborhood == 0 && result.unseen == 0
-                    ? status_kind::success
-                    : status_kind::warning,
-                "Random move distribution sampled");
-        });
+                status_kind::info,
+                diagnostic_label_ + ": computing (leave the page to stop)");
+        }
+        catch (const std::exception& error)
+        {
+            diagnostic_future_ = {};
+            set_status(status_kind::error, label + ": " + error.what());
+        }
+    }
+
+    // Stops the running diagnostic, if any, and drops its result.
+    void cancel_diagnostic()
+    {
+        if (!diagnostic_future_.valid())
+            return;
+        diagnostic_worker_.request_stop();
+        if (diagnostic_worker_.joinable())
+            diagnostic_worker_.join();
+        diagnostic_future_ = {};
+        set_status(status_kind::info, diagnostic_label_ + ": stopped");
+    }
+
+    // Shows the result of the diagnostic that ended.
+    void finish_diagnostic()
+    {
+        auto outcome = diagnostic_future_.get();
+        if (diagnostic_worker_.joinable())
+            diagnostic_worker_.join();
+        if (!outcome.error.empty())
+        {
+            set_status(status_kind::error, diagnostic_label_ + ": " + outcome.error);
+            return;
+        }
+        show_diagnostic(diagnostic_pending_title_, std::move(outcome.body));
+        set_status(outcome.kind, std::move(outcome.status));
     }
 
     void apply_move()
@@ -1640,6 +1769,8 @@ private:
             set_status(status_kind::warning, "Apply move: selected move is invalid");
             return;
         }
+        // A diagnostic of the solution before the move would describe neither.
+        cancel_diagnostic();
         perform("Apply move", [this] {
             const auto before = tester_.evaluate();
             tester_.apply_move();
@@ -2915,6 +3046,11 @@ private:
     ftxui::Component target_input_;
     ftxui::Component timeout_input_;
     ftxui::Component evaluations_input_;
+    // The Move-page diagnostic running on its worker, if any.
+    std::jthread diagnostic_worker_{};
+    std::future<diagnostic_outcome> diagnostic_future_{};
+    std::string diagnostic_label_;
+    std::string diagnostic_pending_title_;
     std::jthread run_worker_{};
     std::future<async_runner_result<typename tester_type::solution_type>> run_future_{};
     std::shared_ptr<easylocal::shared_run_progress> run_progress_state_;

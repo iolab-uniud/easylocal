@@ -289,6 +289,14 @@ reviewed by hand before tagging.
 - `testing::check_report::check(condition, name, message)` also takes the
   message as a callable, called only when the check fails: the move checks
   build no text for the moves that pass.
+- The neighborhood scans of `Session` (`neighborhood_preview`,
+  `neighborhood_statistics`, `check_neighborhood_costs`,
+  `check_move_independence`, `check_random_move_distribution`) take a
+  `std::stop_token` as their last argument (none by default) and end at the
+  next move once it is requested; their results say so in `stopped`. The
+  TextUI runs them off its event loop, on a Session of its own with the
+  current solution: the interface answers during a long scan, and leaving the
+  Move page, applying a move or starting another scan stops it.
 
 ### Runners and solvers
 

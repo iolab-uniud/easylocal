@@ -34,6 +34,7 @@
 #include <ranges>
 #include <span>
 #include <stdexcept>
+#include <stop_token>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -175,6 +176,9 @@ public:
         std::size_t worsening{};
         /// Moves enumerated that are not valid.
         std::size_t invalid{};
+        /// Whether a stop request ended the scan early: the counts cover the
+        /// moves scanned before it.
+        bool stopped{};
     };
 
     /// The result of check_neighborhood_costs.
@@ -186,6 +190,9 @@ public:
         std::size_t mismatches{};
         /// Moves enumerated that are not valid, or lead to an invalid solution.
         std::size_t invalid{};
+        /// Whether a stop request ended the scan early: the counts cover the
+        /// moves scanned before it.
+        bool stopped{};
     };
 
     /// The result of check_move_independence.
@@ -199,6 +206,9 @@ public:
         std::size_t repeated_states{};
         /// Moves enumerated that are not valid.
         std::size_t invalid{};
+        /// Whether a stop request ended the scan early: the counts cover the
+        /// moves scanned before it.
+        bool stopped{};
     };
 
     /// The result of check_random_move_distribution.
@@ -217,6 +227,9 @@ public:
         std::size_t min_frequency{};
         /// The most draws of a valid enumerated move.
         std::size_t max_frequency{};
+        /// Whether a stop request ended the check early: the counts cover the
+        /// moves enumerated and the draws made before it.
+        bool stopped{};
     };
 
     /// One cost component on the current solution, for people.
@@ -248,6 +261,9 @@ public:
         std::size_t invalid{};
         /// The first valid moves, with their costs.
         std::vector<inspected_move> entries;
+        /// Whether a stop request ended the scan early: the counts cover the
+        /// moves scanned before it.
+        bool stopped{};
     };
     /// Whether the Input can be read from a stream.
     static constexpr bool supports_input_loading = readable_input<input_type>;
@@ -877,9 +893,13 @@ public:
 
     /// The moves enumerated from the current solution, counted, the invalid
     /// ones apart, and the first max_entries valid ones with their costs.
+    ///
+    /// A stop request on `stop` (none by default) ends the scan at the next
+    /// move, as the scans below do: the result says it stopped.
     [[nodiscard]]
     neighborhood_preview_result neighborhood_preview(
-        const std::size_t max_entries = 8) const
+        const std::size_t max_entries = 8,
+        const std::stop_token& stop = {}) const
         requires supports_deterministic_moves
     {
         assert(bound_);
@@ -892,6 +912,11 @@ public:
 
         for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
         {
+            if (stop.stop_requested())
+            {
+                result.stopped = true;
+                break;
+            }
             move_type candidate{raw_move};
             ++result.moves;
             if (!static_cast<bool>(neighborhood.is_valid(*solution_, candidate)))
@@ -912,9 +937,11 @@ public:
     }
 
     /// Counts the enumerated moves from the current solution that improve, keep
-    /// or worsen its cost, and the invalid ones.
+    /// or worsen its cost, and the invalid ones; a stop request on `stop` ends
+    /// it early.
     [[nodiscard]]
-    neighborhood_statistics_result neighborhood_statistics() const
+    neighborhood_statistics_result neighborhood_statistics(
+        const std::stop_token& stop = {}) const
         requires supports_improvement_selection
     {
         assert(bound_);
@@ -928,6 +955,11 @@ public:
 
         for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
         {
+            if (stop.stop_requested())
+            {
+                result.stopped = true;
+                break;
+            }
             move_type candidate{raw_move};
             ++result.moves;
             if (!static_cast<bool>(neighborhood.is_valid(*solution_, candidate)))
@@ -949,10 +981,12 @@ public:
 
     /// Compares the delta evaluation of each enumerated move with the full
     /// evaluation of the solution it leads to, by the cost's equivalent() or
-    /// within `tolerance` (`{0, 0}`: exactly).
+    /// within `tolerance` (`{0, 0}`: exactly); a stop request on `stop` ends
+    /// it early.
     [[nodiscard]]
     neighborhood_cost_check_result check_neighborhood_costs(
-        const cost::tolerance& tolerance = {}) const
+        const cost::tolerance& tolerance = {},
+        const std::stop_token& stop = {}) const
         requires supports_cost_consistency_check
     {
         assert(bound_);
@@ -966,6 +1000,11 @@ public:
 
         for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
         {
+            if (stop.stop_requested())
+            {
+                result.stopped = true;
+                break;
+            }
             move_type move{raw_move};
             ++result.moves;
             if (!static_cast<bool>(neighborhood.is_valid(*solution_, move)))
@@ -998,9 +1037,11 @@ public:
     /// with those of the same hash, or, without a hash, of the same cost when
     /// costs are totally ordered, so the check takes about linear time;
     /// otherwise it compares each with every solution reached before,
-    /// quadratic in the size of the neighborhood.
+    /// quadratic in the size of the neighborhood. A stop request on `stop`
+    /// ends it early.
     [[nodiscard]]
-    move_independence_result check_move_independence() const
+    move_independence_result check_move_independence(
+        const std::stop_token& stop = {}) const
         requires supports_move_independence_check
     {
         assert(bound_);
@@ -1017,6 +1058,11 @@ public:
 
         for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
         {
+            if (stop.stop_requested())
+            {
+                result.stopped = true;
+                break;
+            }
             move_type move{raw_move};
             ++result.moves;
             if (!static_cast<bool>(neighborhood.is_valid(*solution_, move)))
@@ -1073,11 +1119,13 @@ public:
     ///
     /// With a totally ordered cost a drawn move is compared only with the
     /// enumerated moves of the same cost, by delta; otherwise with each of
-    /// them, in time quadratic in the size of the neighborhood.
+    /// them, in time quadratic in the size of the neighborhood. A stop request
+    /// on `stop` ends it early.
     [[nodiscard]]
     random_distribution_result check_random_move_distribution(
         rng_type& rng,
-        const std::size_t rounds_per_move = 20) const
+        const std::size_t rounds_per_move = 20,
+        const std::stop_token& stop = {}) const
         requires supports_random_distribution_check
     {
         assert(bound_);
@@ -1088,13 +1136,18 @@ public:
         std::vector<move_type> moves_list;
         for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
         {
+            if (stop.stop_requested())
+            {
+                result.stopped = true;
+                break;
+            }
             move_type move{raw_move};
             if (static_cast<bool>(neighborhood.is_valid(*solution_, move)))
                 moves_list.push_back(std::move(move));
         }
 
         result.neighborhood_size = moves_list.size();
-        if (moves_list.empty() || rounds_per_move == 0)
+        if (result.stopped || moves_list.empty() || rounds_per_move == 0)
             return result;
 
         // With totally ordered costs, a drawn move is compared only with the
@@ -1111,9 +1164,14 @@ public:
                 same_cost[move_cost(moves_list[index])].push_back(index);
 
         std::vector<std::size_t> frequencies(moves_list.size());
-        result.samples = moves_list.size() * rounds_per_move;
-        for (std::size_t sample = 0; sample < result.samples; ++sample)
+        const auto samples = moves_list.size() * rounds_per_move;
+        for (; result.samples < samples; ++result.samples)
         {
+            if (stop.stop_requested())
+            {
+                result.stopped = true;
+                break;
+            }
             auto selected = easylocal::random_move(neighborhood, *solution_, rng);
             if (!selected)
             {
