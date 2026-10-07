@@ -1426,6 +1426,14 @@ easylocal_add_test(
 )
 
 easylocal_add_test(
+    session-contracts
+    SOURCES
+        session_contracts.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
+
+easylocal_add_test(
     parameter-validation
     SOURCES
         parameter_validation.cpp
