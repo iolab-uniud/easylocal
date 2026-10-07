@@ -165,10 +165,9 @@ costs and the fields of every event, so a reader needs nothing but the file.
 Its records are tagged and length-prefixed, so readers can skip event types
 they do not understand.
 
-`trace::binary_recorder<Cost>` is an alias for the synchronous
-`trace::buffered_binary_recorder<Cost>`.  It encodes events directly into a
-contiguous block (256 KiB by default) and writes a block at a time instead of
-calling `std::ostream` for each field.  `trace::async_binary_recorder<Cost>` uses
+`trace::binary_recorder<Cost>` is the synchronous recorder.  It encodes events
+directly into a contiguous block (256 KiB by default) and writes a block at a
+time instead of calling `std::ostream` for each field.  `trace::async_binary_recorder<Cost>` uses
 the same encoder and byte format, but hands completed blocks to one background
 writer thread.  The producer owns one block while a bounded pool of preallocated
 blocks connects it to the writer; if the writer falls behind, the producer
@@ -200,7 +199,7 @@ state, and the options carry the metadata written in the header: whatever tells
 the run apart, as text.
 
 ```cpp
-easylocal::trace::binary_buffer_options options{
+easylocal::trace::binary_recorder_options options{
     .block_size = 256 * 1024,
     .async_queue_blocks = 4,
     .metadata = {{"instance", "ta001"}, {"runner", "ts"}, {"seed", "42"}},

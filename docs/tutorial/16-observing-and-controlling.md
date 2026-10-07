@@ -51,7 +51,7 @@ const auto observed = descent_search.run(
   (`& el::timeout(10s)`, `& el::max_evaluations(5000)`).
 
 Recorders include `trace::memory_recorder`, `trace::jsonl_recorder` and the
-binary `buffered_binary_recorder` and `async_binary_recorder`, whose ELTR traces
+binary `binary_recorder` and `async_binary_recorder`, whose ELTR traces
 describe themselves and are decoded by `scripts/eltr.py` (see
 [Tracing](../tracing.md)).
 

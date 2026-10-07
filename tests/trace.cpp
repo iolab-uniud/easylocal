@@ -710,9 +710,9 @@ int main()
         "application events extend ELTR via ADL, described before their first record");
 
     std::ostringstream sync_equivalent_stream;
-    easylocal::trace::buffered_binary_recorder<int> sync_equivalent{
+    easylocal::trace::binary_recorder<int> sync_equivalent{
         sync_equivalent_stream,
-        easylocal::trace::binary_buffer_options{.block_size = 17}};
+        easylocal::trace::binary_recorder_options{.block_size = 17}};
     easylocal::trace::emit(
         sync_equivalent,
         easylocal::trace::event::move_evaluated<int>{
@@ -728,7 +728,7 @@ int main()
     {
         easylocal::trace::async_binary_recorder<int> async_equivalent{
             async_equivalent_stream,
-            easylocal::trace::binary_buffer_options{
+            easylocal::trace::binary_recorder_options{
                 .block_size = 17,
                 .async_queue_blocks = 2,
             }};

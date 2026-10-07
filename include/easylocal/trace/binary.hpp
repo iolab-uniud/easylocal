@@ -438,7 +438,7 @@ consteval std::uint8_t user_binary_event_tag()
 
 /// The options of a binary recorder: its buffering and the metadata of its
 /// header.
-struct binary_buffer_options
+struct binary_recorder_options
 {
     /// The bytes buffered before a write (256 KiB by default, at least 1).
     std::size_t block_size = 256U * 1024U;
@@ -932,7 +932,7 @@ public:
 
     // Appends the header of the trace; with timestamps, the core events end
     // with the time since now.
-    void append_header(std::vector<char>& buffer, const binary_buffer_options& options)
+    void append_header(std::vector<char>& buffer, const binary_recorder_options& options)
     {
         const auto fields = cost_writer_.fields();
         const std::vector<binary_field> cost_fields(
@@ -1207,7 +1207,7 @@ private:
 /// `block_size` bytes. The stream is held by reference.
 /// Requires a CostWriter callable as `writer(out, cost)`, with `fields()`.
 template<class Cost, class CostWriter = default_binary_cost_writer<Cost>>
-class buffered_binary_recorder
+class binary_recorder
 {
     static_assert(
         binary_cost_writer_for<CostWriter, Cost>,
@@ -1224,12 +1224,9 @@ public:
     static constexpr std::uint32_t format_version = detail::eltr_format_version;
 
     /// Writes to out, with a default-constructed cost writer.
-    explicit buffered_binary_recorder(
-        std::ostream& out,
-        binary_buffer_options options = {})
+    explicit binary_recorder(std::ostream& out, binary_recorder_options options = {})
         requires std::default_initializable<CostWriter>
-        : out_{out},
-          block_size_{std::max<std::size_t>(options.block_size, 1U)}
+        : out_{out}, block_size_{std::max<std::size_t>(options.block_size, 1U)}
     {
         buffer_.reserve(block_size_);
         encoder_.append_header(buffer_, options);
@@ -1237,10 +1234,10 @@ public:
     }
 
     /// Writes to out, costs with cost_writer.
-    buffered_binary_recorder(
+    binary_recorder(
         std::ostream& out,
         CostWriter cost_writer,
-        binary_buffer_options options = {})
+        binary_recorder_options options = {})
         : out_{out},
           encoder_{std::move(cost_writer)},
           block_size_{std::max<std::size_t>(options.block_size, 1U)}
@@ -1251,12 +1248,12 @@ public:
     }
 
     /// Not copyable: it owns the output.
-    buffered_binary_recorder(const buffered_binary_recorder&) = delete;
+    binary_recorder(const binary_recorder&) = delete;
     /// Not copyable: it owns the output.
-    buffered_binary_recorder& operator=(const buffered_binary_recorder&) = delete;
+    binary_recorder& operator=(const binary_recorder&) = delete;
 
     /// Writes the pending records, ignoring an output error.
-    ~buffered_binary_recorder()
+    ~binary_recorder()
     {
         try
         {
@@ -1319,10 +1316,6 @@ private:
     std::size_t block_size_{};
 };
 
-/// The binary recorder: the synchronous buffered_binary_recorder.
-template<class Cost, class CostWriter = default_binary_cost_writer<Cost>>
-using binary_recorder = buffered_binary_recorder<Cost, CostWriter>;
-
 /// A tracer that writes the events as an ELTR binary stream from a background
 /// writer thread, a block at a time.
 ///
@@ -1358,7 +1351,7 @@ public:
     /// Throws `std::invalid_argument` for an unlimited `async_queue_blocks`.
     explicit async_binary_recorder(
         std::ostream& out,
-        binary_buffer_options options = {})
+        binary_recorder_options options = {})
         requires std::default_initializable<CostWriter>
         : sink_{out, normalized_block_size(options), options.async_queue_blocks},
           block_size_{normalized_block_size(options)}
@@ -1376,7 +1369,7 @@ public:
     async_binary_recorder(
         std::ostream& out,
         CostWriter cost_writer,
-        binary_buffer_options options = {})
+        binary_recorder_options options = {})
         : sink_{out, normalized_block_size(options), options.async_queue_blocks},
           encoder_{std::move(cost_writer)},
           block_size_{normalized_block_size(options)}
@@ -1449,7 +1442,7 @@ public:
     }
 
 private:
-    static std::size_t normalized_block_size(const binary_buffer_options& options)
+    static std::size_t normalized_block_size(const binary_recorder_options& options)
     {
         return std::max<std::size_t>(options.block_size, 1U);
     }

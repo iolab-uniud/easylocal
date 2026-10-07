@@ -540,6 +540,12 @@ reviewed by hand before tagging.
   `hash`, instead of one per pair of consecutive visits, which was wrong for
   an algorithm that keeps several solutions. A run that traces visits hashes
   the solution before and after each move.
+- **Breaking:** the synchronous ELTR recorder has one name,
+  `trace::binary_recorder`, now the class itself: `buffered_binary_recorder`,
+  of which it was an alias, is gone. The options of both binary recorders are
+  `trace::binary_recorder_options` (was `binary_buffer_options`), since they
+  carry the header's metadata and the timestamps as well as the buffering.
+  The ELTR format is unchanged.
 - `trace::event::run_context`, a core event without a cost (ELTR tag 12): the
   solvers emit it before each run, with the pipeline stage's name and index
   and the attempt (or MultiStart's start), so the runs of a solve can be told
@@ -553,7 +559,7 @@ reviewed by hand before tagging.
   it. The tracing guide's example of an application event is now
   `weight_changed`.
 - Timestamps in traces, as a recorder option: with `timestamps` in
-  `binary_buffer_options` or `jsonl_options`, each core event ends with
+  `binary_recorder_options` or `jsonl_options`, each core event ends with
   `elapsed_ns`, the nanoseconds since the recorder was constructed (a `u64`
   field of the ELTR schemas, a field of the JSONL line), for anytime and
   time-to-target analyses. Without it, no clock is read.
