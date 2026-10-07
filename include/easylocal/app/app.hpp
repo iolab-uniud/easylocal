@@ -238,11 +238,11 @@ inline constexpr bool app_runnable_v =
 template<class Algorithm, class SM, class NHESpec>
 consteval bool validate_app_runner()
 {
-    using neighborhood_type = service_t<NHESpec>;
-    if constexpr (!runner_neighborhood_explorer<neighborhood_type, SM>)
+    using neighborhood_explorer_type = service_t<NHESpec>;
+    if constexpr (!runner_neighborhood_explorer<neighborhood_explorer_type, SM>)
     {
         static_assert(
-            runner_neighborhood_explorer<neighborhood_type, SM>,
+            runner_neighborhood_explorer<neighborhood_explorer_type, SM>,
             "the neighborhood of a runner registration must explore the "
             "Solution of the app's SolutionManager");
         return false;
@@ -250,10 +250,10 @@ consteval bool validate_app_runner()
     else
     {
         static_assert(
-            app_runnable_v<Algorithm, SM, neighborhood_type>,
+            app_runnable_v<Algorithm, SM, neighborhood_explorer_type>,
             "a registered runner's algorithm must run on its neighborhood, with "
             "or without an RNG: run(run, solution[, rng])");
-        return validate_delta_bindings<SM, neighborhood_type>();
+        return validate_delta_bindings<SM, neighborhood_explorer_type>();
     }
 }
 
@@ -262,17 +262,17 @@ consteval bool validate_app_runner()
 template<class SM, class NHESpec>
 consteval bool validate_app_neighborhood()
 {
-    using neighborhood_type = service_t<NHESpec>;
-    if constexpr (!runner_neighborhood_explorer<neighborhood_type, SM>)
+    using neighborhood_explorer_type = service_t<NHESpec>;
+    if constexpr (!runner_neighborhood_explorer<neighborhood_explorer_type, SM>)
     {
         static_assert(
-            runner_neighborhood_explorer<neighborhood_type, SM>,
+            runner_neighborhood_explorer<neighborhood_explorer_type, SM>,
             "the neighborhood of an app must explore the Solution of the app's "
             "SolutionManager");
         return false;
     }
     else
-        return validate_delta_bindings<SM, neighborhood_type>();
+        return validate_delta_bindings<SM, neighborhood_explorer_type>();
 }
 
 // The check of a runner registration on the app's neighborhood, when it is
@@ -492,7 +492,7 @@ public:
     /// The app's neighborhood explorer, const when the bound app is.
     template<class Self>
     [[nodiscard]]
-    auto& neighborhood(this Self&& self) noexcept
+    auto& neighborhood_explorer(this Self&& self) noexcept
     {
         return self.neighborhood_;
     }

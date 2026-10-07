@@ -625,7 +625,7 @@ void session_selects_random_moves_with_an_explicit_rng()
     std::mt19937_64 rng{1234};
     std::mt19937_64 reference_rng{1234};
     const auto expected = easylocal::random_move(
-        session.bound_app().neighborhood(),
+        session.bound_app().neighborhood_explorer(),
         session.solution(),
         reference_rng);
 

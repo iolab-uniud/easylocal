@@ -162,7 +162,7 @@ void one_input_materializes_one_shared_graph_for_all_runners()
 
     assert(&bound_app.input() == &instance);
     assert(&bound_app.solution_manager().input() == &instance);
-    assert(&bound_app.neighborhood().input() == &instance);
+    assert(&bound_app.neighborhood_explorer().input() == &instance);
 
     auto fi = easylocal::detail::app_access::runner<easylocal::runners::FirstImprovement>(
         bound_app);
@@ -171,8 +171,8 @@ void one_input_materializes_one_shared_graph_for_all_runners()
 
     assert(&fi.solution_manager() == &bound_app.solution_manager());
     assert(&bi.solution_manager() == &bound_app.solution_manager());
-    assert(&fi.neighborhood_explorer() == &bound_app.neighborhood());
-    assert(&bi.neighborhood_explorer() == &bound_app.neighborhood());
+    assert(&fi.neighborhood_explorer() == &bound_app.neighborhood_explorer());
+    assert(&bi.neighborhood_explorer() == &bound_app.neighborhood_explorer());
 }
 
 void registered_runners_are_executable()

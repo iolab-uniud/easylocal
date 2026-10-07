@@ -121,13 +121,14 @@ public:
     /// The SolutionManager of the bound app.
     using solution_manager_type = typename bound_app_type::solution_manager_type;
     /// The neighborhood explorer of the bound app.
-    using neighborhood_type = typename bound_app_type::neighborhood_explorer_type;
+    using neighborhood_explorer_type =
+        typename bound_app_type::neighborhood_explorer_type;
     /// The Solution of the problem.
     using solution_type = typename solution_manager_type::solution_type;
     /// The cost of a solution.
     using cost_type = typename solution_manager_type::cost_type;
     /// The move of the neighborhood.
-    using move_type = typename neighborhood_type::move_type;
+    using move_type = typename neighborhood_explorer_type::move_type;
     /// The random generator of the session.
     using rng_type = std::mt19937_64;
     /// The front of a run: its non-dominated solutions, with their costs.
@@ -141,10 +142,10 @@ public:
         has_random_solution<solution_manager_type, rng_type>;
     /// Whether the neighborhood enumerates its moves.
     static constexpr bool supports_deterministic_moves =
-        deterministic_neighborhood_for<neighborhood_type, solution_type>;
+        deterministic_neighborhood_for<neighborhood_explorer_type, solution_type>;
     /// Whether the neighborhood draws random moves.
     static constexpr bool supports_random_moves =
-        random_neighborhood_for<neighborhood_type, solution_type, rng_type>;
+        random_neighborhood_for<neighborhood_explorer_type, solution_type, rng_type>;
     /// Whether moves can be selected by their cost: the neighborhood enumerates
     /// them and the cost compares with better().
     static constexpr bool supports_improvement_selection =
@@ -758,7 +759,8 @@ public:
         const auto evaluation = this->evaluation();
         const auto current = evaluation.evaluate(*solution_);
         std::size_t index = 0;
-        for (auto&& candidate : easylocal::moves(bound_->neighborhood(), *solution_))
+        for (auto&& candidate :
+            easylocal::moves(bound_->neighborhood_explorer(), *solution_))
         {
             move_.emplace(candidate);
             deterministic_move_index_ = index;
@@ -791,7 +793,8 @@ public:
         std::optional<cost_type> best_cost;
         std::optional<std::size_t> best_index;
         std::size_t index = 0;
-        for (auto&& candidate : easylocal::moves(bound_->neighborhood(), *solution_))
+        for (auto&& candidate :
+            easylocal::moves(bound_->neighborhood_explorer(), *solution_))
         {
             move_.emplace(candidate);
             deterministic_move_index_ = index;
@@ -831,7 +834,8 @@ public:
         assert(bound_);
         assert(solution_);
 
-        auto selected = easylocal::random_move(bound_->neighborhood(), *solution_, rng);
+        auto selected =
+            easylocal::random_move(bound_->neighborhood_explorer(), *solution_, rng);
 
         deterministic_move_index_.reset();
         if (!selected)
@@ -851,7 +855,8 @@ public:
         assert(bound_);
         assert(solution_);
         assert(move_);
-        return static_cast<bool>(bound_->neighborhood().is_valid(*solution_, *move_));
+        return static_cast<bool>(
+            bound_->neighborhood_explorer().is_valid(*solution_, *move_));
     }
 
     /// The cost of the solution the selected move leads to, by delta
@@ -881,7 +886,7 @@ public:
         assert(move_is_valid());
 
         auto candidate = *solution_;
-        bound_->neighborhood().make_move(candidate, *move_);
+        bound_->neighborhood_explorer().make_move(candidate, *move_);
         assert(bound_->solution_manager().is_valid(candidate));
         return bound_->solution_manager().evaluate(candidate);
     }
@@ -913,7 +918,7 @@ public:
         assert(solution_);
 
         neighborhood_preview_result result;
-        const auto& neighborhood = bound_->neighborhood();
+        const auto& neighborhood = bound_->neighborhood_explorer();
         const auto evaluation = this->evaluation();
         const auto current = evaluation.evaluate(*solution_);
 
@@ -956,7 +961,7 @@ public:
 
         neighborhood_statistics_result result;
         const auto& solution_manager = bound_->solution_manager();
-        const auto& neighborhood = bound_->neighborhood();
+        const auto& neighborhood = bound_->neighborhood_explorer();
         const auto evaluation = this->evaluation();
         const auto current = evaluation.evaluate(*solution_);
 
@@ -1001,7 +1006,7 @@ public:
 
         neighborhood_cost_check_result result;
         const auto& solution_manager = bound_->solution_manager();
-        const auto& neighborhood = bound_->neighborhood();
+        const auto& neighborhood = bound_->neighborhood_explorer();
         const auto evaluation = this->evaluation();
         const auto current = evaluation.evaluate(*solution_);
 
@@ -1056,7 +1061,7 @@ public:
 
         move_independence_result result;
         const auto& solution_manager = bound_->solution_manager();
-        const auto& neighborhood = bound_->neighborhood();
+        const auto& neighborhood = bound_->neighborhood_explorer();
         std::vector<solution_type> reached;
         // The indices in reached of the solutions of each hash.
         std::unordered_map<std::uint64_t, std::vector<std::size_t>> by_hash;
@@ -1139,7 +1144,7 @@ public:
         assert(solution_);
 
         random_distribution_result result;
-        const auto& neighborhood = bound_->neighborhood();
+        const auto& neighborhood = bound_->neighborhood_explorer();
         std::vector<move_type> moves_list;
         for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
         {
@@ -1243,7 +1248,7 @@ public:
         assert(move_);
         assert(move_is_valid());
 
-        bound_->neighborhood().make_move(*solution_, *move_);
+        bound_->neighborhood_explorer().make_move(*solution_, *move_);
         clear_move_state();
     }
 
@@ -1288,10 +1293,11 @@ private:
     // The incremental evaluation of the bound app: the current solution is
     // evaluated once per scan, then each move against it.
     [[nodiscard]]
-    detail::evaluation_facility<solution_manager_type, neighborhood_type> evaluation()
-        const
+    detail::evaluation_facility<
+        solution_manager_type,
+        neighborhood_explorer_type> evaluation() const
     {
-        return {bound_->solution_manager(), bound_->neighborhood()};
+        return {bound_->solution_manager(), bound_->neighborhood_explorer()};
     }
 
     // The values of the app's parameters, as text, in the order of its
@@ -1334,7 +1340,8 @@ private:
         requires supports_deterministic_moves
     {
         std::size_t index = 0;
-        for (auto&& candidate : easylocal::moves(bound_->neighborhood(), *solution_))
+        for (auto&& candidate :
+            easylocal::moves(bound_->neighborhood_explorer(), *solution_))
         {
             if (index == target)
             {

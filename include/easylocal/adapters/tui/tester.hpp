@@ -2594,7 +2594,8 @@ private:
         const ftxui::Component& diagnostics) const
     {
         using namespace ftxui;
-        const auto neighborhood = detail::object_name(tester_.bound_app().neighborhood());
+        const auto neighborhood =
+            detail::object_name(tester_.bound_app().neighborhood_explorer());
         auto details = window(
                            text(" Move - " + neighborhood + " "),
                            render_move_summary()) |

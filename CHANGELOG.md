@@ -11,6 +11,13 @@ reviewed by hand before tagging.
 
 ## [4.0.0-alpha.3] — not yet released
 
+### Apps and tools
+
+- **Breaking:** the explorer of an app has the name it has in a `Runner` and
+  in a search run: `Session::neighborhood_type` is
+  `Session::neighborhood_explorer_type`, and `BoundApp::neighborhood()` is
+  `BoundApp::neighborhood_explorer()`.
+
 ### Checking tools
 
 - **Breaking:** `testing::check_delta_evaluator` is

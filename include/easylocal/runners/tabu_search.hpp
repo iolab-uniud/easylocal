@@ -55,7 +55,7 @@ public:
     /// The cost type of the run.
     using cost_type = typename Run::cost_type;
     /// The neighborhood explorer type of the run.
-    using neighborhood_type = typename Run::neighborhood_explorer_type;
+    using neighborhood_explorer_type = typename Run::neighborhood_explorer_type;
 
     /// The candidate move of run at solution, not evaluated.
     ///
@@ -129,7 +129,7 @@ public:
     /// The candidate's attribute, by the neighborhood's tabu_attribute().
     [[nodiscard]]
     auto attribute() const
-        requires has_tabu_attribute<neighborhood_type>
+        requires has_tabu_attribute<neighborhood_explorer_type>
     {
         return easylocal::tabu_attribute(run_.neighborhood_explorer(), move_);
     }
@@ -156,7 +156,7 @@ public:
     /// The cost type of the run.
     using cost_type = typename Run::cost_type;
     /// The neighborhood explorer type of the run.
-    using neighborhood_type = typename Run::neighborhood_explorer_type;
+    using neighborhood_explorer_type = typename Run::neighborhood_explorer_type;
 
     /// The step of run that applied move, reaching solution with cost;
     /// improved_best tells whether it improved the best cost.
@@ -214,7 +214,7 @@ public:
     /// The move's attribute, by the neighborhood's tabu_attribute().
     [[nodiscard]]
     auto attribute() const
-        requires has_tabu_attribute<neighborhood_type>
+        requires has_tabu_attribute<neighborhood_explorer_type>
     {
         return easylocal::tabu_attribute(run_.neighborhood_explorer(), move_);
     }

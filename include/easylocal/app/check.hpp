@@ -510,17 +510,17 @@ void check_bound(
     app_check_report& report)
 {
     using solution_manager_type = typename Bound::solution_manager_type;
-    using neighborhood_type = typename Bound::neighborhood_explorer_type;
+    using neighborhood_explorer_type = typename Bound::neighborhood_explorer_type;
     auto& checks = detail::checks_of(report);
 
     auto& composition = report.composition();
     composition.solution_managers = 1;
     composition.cost_components = app_cost_component_count_v<solution_manager_type>;
     composition.neighborhoods = 1;
-    composition.delta_bindings = app_delta_binding_count_v<neighborhood_type>;
+    composition.delta_bindings = app_delta_binding_count_v<neighborhood_explorer_type>;
 
     const auto& solution_manager = bound.solution_manager();
-    const auto& neighborhood = bound.neighborhood();
+    const auto& neighborhood = bound.neighborhood_explorer();
 
     report.check(
         std::addressof(bound.input()) == std::addressof(input),

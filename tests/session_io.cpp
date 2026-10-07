@@ -80,14 +80,14 @@ template<class Input, class Solution>
 auto make_io_application(const char* name)
 {
     using solution_manager_type = IoSolutionManager<Input, Solution>;
-    using neighborhood_type = IoNeighborhood<solution_manager_type>;
+    using neighborhood_explorer_type = IoNeighborhood<solution_manager_type>;
 
     auto application =
         easylocal::app(name)
             .with_solution_manager(
                 easylocal::solution_manager<solution_manager_type>()
                 | easylocal::component<IoValue>())
-            .with_neighborhood(easylocal::neighborhood<neighborhood_type>())
+            .with_neighborhood(easylocal::neighborhood<neighborhood_explorer_type>())
             .template with_runner<easylocal::runners::FirstImprovement>("fi");
 
     application.template runner_parameters<easylocal::runners::FirstImprovement>("fi")
