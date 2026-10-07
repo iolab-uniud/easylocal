@@ -1,3 +1,5 @@
+#include "support/expect.hpp"
+
 #include <easylocal/runners/best_improvement.hpp>
 #include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/runners/hill_climbing.hpp>
@@ -7,10 +9,8 @@
 #include <compare>
 #include <concepts>
 #include <cstddef>
-#include <iostream>
 #include <optional>
 #include <random>
-#include <string_view>
 #include <utility>
 
 namespace
@@ -304,17 +304,6 @@ struct MinimizingSemanticProbe
         };
     }
 };
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-
-    return true;
-}
 
 } // namespace
 

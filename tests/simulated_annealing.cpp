@@ -3,6 +3,7 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 #include "support/exam_timeslot_load_delta.hpp"
+#include "support/expect.hpp"
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
@@ -17,7 +18,6 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
-#include <iostream>
 #include <limits>
 #include <optional>
 #include <random>
@@ -25,7 +25,6 @@
 #include <stdexcept>
 #include <stop_token>
 #include <string>
-#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -279,16 +278,6 @@ struct OrderedChainValue
         return {solution.value};
     }
 };
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-    return true;
-}
 
 
 [[nodiscard]]

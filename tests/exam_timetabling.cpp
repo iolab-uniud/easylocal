@@ -3,31 +3,15 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 #include "support/exam_timeslot_load_delta.hpp"
+#include "support/expect.hpp"
 
 #include <easylocal/cost.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/recipes.hpp>
 
 #include <cstddef>
-#include <iostream>
-#include <string_view>
 
 namespace exam = exam_timetabling;
-
-namespace
-{
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-    return true;
-}
-
-} // namespace
 
 int main()
 {

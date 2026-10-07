@@ -2,6 +2,8 @@
 // 0.1 + 0.2, lowered by the deltas -0.1 and -0.2, ends at 2.8e-17 rather than
 // 0, so the run re-evaluates in full a cost within the tolerance of the target
 // before deciding that it is not reached.
+#include "support/expect.hpp"
+
 #include <easylocal/cost.hpp>
 #include <easylocal/helpers/recipes.hpp>
 #include <easylocal/runners/hill_climbing.hpp>
@@ -10,23 +12,11 @@
 
 #include <array>
 #include <cstddef>
-#include <iostream>
 #include <optional>
 #include <random>
-#include <string_view>
 
 namespace
 {
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-    return true;
-}
 
 struct Items
 {

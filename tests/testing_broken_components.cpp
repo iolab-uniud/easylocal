@@ -2,6 +2,7 @@
 // (tests/support/broken_components.hpp): each check fails, with a message
 // that names the move, and the correct components pass.
 #include "support/broken_components.hpp"
+#include "support/expect.hpp"
 
 #include <easylocal/app/app.hpp>
 #include <easylocal/app/check.hpp>
@@ -11,7 +12,6 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <iostream>
 #include <span>
 #include <sstream>
 #include <string>
@@ -23,13 +23,6 @@ namespace
 
 namespace el = easylocal;
 namespace elt = easylocal::testing;
-
-bool expect(bool condition, std::string_view message)
-{
-    if (!condition)
-        std::cerr << "FAILED: " << message << '\n';
-    return condition;
-}
 
 // Symmetric integer distances that differ from city to city.
 broken::Tsp cities(const std::size_t count)

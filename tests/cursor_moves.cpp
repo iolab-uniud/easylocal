@@ -1,10 +1,10 @@
+#include "support/expect.hpp"
+
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 
 #include <concepts>
 #include <cstddef>
-#include <iostream>
 #include <ranges>
-#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -130,17 +130,6 @@ concept CanAdaptCursor =
     {
         easylocal::cursor_moves(explorer, solution);
     };
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-
-    return true;
-}
 
 template<std::ranges::input_range Range>
 auto collect(Range&& range) -> std::vector<Move>

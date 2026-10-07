@@ -2,6 +2,7 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 #include "support/assignment_capacity_delta.hpp"
+#include "support/expect.hpp"
 
 #include <easylocal/runners/best_improvement.hpp>
 #include <easylocal/runners/first_improvement.hpp>
@@ -10,10 +11,8 @@
 #include <array>
 #include <cstdint>
 #include <functional>
-#include <iostream>
 #include <random>
 #include <ranges>
-#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -157,17 +156,6 @@ public:
 private:
     ReassignJobNeighborhoodExplorer inner_;
 };
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-
-    return true;
-}
 
 } // namespace
 

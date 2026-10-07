@@ -1,5 +1,7 @@
 // Tabu Search on a line of positions 0..10, whose moves step left or right; a
 // step forbids the opposite step while it is in the tabu list.
+#include "support/expect.hpp"
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/runners/runner.hpp>
@@ -10,7 +12,6 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <iostream>
 #include <optional>
 #include <random>
 #include <stdexcept>
@@ -245,16 +246,6 @@ struct ForkObjective
         return costs[static_cast<std::size_t>(position.value)][Objective];
     }
 };
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-    return true;
-}
 
 // A custom tabu list that forbids nothing and counts the moves it is told of.
 struct ForgetfulParameters

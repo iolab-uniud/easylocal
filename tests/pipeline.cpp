@@ -1,5 +1,7 @@
 // solvers::Pipeline: stages in sequence, their targets and attempts, the
 // effort and report of each stage, cancellation and parameters.
+#include "support/expect.hpp"
+
 #include <easylocal/app/app.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/runners/runner.hpp>
@@ -11,7 +13,6 @@
 #include <algorithm>
 #include <concepts>
 #include <cstddef>
-#include <iostream>
 #include <memory>
 #include <optional>
 #include <random>
@@ -195,13 +196,6 @@ template<class Stage, class Initialization>
 concept restartable = requires(Stage stage) {
     std::move(stage) & easylocal::solvers::restart(Initialization{});
 };
-
-bool expect(const bool condition, const std::string_view message)
-{
-    if (!condition)
-        std::cerr << "FAILED: " << message << '\n';
-    return condition;
-}
 
 } // namespace
 

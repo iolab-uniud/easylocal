@@ -2,6 +2,8 @@
 // parameter, wherever they enter: a policy or an algorithm constructed from
 // them, make_runner, the binding of a runner or of an app, and a Session.
 
+#include "support/expect.hpp"
+
 #include <easylocal/app/app.hpp>
 #include <easylocal/app/session.hpp>
 #include <easylocal/config/parameter_set.hpp>
@@ -131,13 +133,6 @@ auto chain_app(const HillClimbingParameters parameters)
             solution_manager<ChainSolutionManager>() | component<ChainCost>())
         .with_neighborhood(neighborhood<ChainNeighborhood>())
         .with_runner<HillClimbing>("hc", parameters);
-}
-
-bool expect(const bool condition, const std::string_view description)
-{
-    if (!condition)
-        std::cerr << "FAILED: " << description << '\n';
-    return condition;
 }
 
 // The message of the std::invalid_argument that make throws, or nothing when

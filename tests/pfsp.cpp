@@ -4,6 +4,7 @@
 #include "instance.hpp"
 #include "makespan_component.hpp"
 #include "solution_manager.hpp"
+#include "support/expect.hpp"
 #include "swap_neighborhood_explorer.hpp"
 
 #include <easylocal/app/io.hpp>
@@ -13,9 +14,7 @@
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/runners/tabu_search.hpp>
 
-#include <iostream>
 #include <random>
-#include <string_view>
 
 #ifndef EASYLOCAL_PFSP_SMALL_INSTANCE
 #error "EASYLOCAL_PFSP_SMALL_INSTANCE must name the small instance"
@@ -33,16 +32,6 @@ static_assert(easylocal::has_solution_hash<PfspSolutionManager>);
 static_assert(
     easylocal::inverse_neighborhood_for<SwapJobsNeighborhoodExplorer, Schedule>);
 static_assert(easylocal::has_tabu_attribute_member<SwapJobsNeighborhoodExplorer>);
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-    return true;
-}
 
 template<class Algorithm, class Explorer>
 [[nodiscard]]

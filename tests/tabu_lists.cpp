@@ -1,16 +1,16 @@
 // The tabu lists, through their states: a candidate forbidden by the moves of
 // opposite sign, whose attribute is its absolute value, and steps that carry a
 // move, an iteration, a solution and its hash.
+#include "support/expect.hpp"
+
 #include <easylocal/runners/tabu_search.hpp>
 
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
-#include <iostream>
 #include <optional>
 #include <random>
 #include <stdexcept>
-#include <string_view>
 
 namespace
 {
@@ -127,16 +127,6 @@ struct OpaqueRun
 
     [[nodiscard]] auto solution_manager() const -> manager;
 };
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-    return true;
-}
 
 [[nodiscard]]
 auto tenure(const auto& state, const int move) -> std::optional<std::size_t>

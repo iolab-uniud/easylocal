@@ -1,5 +1,7 @@
 // Target costs (run_options::stop_at, easylocal::stop_at), run options passed
 // to solvers, and the effort solvers report.
+#include "support/expect.hpp"
+
 #include <easylocal/cost.hpp>
 #include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/runners/runner.hpp>
@@ -11,12 +13,10 @@
 #include <chrono>
 #include <concepts>
 #include <cstddef>
-#include <iostream>
 #include <optional>
 #include <random>
 #include <stdexcept>
 #include <stop_token>
-#include <string_view>
 #include <thread>
 #include <type_traits>
 #include <utility>
@@ -274,16 +274,6 @@ struct ProgressLog
         return !evaluations.empty() && std::ranges::is_sorted(evaluations);
     }
 };
-
-auto expect(bool condition, std::string_view message) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << message << '\n';
-        return false;
-    }
-    return true;
-}
 
 } // namespace
 

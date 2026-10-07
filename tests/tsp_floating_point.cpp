@@ -5,6 +5,7 @@
 #include "neighborhood_explorer.hpp"
 #include "solution.hpp"
 #include "solution_manager.hpp"
+#include "support/expect.hpp"
 #include "tour_length_component.hpp"
 #include "tour_length_delta.hpp"
 
@@ -18,8 +19,6 @@
 #include <compare>
 #include <cstddef>
 #include <functional>
-#include <iostream>
-#include <string_view>
 
 namespace
 {
@@ -39,17 +38,6 @@ auto definitely_less(
     const easylocal::cost::tolerance within) -> bool
 {
     return easylocal::cost::approximate_compare(lhs, rhs, within) < 0;
-}
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-
-    return true;
 }
 
 [[nodiscard]]

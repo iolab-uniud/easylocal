@@ -1,3 +1,5 @@
+#include "support/expect.hpp"
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/runners/hill_climbing.hpp>
@@ -9,11 +11,9 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
-#include <iostream>
 #include <optional>
 #include <random>
 #include <stop_token>
-#include <string_view>
 #include <type_traits>
 #include <variant>
 
@@ -150,16 +150,6 @@ auto chain_runner(const LateAcceptanceHillClimbingParameters parameters)
     return easylocal::make_runner<LateAcceptanceHillClimbing>(parameters)
         | (solution_manager<ChainSolutionManager>() | component<Cost>())
         | neighborhood<ChainNeighborhood>();
-}
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-    return true;
 }
 
 } // namespace

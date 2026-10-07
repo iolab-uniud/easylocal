@@ -1,33 +1,22 @@
-#include <easylocal/helpers/neighborhood_explorer.hpp>
 #include "solution_manager.hpp"
-#include "swap_neighborhood_explorer.hpp"
+#include "support/expect.hpp"
 #include "swap_move.hpp"
+#include "swap_neighborhood_explorer.hpp"
 #include "swap_tour_length_delta.hpp"
 #include "tour_length_component.hpp"
 
+#include <easylocal/helpers/neighborhood_explorer.hpp>
+
 #include <cmath>
 #include <cstddef>
-#include <iostream>
 #include <map>
 #include <random>
 #include <ranges>
-#include <string_view>
 #include <utility>
 #include <vector>
 
 namespace
 {
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-
-    return true;
-}
 
 using observed_move = std::pair<std::size_t, std::size_t>;
 

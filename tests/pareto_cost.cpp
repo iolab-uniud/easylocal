@@ -1,30 +1,20 @@
 // cost::pareto, ordered by dominance, and the archive of the non-dominated
 // solutions that search_run keeps for such a cost.
+#include "support/expect.hpp"
+
 #include <easylocal/cost.hpp>
 #include <easylocal/runners/pareto_archive.hpp>
 #include <easylocal/trace/binary.hpp>
 
 #include <compare>
-#include <iostream>
 #include <stdexcept>
 #include <string>
-#include <string_view>
 
 namespace
 {
 
 using easylocal::cost::pareto;
 using cost_type = pareto<int, double>;
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-    return true;
-}
 
 [[nodiscard]]
 auto same_name(const std::string& lhs, const std::string& rhs) -> bool

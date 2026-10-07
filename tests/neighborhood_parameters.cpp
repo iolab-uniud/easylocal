@@ -1,6 +1,8 @@
 // A NeighborhoodExplorer with parameters: its recipe holds them, gives them to
 // the explorer when a runner is bound, and exposes them under "neighborhood"
 // (under "neighborhood.<position>" in a union).
+#include "support/expect.hpp"
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/helpers/neighborhood_union.hpp>
@@ -9,7 +11,6 @@
 
 #include <algorithm>
 #include <array>
-#include <iostream>
 #include <optional>
 #include <random>
 #include <string_view>
@@ -158,16 +159,6 @@ auto has_parameter(
         [&](const config::parameter_info& parameter) {
             return parameter.path == path && parameter.value == value;
         });
-}
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-    return true;
 }
 
 } // namespace

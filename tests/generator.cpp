@@ -1,10 +1,11 @@
 // easylocal::generator: std::generator where the standard library has it,
 // the fallback of utils/generator.hpp otherwise (libc++).
 
+#include "support/expect.hpp"
+
 #include <easylocal/utils/generator.hpp>
 
 #include <cstddef>
-#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -14,16 +15,6 @@
 
 namespace
 {
-
-bool expect(bool condition, std::string_view message)
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << message << '\n';
-        return false;
-    }
-    return true;
-}
 
 easylocal::generator<int> count_to(int last)
 {

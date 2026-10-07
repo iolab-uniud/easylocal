@@ -1,11 +1,11 @@
+#include "support/expect.hpp"
+
 #include <easylocal/solvers.hpp>
 
 #include <algorithm>
 #include <concepts>
 #include <cstdint>
-#include <iostream>
 #include <random>
-#include <string_view>
 #include <utility>
 
 namespace
@@ -119,11 +119,6 @@ struct RandomAlgorithm
 template<class Solver, class Initialization>
 concept accepts = requires(Solver& solver) { solver.initialization(Initialization{}); };
 
-bool expect(bool condition, std::string_view message)
-{
-    if (!condition) std::cerr << "FAILED: " << message << '\n';
-    return condition;
-}
 }
 
 int main()

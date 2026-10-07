@@ -1,6 +1,7 @@
 #include "instance.hpp"
 #include "solution.hpp"
 #include "solution_manager.hpp"
+#include "support/expect.hpp"
 #include "tour_length_component.hpp"
 
 #include <easylocal/cost.hpp>
@@ -8,27 +9,9 @@
 
 #include <compare>
 #include <concepts>
-#include <iostream>
-#include <string_view>
 #include <tuple>
 #include <type_traits>
 #include <vector>
-
-namespace
-{
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-
-    return true;
-}
-
-} // namespace
 
 int main()
 {

@@ -1,6 +1,8 @@
 // The tabu customization points of a neighborhood: inverse, configurable on
 // the explorer, and tabu_attribute, chosen by the explorer or the move itself;
 // a neighborhood union dispatches both to its children.
+#include "support/expect.hpp"
+
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/neighborhood_union.hpp>
 
@@ -8,10 +10,8 @@
 #include <array>
 #include <cstddef>
 #include <functional>
-#include <iostream>
 #include <optional>
 #include <random>
-#include <string_view>
 #include <type_traits>
 #include <unordered_set>
 #include <utility>
@@ -220,16 +220,6 @@ static_assert(
     "a union has an inverse only when every child has one");
 static_assert(easylocal::has_tabu_attribute<PartialUnion>);
 static_assert(easylocal::has_tabu_attribute<TwinUnion>);
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-    return true;
-}
 
 } // namespace
 

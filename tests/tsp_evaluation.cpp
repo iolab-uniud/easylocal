@@ -2,6 +2,7 @@
 #include "neighborhood_explorer.hpp"
 #include "solution.hpp"
 #include "solution_manager.hpp"
+#include "support/expect.hpp"
 #include "tour_length_component.hpp"
 #include "tour_length_delta.hpp"
 
@@ -9,8 +10,6 @@
 #include <easylocal/runners/runner.hpp>
 
 #include <functional>
-#include <iostream>
-#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -90,17 +89,6 @@ public:
 private:
     int& make_move_count_;
 };
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-
-    return true;
-}
 
 } // namespace
 

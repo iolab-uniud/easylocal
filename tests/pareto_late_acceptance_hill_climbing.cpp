@@ -2,6 +2,7 @@
 // for any runner with a cost::pareto cost (and the solvers merge across their
 // runs), on points of a 10 x 10 grid with objectives x + y and (9 - x) + y:
 // the front is the row y = 0.
+#include "support/expect.hpp"
 #include "support/pareto_grid.hpp"
 
 #include <easylocal/app/app.hpp>
@@ -18,10 +19,8 @@
 #include <compare>
 #include <concepts>
 #include <cstddef>
-#include <iostream>
 #include <optional>
 #include <random>
-#include <string_view>
 #include <type_traits>
 #include <variant>
 
@@ -138,16 +137,6 @@ auto valid_front(const Front& front) -> bool
             return false;
     }
     return !front.empty();
-}
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-    return true;
 }
 
 } // namespace

@@ -1,13 +1,13 @@
+#include "support/expect.hpp"
+
 #include <easylocal/solvers.hpp>
 
 #include <algorithm>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
-#include <iostream>
 #include <random>
 #include <stdexcept>
-#include <string_view>
 #include <vector>
 
 namespace
@@ -99,11 +99,6 @@ struct IdentityAlgorithm
     }
 };
 
-bool expect(const bool condition, const std::string_view message)
-{
-    if (!condition) std::cerr << "FAILED: " << message << '\n';
-    return condition;
-}
 }
 
 // Keeps the attempts of the run_context events, and whether one had a stage.

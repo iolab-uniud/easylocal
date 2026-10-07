@@ -1,11 +1,11 @@
 // cost::tolerance and the approximate comparisons of costs.
+#include "support/expect.hpp"
+
 #include <easylocal/cost.hpp>
 
 #include <cmath>
 #include <compare>
-#include <iostream>
 #include <limits>
-#include <string_view>
 
 namespace
 {
@@ -21,17 +21,6 @@ auto definitely_less(
     const ApproximateTolerance tolerance) -> bool
 {
     return approximate_compare(lhs, rhs, tolerance) < 0;
-}
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-
-    return true;
 }
 
 } // namespace

@@ -1,3 +1,5 @@
+#include "support/expect.hpp"
+
 #include <easylocal/cost.hpp>
 #include <easylocal/helpers/recipes.hpp>
 
@@ -6,8 +8,6 @@
 #include <compare>
 #include <concepts>
 #include <cstddef>
-#include <iostream>
-#include <string_view>
 #include <utility>
 
 namespace
@@ -18,17 +18,6 @@ concept subtractable_cost =
     requires(const Cost& lhs, const Cost& rhs) {
         lhs - rhs;
     };
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-
-    return true;
-}
 
 } // namespace
 

@@ -1,3 +1,5 @@
+#include "support/expect.hpp"
+
 #include <easylocal/runners/runner.hpp>
 
 #include <functional>
@@ -276,17 +278,6 @@ public:
 private:
     bool accept_;
 };
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-
-    return true;
-}
 
 auto check_common_evaluation(
     const ProbeResult& result,

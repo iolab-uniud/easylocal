@@ -2,6 +2,8 @@
 // easylocal::timeout(d) with a std::chrono duration or a number of seconds,
 // and an evaluation budget, easylocal::max_evaluations(n), alone or with the
 // other run options.
+#include "support/expect.hpp"
+
 #include <easylocal/cost.hpp>
 #include <easylocal/runners/hill_climbing.hpp>
 #include <easylocal/runners/runner.hpp>
@@ -14,14 +16,12 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <iostream>
 #include <limits>
 #include <optional>
 #include <random>
 #include <stdexcept>
 #include <stop_token>
 #include <string>
-#include <string_view>
 #include <type_traits>
 #include <variant>
 #include <vector>
@@ -116,13 +116,6 @@ public:
 private:
     const SolutionManager& sm_;
 };
-
-bool expect(const bool condition, const std::string_view message)
-{
-    if (!condition)
-        std::cerr << "FAILED: " << message << '\n';
-    return condition;
-}
 
 } // namespace
 

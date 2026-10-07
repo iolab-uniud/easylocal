@@ -1,3 +1,5 @@
+#include "support/expect.hpp"
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/runners/best_improvement.hpp>
@@ -14,7 +16,6 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
-#include <iostream>
 #include <optional>
 #include <random>
 #include <stop_token>
@@ -181,16 +182,6 @@ auto incumbents(const easylocal::trace::memory_recorder<int>& trace)
                 &record))
             found.push_back(*incumbent);
     return found;
-}
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-    return true;
 }
 
 } // namespace

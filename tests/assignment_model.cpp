@@ -2,6 +2,7 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 #include "support/assignment_capacity_delta.hpp"
+#include "support/expect.hpp"
 
 #include <easylocal/cost.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
@@ -10,8 +11,6 @@
 #include <compare>
 #include <concepts>
 #include <cstddef>
-#include <iostream>
-#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -19,17 +18,6 @@ namespace
 {
 
 using namespace assignment;
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-
-    return true;
-}
 
 } // namespace
 

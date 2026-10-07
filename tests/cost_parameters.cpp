@@ -2,6 +2,8 @@
 // parameters_type is a parameter block is built from it and configured under
 // its name, cost.<name>.* in a runner.
 
+#include "support/expect.hpp"
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
@@ -12,7 +14,6 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
-#include <iostream>
 #include <stdexcept>
 #include <string_view>
 #include <vector>
@@ -277,13 +278,6 @@ bool has_parameter(
         [&](const config::parameter_info& parameter) {
             return parameter.path == path && parameter.value == value;
         });
-}
-
-bool expect(const bool condition, const std::string_view description)
-{
-    if (!condition)
-        std::cerr << "FAILED: " << description << '\n';
-    return condition;
 }
 
 } // namespace

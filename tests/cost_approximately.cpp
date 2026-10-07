@@ -1,28 +1,19 @@
 // cost::approximately: the search compares the costs of its child within a
 // tolerance, keeps the hard components of a hard_soft child visible, and the
 // hard projection compares within the same tolerance.
+#include "support/expect.hpp"
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/helpers/detail/cost_layer.hpp>
 #include <easylocal/helpers/recipes.hpp>
 
 #include <algorithm>
-#include <iostream>
 #include <string_view>
 #include <utility>
 
 namespace
 {
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-    return true;
-}
 
 struct Instance
 {

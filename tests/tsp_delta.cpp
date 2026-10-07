@@ -1,28 +1,11 @@
-#include <easylocal/helpers/neighborhood_explorer.hpp>
 #include "neighborhood_explorer.hpp"
 #include "solution.hpp"
 #include "solution_manager.hpp"
+#include "support/expect.hpp"
 #include "tour_length_component.hpp"
 #include "tour_length_delta.hpp"
 
-#include <iostream>
-#include <string_view>
-
-namespace
-{
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-
-    return true;
-}
-
-} // namespace
+#include <easylocal/helpers/neighborhood_explorer.hpp>
 
 int main()
 {

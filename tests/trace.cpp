@@ -1,3 +1,5 @@
+#include "support/expect.hpp"
+
 #include <easylocal/cost.hpp>
 #include <easylocal/trace.hpp>
 
@@ -13,23 +15,12 @@
 #include <stdexcept>
 #include <streambuf>
 #include <string>
-#include <string_view>
 #include <type_traits>
 #include <variant>
 #include <vector>
 
 namespace
 {
-
-auto expect(bool condition, std::string_view message) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << message << '\n';
-        return false;
-    }
-    return true;
-}
 
 struct structured_cost
 {

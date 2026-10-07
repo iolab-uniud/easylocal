@@ -3,6 +3,7 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 #include "support/assignment_capacity_delta.hpp"
+#include "support/expect.hpp"
 
 #include <easylocal/easylocal.hpp>
 #include <easylocal/runners/best_improvement.hpp>
@@ -11,13 +12,11 @@
 #include <array>
 #include <concepts>
 #include <cstddef>
-#include <iostream>
 #include <limits>
 #include <optional>
 #include <random>
 #include <ranges>
 #include <string>
-#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -369,17 +368,6 @@ public:
         return run.random_move(solution, rng).has_value();
     }
 };
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-
-    return true;
-}
 
 } // namespace
 

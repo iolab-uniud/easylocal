@@ -1,10 +1,10 @@
-#include <easylocal/runners/runner.hpp>
+#include "support/expect.hpp"
+
 #include <easylocal/helpers/solution_manager.hpp>
+#include <easylocal/runners/runner.hpp>
 
 #include <cstdint>
-#include <iostream>
 #include <random>
-#include <string_view>
 
 namespace
 {
@@ -159,17 +159,6 @@ public:
         return solution.value;
     }
 };
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-
-    return true;
-}
 
 } // namespace
 

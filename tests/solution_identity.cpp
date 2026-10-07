@@ -1,5 +1,7 @@
 // Optional solution identity: a hash and an equality from the SolutionManager
 // or from the solution type, and the helpers to write a hash.
+#include "support/expect.hpp"
+
 #include <easylocal/cost.hpp>
 #include <easylocal/helpers/detail/cost_layer.hpp>
 #include <easylocal/helpers/recipes.hpp>
@@ -10,9 +12,7 @@
 #include <array>
 #include <cstdint>
 #include <functional>
-#include <iostream>
 #include <ranges>
-#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -113,16 +113,6 @@ static_assert(!easylocal::has_solution_equality<PlainManager<Opaque>>);
 static_assert(!easylocal::has_solution_hash<PlainManager<Tour>>);
 static_assert(easylocal::has_solution_equality<PlainManager<Tour>>);
 static_assert(easylocal::has_solution_hash<PlainManager<int>>);
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-    return true;
-}
 
 } // namespace
 

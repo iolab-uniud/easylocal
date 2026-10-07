@@ -1,3 +1,5 @@
+#include "support/expect.hpp"
+
 #include <easylocal/utils/logging.hpp>
 
 #include <cstdio>
@@ -6,7 +8,6 @@
 #include <iostream>
 #include <iterator>
 #include <string>
-#include <string_view>
 
 namespace
 {
@@ -31,17 +32,6 @@ void capture_sink(const easylocal::logging::record& entry) noexcept
     capture.category_matches = entry.category == "application.search";
     capture.message_matches = entry.message == "candidate accepted";
     capture.location_matches = entry.location.line() != 0;
-}
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-
-    return true;
 }
 
 } // namespace

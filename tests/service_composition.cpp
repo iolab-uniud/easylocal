@@ -2,6 +2,7 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 #include "support/assignment_capacity_delta.hpp"
+#include "support/expect.hpp"
 
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/parameter_set.hpp>
@@ -17,9 +18,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <iostream>
 #include <ranges>
-#include <string_view>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -243,17 +242,6 @@ struct TwoCapacityAggregator
             second.total_overload};
     }
 };
-
-auto expect(const bool condition, const std::string_view description) -> bool
-{
-    if (!condition)
-    {
-        std::cerr << "FAILED: " << description << '\n';
-        return false;
-    }
-
-    return true;
-}
 
 // Whether every delta attached to NHE names an active component of SM.
 template<class SM, class NHE>
