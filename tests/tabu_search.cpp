@@ -256,6 +256,56 @@ auto expect(const bool condition, const std::string_view description) -> bool
     return true;
 }
 
+// A custom tabu list that forbids nothing and counts the moves it is told of.
+struct ForgetfulParameters
+{
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return easylocal::config::fields();
+    }
+
+    [[nodiscard]]
+    constexpr easylocal::config::validation_result validate() const noexcept
+    {
+        return easylocal::config::validation_result::success();
+    }
+};
+
+class Forgetful
+{
+public:
+    using parameters_type = ForgetfulParameters;
+
+    explicit Forgetful(const ForgetfulParameters&) {}
+
+    class state
+    {
+    public:
+        template<class Candidate>
+        [[nodiscard]]
+        std::optional<std::size_t> tabu_tenure(const Candidate&) const noexcept
+        {
+            return std::nullopt;
+        }
+
+        template<class Step, class RNG>
+        void update(const Step&, RNG&)
+        {
+            ++updates;
+        }
+
+        static inline std::size_t updates = 0;
+    };
+
+    template<class Run>
+    [[nodiscard]]
+    state make_state() const
+    {
+        return {};
+    }
+};
+
 // Requests a stop once the run has made `after` evaluations.
 struct StopAfter
 {
@@ -846,6 +896,58 @@ int main()
         ok &= expect(
             rejected && trace.records().empty(),
             "a list that cannot run throws before the run starts");
+    }
+
+    {
+        const LineInstance line;
+        // A custom list: the runner takes it, and tells it every move applied.
+        Forgetful::state::updates = 0;
+        std::mt19937 rng{3U};
+        const auto forgetful =
+            line_runner<TabuSearch<Forgetful>, Valley>({.max_iterations = 3})
+                .bind(line)
+                .run(Position{1}, rng);
+        ok &= expect(
+            forgetful.iterations == 3 && Forgetful::state::updates == 3,
+            "a custom tabu list is told of every move applied");
+
+        // improve_on_best: from 5 (cost 3) both steps worsen, and the first
+        // iteration applies the better, to 6 (cost 5). From 6 the left step,
+        // back to 5 (cost 3), improves the current cost but not the best; the
+        // right one, to 7 (cost 1), improves both.
+        using Bowl = Profile<9, 9, 9, 9, 6, 3, 5, 1, 9, 9, 9>;
+        const auto second_step = [&](const bool improve_on_best) {
+            std::mt19937 step_rng{3U};
+            return line_runner<FirstImprovementTabuSearch<Forgetful>, Bowl>(
+                {.max_iterations = 2, .candidates = {.improve_on_best = improve_on_best}})
+                .bind(line)
+                .run(Position{5}, step_rng);
+        };
+        const auto on_current = second_step(false);
+        const auto on_best = second_step(true);
+        ok &= expect(
+            on_current.solution.value == 5 && on_best.solution.value == 7,
+            "improve_on_best skips a move that improves only the current cost");
+
+        // The elite candidate list rescans only its kept moves while they are
+        // good enough: fewer evaluations than the full scan for as many
+        // iterations, on the same profile.
+        const auto evaluations =
+            [&]<class Algorithm>(const typename Algorithm::parameters_type& parameters) {
+                std::mt19937 elite_rng{3U};
+                return line_runner<Algorithm, Valley>(parameters)
+                    .bind(line)
+                    .run(Position{1}, elite_rng);
+            };
+        const auto full =
+            evaluations.template operator()<TabuSearch<Forgetful>>({.max_iterations = 6});
+        const auto elite =
+            evaluations.template operator()<EliteCandidateTabuSearch<Forgetful>>(
+                {.max_iterations = 6, .candidates = {.elite_size = 1, .quality = 10.0}});
+        ok &= expect(
+            full.iterations == 6 && elite.iterations == 6
+                && elite.evaluations < full.evaluations,
+            "the elite candidate list evaluates only its kept moves");
     }
 
     ok &= keeps_its_limits<TabuSearch<>>("tabu search");
