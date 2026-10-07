@@ -97,19 +97,6 @@ struct configuration_validation_result
 namespace detail
 {
 
-[[nodiscard]]
-inline std::string join_path(const std::string_view prefix, const std::string_view name)
-{
-    if (prefix.empty())
-        return std::string{name};
-    if (name.empty())
-        return std::string{prefix};
-    std::string path{prefix};
-    path += '.';
-    path.append(name);
-    return path;
-}
-
 // Every field of a block, the fields of its nested groups included:
 // leaf(path, descriptor, value&, owner) for the fields, with the block they
 // belong to, group(path, nested&) for each nested block, before its own
@@ -167,51 +154,6 @@ void walk_requirements(const Block& block, const std::string& prefix, Visit& vis
         schema_v<Block>);
 }
 
-// The fields of a block that matter, not of its nested groups, that lie
-// outside the domain of their schema, one diagnostic each, with the field's
-// path; then the requirements that do not hold, with the block's path.
-template<class Block>
-bool check_field_domains(
-    const Block& block,
-    const std::string& prefix,
-    std::vector<configuration_validation_diagnostic>& diagnostics)
-{
-    bool valid = true;
-    std::apply(
-        [&](const auto&... descriptors) {
-            (
-                [&] {
-                    using descriptor_type = std::remove_cvref_t<decltype(descriptors)>;
-                    if constexpr (is_parameter_requirement_v<descriptor_type>)
-                    {
-                        if (!static_cast<bool>(evaluate(descriptors.expression, block)))
-                        {
-                            valid = false;
-                            diagnostics.push_back(
-                                {prefix, std::string{descriptors.message}});
-                        }
-                    }
-                    else if constexpr (!is_parameter_group_v<descriptor_type>)
-                    {
-                        const auto& value = block.*descriptor_type::member;
-                        if (is_active(descriptors, block)
-                            && !domain_contains(descriptors.domain, value))
-                        {
-                            valid = false;
-                            diagnostics.push_back(
-                                {join_path(prefix, descriptor_type::name()),
-                                    "expected a value in "
-                                        + describe_domain(descriptors.domain).text()
-                                        + ", got " + format_value(value)});
-                        }
-                    }
-                }(),
-                ...);
-        },
-        schema_v<Block>);
-    return valid;
-}
-
 // The diagnostics of a block and of its nested groups, each under its own
 // path: the fields outside their domains and the requirements that do not
 // hold; then the groups; then, when all of these pass, the block's validate(),
@@ -223,7 +165,13 @@ bool validate_block(
     const std::string& prefix,
     std::vector<configuration_validation_diagnostic>& diagnostics)
 {
-    bool valid = check_field_domains(block, prefix, diagnostics);
+    bool valid = schema_diagnostics(
+        block,
+        prefix,
+        [&diagnostics](std::string path, std::string message) {
+            diagnostics.push_back({std::move(path), std::move(message)});
+            return true;
+        });
     std::apply(
         [&](const auto&... descriptors) {
             (
@@ -247,7 +195,7 @@ bool validate_block(
     {
         if (const auto validation = block.validate(); !validation)
         {
-            diagnostics.push_back({prefix, std::string{validation.message}});
+            diagnostics.push_back({prefix, validation.message});
             return false;
         }
     }

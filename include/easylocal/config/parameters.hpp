@@ -12,12 +12,13 @@
 #include <easylocal/config/condition.hpp>
 #include <easylocal/config/domain.hpp>
 #include <easylocal/config/fixed_string.hpp>
+#include <easylocal/config/overrides.hpp>
 
-#include <array>
 #include <concepts>
 #include <cstddef>
 #include <functional>
 #include <stdexcept>
+#include <string>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
@@ -34,7 +35,7 @@ struct validation_result
     /// Whether the block is valid.
     bool valid{true};
     /// Why the block is not valid; empty when it is.
-    std::string_view message{};
+    std::string message{};
 
     /// Whether the block is valid.
     [[nodiscard]]
@@ -50,12 +51,11 @@ struct validation_result
         return {};
     }
 
-    /// An invalid result, with the reason `message`, which must outlive it (a
-    /// string literal usually does).
+    /// An invalid result, with the reason `message`.
     [[nodiscard]]
-    static constexpr validation_result failure(const std::string_view message) noexcept
+    static constexpr validation_result failure(const std::string_view message)
     {
-        return {.valid = false, .message = message};
+        return {.valid = false, .message = std::string{message}};
     }
 };
 
@@ -523,26 +523,71 @@ constexpr bool is_active(const Descriptor& descriptor, const Block& block)
 namespace detail
 {
 
-// "name is out of its range" or "name is not one of its values", as static
-// text that a validation_result can refer to.
-template<class Descriptor>
-struct out_of_domain_message
+[[nodiscard]]
+constexpr std::string join_path(
+    const std::string_view prefix,
+    const std::string_view name)
 {
-    static constexpr std::string_view suffix =
-        is_range_domain_v<typename Descriptor::domain_type>
-        ? std::string_view{" is out of its range"}
-        : std::string_view{" is not one of its values"};
-    static constexpr auto text = [] {
-        constexpr auto name = Descriptor::name();
-        std::array<char, name.size() + suffix.size()> result{};
-        for (std::size_t index = 0; index < name.size(); ++index)
-            result[index] = name[index];
-        for (std::size_t index = 0; index < suffix.size(); ++index)
-            result[name.size() + index] = suffix[index];
-        return result;
-    }();
-    static constexpr std::string_view value{text.data(), text.size()};
-};
+    if (prefix.empty())
+        return std::string{name};
+    if (name.empty())
+        return std::string{prefix};
+    std::string path{prefix};
+    path += '.';
+    path.append(name);
+    return path;
+}
+
+// The fields of a block that matter, not of its nested groups, that lie
+// outside their domains, and the requirements that do not hold, in the order
+// of the schema: report(path, message) for each, with the path of the field,
+// or of the block for a requirement, until report returns false. Whether
+// there were none.
+template<class Block, class Report>
+constexpr bool schema_diagnostics(
+    const Block& block,
+    const std::string_view prefix,
+    Report&& report)
+{
+    bool valid = true;
+    bool reporting = true;
+    std::apply(
+        [&](const auto&... descriptors) {
+            (
+                [&] {
+                    using descriptor_type = std::remove_cvref_t<decltype(descriptors)>;
+                    if (!reporting)
+                        return;
+                    if constexpr (is_parameter_requirement_v<descriptor_type>)
+                    {
+                        if (!static_cast<bool>(evaluate(descriptors.expression, block)))
+                        {
+                            valid = false;
+                            reporting = report(
+                                std::string{prefix},
+                                std::string{descriptors.message});
+                        }
+                    }
+                    else if constexpr (!is_parameter_group_v<descriptor_type>)
+                    {
+                        const auto& value = block.*descriptor_type::member;
+                        if (is_active(descriptors, block)
+                            && !domain_contains(descriptors.domain, value))
+                        {
+                            valid = false;
+                            reporting = report(
+                                join_path(prefix, descriptor_type::name()),
+                                "expected a value in "
+                                    + describe_domain(descriptors.domain).text()
+                                    + ", got " + format_value(value));
+                        }
+                    }
+                }(),
+                ...);
+        },
+        schema_v<Block>);
+    return valid;
+}
 
 } // namespace detail
 
@@ -550,43 +595,26 @@ struct out_of_domain_message
 /// field that matters lies in its domain, each requirement holds, and then each
 /// nested group is valid.
 ///
-/// It is the check a validate() makes for what its schema declares.
+/// It is the check a validate() makes for what its schema declares. The reason
+/// is a requirement's message, or the field and its domain:
+/// `cooling_rate: expected a value in (0, 1), got 2`.
 ///
 /// A group is checked with its own validate(), or with check_schema when it
 /// has none, so that a block made in the code is checked whole.
 template<class Block>
 [[nodiscard]]
-constexpr validation_result check_schema(const Block& block) noexcept
+constexpr validation_result check_schema(const Block& block)
 {
     validation_result result;
     const auto& schema = detail::schema_v<Block>;
-    std::apply(
-        [&](const auto&... descriptors) {
-            (
-                [&] {
-                    using descriptor_type = std::remove_cvref_t<decltype(descriptors)>;
-                    if constexpr (is_parameter_requirement_v<descriptor_type>)
-                    {
-                        if (result
-                            && !static_cast<bool>(
-                                evaluate(descriptors.expression, block)))
-                            result = validation_result::failure(descriptors.message);
-                    }
-                    else if constexpr (!is_parameter_group_v<descriptor_type>)
-                    {
-                        if (result && is_active(descriptors, block)
-                            && !domain_contains(
-                                descriptors.domain,
-                                block.*descriptor_type::member))
-                        {
-                            result = validation_result::failure(
-                                detail::out_of_domain_message<descriptor_type>::value);
-                        }
-                    }
-                }(),
-                ...);
-        },
-        schema);
+    detail::schema_diagnostics(
+        block,
+        {},
+        [&result](const std::string& path, const std::string& message) {
+            result = validation_result::failure(
+                path.empty() ? message : path + ": " + message);
+            return false;
+        });
     if (!result)
         return result;
     std::apply(

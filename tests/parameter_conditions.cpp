@@ -129,7 +129,7 @@ void a_field_that_does_not_matter_is_not_checked()
     search.acceptance = 2.0; // outside its domain, but samples is 0
     assert(search.validate());
     search.samples = 10;
-    assert(search.validate().message == "acceptance is out of its range");
+    assert(search.validate().message == "acceptance: expected a value in (0, 1), got 2");
 
     search = {};
     search.policy = "random";

@@ -5,7 +5,6 @@
 /// overrides are read as booleans, numbers, strings, arrays and vectors, and
 /// format_value writes them back in the same syntax.
 
-#include <easylocal/config/parameters.hpp>
 #include <easylocal/utils/detail/meta.hpp>
 #include <easylocal/utils/detail/number_text.hpp>
 #include <easylocal/utils/detail/text.hpp>

@@ -81,11 +81,13 @@ void check_domains_names_the_first_field_outside()
     parameters.rate = 0.0;
     const auto result = config::check_schema(parameters);
     assert(!result);
-    assert(result.message == "rate is out of its range");
+    assert(result.message == "rate: expected a value in (0, 1], got 0");
 
     parameters = {};
     parameters.policy = "greedy";
-    assert(config::check_schema(parameters).message == "policy is not one of its values");
+    assert(
+        config::check_schema(parameters).message
+        == "policy: expected a value in {tabu, random}, got greedy");
 
     parameters = {};
     parameters.weights = {1.0, 11.0};
@@ -98,6 +100,12 @@ void check_domains_names_the_first_field_outside()
     parameters = {};
     parameters.rate = std::numeric_limits<double>::quiet_NaN();
     assert(!config::check_schema(parameters));
+
+    // The reason is owned: it may be built at run time.
+    std::string reason{"a reason built at run time, longer than a short string"};
+    const auto failure = config::validation_result::failure(reason);
+    reason.clear();
+    assert(failure.message == "a reason built at run time, longer than a short string");
 }
 
 void parameter_sets_check_domains_with_the_field_path()
@@ -273,7 +281,8 @@ void built_in_validate_checks_the_declared_domains()
 
     ClassicParameters classic;
     classic.cooling_rate = 1.0;
-    assert(classic.validate().message == "cooling_rate is out of its range");
+    assert(
+        classic.validate().message == "cooling_rate: expected a value in (0, 1), got 1");
     classic = {};
     classic.initial_acceptance = 0.0;
     assert(classic.validate()); // without calibration it does not matter
@@ -288,7 +297,7 @@ void built_in_validate_checks_the_declared_domains()
 
     GreatDelugeParameters deluge;
     deluge.level_rate = 1.0;
-    assert(deluge.validate().message == "level_rate is out of its range");
+    assert(deluge.validate().message == "level_rate: expected a value in (0, 1), got 1");
 }
 
 } // namespace

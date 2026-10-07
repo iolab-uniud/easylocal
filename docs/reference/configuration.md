@@ -23,7 +23,7 @@ struct MyParameters
             config::group<"schedule", &MyParameters::schedule>("Description"));
     }
 
-    config::validation_result validate() const; // success() or failure("reason")
+    config::validation_result validate() const; // success() or failure(reason)
 };
 ```
 
@@ -104,13 +104,16 @@ its `validate()`: the fields that matter outside their domains, with the
 field's path (`expected a value in (0, 1), got 1.5`), and the requirements
 that do not hold, with the block's path and their message; then each nested
 group, under its own path; the block's `validate()` runs only when they pass. A `validate()` checks the same with
-`config::check_schema`, so that a block made in the code is checked too:
+`config::check_schema`, so that a block made in the code is checked too; its
+reason, the first that fails, has the same text, with the field's name first.
+A `validation_result` owns its message, so `failure()` takes one built at run
+time as well as a literal:
 
 ```cpp
 config::validation_result validate() const
 {
     if (const auto schema = config::check_schema(*this); !schema)
-        return schema; // "cooling_rate is out of its range", or a requirement's message
+        return schema; // "cooling_rate: expected a value in (0, 1), got 2", or a requirement's message
     // ... the checks the schema does not declare
 }
 ```

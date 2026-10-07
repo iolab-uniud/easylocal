@@ -131,6 +131,12 @@ reviewed by hand before tagging.
   declares a schema for its `max_evaluations`, configurable as
   `search.max_evaluations` in a runner and `runners.<name>.max_evaluations`
   in an app.
+- **Breaking:** `config::validation_result` owns its message, a `std::string`
+  where it held a `std::string_view` that had to outlive it:
+  `validation_result::failure()` takes a reason built at run time too.
+  `config::check_schema` gives the same reason as the validation of a
+  parameter set, with the field first, `cooling_rate: expected a value in (0,
+  1), got 2`, where it read `cooling_rate is out of its range`.
 
 ### Apps and tools
 
