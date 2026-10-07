@@ -565,7 +565,7 @@ using easylocal::timeout;
 /// app's recipes: its SolutionManager, with the app's cost, and the app's
 /// neighborhood or its own.
 ///
-/// stage<Algorithm>(name, parameters[, neighborhood]) builds it, and `&` the
+/// `stage<Algorithm>(name, parameters[, neighborhood])` builds it, and `&` the
 /// stage options, as for a stage of a runner. Registered in an app with
 /// easylocal::pipeline, it becomes a stage of the runner of Algorithm on the
 /// app's recipes when the pipeline runs, so the app's `cost.*` parameters
@@ -1004,12 +1004,16 @@ public:
     /// The number of stages.
     static constexpr std::size_t stage_count = sizeof...(Stages);
 
-    /// The same pipeline, with its RNG seeded with `seed`: this pipeline on an
-    /// lvalue, the moved pipeline on a temporary. Each solve() continues the
-    /// stream, so the seed reproduces the sequence of solves.
+    /// The same pipeline, with its RNG seeded with `seed`.
+    ///
+    /// This pipeline on an lvalue, the moved pipeline on a temporary. Each
+    /// solve() continues the stream, so the seed reproduces the sequence of
+    /// solves.
     using start_type::seed;
     /// The same pipeline, building its initial solutions as `initialization`
-    /// says: initialization::initial, random or automatic, rejected at compile
+    /// says.
+    ///
+    /// One of initialization::initial, random or automatic, rejected at compile
     /// time when the first stage does not support it. This pipeline on an
     /// lvalue, the moved pipeline on a temporary.
     using start_type::initialization;
@@ -1114,9 +1118,10 @@ public:
 
     /// The parameters of every stage under its name: its runner's and its own
     /// (`<name>.attempts`, `<name>.timeout`, `<name>.max_evaluations`),
-    /// read-only when the pipeline is const. The set refers to this pipeline,
-    /// which must stay in place while it is used: a temporary pipeline has no
-    /// configuration().
+    /// read-only when the pipeline is const.
+    ///
+    /// The set refers to this pipeline, which must stay in place while it is
+    /// used: a temporary pipeline has no configuration().
     template<class Self>
     [[nodiscard]]
     config::parameter_set configuration(this Self& self)

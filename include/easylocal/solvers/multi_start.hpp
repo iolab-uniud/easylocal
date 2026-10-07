@@ -82,12 +82,15 @@ public:
     /// Whether the runner can build a random solution (`random_solution(rng)`).
     using start_type::supports_random;
 
-    /// The same solver, with its RNG seeded with `seed`: this solver on an
-    /// lvalue, the moved solver on a temporary. Each solve() continues the
-    /// stream, so the seed reproduces the sequence of solves.
+    /// The same solver, with its RNG seeded with `seed`.
+    ///
+    /// This solver on an lvalue, the moved solver on a temporary. Each solve()
+    /// continues the stream, so the seed reproduces the sequence of solves.
     using start_type::seed;
     /// The same solver, building its initial solutions as `initialization`
-    /// says: initialization::initial, random or automatic, rejected at compile
+    /// says.
+    ///
+    /// One of initialization::initial, random or automatic, rejected at compile
     /// time when the runner does not support it. This solver on an lvalue, the
     /// moved solver on a temporary.
     using start_type::initialization;
@@ -180,6 +183,7 @@ public:
     }
 
     /// Deleted: the set of a temporary would refer to it after it is gone.
+    ///
     /// Configure the object that will run, after its last copy.
     config::parameter_set configuration() const&& = delete;
 
