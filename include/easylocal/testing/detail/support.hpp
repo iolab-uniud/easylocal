@@ -294,8 +294,16 @@ void check_random_moves_against_enumeration(
                 }
                 if (!static_cast<bool>(neighborhood.is_valid(solution, *move)))
                     continue; // reported by the random proposal check
+                // find_if, not find: the MSVC library vectorizes find() on a
+                // move whose == is the default, and asserts that its size is 1,
+                // 2, 4 or 8 bytes.
                 report.check(
-                    std::ranges::find(enumerated, *move) != enumerated.end(),
+                    std::ranges::find_if(
+                        enumerated,
+                        [&](const auto& enumerated_move) {
+                            return enumerated_move == *move;
+                        })
+                        != enumerated.end(),
                     "random move in the neighborhood",
                     move_label(sample, *move)
                         + ": random_move drew a move that moves() does not "
