@@ -1,8 +1,8 @@
 #pragma once
 
 /// \file
-/// App: a problem's components gathered under a name, written as a pipe
-/// (app("tsp") | solution_manager | neighborhood | runner<...>("name", {...})).
+/// App: a problem's components gathered under a name, written as a pipe:
+/// `app("tsp") | sm | nhe | runner<A>("name", {...})`.
 ///
 /// An app is bound to an Input (BoundApp) to get its services, runs any of its
 /// runners by name, and exposes all its parameters as one parameter_set. Tools
@@ -493,10 +493,10 @@ public:
     /// returns its result; empty when nothing has that name.
     ///
     /// A runner runs on these services, with its own neighborhood when it has
-    /// one, and gets rng when its algorithm takes one; a pipeline runs with rng,
-    /// its stages of runners on their own recipes, those of algorithms on the
-    /// app's. The options are run options, such as
-    /// with(control, tracer). The solution must be valid for the Input.
+    /// one, and gets rng when its algorithm takes one; a pipeline runs with
+    /// rng, its stages of runners on their own recipes, those of algorithms on
+    /// the app's. The options are run options, such as with(control, tracer).
+    /// The solution must be valid for the Input.
     template<std::uniform_random_bit_generator RNG, class... Options>
     [[nodiscard]]
     std::optional<named_run_result<solution_type, cost_type>> run(
@@ -669,7 +669,7 @@ public:
     static constexpr bool has_neighborhood =
         !std::same_as<NHESpec, detail::unconfigured_t>;
     /// The number of runners and pipelines registered.
-    static constexpr std::size_t runner_count = sizeof...(Registrations);
+    static constexpr std::size_t registration_count = sizeof...(Registrations);
 
     /// An app named name, without components.
     explicit App(std::string name) : name_{std::move(name)} {}
@@ -708,6 +708,9 @@ public:
 
     /// The app with spec as its SolutionManager recipe: the method spelling of
     /// `app | spec`.
+    ///
+    /// Requires an app without a SolutionManager yet, and a SolutionManager
+    /// recipe with a cost.
     template<class Spec>
         requires std::same_as<SMSpec, detail::unconfigured_t>
         && detail::is_solution_manager_spec_v<std::remove_cvref_t<Spec>>
@@ -726,6 +729,9 @@ public:
 
     /// The app with spec as its neighborhood recipe, the default of its
     /// runners: the method spelling of `app | spec`.
+    ///
+    /// Requires an app with a SolutionManager and no neighborhood yet, and a
+    /// neighborhood recipe that explores its Solution.
     template<class Spec>
         requires(!std::same_as<SMSpec, detail::unconfigured_t>)
         && std::same_as<NHESpec, detail::unconfigured_t>
@@ -747,6 +753,10 @@ public:
     /// The app with a runner of Algorithm registered as name, on the app's
     /// neighborhood: the method spelling of `app | runner<Algorithm>(name,
     /// parameters)`.
+    ///
+    /// Requires an app with a SolutionManager and a neighborhood, and an
+    /// algorithm with a default-constructible parameters_type, constructible
+    /// from it, that runs on the neighborhood.
     template<detail::app_algorithm Algorithm>
         requires(!std::same_as<SMSpec, detail::unconfigured_t>)
         && (!std::same_as<NHESpec, detail::unconfigured_t>)
@@ -767,6 +777,10 @@ public:
     /// neighborhood, built from the recipe neighborhood over the app's
     /// SolutionManager: the method spelling of `app | runner<Algorithm>(name,
     /// parameters, neighborhood)`.
+    ///
+    /// Requires an app with a SolutionManager and a neighborhood, and an
+    /// algorithm with a default-constructible parameters_type, constructible
+    /// from it, that runs on the neighborhood given.
     template<detail::app_algorithm Algorithm, class Spec>
         requires(!std::same_as<SMSpec, detail::unconfigured_t>)
         && (!std::same_as<NHESpec, detail::unconfigured_t>)
@@ -787,9 +801,9 @@ public:
 
     /// The app with a runner registration, made by easylocal::runner.
     ///
-    /// A registration with its own neighborhood is checked at compile time:
-    /// the neighborhood explores the app's solutions, and the algorithm runs
-    /// on it.
+    /// A registration is checked at compile time: its neighborhood, the app's
+    /// or its own, explores the app's solutions, and the algorithm runs on it.
+    /// Requires an app with a SolutionManager and a neighborhood.
     template<class Algorithm, class Spec>
         requires(!std::same_as<SMSpec, detail::unconfigured_t>)
         && (!std::same_as<NHESpec, detail::unconfigured_t>)
@@ -873,6 +887,7 @@ public:
     ///
     /// Every run reads them, so a change applies from the next run. Throws
     /// std::invalid_argument when no runner of Algorithm has that name.
+    /// Requires an app with a runner of Algorithm.
     template<class Algorithm, class Self>
         requires(detail::app_runner_count_v<Algorithm, Registrations...> > 0)
     [[nodiscard]]
@@ -954,7 +969,7 @@ public:
 
     /// Throws std::invalid_argument unless the registration names
     /// (check_registration_names) and every parameter of the app are valid,
-    /// the message giving each invalid block as "<path>: <message>".
+    /// the message giving each invalid block as `"<path>: <message>"`.
     ///
     /// bind() checks them, as do a Session and a REST blueprint when they are
     /// made.
@@ -1320,7 +1335,9 @@ detail::app_runner_registration<Algorithm, std::remove_cvref_t<Spec>> runner(
 
 /// A pipeline registration for an app, of the stages of a pipeline already
 /// built: `pipeline("cascade", (stage("a", runner) & until_feasible()) |
-/// stage("b", runner))`. The app runs it with its own RNG.
+/// stage("b", runner))`.
+///
+/// The app runs it with its own RNG.
 template<std::uniform_random_bit_generator RNG, class... Stages>
 [[nodiscard]]
 detail::app_pipeline_registration<Stages...> pipeline(

@@ -1,8 +1,9 @@
 #pragma once
 
 /// \file
-/// NeighborhoodExplorer: move validity/application semantics, deterministic
-/// and random neighborhood protocols and their framework customization points.
+/// NeighborhoodExplorer: which moves exist, whether one is valid and how it
+/// changes a solution, with the functions the algorithms enumerate and draw
+/// moves through.
 
 #include <easylocal/utils/detail/meta.hpp>
 #include <easylocal/utils/generator.hpp> // IWYU pragma: export
@@ -265,7 +266,8 @@ private:
 
 } // namespace detail
 
-/// Adapt an EL3-style deterministic cursor to the lazy input-range protocol.
+/// The moves of an explorer with the cursor of EasyLocal 3, as a lazy input
+/// range.
 template<class Explorer, class Solution>
     requires cursor_neighborhood_for<Explorer, Solution>
 [[nodiscard]]
@@ -276,11 +278,11 @@ inline detail::cursor_moves_view<Explorer, Solution> cursor_moves(
     return detail::cursor_moves_view<Explorer, Solution>{explorer, solution};
 }
 
-/// Unified deterministic-neighborhood customization point.
+/// The moves of an explorer at solution, as an input range: its cursor, when it
+/// has one, else its moves().
 ///
-/// The EL3 cursor protocol wins when both cursor and native range protocols are
-/// present. A reference that the explorer's moves() returns, to moves it keeps,
-/// stays a reference: they are not copied.
+/// The cursor wins when the explorer has both. A reference that the explorer's
+/// moves() returns, to moves it keeps, stays a reference: they are not copied.
 template<class Explorer, class Solution>
     requires deterministic_neighborhood_for<Explorer, Solution>
 [[nodiscard]]
@@ -296,10 +298,11 @@ inline decltype(auto) moves(const Explorer& explorer, const Solution& solution)
     }
 }
 
-/// Unified random-neighborhood customization point.
+/// A move of an explorer drawn at solution with rng, by its random_move();
+/// empty when it has none.
 ///
-/// A neighborhood may return `std::optional<T>` for any T from which its
-/// declared move_type can be built.
+/// The explorer may return `std::optional<T>` for any T from which its
+/// move_type can be built.
 template<class Explorer, class Solution, std::uniform_random_bit_generator RNG>
     requires random_neighborhood_for<Explorer, Solution, RNG>
 [[nodiscard]]
@@ -317,13 +320,13 @@ inline std::optional<typename Explorer::move_type> random_move(
     return std::optional<typename Explorer::move_type>(std::in_place, std::move(*result));
 }
 
-/// Optional tabu customization points, used by tabu search.
+/// An explorer with the inverse(solution, move, tabu_move) Tabu Search needs.
 ///
-/// inverse(solution, move, tabu_move): whether move, proposed at solution, is
-/// forbidden by tabu_move, a move applied earlier, typically because it would
-/// undo it. There is no default: what forbids what (the same pair of jobs, or
-/// any move of either job) is a modelling choice of the neighborhood, and may
-/// be one of its parameters.
+/// inverse(solution, move, tabu_move) says whether move, proposed at solution,
+/// is forbidden by tabu_move, a move applied earlier, typically because it
+/// would undo it. There is no default: what forbids what (the same pair of
+/// jobs, or any move of either job) is a modelling choice of the neighborhood,
+/// and may be one of its parameters.
 template<class NHE, class Solution>
 concept inverse_neighborhood_for = requires(
     const NHE& neighborhood,
@@ -347,10 +350,10 @@ inline bool inverse(
     return static_cast<bool>(explorer.inverse(solution, move, tabu_move));
 }
 
-/// tabu_attribute(move): the attribute of a move that frequency-based memory
-/// counts, a value with std::hash and ==.
+/// An explorer with a tabu_attribute(move) member, the attribute of a move that
+/// frequency-based memory counts: a value with std::hash and ==.
 ///
-/// A tabu_attribute member chooses it (the pair of jobs of a swap, ignoring
+/// The member chooses it (the pair of jobs of a swap, ignoring
 /// their positions); without one, the move itself is the attribute when it has
 /// std::hash and ==.
 template<class NHE>
@@ -394,10 +397,10 @@ using tabu_attribute_t = decltype(easylocal::tabu_attribute(
     std::declval<const Explorer&>(),
     std::declval<const typename Explorer::move_type&>()));
 
-/// Optional non-virtual convenience base: associated types and the
-/// SolutionManager reference.
+/// A base for an explorer, which gives it the associated types, the
+/// SolutionManager it is built from and input().
 ///
-/// Not required by the structural concepts above.
+/// It is optional and non-virtual: the concepts above do not require it.
 template<class SolutionManager, class Move>
 class neighborhood_explorer_base
 {

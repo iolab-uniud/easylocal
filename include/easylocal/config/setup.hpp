@@ -1,6 +1,7 @@
 #pragma once
 
-/// \file load_and_apply: the usual setup of a program's parameters, from its
+/// \file
+/// load_and_apply: the usual setup of a program's parameters, from its
 /// defaults, then an optional configuration file, then the command line, with
 /// all the diagnostics collected and printed together.
 

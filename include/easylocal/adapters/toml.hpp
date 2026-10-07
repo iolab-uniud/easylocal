@@ -26,8 +26,9 @@ enum class toml_config_error
 {
     /// The text is not valid TOML.
     parse_error,
-    /// A value that is not a string, a number, a boolean or an array of numbers,
-    /// booleans and such arrays: a date, a time, or an array holding a string.
+    /// A value that is not a string, a number, a boolean or an array of
+    /// numbers, booleans and such arrays: a date, a time, or an array holding a
+    /// string.
     unsupported_value,
 };
 

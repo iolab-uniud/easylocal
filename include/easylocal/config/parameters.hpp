@@ -284,7 +284,9 @@ struct parameter_requirement
 /// `require(value<"final_temperature"> < value<"initial_temperature">,
 /// "final_temperature must be smaller than initial_temperature")`: the
 /// validation of the parameters checks it, and a configurator never proposes
-/// values that break it. The message must outlive it (a string literal does).
+/// values that break it.
+///
+/// The message must outlive it (a string literal does).
 template<expression Expression>
 [[nodiscard]]
 constexpr parameter_requirement<Expression> require(
@@ -546,8 +548,9 @@ struct out_of_domain_message
 
 /// Whether a block meets its schema, and the first reason it does not: each
 /// field that matters lies in its domain, each requirement holds, and then each
-/// nested group is valid. It is the check a validate() makes for what its
-/// schema declares.
+/// nested group is valid.
+///
+/// It is the check a validate() makes for what its schema declares.
 ///
 /// A group is checked with its own validate(), or with check_schema when it
 /// has none, so that a block made in the code is checked whole.

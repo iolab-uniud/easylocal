@@ -230,6 +230,9 @@ constexpr auto computed(const T& operand)
 } // namespace detail
 
 /// `left < right`, when one of them is an expression.
+///
+/// Requires operands that are expressions, numbers, booleans, texts or
+/// limits.
 template<class Left, class Right>
     requires(expression<Left> || expression<Right>)
     && detail::expression_operand<Left> && detail::expression_operand<Right>
@@ -240,6 +243,9 @@ constexpr auto operator<(const Left& left, const Right& right)
 }
 
 /// `left <= right`, when one of them is an expression.
+///
+/// Requires operands that are expressions, numbers, booleans, texts or
+/// limits.
 template<class Left, class Right>
     requires(expression<Left> || expression<Right>)
     && detail::expression_operand<Left> && detail::expression_operand<Right>
@@ -250,6 +256,9 @@ constexpr auto operator<=(const Left& left, const Right& right)
 }
 
 /// `left > right`, when one of them is an expression.
+///
+/// Requires operands that are expressions, numbers, booleans, texts or
+/// limits.
 template<class Left, class Right>
     requires(expression<Left> || expression<Right>)
     && detail::expression_operand<Left> && detail::expression_operand<Right>
@@ -260,6 +269,9 @@ constexpr auto operator>(const Left& left, const Right& right)
 }
 
 /// `left >= right`, when one of them is an expression.
+///
+/// Requires operands that are expressions, numbers, booleans, texts or
+/// limits.
 template<class Left, class Right>
     requires(expression<Left> || expression<Right>)
     && detail::expression_operand<Left> && detail::expression_operand<Right>
@@ -270,6 +282,9 @@ constexpr auto operator>=(const Left& left, const Right& right)
 }
 
 /// `left == right`, when one of them is an expression.
+///
+/// Requires operands that are expressions, numbers, booleans, texts or
+/// limits.
 template<class Left, class Right>
     requires(expression<Left> || expression<Right>)
     && detail::expression_operand<Left> && detail::expression_operand<Right>
@@ -280,6 +295,9 @@ constexpr auto operator==(const Left& left, const Right& right)
 }
 
 /// `left != right`, when one of them is an expression.
+///
+/// Requires operands that are expressions, numbers, booleans, texts or
+/// limits.
 template<class Left, class Right>
     requires(expression<Left> || expression<Right>)
     && detail::expression_operand<Left> && detail::expression_operand<Right>
@@ -290,6 +308,9 @@ constexpr auto operator!=(const Left& left, const Right& right)
 }
 
 /// `left && right`, when one of them is an expression.
+///
+/// Requires operands that are expressions, numbers, booleans, texts or
+/// limits.
 template<class Left, class Right>
     requires(expression<Left> || expression<Right>)
     && detail::expression_operand<Left> && detail::expression_operand<Right>
@@ -300,6 +321,9 @@ constexpr auto operator&&(const Left& left, const Right& right)
 }
 
 /// `left || right`, when one of them is an expression.
+///
+/// Requires operands that are expressions, numbers, booleans, texts or
+/// limits.
 template<class Left, class Right>
     requires(expression<Left> || expression<Right>)
     && detail::expression_operand<Left> && detail::expression_operand<Right>
@@ -310,6 +334,9 @@ constexpr auto operator||(const Left& left, const Right& right)
 }
 
 /// `left + right`, when one of them is an expression.
+///
+/// Requires operands that are expressions, numbers, booleans, texts or
+/// limits.
 template<class Left, class Right>
     requires(expression<Left> || expression<Right>)
     && detail::expression_operand<Left> && detail::expression_operand<Right>
@@ -320,6 +347,9 @@ constexpr auto operator+(const Left& left, const Right& right)
 }
 
 /// `left - right`, when one of them is an expression.
+///
+/// Requires operands that are expressions, numbers, booleans, texts or
+/// limits.
 template<class Left, class Right>
     requires(expression<Left> || expression<Right>)
     && detail::expression_operand<Left> && detail::expression_operand<Right>
@@ -330,6 +360,9 @@ constexpr auto operator-(const Left& left, const Right& right)
 }
 
 /// `left * right`, when one of them is an expression.
+///
+/// Requires operands that are expressions, numbers, booleans, texts or
+/// limits.
 template<class Left, class Right>
     requires(expression<Left> || expression<Right>)
     && detail::expression_operand<Left> && detail::expression_operand<Right>
@@ -340,6 +373,9 @@ constexpr auto operator*(const Left& left, const Right& right)
 }
 
 /// `left / right`, when one of them is an expression.
+///
+/// Requires operands that are expressions, numbers, booleans, texts or
+/// limits.
 template<class Left, class Right>
     requires(expression<Left> || expression<Right>)
     && detail::expression_operand<Left> && detail::expression_operand<Right>
@@ -350,6 +386,8 @@ constexpr auto operator/(const Left& left, const Right& right)
 }
 
 /// `!operand`.
+///
+/// Requires an expression.
 template<expression Operand>
 [[nodiscard]]
 constexpr auto operator!(const Operand& operand)
@@ -358,6 +396,8 @@ constexpr auto operator!(const Operand& operand)
 }
 
 /// `-operand`.
+///
+/// Requires an expression.
 template<expression Operand>
 [[nodiscard]]
 constexpr auto operator-(const Operand& operand)

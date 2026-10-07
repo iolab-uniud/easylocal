@@ -38,7 +38,7 @@ using CompleteGraphApp = decltype(
 
 static_assert(!EmptyApp::has_solution_manager);
 static_assert(!EmptyApp::has_neighborhood);
-static_assert(EmptyApp::runner_count == 0);
+static_assert(EmptyApp::registration_count == 0);
 static_assert(can_add_assignment_solution_manager<EmptyApp>);
 
 static_assert(AppWithSolutionManager::has_solution_manager);
@@ -48,7 +48,7 @@ static_assert(can_add_reassign_neighborhood<AppWithSolutionManager>);
 
 static_assert(CompleteGraphApp::has_solution_manager);
 static_assert(CompleteGraphApp::has_neighborhood);
-static_assert(CompleteGraphApp::runner_count == 1);
+static_assert(CompleteGraphApp::registration_count == 1);
 static_assert(!can_add_assignment_solution_manager<CompleteGraphApp>);
 static_assert(!can_add_reassign_neighborhood<CompleteGraphApp>);
 }

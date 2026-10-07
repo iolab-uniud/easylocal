@@ -4,30 +4,27 @@
 /// Cost expressions: the structure of a cost, written over the cost components
 /// of a SolutionManager recipe.
 ///
-///   solution_manager<SM>()
-///       | cost::hard_soft(
-///             cost::sum(component<A>(), component<B>() * 10),
-///             component<C>())
+/// \code
+/// solution_manager<SM>()
+///     | cost::hard_soft(
+///           cost::sum(component<A>(), component<B>() * 10),
+///           component<C>())
+/// \endcode
 ///
-/// A leaf is a cost component (component<C>(args...)); a node combines the
-/// costs of its children:
-/// - cost::sum(terms...)          Σ wᵢ · costᵢ over arithmetic costs, weights
-///                                configurable as `weights` (1 unless
-///                                cost::weighted(child, w), or its shorthand
-///                                child * w, gives one);
-/// - cost::in_order(children...)  cost::lexicographic of the children's costs;
-/// - cost::objectives(children...) cost::pareto of the children's costs,
-///                                compared by Pareto dominance;
-/// - cost::hard_soft(hard, soft)  cost::hierarchical; a pipeline stage
-///                                until_feasible() evaluates only the
-///                                components under `hard`;
-/// - cost::apply(f, children...)  f(costs...), any user function; f may also
-///                                define compare(a, b), the order of the costs
-///                                (at the root); cost::apply<F>(parameters,
-///                                children...) builds a function with
-///                                parameters, configurable as `<name>.*`;
-/// - cost::approximately(child)   the cost of child, compared by the search
-///                                within a cost::tolerance (at the root).
+/// A leaf is a cost component (`component<C>(args...)`); a node combines the
+/// costs of its children: `cost::sum(terms...)`, the weighted sum of arithmetic
+/// costs, its weights configurable as `weights` (1 unless
+/// `cost::weighted(child, w)`, or its shorthand `child * w`, gives one);
+/// `cost::in_order(children...)`, a cost::lexicographic;
+/// `cost::objectives(children...)`, a cost::pareto, compared by Pareto
+/// dominance; `cost::hard_soft(hard, soft)`, a cost::hierarchical, whose `hard`
+/// components alone a pipeline stage until_feasible() evaluates;
+/// `cost::apply(f, children...)`, `f(costs...)` for any user function, which
+/// may also define `compare(a, b)`, the order of the costs, at the root
+/// (`cost::apply<F>(parameters, children...)` builds a function with
+/// parameters, configurable as `<name>.*`); and `cost::approximately(child)`,
+/// the cost of child compared by the search within a cost::tolerance, at the
+/// root.
 ///
 /// The expression types below only record the structure; they are given meaning
 /// by the SolutionManager recipe, which knows the components' value types.

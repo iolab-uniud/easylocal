@@ -1,10 +1,12 @@
 #pragma once
 
-/// \file Costs written as text, for targets given on the command line, in files
-/// or in the TextUI, and written back in the same form (to_text): a number for
-/// an arithmetic cost, [hard, soft] for a cost::hierarchical, [v1, v2, ...] for
-/// a cost::lexicographic or a cost::pareto, nested as the types are (for
-/// example [0, [3, 1.5]]).
+/// \file
+/// Costs written as text, for targets given on the command line, in files or
+/// in the TextUI, and written back in the same form (to_text).
+///
+/// A number for an arithmetic cost, `[hard, soft]` for a cost::hierarchical,
+/// `[v1, v2, ...]` for a cost::lexicographic or a cost::pareto, nested as the
+/// types are (for example `[0, [3, 1.5]]`).
 
 #include <easylocal/cost/concepts.hpp>
 #include <easylocal/cost/hierarchical.hpp>

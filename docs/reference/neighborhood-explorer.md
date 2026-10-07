@@ -14,11 +14,11 @@ move is valid and how it changes a solution.
 | `is_valid(const Solution&, const Move&) const -> bool` | yes | debug assertions, checks |
 | `make_move(Solution&, const Move&) const` | yes; the Solution by reference, which it changes | every runner |
 | `input() const -> const Input&` | no (`neighborhood_explorer_base` gives it) | the checks that the services share the Input |
-| `moves(const Solution&) const` → input range of moves | one of the two, for deterministic algorithms | First/Best Improvement, Session and TextUI |
+| `moves(const Solution&) const` → input range of moves | one of the two, for deterministic algorithms | First and Best Improvement, Tabu Search, `check(app)`, Session and TextUI |
 | `first_move(const Solution&, Move&)`, `next_move(const Solution&, Move&)` → `bool` | | |
-| `random_move(const Solution&, RNG&) const -> std::optional<Move>` | for stochastic algorithms | Simulated Annealing, Session and TextUI |
+| `random_move(const Solution&, RNG&) const -> std::optional<Move>` | for stochastic algorithms | Simulated Annealing, Hill Climbing, Late Acceptance Hill Climbing, Great Deluge, Pareto Late Acceptance Hill Climbing, `check(app)`, Session and TextUI |
 | `name() -> std::string_view` | no | TextUI display |
-| `inverse(const Solution&, const Move& move, const Move& tabu_move) const -> bool` | for tabu search | whether `move` is forbidden by `tabu_move`, applied earlier |
+| `inverse(const Solution&, const Move& move, const Move& tabu_move) const -> bool` | for tabu search | Tabu Search: whether `move` is forbidden by `tabu_move`, applied earlier |
 | `tabu_attribute(const Move&) const` → value with `std::hash` and `==` | no (default: the move, if hashable) | frequency-based tabu memory |
 
 Concepts: `neighborhood_explorer_for<NHE, SM>`, `cursor_neighborhood_for`,

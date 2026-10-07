@@ -692,7 +692,7 @@ inline void throw_diagnostics(
 } // namespace detail
 
 /// Throws `std::invalid_argument` unless every block of the set is valid; the
-/// message gives each invalid block as "<path>: <message>".
+/// message gives each invalid block as `"<path>: <message>"`.
 inline void require_valid(const parameter_set& parameters)
 {
     detail::throw_diagnostics(parameters.validate().diagnostics);

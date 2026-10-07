@@ -124,8 +124,9 @@ constexpr range_domain<Number> range(const Number low, easylocal::unlimited_t)
 }
 
 /// Any value: the domain of a field whose values are all valid, such as a seed,
-/// free text or a number that may be negative. It is declared as
-/// easylocal::unlimited: `field<"seed", &P::seed>("...",
+/// free text or a number that may be negative.
+///
+/// It is declared as easylocal::unlimited: `field<"seed", &P::seed>("...",
 /// easylocal::unlimited)`.
 struct unbounded_domain
 {
@@ -337,7 +338,9 @@ concept domain_for =
                 && detail::is_number_v<detail::domain_element_t<Value>>)));
 
 /// Whether value lies in domain; for an array or a vector, whether each element
-/// does. Every value lies in no_domain.
+/// does.
+///
+/// Every value lies in no_domain.
 template<class Domain, class Value>
     requires domain_for<Domain, Value>
 [[nodiscard]]
@@ -479,8 +482,9 @@ struct domain_info
     }
 
     /// Whether every value of other lies in this domain: a range within this
-    /// range, values within this set or this range. Everything lies within no
-    /// domain.
+    /// range, values within this set or this range.
+    ///
+    /// Everything lies within no domain.
     [[nodiscard]]
     bool contains(const domain_info& other) const
     {

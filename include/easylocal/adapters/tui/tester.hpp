@@ -87,7 +87,7 @@ struct options
     /// The directory relative paths start from; empty: the working directory.
     std::filesystem::path path_base{};
     /// The longest text of an Input, a solution or a move shown, in bytes;
-    /// longer ones are truncated. 0: no limit.
+    /// longer ones are truncated, and 0 is no limit.
     std::size_t max_render_chars{4096};
     /// The random moves drawn per valid move by the random distribution check,
     /// which draws none with 0.

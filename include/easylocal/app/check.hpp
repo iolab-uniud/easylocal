@@ -487,7 +487,7 @@ bool check_configuration(const App& application, app_check_report& report)
 template<class App>
 void count_composition(app_check_report& report)
 {
-    report.composition().runner_registrations = App::runner_count;
+    report.composition().runner_registrations = App::registration_count;
 }
 
 // The checks that do not need the app bound: the registration names, the

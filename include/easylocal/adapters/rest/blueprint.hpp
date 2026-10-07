@@ -68,7 +68,9 @@ struct blueprint_options
     std::uint64_t seed{0};
     /// The longest time limit of a run, in seconds: a request with a longer
     /// "timeout" is rejected with `422`, and a run without one gets this
-    /// limit; empty: no bound. Must be a non-negative number.
+    /// limit; empty: no bound.
+    ///
+    /// It must be a non-negative number.
     std::optional<double> max_timeout{};
 };
 

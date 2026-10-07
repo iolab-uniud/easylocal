@@ -129,10 +129,10 @@ constexpr bool solutions_equal(
         return static_cast<bool>(lhs == rhs);
 }
 
-/// Optional non-virtual convenience base: associated types and the bound Input
-/// reference.
+/// A base for a SolutionManager, which gives it the associated types, the Input
+/// it is built from and input().
 ///
-/// Not required by the structural concepts above.
+/// It is optional and non-virtual: the concepts above do not require it.
 template<class Input, class Solution>
 class solution_manager_base
 {
