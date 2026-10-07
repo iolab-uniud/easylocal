@@ -715,6 +715,10 @@ reviewed by hand before tagging.
 - `trace::jsonl_recorder` writes its numbers in the classic locale: a stream
   imbued with a locale that groups digits wrote `"evaluations":1,234`, which
   is not JSON. The line keeps the stream's flags and precision only.
+- `cli::run` writes the time, the iterations, the evaluations and the front's
+  indices as they read back, whatever the locale of its stream (`time 0,42`
+  and `evaluations 2.000` under a decimal-comma locale), and the TextUI's
+  progress line writes its seconds with a point under any global locale.
 - A floating-point cost updated by deltas reaches its target: deltas that
   leave it a rounding error away (`0.1 + 0.2 - 0.1 - 0.2` is 2.8e-17) kept a
   run, and `until_feasible()` with its zero hard cost, from ever stopping. A

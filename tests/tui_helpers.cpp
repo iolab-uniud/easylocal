@@ -8,6 +8,7 @@
 #include <cassert>
 #include <filesystem>
 #include <fstream>
+#include <locale>
 #include <ostream>
 #include <string>
 #include <string_view>
@@ -88,6 +89,15 @@ struct unnamed_value
 {
 };
 
+// A decimal comma, as some locales write numbers.
+struct comma_numbers : std::numpunct<char>
+{
+    char do_decimal_point() const override
+    {
+        return ',';
+    }
+};
+
 } // namespace
 
 int main()
@@ -130,6 +140,14 @@ int main()
     assert(!count_text("1.5"));
     assert(!count_text("many"));
     assert(seconds_label(12.34) == "12.3s");
+    // Whatever the global locale.
+    {
+        const auto previous =
+            std::locale::global(std::locale{std::locale::classic(), new comma_numbers});
+        const auto label = seconds_label(1.5);
+        std::locale::global(previous);
+        assert(label == "1.5s");
+    }
 
     assert(value_text(member_described{}) == "member");
     assert(value_text(adl_case::value{}) == "adl");

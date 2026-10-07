@@ -197,7 +197,8 @@ component, followed by its description, indented), and the solution
 (or saves it to `--output`) to `options.out`; errors go to `options.err`.
 After a run with a front (a `cost::pareto` cost) it writes a line `front <n>`,
 then for each point, in the order of the front, a line `point <i> cost <cost>`,
-from 1, followed by its solution. With `--output` the solutions of the front
+from 1, followed by its solution. Its numbers read back whatever the locale
+of `options.out`: no decimal comma, no grouped digits. With `--output` the solutions of the front
 go instead to numbered files next to it, one solution per file as
 `save_solution` writes it, which `--solution` reads back:
 `--output best.txt` gives `best.1.txt`, `best.2.txt`, ...

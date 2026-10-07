@@ -8,12 +8,12 @@
 #include <easylocal/cost.hpp>
 
 #include <algorithm>
+#include <array>
 #include <charconv>
 #include <cmath>
 #include <cstddef>
 #include <ftxui/ftxui.hpp>
 #include <ftxui/screen/string.hpp>
-#include <iomanip>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -256,12 +256,21 @@ template<class Number>
     return number_from_text<std::size_t>(text);
 }
 
-// Seconds as the progress label shows them: one decimal, such as 12.3s.
+// Seconds as the progress label shows them: one decimal, such as 12.3s,
+// whatever the global locale.
 [[nodiscard]] inline std::string seconds_label(const double seconds)
 {
-    std::ostringstream out;
-    out << std::fixed << std::setprecision(1) << seconds << 's';
-    return out.str();
+    std::array<char, 64> buffer{};
+    const auto [end, error] = std::to_chars(
+        buffer.data(),
+        buffer.data() + buffer.size() - 1,
+        seconds,
+        std::chars_format::fixed,
+        1);
+    if (error != std::errc{})
+        return "?s";
+    *end = 's';
+    return std::string{buffer.data(), end + 1};
 }
 
 // A scrollable text wrapped to a width: the Input and solution windows. The

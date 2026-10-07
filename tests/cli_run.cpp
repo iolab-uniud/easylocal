@@ -17,6 +17,7 @@
 #include <fstream>
 #include <initializer_list>
 #include <iterator>
+#include <locale>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -179,6 +180,25 @@ Captured run(
 {
     return run_app(tsp_app(), arguments, std::move(own), std::move(defaults));
 }
+
+// A decimal comma and digits grouped by dots, as some locales write numbers.
+struct comma_numbers : std::numpunct<char>
+{
+    char do_decimal_point() const override
+    {
+        return ',';
+    }
+
+    char do_thousands_sep() const override
+    {
+        return '.';
+    }
+
+    std::string do_grouping() const override
+    {
+        return "\3";
+    }
+};
 
 // The number of times text occurs in out.
 std::size_t occurrences(const std::string& out, const std::string& text)
@@ -515,6 +535,33 @@ int main()
         assert(first.out.starts_with(
             "cost " + easylocal::detail::report_text(session.evaluate()) + "\n"));
         assert(first.out.find(tour.str()) != std::string::npos);
+        std::filesystem::remove(cities);
+    }
+
+    // The time and the counts read back as numbers in any locale of the stream:
+    // no decimal comma, no grouped digits.
+    {
+        const auto cities = thirty_cities();
+        const auto previous =
+            std::locale::global(std::locale{std::locale::classic(), new comma_numbers});
+        const auto annealed = run_app(
+            annealing_app(),
+            {"--instance",
+                cities,
+                "--seed",
+                "3",
+                "--runner",
+                "sa",
+                "--max_evaluations",
+                "2000"});
+        std::locale::global(previous);
+        assert(annealed.status == 0);
+        assert(annealed.out.find("\nevaluations 2000\n") != std::string::npos);
+        const auto time = annealed.out.find("\ntime ");
+        assert(time != std::string::npos);
+        const auto time_line =
+            annealed.out.substr(time + 6, annealed.out.find('\n', time + 1) - time - 6);
+        assert(time_line.find(',') == std::string::npos);
         std::filesystem::remove(cities);
     }
 

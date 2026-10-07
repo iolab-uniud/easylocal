@@ -340,13 +340,13 @@ void write_front(
     const auto& front = session.last_run_front();
     if (front.empty())
         return;
-    out << "front " << front.size() << '\n';
+    out << "front " << easylocal::detail::number_text(front.size()) << '\n';
     std::size_t index = 0;
     for (const auto& point : front)
     {
         ++index;
-        out << "point " << index << " cost " << easylocal::detail::report_text(point.cost)
-            << '\n';
+        out << "point " << easylocal::detail::number_text(index) << " cost "
+            << easylocal::detail::report_text(point.cost) << '\n';
         if (output.empty())
             write_solution(out, session, point.solution);
         else if constexpr (Session::supports_solution_saving)
@@ -689,7 +689,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
                         session.evaluate(),
                         tuning.hard_weight));
                 if (tuning.print == "cost_time")
-                    out << ' ' << elapsed.count();
+                    out << ' ' << easylocal::detail::number_text(elapsed.count());
                 out << '\n';
                 // The solution, when it is asked for, is saved all the same.
                 if constexpr (session_type::supports_solution_saving)
@@ -699,13 +699,15 @@ int run(App application, const int argc, char* argv[], options settings = {})
             }
         }
 
+        // The numbers are written as they read back, whatever the locale of
+        // the stream.
         out << "cost " << easylocal::detail::report_text(session.evaluate()) << "\ntime "
-            << elapsed.count() << '\n';
+            << easylocal::detail::number_text(elapsed.count()) << '\n';
         if (const auto& effort = session.last_run_effort())
         {
-            out << "iterations " << effort->iterations << "\nevaluations "
-                << effort->evaluations << "\ntermination "
-                << to_string(effort->termination) << '\n';
+            out << "iterations " << easylocal::detail::number_text(effort->iterations)
+                << "\nevaluations " << easylocal::detail::number_text(effort->evaluations)
+                << "\ntermination " << to_string(effort->termination) << '\n';
         }
         if (command_line.report)
             detail::write_report(out, session);
