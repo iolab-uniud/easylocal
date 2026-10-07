@@ -79,9 +79,10 @@ class Tui:
     def __exit__(self, *exc) -> None:
         self.close()
 
-    def close(self, timeout: float = 5.0) -> None:
+    def close(self, timeout: float = 15.0) -> None:
         """Quit as a user would, so that the program ends normally (and a
-        coverage build writes its data); kill it if it does not quit."""
+        coverage build writes its data); kill it if it does not quit. The
+        timeout leaves room for a loaded CI runner."""
         # Escape closes any modal (and stops a run); `q` quits unless a text
         # field has the focus, which Tab moves along.
         attempts = [(ESCAPE, ESCAPE, "q"), *[(TAB, "q")] * 8]
