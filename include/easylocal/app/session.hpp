@@ -17,6 +17,7 @@
 #include <easylocal/helpers/detail/evaluation.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
+#include <easylocal/utils/detail/text.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -391,7 +392,8 @@ public:
     {
         std::ifstream in{path};
         if (!in)
-            throw std::runtime_error{"failed to open Input file: " + path.string()};
+            throw std::runtime_error{
+                "failed to open Input file: " + easylocal::detail::utf8_text(path)};
         load_input(in);
     }
 
@@ -471,7 +473,8 @@ public:
     {
         std::ifstream in{path};
         if (!in)
-            throw std::runtime_error{"failed to open Solution file: " + path.string()};
+            throw std::runtime_error{
+                "failed to open Solution file: " + easylocal::detail::utf8_text(path)};
         load_solution(in);
     }
 

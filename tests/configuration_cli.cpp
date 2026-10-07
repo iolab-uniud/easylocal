@@ -133,6 +133,18 @@ void config_file_option_is_frontend_metadata()
     assert(parsed.overrides[0].path == "application.seed");
 }
 
+void config_file_path_is_utf8_text()
+{
+    // The arguments are UTF-8, on Windows too, where the ANSI code page is not.
+    constexpr std::array arguments{std::string_view{"--config=citt\xc3\xa0.cfg"}};
+
+    const auto parsed =
+        parse_cli(std::span<const std::string_view>{arguments.data(), arguments.size()});
+
+    assert(parsed);
+    assert(parsed.config_file == std::filesystem::path{u8"citt\u00e0.cfg"});
+}
+
 void duplicate_config_file_is_reported()
 {
     constexpr std::array arguments{
@@ -295,6 +307,7 @@ int main()
     empty_values_and_paths_are_reported();
     help_is_a_frontend_action_not_an_override();
     config_file_option_is_frontend_metadata();
+    config_file_path_is_utf8_text();
     duplicate_config_file_is_reported();
     cli_batch_reuses_transactional_textual_overrides();
     cli_validation_errors_leave_configuration_unchanged();

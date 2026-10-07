@@ -9,6 +9,7 @@
 /// them directly.
 
 #include <easylocal/utils/detail/describe.hpp>
+#include <easylocal/utils/detail/text.hpp>
 
 #include <concepts>
 #include <cstddef>
@@ -122,14 +123,16 @@ auto read_file(const std::filesystem::path& path, const std::string_view what, R
     std::ifstream in{path};
     if (!in)
         throw std::runtime_error{
-            "failed to open " + std::string{what} + " file: " + path.string()};
+            "failed to open " + std::string{what}
+            + " file: " + easylocal::detail::utf8_text(path)};
     try
     {
         return read(in);
     }
     catch (const std::exception& error)
     {
-        throw std::runtime_error{path.string() + ": " + error.what()};
+        throw std::runtime_error{
+            easylocal::detail::utf8_text(path) + ": " + error.what()};
     }
 }
 
@@ -366,19 +369,22 @@ void save_solution(
 {
     std::ofstream out{path};
     if (!out)
-        throw std::runtime_error{"failed to open Solution file: " + path.string()};
+        throw std::runtime_error{
+            "failed to open Solution file: " + easylocal::detail::utf8_text(path)};
     try
     {
         write_solution(input, solution, out);
     }
     catch (const std::exception& error)
     {
-        throw std::runtime_error{path.string() + ": " + error.what()};
+        throw std::runtime_error{
+            easylocal::detail::utf8_text(path) + ": " + error.what()};
     }
     // The data may reach the file only when it is flushed and closed.
     out.close();
     if (out.fail())
-        throw std::runtime_error{"failed to write Solution file: " + path.string()};
+        throw std::runtime_error{
+            "failed to write Solution file: " + easylocal::detail::utf8_text(path)};
 }
 
 } // namespace easylocal

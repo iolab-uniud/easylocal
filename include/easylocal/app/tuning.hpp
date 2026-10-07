@@ -14,6 +14,7 @@
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/cost/scalar.hpp>
 #include <easylocal/utils/detail/number_text.hpp>
+#include <easylocal/utils/detail/text.hpp>
 
 #include <algorithm>
 #include <array>
@@ -867,7 +868,7 @@ void write_new_file(
     out.close();
     if (!out)
     {
-        result.errors.push_back("cannot write " + path.string());
+        result.errors.push_back("cannot write " + easylocal::detail::utf8_text(path));
         return;
     }
     result.written.push_back(path);
@@ -904,11 +905,12 @@ inline irace_stub_result write_irace_stub(const irace_stub& stub)
     if (error)
     {
         result.errors.push_back(
-            "cannot create " + stub.directory.string() + ": " + error.message());
+            "cannot create " + easylocal::detail::utf8_text(stub.directory) + ": "
+            + error.message());
         return result;
     }
     const auto directory = std::filesystem::absolute(stub.directory);
-    const auto program = stub.program.filename().string();
+    const auto program = easylocal::detail::utf8_text(stub.program.filename());
 
     const bool new_parameters =
         !std::filesystem::exists(directory / "parameters.txt", error);
@@ -983,8 +985,9 @@ inline irace_stub_result write_irace_stub(const irace_stub& stub)
             << "shift 4\n"
             << "# The bound, when irace passes one, is not used.\n"
             << "case \"${1-}\" in --*) ;; *) [ $# -gt 0 ] && shift ;; esac\n"
-            << "exec " << detail::shell_quote(stub.program.string()) << " --config "
-            << detail::shell_quote((directory / "fixed.conf").string())
+            << "exec " << detail::shell_quote(easylocal::detail::utf8_text(stub.program))
+            << " --config "
+            << detail::shell_quote(easylocal::detail::utf8_text(directory / "fixed.conf"))
             << " --tuning.print=cost --instance=\"$instance\" --seed=\"$seed\" \"$@\"\n";
     });
     if (std::ranges::find(result.written, runner_path) != result.written.end())
@@ -1001,7 +1004,8 @@ inline irace_stub_result write_irace_stub(const irace_stub& stub)
         out << "# The instances irace tunes on: one file per line, absolute or relative\n"
             << "# to this directory.\n";
         if (!stub.instance.empty())
-            out << std::filesystem::absolute(stub.instance).string() << '\n';
+            out << easylocal::detail::utf8_text(std::filesystem::absolute(stub.instance))
+                << '\n';
     });
 
     detail::write_new_file(directory / "scenario.txt", result, [&](std::ostream& out) {
@@ -1100,7 +1104,8 @@ inline irace_stub_result write_irace_stub(const irace_stub& stub)
     out << '\n';
     out.close();
     if (!out)
-        result.errors.push_back("cannot write " + configurations.string());
+        result.errors.push_back(
+            "cannot write " + easylocal::detail::utf8_text(configurations));
     else
         result.configurations = configurations;
 

@@ -644,7 +644,10 @@ reviewed by hand before tagging.
   give it: an override reads it, and `format_value` writes it, in UTF-8 where
   they used the ANSI code page, and so do the TOML file names, the name of a
   configuration file in its diagnostics, and the paths the TextUI shows and
-  edits.
+  edits. The command line counts as UTF-8 too: the `--config` file, the
+  program's own name, and the paths `cli::run` writes in its messages and in
+  the irace stub (a program that runs on Windows with another code page
+  declares UTF-8 as its code page in its manifest).
 
 ### Documentation and examples
 

@@ -253,7 +253,8 @@ int run_traced(
     std::ofstream file{path, std::ios::binary};
     if (!file)
     {
-        err << "error: trace: cannot write " << path.string() << '\n';
+        err << "error: trace: cannot write " << easylocal::detail::utf8_text(path)
+            << '\n';
         return 1;
     }
     const auto record = [&](auto& recorder) {
@@ -262,7 +263,8 @@ int run_traced(
         recorder.flush();
         if (!recorder.good())
         {
-            err << "error: trace: cannot write " << path.string() << '\n';
+            err << "error: trace: cannot write " << easylocal::detail::utf8_text(path)
+                << '\n';
             return 1;
         }
         return 0;
@@ -325,10 +327,11 @@ inline std::filesystem::path front_file(
     const std::filesystem::path& output,
     const std::size_t index)
 {
+    auto name = output.stem();
+    name += "." + std::to_string(index);
+    name += output.extension();
     auto file = output;
-    file.replace_filename(
-        output.stem().string() + '.' + std::to_string(index)
-        + output.extension().string());
+    file.replace_filename(name);
     return file;
 }
 
@@ -378,7 +381,7 @@ inline int write_irace(
 {
     irace_stub stub{
         .directory = tuning.irace,
-        .program = std::filesystem::path{program},
+        .program = easylocal::detail::path_from_utf8(program),
         .parameters = std::move(tunable),
         .ranges = settings.tuning,
         .requirements = std::move(requirements),
@@ -413,7 +416,10 @@ inline int write_irace(
             continue;
         auto value = values[index].value;
         if (values[index].kind == config::parameter_kind::path && !value.empty())
-            value = std::filesystem::absolute(value, error).string();
+            value = easylocal::detail::utf8_text(
+                std::filesystem::absolute(
+                    easylocal::detail::path_from_utf8(value),
+                    error));
         stub.fixed.push_back({path, std::move(value)});
     }
 
@@ -423,16 +429,16 @@ inline int write_irace(
     if (!result)
         return 2;
     for (const auto& path : result.written)
-        out << "wrote " << path.string() << '\n';
+        out << "wrote " << easylocal::detail::utf8_text(path) << '\n';
     for (const auto& path : result.kept)
-        out << "kept " << path.string() << " (it exists)\n";
+        out << "kept " << easylocal::detail::utf8_text(path) << " (it exists)\n";
     if (result.tuned == 0)
     {
         out << "nothing to tune yet: uncomment a parameter in parameters.txt, then "
                "run --tuning.irace again\n";
         return 0;
     }
-    out << "updated " << result.configurations.string() << '\n';
+    out << "updated " << easylocal::detail::utf8_text(result.configurations) << '\n';
     for (const auto& moved : result.moved)
         out << "  first configuration moved into its range: " << moved << '\n';
     out << result.tuned << " parameters to tune";
@@ -440,7 +446,7 @@ inline int write_irace(
         out << ", " << result.to_complete << " more to complete in parameters.txt";
     if (stub.instance.empty())
         out << "; list the instances in instances.txt";
-    out << "; then run irace in " << tuning.irace.string() << '\n';
+    out << "; then run irace in " << easylocal::detail::utf8_text(tuning.irace) << '\n';
     return 0;
 }
 
@@ -622,7 +628,8 @@ int run(App application, const int argc, char* argv[], options settings = {})
                 session.load_solution(command_line.solution);
                 if (!session.is_valid())
                 {
-                    err << "error: solution: " << command_line.solution.string()
+                    err << "error: solution: "
+                        << easylocal::detail::utf8_text(command_line.solution)
                         << " is not valid for the Input\n";
                     return 2;
                 }

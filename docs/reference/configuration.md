@@ -238,7 +238,7 @@ position (`element 2: expected a number`), and the size of an array
 
 | Function | Purpose |
 | --- | --- |
-| `config::parse_cli(argc, argv)` | the overrides `--path=value` and `--path value`, `--config <file>` and `--help` of a command line, with its errors |
+| `config::parse_cli(argc, argv)` | the overrides `--path=value` and `--path value`, `--config <file>` and `--help` of a command line, with its errors; the arguments are UTF-8 text, on Windows too |
 | `config::parse_config_text(text)` | the overrides of the text of a configuration file, as `load_config_file` reads them |
 | `config::overlay_overrides(base, top)` | one batch of two: the overrides of `top` replace those of `base` with the same path |
 | `config::require_valid(set)` | throws `std::invalid_argument` unless every block is valid |

@@ -8,6 +8,7 @@
 
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/parameter_set.hpp>
+#include <easylocal/utils/detail/text.hpp>
 
 #include <cstddef>
 #include <filesystem>
@@ -123,7 +124,7 @@ inline cli_parse_result parse_cli(const std::span<const std::string_view> argume
                 continue;
             }
 
-            result.config_file = std::filesystem::path{std::string{value}};
+            result.config_file = easylocal::detail::path_from_utf8(value);
             continue;
         }
 
