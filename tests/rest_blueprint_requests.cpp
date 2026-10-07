@@ -779,7 +779,7 @@ void a_problem_with_text_hooks_needs_no_codec()
         "5\n0 2 9 10 7\n2 0 6 4 3\n9 6 0 8 5\n10 4 8 0 6\n7 3 5 6 0\n"};
     easylocal::Session
         session{session_application, easylocal::read_input<Tsp>(input_text), 11};
-    session.use_random_solution(session.rng());
+    session.use_random_solution();
     assert(session.run("sa", easylocal::max_evaluations(200)));
     std::ostringstream session_tour;
     session.write_solution(session_tour);

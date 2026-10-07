@@ -1089,7 +1089,7 @@ private:
                         if constexpr (session_type::supports_random_solution)
                         {
                             if (record->start == "random")
-                                session.use_random_solution(session.rng());
+                                session.use_random_solution();
                         }
                         // One run path, with or without a target.
                         const auto options = easylocal::detail::with_limits(

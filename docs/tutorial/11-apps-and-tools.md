@@ -73,10 +73,11 @@ const Tour session_tour = session.solution(); // a copy: the session goes on
 
 - `el::Session{application, tsp, seed}` copies the app and the Input: the
   session owns both, so it can outlive the variables it was built from. The
-  seed starts the RNG that the session gives to stochastic runners, so the same
-  seed repeats the same session. For another Input, build another Session.
+  seed (0 when it is left out) starts the RNG that draws the session's random
+  solutions and moves and seeds its runs, so the same seed repeats the same
+  session. For another Input, build another Session.
 - `use_initial_solution()` makes the initial tour the current solution
-  (`use_random_solution(rng)` makes a random one).
+  (`use_random_solution()` makes a random one, with the session's RNG).
 - A step by hand takes two calls: `use_first_improving_move()` *selects* the
   first move that improves the current solution, and `apply_move()` applies
   it. The selection returns `false` when there is no such move, on a local

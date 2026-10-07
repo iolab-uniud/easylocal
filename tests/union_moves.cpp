@@ -43,12 +43,12 @@ int main()
 {
     using session_type = el::Session<decltype(make_application())>;
     static_assert(std::equality_comparable<session_type::move_type>);
-    static_assert(session_type::supports_move_independence_check);
-    static_assert(session_type::supports_random_distribution_check);
+    static_assert(session_type::supports_check_move_independence);
+    static_assert(session_type::supports_check_random_move_distribution);
 
     session_type session{make_application(), five_cities(), 1};
     session.use_initial_solution();
-    const auto sampling = session.check_random_move_distribution(session.rng());
+    const auto sampling = session.check_random_move_distribution();
     assert(sampling.samples > 0);
     assert(sampling.out_of_neighborhood == 0);
     return 0;

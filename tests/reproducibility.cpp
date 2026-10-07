@@ -84,7 +84,7 @@ int main()
         // A session: a random tour from its generator, then a run, which draws
         // its own generator from it.
         easylocal::Session session{application, input, seed};
-        session.use_random_solution(session.rng());
+        session.use_random_solution();
         assert(session.run("descent"));
         const auto by_session = text_of(input, session.solution());
 

@@ -361,20 +361,34 @@ flowchart TB
 
 | Constructor | |
 | --- | --- |
-| `Session{app, input, seed}` | a session on `input`, which it owns; another Input is another session |
-| `Session{app, std::shared_ptr<const Input>, seed}` | a session on an Input it shares with other owners, without copying it |
+| `Session{app, input[, seed]}` | a session on `input`, which it owns; another Input is another session |
+| `Session{app, std::shared_ptr<const Input>[, seed]}` | a session on an Input it shares with other owners, without copying it |
 | `Session{app[, seed]}` | a session without an Input yet, for frontends that load one (`set_input`, `read_input`, `load_input`) |
 
 | Commands | |
 | --- | --- |
 | Input | `set_input`, `read_input(in)` from a stream, `load_input(path)` from a file (the I/O hooks of [Problem model](problem-model.md#optional-hooks)), `input`, `has_input`, `input_handle` (the shared Input, null without one) |
-| Solution | `use_initial_solution`, `use_random_solution(rng)`, `set_solution`, `read_solution(in)` and `write_solution(out)` on streams, `load_solution(path)` and `save_solution(path)` on files, `solution`, `has_solution`, `is_valid`, `evaluate`, `check()` |
-| Move | select with `use_first_move`, `use_next_move`, `use_first_improving_move`, `use_best_move`, `use_random_move(rng)` or `set_move`; then `has_move`, `move`, `move_is_valid`, `evaluate_move`, `evaluate_move_fully`, `move_evaluation_matches_full([tolerance])`, `apply_move` |
-| RNG | `rng()`, the session's generator, and `set_seed(seed)`; each run draws its own generator from it |
-| Neighborhood | `neighborhood_preview`, `neighborhood_statistics`, `check_neighborhood_costs([tolerance])` (the delta and the full costs agree by `equivalent` or within a `cost::tolerance`, 1e-9 by default), `check_move_independence` (needs `solutions_equal`: the SolutionManager's `equal` or `Solution::operator==`), `check_random_move_distribution(rng)` (needs `Move::operator==`); with a totally ordered cost these two compare a value only with those of the same cost, about linear in the moves, otherwise with all of them, quadratic. Each takes a `std::stop_token` as its last argument (none by default), stops at the next move once it is requested, and says so in its result's `stopped` |
+| Solution | `use_initial_solution`, `use_random_solution()`, `set_solution`, `read_solution(in)` and `write_solution(out)` on streams, `load_solution(path)` and `save_solution(path)` on files, `solution`, `has_solution`, `is_valid`, `evaluate`, `check()` |
+| Move | select with `use_first_move`, `use_next_move`, `use_first_improving_move`, `use_best_move`, `use_random_move()` or `set_move`; then `has_move`, `move`, `move_is_valid`, `evaluate_move`, `evaluate_move_fully`, `move_evaluation_matches_full([tolerance])`, `apply_move` |
+| RNG | `rng()`, the session's generator, and `set_seed(seed)`; the seed of every constructor is 0 by default; random solutions and moves are drawn with it, and each run draws its own generator from it |
+| Neighborhood | `neighborhood_preview`, `neighborhood_statistics`, `check_neighborhood_costs([tolerance])` (the delta and the full costs agree by `equivalent` or within a `cost::tolerance`, 1e-9 by default), `check_move_independence` (needs `solutions_equal`: the SolutionManager's `equal` or `Solution::operator==`), `check_random_move_distribution([rounds_per_move])` (draws the session's RNG, 20 rounds per move by default; needs `Move::operator==`); with a totally ordered cost these two compare a value only with those of the same cost, about linear in the moves, otherwise with all of them, quadratic. Each takes a `std::stop_token` as its last argument (none by default), stops at the next move once it is requested, and says so in its result's `stopped` |
 | Runners | `runner_names` (the runners and pipelines), `run("name", options...)` (replaces the current solution; the options are run options: `with(control, tracer)`, `stop_at`, `timeout`, `max_evaluations`), `last_run_effort()`: the evaluations, iterations and termination of the last run, as `named_run_result` has them (empty before the first run, after a new Input or a run that did not complete); `last_run_front()`: with a `cost::pareto` cost, the front of the last run, a vector of `pareto_point{solution, cost}` (`front_type`), empty in the same cases |
 | Costs | `read_cost(text)`: a cost written as text, such as a target, by the problem's `read_cost` or `cost::from_text`; `cost_report()`: each cost component on the current solution, in the order of the recipe, as `component_report{name, value, description}`: its `name()` or `#<position>`, its own value without weights, and its `describe(solution)` text, empty without it |
 | Parameters | `configuration()`, the app's; `configure(text_overrides)` applies them all or none and rebuilds the bound services (the current solution stays, the selected move is cleared); its result lists the errors and must be read: a misspelt path is one |
+
+A command the problem cannot serve does not compile; a frontend tests it first
+with the `static constexpr bool` capability named after it:
+`supports_initial_solution`, `supports_random_solution`,
+`supports_read_input` (also `load_input`), `supports_read_solution` (also
+`load_solution`), `supports_write_solution` (also `save_solution`),
+`supports_check_neighborhood_costs`, `supports_check_move_independence` and
+`supports_check_random_move_distribution`. Three name a group:
+`supports_deterministic_moves` (`use_first_move`, `use_next_move`,
+`neighborhood_preview`), `supports_random_moves` (`use_random_move`) and
+`supports_improving_moves` (`use_first_improving_move`, `use_best_move`,
+`neighborhood_statistics`). The result of a check is named after it too:
+`check_neighborhood_costs_result`, `check_move_independence_result`,
+`check_random_move_distribution_result`.
 
 The commands move the session through these states; a new Input drops the
 solution and the move, a new solution or a run drops the move:

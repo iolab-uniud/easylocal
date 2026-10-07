@@ -564,7 +564,7 @@ const auto independence = session.check_move_independence();
 // (draws that return no move or one the enumeration does not contain),
 // unseen (enumerated moves never drawn), min_frequency and max_frequency
 // (how often the least and the most drawn moves came up).
-const auto sampling = session.check_random_move_distribution(session.rng());
+const auto sampling = session.check_random_move_distribution();
 
 if (costs.mismatches != 0 || costs.invalid != 0 || sampling.out_of_neighborhood != 0)
     return 1;

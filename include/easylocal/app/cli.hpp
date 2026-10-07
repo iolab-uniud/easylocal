@@ -315,7 +315,7 @@ void write_solution(
     const Session& session,
     const typename Session::solution_type& solution)
 {
-    if constexpr (Session::supports_solution_saving)
+    if constexpr (Session::supports_write_solution)
         easylocal::write_solution(session.input(), solution, out);
     else
         out << easylocal::describe(solution) << '\n';
@@ -356,7 +356,7 @@ void write_front(
             << easylocal::detail::report_text(point.cost) << '\n';
         if (output.empty())
             write_solution(out, session, point.solution);
-        else if constexpr (Session::supports_solution_saving)
+        else if constexpr (Session::supports_write_solution)
             easylocal::save_solution(
                 session.input(),
                 point.solution,
@@ -481,7 +481,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
 {
     using session_type = Session<App>;
     static_assert(
-        session_type::supports_input_loading,
+        session_type::supports_read_input,
         "cli::run reads the Input from a file: give the Input a read_input hook");
 
     auto& out = *settings.out;
@@ -580,7 +580,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
     // before the Input is read and the search runs.
     const bool initial_start = command_line.start == "initial"
         || (command_line.start.empty() && !session_type::supports_random_solution);
-    if (!command_line.solution.empty() && !session_type::supports_solution_loading)
+    if (!command_line.solution.empty() && !session_type::supports_read_solution)
     {
         err << "error: solution: this problem cannot read solutions\n";
         return 2;
@@ -597,7 +597,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
         err << "error: start: this problem has no random solutions\n";
         return 2;
     }
-    if (!command_line.output.empty() && !session_type::supports_solution_saving)
+    if (!command_line.output.empty() && !session_type::supports_write_solution)
     {
         err << "error: output: this problem cannot write solutions\n";
         return 2;
@@ -623,7 +623,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
 
         if (!command_line.solution.empty())
         {
-            if constexpr (session_type::supports_solution_loading)
+            if constexpr (session_type::supports_read_solution)
             {
                 session.load_solution(command_line.solution);
                 if (!session.is_valid())
@@ -643,7 +643,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
         else
         {
             if constexpr (session_type::supports_random_solution)
-                session.use_random_solution(session.rng());
+                session.use_random_solution();
         }
 
         const auto begin = std::chrono::steady_clock::now();
@@ -704,7 +704,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
                     out << ' ' << easylocal::detail::number_text(elapsed.count());
                 out << '\n';
                 // The solution, when it is asked for, is saved all the same.
-                if constexpr (session_type::supports_solution_saving)
+                if constexpr (session_type::supports_write_solution)
                     if (!command_line.output.empty())
                         session.save_solution(command_line.output);
                 return 0;
@@ -725,7 +725,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
             detail::write_report(out, session);
         if (command_line.output.empty())
             detail::write_solution(out, session, session.solution());
-        else if constexpr (session_type::supports_solution_saving)
+        else if constexpr (session_type::supports_write_solution)
             session.save_solution(command_line.output);
         detail::write_front(out, session, command_line.output);
     }

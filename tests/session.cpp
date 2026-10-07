@@ -503,10 +503,10 @@ void session_exposes_random_solution_as_an_explicit_choice()
     static_assert(decltype(session)::supports_random_solution);
 
     session.set_input(RandomOnlyInput{});
-    std::mt19937_64 rng{1234};
+    session.set_seed(1234);
     std::mt19937_64 reference{1234};
 
-    session.use_random_solution(rng);
+    session.use_random_solution();
 
     assert(session.has_solution());
     assert(session.solution().value == reference());
@@ -553,7 +553,7 @@ void session_selects_first_improving_and_best_moves()
     session.set_input(make_input(3));
     session.set_solution(AssignmentSolution{.assignment = {0, 0}});
 
-    static_assert(decltype(session)::supports_improvement_selection);
+    static_assert(decltype(session)::supports_improving_moves);
     assert(session.evaluate().soft() == 7);
 
     const auto improving = session.use_first_improving_move();
@@ -616,13 +616,13 @@ void session_runs_on_its_bound_app()
     assert(CountedNeighborhood::constructions == 1);
 }
 
-void session_selects_random_moves_with_an_explicit_rng()
+void session_selects_random_moves_with_its_rng()
 {
     easylocal::Session session{make_application()};
     session.set_input(make_input(3));
     session.use_initial_solution();
 
-    std::mt19937_64 rng{1234};
+    session.set_seed(1234);
     std::mt19937_64 reference_rng{1234};
     const auto expected = easylocal::random_move(
         session.bound_app().neighborhood_explorer(),
@@ -630,7 +630,7 @@ void session_selects_random_moves_with_an_explicit_rng()
         reference_rng);
 
     assert(expected);
-    const auto selected = session.use_random_move(rng);
+    const auto selected = session.use_random_move();
     assert(selected);
     assert(session.has_move());
     assert(session.move().job == expected->job);
@@ -738,8 +738,7 @@ void session_reports_when_the_current_solution_has_no_moves()
     assert(!has_first);
     assert(!session.has_move());
 
-    std::mt19937_64 rng{1234};
-    const auto has_random = session.use_random_move(rng);
+    const auto has_random = session.use_random_move();
     assert(!has_random);
     assert(!session.has_move());
 }
@@ -1057,7 +1056,7 @@ void the_neighborhood_checks_group_by_cost()
     assert(independence.null_moves == 0);
     assert(independence.repeated_states == 2);
 
-    const auto distribution = session.check_random_move_distribution(session.rng(), 50);
+    const auto distribution = session.check_random_move_distribution(50);
     assert(distribution.neighborhood_size == 4);
     assert(distribution.samples == 200);
     assert(distribution.out_of_neighborhood == 0);
@@ -1070,9 +1069,9 @@ void session_reports_neighborhood_diagnostics()
     session.set_input(make_input(3));
     session.set_solution(AssignmentSolution{.assignment = {0, 0}});
 
-    static_assert(decltype(session)::supports_cost_consistency_check);
-    static_assert(decltype(session)::supports_move_independence_check);
-    static_assert(decltype(session)::supports_random_distribution_check);
+    static_assert(decltype(session)::supports_check_neighborhood_costs);
+    static_assert(decltype(session)::supports_check_move_independence);
+    static_assert(decltype(session)::supports_check_random_move_distribution);
 
     const auto preview = session.neighborhood_preview(1);
     assert(preview.moves == 2);
@@ -1095,8 +1094,7 @@ void session_reports_neighborhood_diagnostics()
     assert(independence.null_moves == 0);
     assert(independence.repeated_states == 0);
 
-    std::mt19937_64 rng{1234};
-    const auto distribution = session.check_random_move_distribution(rng, 8);
+    const auto distribution = session.check_random_move_distribution(8);
     assert(distribution.neighborhood_size == 2);
     assert(distribution.samples == 16);
     assert(distribution.out_of_neighborhood == 0);
@@ -1120,7 +1118,7 @@ void session_reports_neighborhood_diagnostics()
     const auto stopped_independence = session.check_move_independence(stop.get_token());
     assert(stopped_independence.stopped && stopped_independence.moves == 0);
     const auto stopped_distribution =
-        session.check_random_move_distribution(rng, 8, stop.get_token());
+        session.check_random_move_distribution(8, stop.get_token());
     assert(stopped_distribution.stopped);
     assert(stopped_distribution.neighborhood_size == 0);
     assert(stopped_distribution.samples == 0);
@@ -1182,7 +1180,7 @@ int main()
     session_selects_first_improving_and_best_moves();
     session_evaluates_the_current_solution_once_per_scan();
     session_runs_on_its_bound_app();
-    session_selects_random_moves_with_an_explicit_rng();
+    session_selects_random_moves_with_its_rng();
     session_compares_move_evaluation_with_full_recomputation();
     session_reports_neighborhood_diagnostics();
     applying_a_move_updates_the_solution_and_clears_move_state();

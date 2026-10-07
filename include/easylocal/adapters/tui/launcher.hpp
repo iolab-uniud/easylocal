@@ -101,7 +101,7 @@ public:
 
     void run()
     {
-        if constexpr (first_session_type::supports_input_loading)
+        if constexpr (first_session_type::supports_read_input)
         {
             if (!options_.tester.input_path.empty())
             {

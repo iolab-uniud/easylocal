@@ -75,7 +75,7 @@ const auto independence = session.check_move_independence();
 // (draws that return no move or one the enumeration does not contain),
 // unseen (enumerated moves never drawn), min_frequency and max_frequency
 // (how often the least and the most drawn moves came up).
-const auto sampling = session.check_random_move_distribution(session.rng());
+const auto sampling = session.check_random_move_distribution();
 
 if (costs.mismatches != 0 || costs.invalid != 0 || sampling.out_of_neighborhood != 0)
     return 1;
@@ -85,7 +85,7 @@ if (costs.mismatches != 0 || costs.invalid != 0 || sampling.out_of_neighborhood 
 | --- | --- | --- |
 | `check_neighborhood_costs()` | `moves`, `mismatches`, `invalid` | a move whose delta evaluation disagrees with the full evaluation, or an invalid enumerated move |
 | `check_move_independence()` | `moves`, `null_moves`, `repeated_states`, `invalid` | moves that change nothing (*null moves*), and different moves that lead to the same solution |
-| `check_random_move_distribution(rng)` | `neighborhood_size`, `samples`, `out_of_neighborhood`, `unseen`, `min_frequency`, `max_frequency` | a sampled move that is not in the enumerated neighborhood; moves never sampled (`unseen`) hint at a biased `random_move` |
+| `check_random_move_distribution([rounds_per_move])` | `neighborhood_size`, `samples`, `out_of_neighborhood`, `unseen`, `min_frequency`, `max_frequency` | a sampled move that is not in the enumerated neighborhood; moves never sampled (`unseen`) hint at a biased `random_move` |
 
 All three need the moves to be enumerable; the last one also needs
 `random_move`. `check_neighborhood_costs(tolerance)` compares the costs within

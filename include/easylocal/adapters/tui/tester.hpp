@@ -481,7 +481,7 @@ private:
     {
         using namespace ftxui;
         auto solution_controls = Container::Vertical({});
-        if constexpr (tester_type::supports_input_loading)
+        if constexpr (tester_type::supports_read_input)
         {
             solution_controls->Add(section_label("Instances"));
             auto instance_menu_option = MenuOption::Vertical();
@@ -514,13 +514,13 @@ private:
             solution_controls->Add(Container::Horizontal(std::move(source_actions)));
         }
 
-        if constexpr (tester_type::supports_solution_loading ||
-                      tester_type::supports_solution_saving)
+        if constexpr (tester_type::supports_read_solution
+            || tester_type::supports_write_solution)
         {
             solution_controls->Add(section_label("Solutions"));
             auto solution_menu_option = MenuOption::Vertical();
             solution_menu_option.on_change = [this] { select_known_solution(); };
-            if constexpr (tester_type::supports_solution_loading)
+            if constexpr (tester_type::supports_read_solution)
             {
                 solution_menu_option.on_enter = [this] { load_solution(); };
             }
@@ -535,9 +535,9 @@ private:
                 "Browse...",
                 [this] { open_browser(file_target::solution); },
                 ButtonOption::Ascii()));
-            if constexpr (tester_type::supports_solution_loading)
+            if constexpr (tester_type::supports_read_solution)
                 file_actions.push_back(action_button(tester_page::solution, "Shift-L"));
-            if constexpr (tester_type::supports_solution_saving)
+            if constexpr (tester_type::supports_write_solution)
                 file_actions.push_back(action_button(tester_page::solution, "W"));
             solution_controls->Add(Container::Horizontal(std::move(file_actions)));
         }
@@ -1018,7 +1018,7 @@ private:
         switch (page)
         {
         case tester_page::solution:
-            if constexpr (tester_type::supports_input_loading)
+            if constexpr (tester_type::supports_read_input)
                 add("L", "Load input", {Event::l}, [this] { load_input(); });
             if constexpr (tester_type::supports_initial_solution)
                 add("I", "Initial", {Event::i, Event::I}, [this] {
@@ -1028,14 +1028,14 @@ private:
                 add("R", "Random", {Event::r, Event::R}, [this] {
                     use_random_solution();
                 });
-            if constexpr (tester_type::supports_solution_loading)
+            if constexpr (tester_type::supports_read_solution)
                 add("Shift-L", "Load solution", {Event::L}, [this] { load_solution(); });
-            if constexpr (tester_type::supports_solution_saving)
+            if constexpr (tester_type::supports_write_solution)
                 add("W", "Save", {Event::w, Event::W}, [this] { save_solution(); });
             add("C", "Check", {Event::c, Event::C}, [this] { check(); });
             break;
         case tester_page::move:
-            if constexpr (tester_type::supports_improvement_selection)
+            if constexpr (tester_type::supports_improving_moves)
             {
                 add("B", "Best", {Event::b, Event::B}, [this] { best_move(); });
                 add("I", "First improving", {Event::i, Event::I}, [this] {
@@ -1052,19 +1052,19 @@ private:
             add("A", "Apply", {Event::a, Event::A}, [this] { apply_move(); });
             if constexpr (tester_type::supports_deterministic_moves)
                 add("P", "List", {Event::p, Event::P}, [this] { preview_neighbors(); });
-            if constexpr (tester_type::supports_improvement_selection)
+            if constexpr (tester_type::supports_improving_moves)
                 add("T", "Stats", {Event::t, Event::T}, [this] {
                     neighborhood_statistics();
                 });
-            if constexpr (tester_type::supports_cost_consistency_check)
+            if constexpr (tester_type::supports_check_neighborhood_costs)
                 add("C", "Costs", {Event::c, Event::C}, [this] {
                     check_neighborhood_costs();
                 });
-            if constexpr (tester_type::supports_move_independence_check)
+            if constexpr (tester_type::supports_check_move_independence)
                 add("D", "Indep", {Event::d, Event::D}, [this] {
                     check_move_independence();
                 });
-            if constexpr (tester_type::supports_random_distribution_check)
+            if constexpr (tester_type::supports_check_random_move_distribution)
                 add("U", "Distribution", {Event::u, Event::U}, [this] {
                     check_random_distribution();
                 });
@@ -1246,7 +1246,7 @@ private:
     }
 
     void load_input()
-        requires tester_type::supports_input_loading
+        requires tester_type::supports_read_input
     {
         if (input_path_.empty())
         {
@@ -1289,14 +1289,14 @@ private:
             return;
         }
         perform("Random solution", [this] {
-            tester_.use_random_solution(tester_.rng());
+            tester_.use_random_solution();
             after_solution_change();
             set_status(status_kind::success, solution_status("Random solution selected"));
         });
     }
 
     void load_solution()
-        requires tester_type::supports_solution_loading
+        requires tester_type::supports_read_solution
     {
         if (!require_input("Load solution"))
         {
@@ -1318,7 +1318,7 @@ private:
     }
 
     void save_solution()
-        requires tester_type::supports_solution_saving
+        requires tester_type::supports_write_solution
     {
         if (!require_solution("Save solution"))
         {
@@ -1443,7 +1443,7 @@ private:
     }
 
     void best_move()
-        requires tester_type::supports_improvement_selection
+        requires tester_type::supports_improving_moves
     {
         if (!require_solution("Best move"))
             return;
@@ -1459,7 +1459,7 @@ private:
     }
 
     void first_improving_move()
-        requires tester_type::supports_improvement_selection
+        requires tester_type::supports_improving_moves
     {
         if (!require_solution("First improving move"))
             return;
@@ -1529,7 +1529,7 @@ private:
             return;
         }
         perform("Random move", [this] {
-            if (tester_.use_random_move(tester_.rng()))
+            if (tester_.use_random_move())
             {
                 last_move_result_.clear();
                 set_status(status_kind::success, move_status("Selected random move"));
@@ -1575,7 +1575,7 @@ private:
     }
 
     void neighborhood_statistics()
-        requires tester_type::supports_improvement_selection
+        requires tester_type::supports_improving_moves
     {
         if (!require_solution("Neighborhood statistics"))
             return;
@@ -1598,7 +1598,7 @@ private:
     }
 
     void check_neighborhood_costs()
-        requires tester_type::supports_cost_consistency_check
+        requires tester_type::supports_check_neighborhood_costs
     {
         if (!require_solution("Check neighborhood costs"))
             return;
@@ -1622,7 +1622,7 @@ private:
     }
 
     void check_move_independence()
-        requires tester_type::supports_move_independence_check
+        requires tester_type::supports_check_move_independence
     {
         if (!require_solution("Check move independence"))
             return;
@@ -1647,7 +1647,7 @@ private:
     }
 
     void check_random_distribution()
-        requires tester_type::supports_random_distribution_check
+        requires tester_type::supports_check_random_move_distribution
     {
         if (!require_solution("Check random distribution"))
             return;
@@ -1657,8 +1657,7 @@ private:
             [rounds = options_.random_distribution_rounds](
                 tester_type& session,
                 const std::stop_token& stop) {
-                const auto result =
-                    session.check_random_move_distribution(session.rng(), rounds, stop);
+                const auto result = session.check_random_move_distribution(rounds, stop);
                 return diagnostic_outcome{
                     .body = "Neighborhood size: "
                         + std::to_string(result.neighborhood_size) + "\n" + "Samples: "
@@ -2354,7 +2353,7 @@ private:
         }
 
         auto rendered = value_text(tester_.solution());
-        if constexpr (tester_type::supports_solution_saving)
+        if constexpr (tester_type::supports_write_solution)
         {
             if (rendered.starts_with("<not printable"))
             {
@@ -3103,7 +3102,7 @@ void run(App application, tui::options settings = {})
 {
     using session_type = easylocal::Session<App>;
     session_type session{std::move(application), settings.seed};
-    if constexpr (session_type::supports_input_loading)
+    if constexpr (session_type::supports_read_input)
     {
         if (!settings.input_path.empty())
             session.load_input(detail::initial_input_file(settings));

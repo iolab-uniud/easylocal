@@ -204,16 +204,14 @@ int main()
 
     auto outside_session =
         session_on<broken::OutsideTwoOpt, TwoOptLengthDelta>(tsp8, shuffled);
-    const auto outside_draws =
-        outside_session.check_random_move_distribution(outside_session.rng(), 2);
+    const auto outside_draws = outside_session.check_random_move_distribution(2);
     ok &= expect(
         outside_draws.neighborhood_size == 20 && outside_draws.samples == 40
             && outside_draws.out_of_neighborhood == 40 && outside_draws.unseen == 20,
         "check_random_move_distribution counts the draws outside the neighborhood");
     auto empty_session =
         session_on<broken::EmptyRandomTwoOpt, TwoOptLengthDelta>(tsp8, shuffled);
-    const auto empty_draws =
-        empty_session.check_random_move_distribution(empty_session.rng(), 1);
+    const auto empty_draws = empty_session.check_random_move_distribution(1);
     ok &= expect(
         empty_draws.out_of_neighborhood == 20 && empty_draws.unseen == 20,
         "check_random_move_distribution counts the draws that find no move");

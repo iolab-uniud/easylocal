@@ -369,27 +369,25 @@ using io_app_type = decltype(make_io_application<Input, Solution>("io"));
 template<class Input, class Solution>
 using session_type = easylocal::Session<io_app_type<Input, Solution>>;
 
+static_assert(session_type<static_io::Input, static_io::Solution>::supports_read_input);
 static_assert(
-    session_type<static_io::Input, static_io::Solution>::supports_input_loading);
+    session_type<static_io::Input, static_io::Solution>::supports_read_solution);
 static_assert(
-    session_type<static_io::Input, static_io::Solution>::supports_solution_loading);
-static_assert(
-    session_type<static_io::Input, static_io::Solution>::supports_solution_saving);
+    session_type<static_io::Input, static_io::Solution>::supports_write_solution);
 static_assert(
     !session_type<static_io::Input, static_io::Solution>::supports_initial_solution);
 static_assert(
     !session_type<static_io::Input, static_io::Solution>::supports_random_solution);
 
-static_assert(session_type<adl_io::Input, adl_io::Solution>::supports_input_loading);
-static_assert(session_type<adl_io::Input, adl_io::Solution>::supports_solution_loading);
-static_assert(session_type<adl_io::Input, adl_io::Solution>::supports_solution_saving);
+static_assert(session_type<adl_io::Input, adl_io::Solution>::supports_read_input);
+static_assert(session_type<adl_io::Input, adl_io::Solution>::supports_read_solution);
+static_assert(session_type<adl_io::Input, adl_io::Solution>::supports_write_solution);
 
+static_assert(session_type<stream_io::Input, stream_io::Solution>::supports_read_input);
 static_assert(
-    session_type<stream_io::Input, stream_io::Solution>::supports_input_loading);
+    session_type<stream_io::Input, stream_io::Solution>::supports_read_solution);
 static_assert(
-    session_type<stream_io::Input, stream_io::Solution>::supports_solution_loading);
-static_assert(
-    session_type<stream_io::Input, stream_io::Solution>::supports_solution_saving);
+    session_type<stream_io::Input, stream_io::Solution>::supports_write_solution);
 
 void static_member_io_has_priority()
 {

@@ -42,6 +42,26 @@ reviewed by hand before tagging.
   (formerly `parameters`): `cli::run(app, argc, argv,
   {.program_parameters = own})`. The stability page says
   that `cli::options` is Stable but for its Experimental `tuning`.
+- **Breaking:** a Session draws with its own RNG: `use_random_solution()`,
+  `use_random_move()` and `check_random_move_distribution([rounds_per_move,
+  stop])` no longer take a generator (they took any `std::mt19937_64`, while
+  the session's was the one that made a session reproducible); `set_seed`
+  reseeds it. Every constructor takes the seed last, 0 by default:
+  `Session{app, input}` is `Session{app, input, 0}`.
+- **Breaking:** the capabilities and results of a Session are named after its
+  functions: `supports_check_neighborhood_costs`,
+  `supports_check_move_independence` and
+  `supports_check_random_move_distribution` replace
+  `supports_cost_consistency_check`, `supports_move_independence_check` and
+  `supports_random_distribution_check`; `supports_read_input`,
+  `supports_read_solution` and `supports_write_solution` replace
+  `supports_input_loading`, `supports_solution_loading` and
+  `supports_solution_saving`; `supports_improving_moves`, the group of
+  `use_first_improving_move`, `use_best_move` and `neighborhood_statistics`,
+  replaces `supports_improvement_selection`. `check_neighborhood_costs_result`,
+  `check_move_independence_result` and `check_random_move_distribution_result`
+  replace `neighborhood_cost_check_result`, `move_independence_result` and
+  `random_distribution_result`.
 
 ### Checking tools
 

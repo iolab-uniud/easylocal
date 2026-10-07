@@ -33,7 +33,7 @@ using Annealing = runners::SimulatedAnnealing<runners::temperature::Classic>;
 {
     el::Session session{make_application(), seed};
     session.set_input(five_cities());
-    session.use_random_solution(session.rng());
+    session.use_random_solution();
     if (!session.run(runner))
     {
         std::abort();

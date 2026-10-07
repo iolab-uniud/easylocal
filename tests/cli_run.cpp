@@ -528,7 +528,7 @@ int main()
 
         easylocal::Session session{annealing_app(), 11};
         session.load_input(cities);
-        session.use_random_solution(session.rng());
+        session.use_random_solution();
         assert(session.run("sa", easylocal::max_evaluations(300)));
         std::ostringstream tour;
         session.write_solution(tour);

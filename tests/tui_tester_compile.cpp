@@ -37,9 +37,9 @@ int main()
                         | easylocal::solvers::stage("descent", descent)));
 
     using session_type = easylocal::Session<decltype(application)>;
-    static_assert(session_type::supports_input_loading);
-    static_assert(session_type::supports_solution_loading);
-    static_assert(session_type::supports_solution_saving);
+    static_assert(session_type::supports_read_input);
+    static_assert(session_type::supports_read_solution);
+    static_assert(session_type::supports_write_solution);
 
     // Instantiates the complete FTXUI frontend without entering a terminal loop.
     if (false)

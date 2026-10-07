@@ -146,22 +146,23 @@ public:
     /// Whether the neighborhood draws random moves.
     static constexpr bool supports_random_moves =
         random_neighborhood_for<neighborhood_explorer_type, solution_type, rng_type>;
-    /// Whether moves can be selected by their cost: the neighborhood enumerates
-    /// them and the cost compares with better().
-    static constexpr bool supports_improvement_selection =
+    /// Whether use_first_improving_move, use_best_move and
+    /// neighborhood_statistics are available, which compare the moves by their
+    /// cost: the neighborhood enumerates them and the cost has better().
+    static constexpr bool supports_improving_moves =
         supports_deterministic_moves && cost::has_better<solution_manager_type>;
     /// Whether check_neighborhood_costs is available: the neighborhood
     /// enumerates its moves and the cost has equivalent().
-    static constexpr bool supports_cost_consistency_check =
+    static constexpr bool supports_check_neighborhood_costs =
         supports_deterministic_moves && cost::has_equivalent<solution_manager_type>;
     /// Whether check_move_independence is available: the neighborhood
     /// enumerates its moves and solutions compare, with the SolutionManager's
     /// `equal` or the solution's `==` (solutions_equal).
-    static constexpr bool supports_move_independence_check =
+    static constexpr bool supports_check_move_independence =
         supports_deterministic_moves && has_solution_equality<solution_manager_type>;
     /// Whether check_random_move_distribution is available: the neighborhood
     /// enumerates and draws its moves, and moves compare with `==`.
-    static constexpr bool supports_random_distribution_check =
+    static constexpr bool supports_check_random_move_distribution =
         supports_deterministic_moves && supports_random_moves
         && detail::comparable_moves_v<move_type>;
 
@@ -184,7 +185,7 @@ public:
     };
 
     /// The result of check_neighborhood_costs.
-    struct neighborhood_cost_check_result
+    struct check_neighborhood_costs_result
     {
         /// Moves enumerated.
         std::size_t moves{};
@@ -198,7 +199,7 @@ public:
     };
 
     /// The result of check_move_independence.
-    struct move_independence_result
+    struct check_move_independence_result
     {
         /// Moves enumerated.
         std::size_t moves{};
@@ -214,7 +215,7 @@ public:
     };
 
     /// The result of check_random_move_distribution.
-    struct random_distribution_result
+    struct check_random_move_distribution_result
     {
         /// Valid moves enumerated.
         std::size_t neighborhood_size{};
@@ -267,18 +268,20 @@ public:
         /// moves scanned before it.
         bool stopped{};
     };
-    /// Whether the Input can be read from a stream.
-    static constexpr bool supports_input_loading = readable_input<input_type>;
-    /// Whether a solution can be read from a stream.
-    static constexpr bool supports_solution_loading =
+    /// Whether read_input and load_input are available: the Input can be read
+    /// from a stream.
+    static constexpr bool supports_read_input = readable_input<input_type>;
+    /// Whether read_solution and load_solution are available: a solution can be
+    /// read from a stream.
+    static constexpr bool supports_read_solution =
         readable_solution<input_type, solution_type>;
-    /// Whether a solution can be written to a stream.
-    static constexpr bool supports_solution_saving =
+    /// Whether write_solution and save_solution are available: a solution can
+    /// be written to a stream.
+    static constexpr bool supports_write_solution =
         writable_solution<input_type, solution_type>;
 
     static_assert(
-        supports_initial_solution || supports_random_solution
-            || supports_solution_loading,
+        supports_initial_solution || supports_random_solution || supports_read_solution,
         "Session requires the SolutionManager to provide initial_solution() "
         "or random_solution(std::mt19937_64&) or solution stream loading "
         "to be available");
@@ -286,8 +289,9 @@ public:
     /// A session without an Input yet: set_input or load_input provides it, as
     /// in an interactive frontend.
     ///
-    /// The seed initializes the RNG of the session, which draws random
-    /// solutions and seeds the generator of each run. Throws
+    /// The seed, 0 by default as in every constructor, initializes the RNG of
+    /// the session, which draws the random solutions and moves and seeds the
+    /// generator of each run. Throws
     /// `std::invalid_argument` when the parameters of the app are not valid, as
     /// binding it would.
     explicit Session(App application, const std::uint64_t seed = 0)
@@ -298,21 +302,22 @@ public:
     }
 
     /// A session on an Input, which it owns: the app bound to it, and the RNG
-    /// seeded with seed.
+    /// seeded with seed (0 by default).
     ///
     /// Another Input is another session.
-    Session(App application, input_type input, const std::uint64_t seed)
+    Session(App application, input_type input, const std::uint64_t seed = 0)
         : Session{std::move(application), seed}
     {
         set_input(std::move(input));
     }
 
     /// A session on an Input it shares with its other owners, for example an
-    /// adapter that keeps the Input to encode the results.
+    /// adapter that keeps the Input to encode the results; the seed is 0 by
+    /// default.
     Session(
         App application,
         std::shared_ptr<const input_type> input,
-        const std::uint64_t seed)
+        const std::uint64_t seed = 0)
         : Session{std::move(application), seed}
     {
         set_input(std::move(input));
@@ -378,7 +383,7 @@ public:
     /// Reads the Input from a stream with the problem's read hook, as
     /// set_input.
     void read_input(std::istream& in)
-        requires supports_input_loading
+        requires supports_read_input
     {
         set_input(easylocal::read_input<input_type>(in));
     }
@@ -389,7 +394,7 @@ public:
     /// Unlike easylocal::load_input, errors do not name the file, which an
     /// interactive frontend shows on its own.
     void load_input(const std::filesystem::path& path)
-        requires supports_input_loading
+        requires supports_read_input
     {
         std::ifstream in{path};
         if (!in)
@@ -440,14 +445,14 @@ public:
         clear_move_state();
     }
 
-    /// Makes a random_solution(rng) of the SolutionManager the current
-    /// solution.
-    void use_random_solution(rng_type& rng)
+    /// Makes a random_solution of the SolutionManager, drawn with the session's
+    /// RNG, the current solution.
+    void use_random_solution()
         requires supports_random_solution
     {
         assert(bound_);
         solution_ = std::make_unique<solution_type>(
-            bound_->solution_manager().random_solution(rng));
+            bound_->solution_manager().random_solution(rng_));
         clear_move_state();
     }
 
@@ -461,7 +466,7 @@ public:
 
     /// Reads the current solution from a stream with the problem's read hook.
     void read_solution(std::istream& in)
-        requires supports_solution_loading
+        requires supports_read_solution
     {
         assert(input_);
         set_solution(easylocal::read_solution<solution_type>(*input_, in));
@@ -470,7 +475,7 @@ public:
     /// Reads the current solution from a file; throws std::runtime_error when
     /// the file cannot be opened.
     void load_solution(const std::filesystem::path& path)
-        requires supports_solution_loading
+        requires supports_read_solution
     {
         std::ifstream in{path};
         if (!in)
@@ -481,7 +486,7 @@ public:
 
     /// Writes the current solution to a stream with the problem's write hook.
     void write_solution(std::ostream& out) const
-        requires supports_solution_saving
+        requires supports_write_solution
     {
         assert(input_);
         assert(solution_);
@@ -490,7 +495,7 @@ public:
 
     /// Writes the current solution to a file.
     void save_solution(const std::filesystem::path& path) const
-        requires supports_solution_saving
+        requires supports_write_solution
     {
         assert(input_);
         assert(solution_);
@@ -751,7 +756,7 @@ public:
     /// no move selected, when there is none.
     [[nodiscard]]
     bool use_first_improving_move()
-        requires supports_improvement_selection
+        requires supports_improving_moves
     {
         assert(bound_);
         assert(solution_);
@@ -782,7 +787,7 @@ public:
     /// with no move selected, when there is none.
     [[nodiscard]]
     bool use_best_move()
-        requires supports_improvement_selection
+        requires supports_improving_moves
     {
         assert(bound_);
         assert(solution_);
@@ -826,16 +831,17 @@ public:
         return true;
     }
 
-    /// Selects a random move; false, with no move selected, when none is drawn.
+    /// Selects a random move, drawn with the session's RNG; false, with no move
+    /// selected, when none is drawn.
     [[nodiscard]]
-    bool use_random_move(rng_type& rng)
+    bool use_random_move()
         requires supports_random_moves
     {
         assert(bound_);
         assert(solution_);
 
         auto selected =
-            easylocal::random_move(bound_->neighborhood_explorer(), *solution_, rng);
+            easylocal::random_move(bound_->neighborhood_explorer(), *solution_, rng_);
 
         deterministic_move_index_.reset();
         if (!selected)
@@ -954,7 +960,7 @@ public:
     [[nodiscard]]
     neighborhood_statistics_result neighborhood_statistics(
         const std::stop_token& stop = {}) const
-        requires supports_improvement_selection
+        requires supports_improving_moves
     {
         assert(bound_);
         assert(solution_);
@@ -996,15 +1002,15 @@ public:
     /// within `tolerance` (`{0, 0}`: exactly); a stop request on `stop` ends
     /// it early.
     [[nodiscard]]
-    neighborhood_cost_check_result check_neighborhood_costs(
+    check_neighborhood_costs_result check_neighborhood_costs(
         const cost::tolerance& tolerance = {},
         const std::stop_token& stop = {}) const
-        requires supports_cost_consistency_check
+        requires supports_check_neighborhood_costs
     {
         assert(bound_);
         assert(solution_);
 
-        neighborhood_cost_check_result result;
+        check_neighborhood_costs_result result;
         const auto& solution_manager = bound_->solution_manager();
         const auto& neighborhood = bound_->neighborhood_explorer();
         const auto evaluation = this->evaluation();
@@ -1052,14 +1058,14 @@ public:
     /// quadratic in the size of the neighborhood. A stop request on `stop`
     /// ends it early.
     [[nodiscard]]
-    move_independence_result check_move_independence(
+    check_move_independence_result check_move_independence(
         const std::stop_token& stop = {}) const
-        requires supports_move_independence_check
+        requires supports_check_move_independence
     {
         assert(bound_);
         assert(solution_);
 
-        move_independence_result result;
+        check_move_independence_result result;
         const auto& solution_manager = bound_->solution_manager();
         const auto& neighborhood = bound_->neighborhood_explorer();
         std::vector<solution_type> reached;
@@ -1126,24 +1132,24 @@ public:
         return result;
     }
 
-    /// Draws rounds_per_move random moves per valid enumerated move and counts
-    /// how often each is drawn, and the draws outside the enumerated moves.
+    /// Draws rounds_per_move random moves per valid enumerated move, with the
+    /// session's RNG, and counts how often each is drawn, and the draws outside
+    /// the enumerated moves.
     ///
     /// With a totally ordered cost a drawn move is compared only with the
     /// enumerated moves of the same cost, by delta; otherwise with each of
     /// them, in time quadratic in the size of the neighborhood. A stop request
     /// on `stop` ends it early.
     [[nodiscard]]
-    random_distribution_result check_random_move_distribution(
-        rng_type& rng,
+    check_random_move_distribution_result check_random_move_distribution(
         const std::size_t rounds_per_move = 20,
-        const std::stop_token& stop = {}) const
-        requires supports_random_distribution_check
+        const std::stop_token& stop = {})
+        requires supports_check_random_move_distribution
     {
         assert(bound_);
         assert(solution_);
 
-        random_distribution_result result;
+        check_random_move_distribution_result result;
         const auto& neighborhood = bound_->neighborhood_explorer();
         std::vector<move_type> moves_list;
         for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
@@ -1184,7 +1190,7 @@ public:
                 result.stopped = true;
                 break;
             }
-            auto selected = easylocal::random_move(neighborhood, *solution_, rng);
+            auto selected = easylocal::random_move(neighborhood, *solution_, rng_);
             if (!selected)
             {
                 ++result.out_of_neighborhood;
