@@ -41,16 +41,24 @@ int main()
 
     bool ok = true;
 
-    const TspInstance instance{
-        .city_count = 4,
-        .distances = std::vector<distance_type>(16, 0.0),
+    // Distinct symmetric distances, small integers that doubles add exactly:
+    // a wrong edge in the delta changes its value.
+    const std::vector<std::vector<distance_type>> rows{
+        {0.0, 3.0, 7.0, 2.0, 11.0},
+        {3.0, 0.0, 4.0, 9.0, 6.0},
+        {7.0, 4.0, 0.0, 5.0, 1.0},
+        {2.0, 9.0, 5.0, 0.0, 8.0},
+        {11.0, 6.0, 1.0, 8.0, 0.0},
     };
+    TspInstance instance{.city_count = rows.size(), .distances = {}};
+    for (const auto& row : rows)
+        instance.distances.insert(instance.distances.end(), row.begin(), row.end());
     const TspSolutionManager solution_manager{instance};
     const SwapCitiesNeighborhoodExplorer neighborhood{solution_manager};
     const TourLengthComponent tour_length{instance};
     const SwapTourLengthDelta delta_evaluator{instance};
     const Tour solution{
-        .tour = {0, 2, 1, 3},
+        .tour = {0, 2, 1, 4, 3},
     };
 
     auto all_moves = easylocal::moves(neighborhood, solution);
@@ -62,9 +70,13 @@ int main()
         {0, 1},
         {0, 2},
         {0, 3},
+        {0, 4},
         {1, 2},
         {1, 3},
+        {1, 4},
         {2, 3},
+        {2, 4},
+        {3, 4},
     };
 
     ok &= expect(
@@ -72,6 +84,7 @@ int main()
         "swap moves are generated lazily in lexicographic position order");
 
     const auto current_length = tour_length.evaluate(solution);
+    bool some_delta_nonzero = false;
     for (const auto& [first, second] : expected)
     {
         const SwapCitiesMove move{
@@ -81,11 +94,13 @@ int main()
         auto candidate = solution;
         neighborhood.make_move(candidate, move);
 
+        const auto delta = delta_evaluator.delta_evaluate(solution, move);
+        some_delta_nonzero |= delta != 0.0;
         ok &= expect(
-            current_length + delta_evaluator.delta_evaluate(solution, move) ==
-                tour_length.evaluate(candidate),
+            current_length + delta == tour_length.evaluate(candidate),
             "swap tour-length delta agrees with full evaluation for every move");
     }
+    ok &= expect(some_delta_nonzero, "some swap changes the tour length");
 
     std::mt19937 rng{12345U};
     const auto random_move = neighborhood.random_move(solution, rng);
@@ -135,7 +150,7 @@ int main()
             .second_position = 2,
         });
     ok &= expect(
-        moved.tour == std::vector<city_id>{0, 1, 2, 3},
+        moved.tour == std::vector<city_id>{0, 1, 2, 4, 3},
         "swap move exchanges exactly the selected tour positions");
 
     ok &= expect(
@@ -150,8 +165,8 @@ int main()
         !neighborhood.is_valid(
             solution,
             SwapCitiesMove{
-                .first_position = 3,
-                .second_position = 4,
+                .first_position = 4,
+                .second_position = 5,
             }),
         "out-of-range swap position is invalid");
 
