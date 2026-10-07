@@ -278,6 +278,77 @@ private:
     Neighborhood neighborhood_;
 };
 
+// A context with better_or_equivalent as well: non-worsening.
+template<class Neighborhood>
+class NonWorseningContext : public SearchContext<Neighborhood>
+{
+public:
+    [[nodiscard]]
+    static auto better_or_equivalent(const Cost&, const Cost&) noexcept -> bool
+    {
+        return true;
+    }
+};
+
+// A context without better(): a search context, but not a strict-improvement
+// one.
+template<class Neighborhood>
+class UnorderedContext
+{
+public:
+    using solution_type = Solution;
+    using cost_type = Cost;
+    using neighborhood_explorer_type = Neighborhood;
+
+    [[nodiscard]]
+    auto neighborhood_explorer() const noexcept -> const neighborhood_explorer_type&
+    {
+        return neighborhood_;
+    }
+
+    [[nodiscard]]
+    static auto evaluation() noexcept -> Evaluation
+    {
+        return {};
+    }
+
+private:
+    Neighborhood neighborhood_;
+};
+
+// An evaluation without commit(): its context is not a search context.
+class UncommittedEvaluation
+{
+public:
+    using evaluation_type = EvaluationState;
+    using candidate_type = CandidateState;
+
+    [[nodiscard]]
+    static auto evaluate(const Solution&) noexcept -> evaluation_type
+    {
+        return {};
+    }
+
+    [[nodiscard]]
+    static auto evaluate_move(
+        const Solution&,
+        const evaluation_type&,
+        const Move&) noexcept -> candidate_type
+    {
+        return {};
+    }
+};
+
+class UncommittedContext : public UnorderedContext<GoodNeighborhood>
+{
+public:
+    [[nodiscard]]
+    static auto evaluation() noexcept -> UncommittedEvaluation
+    {
+        return {};
+    }
+};
+
 } // namespace
 
 int main()
@@ -321,6 +392,20 @@ int main()
     static_assert(easylocal::runners::detail::random_move_context<
                   SearchContext<RandomMoveGoodNeighborhood>,
                   std::mt19937>);
+
+    // The negative cases: what each context lacks.
+    namespace context = easylocal::runners::detail;
+    static_assert(
+        !context::random_move_context<SearchContext<GoodNeighborhood>, std::mt19937>);
+    static_assert(
+        !context::random_move_context<SearchContext<RandomMoveGoodNeighborhood>, int>);
+    static_assert(!context::non_worsening_context<SearchContext<GoodNeighborhood>>);
+    static_assert(context::non_worsening_context<NonWorseningContext<GoodNeighborhood>>);
+    static_assert(context::search_context<UnorderedContext<GoodNeighborhood>>);
+    static_assert(
+        !context::strict_improvement_context<UnorderedContext<GoodNeighborhood>>);
+    static_assert(!context::search_context<UncommittedContext>);
+    static_assert(!context::strict_improvement_context<UncommittedContext>);
 
     return 0;
 }
