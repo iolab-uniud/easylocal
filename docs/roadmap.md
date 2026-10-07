@@ -5,6 +5,25 @@ prepared for, not yet scheduled. Nothing here is a promise of the
 [API stability](stability.md) policy; an item becomes part of the API only
 when it is released and listed in the changelog.
 
+## One spelling for each name
+
+**Why.** Two documented ways to compose the same thing, the pipe (`|`, `&`)
+and the `with_*` members, contradict the rule of one documented way per part;
+and some names still say what the library called a concept before its
+vocabulary settled: `check_delta_evaluator` checks a delta cost component, and
+a few members and options keep older words.
+
+**What.** The `with_*` members leave the public API (`detail`), so the
+documentation and the examples show only `|` and `&`; the remaining
+terminology moves in one breaking batch, such as `check_delta_evaluator` to
+`check_delta_cost_component`. Alongside: messages naming what each algorithm
+needs when a runner is registered on a neighborhood it cannot use, Pareto Late
+Acceptance committing a move in place if a benchmark shows it pays, and a
+restructured chapter 2 of the tutorial.
+
+**When.** 4.0.0-alpha.3. Until then the `with_*` spellings are Experimental
+(see [API stability](stability.md)).
+
 ## Asynchronous runs on a Session
 
 **Why.** A `Session` runs a registered runner on the calling thread:
