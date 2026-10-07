@@ -152,6 +152,13 @@ prefix, `configuration.add(sa.configuration())`, for `--search.*`; one that
 combines several things gives each its own prefix, so that their parameters do
 not collide.
 
+A program's own limits of a run fit a block of the library,
+`easylocal::RunParameters`: `target` (a cost as text), `timeout` (seconds) and
+`max_evaluations`, added as `configuration.add("run", run_parameters)` for
+`--run.target=0`; `run_parameters.options<Cost>(input)` turns them into the
+options of a run, as `easylocal::timeout(seconds)`, `max_evaluations(n)` and
+`stop_at(cost)` do one by one.
+
 An app (chapter 11) gathers the parameters of all its runners, under
 `runners.<name>`, with those of its cost, SolutionManager and neighborhood; the same paths serve
 the command line, the TextUI and the REST service, together with a target cost

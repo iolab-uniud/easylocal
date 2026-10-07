@@ -65,24 +65,31 @@ auto same_runner =
 
 ## Built-in algorithms
 
-The algorithms live in `easylocal::runners`, one header each:
+The algorithms live in `easylocal::runners`, one header each under
+`runners/`; what each needs of the neighborhood and of the cost, and its
+parameters, are in the [Runners](../reference/runners.md#built-in-algorithms)
+reference:
 
-| Algorithm | Header | Needs | Parameters |
-| --- | --- | --- | --- |
-| `FirstImprovement` | `runners/first_improvement.hpp` | `moves` or cursor | `max_evaluations` (unlimited: until a local optimum) |
-| `BestImprovement` | `runners/best_improvement.hpp` | `moves` or cursor | `max_evaluations` (unlimited: until a local optimum) |
-| `HillClimbing` | `runners/hill_climbing.hpp` | `random_move` | `max_idle_iterations`, `max_evaluations` (unlimited by default) |
-| `LateAcceptanceHillClimbing` | `runners/late_acceptance_hill_climbing.hpp` | `random_move` | `history_length`, `max_idle_iterations`, `max_evaluations` |
-| `GreatDeluge` | `runners/great_deluge.hpp` | `random_move`, an arithmetic cost | `initial_level`, `min_level`, `level_rate`, `neighbors_sampled`, `max_evaluations` |
-| `TabuSearch<List, Aspiration>`, `FirstImprovementTabuSearch<…>`, `AspirationPlusTabuSearch<…>`, `EliteCandidateTabuSearch<…>` | `runners/tabu_search.hpp` | `moves` or cursor, `inverse` | `max_idle_iterations`, `max_iterations`, `max_evaluations`, `tabu_list`, `candidates` (but `TabuSearch`) |
-| `SimulatedAnnealing<Temperature, Acceptance>` | `runners/simulated_annealing.hpp` | `random_move`, `cost::delta` | `temperature`: the policy's |
+| Algorithm | Header | Needs |
+| --- | --- | --- |
+| `FirstImprovement`, `BestImprovement` | `first_improvement.hpp`, `best_improvement.hpp` | `moves` or cursor |
+| `HillClimbing`, `LateAcceptanceHillClimbing` | `hill_climbing.hpp`, `late_acceptance_hill_climbing.hpp` | `random_move` |
+| `GreatDeluge` | `great_deluge.hpp` | `random_move`, an arithmetic cost |
+| `SimulatedAnnealing<Temperature, Acceptance>` | `simulated_annealing.hpp` | `random_move`, `cost::delta` |
+| `TabuSearch<List, Aspiration>` and its three variants | `tabu_search.hpp` | `moves` or cursor, `inverse` |
+| `ParetoLateAcceptanceHillClimbing` | `pareto_late_acceptance_hill_climbing.hpp` | `random_move`, a `cost::pareto` cost, `random_solution` |
+
+Every one bounds its run with `max_evaluations` (unlimited by default: a
+descent stops at a local optimum).
 
 Simulated Annealing takes a temperature policy (`Classic`, `FixedLength`,
 `Cutoff`, `Hybrid`, `FixedTemperature`, `TimeBased` in `runners::temperature`,
 and `Reheating<…>` over any of them but `FixedTemperature`); acceptance defaults to
-`runners::MetropolisAcceptance`. Its parameters are the policy's, under
-`temperature`: `{.temperature = {...}}`, and `search.temperature.*` in a
-configuration (chapter 9). With `calibration_samples` > 0 a policy
+`runners::MetropolisAcceptance`. Its parameters,
+`SimulatedAnnealingParameters<ClassicParameters>` for `Classic`, hold the
+policy's under `temperature` and the run's `max_evaluations`:
+`{.temperature = {...}, .max_evaluations = 10000}`, and
+`search.temperature.*` in a configuration (chapter 9). With `calibration_samples` > 0 a policy
 estimates its initial temperature from moves sampled at the initial solution.
 Stochastic algorithms receive the RNG as a `run` argument:
 
@@ -113,7 +120,8 @@ provide it, `cost::lexicographic` deliberately does not.
 
 ## Results
 
-Built-in algorithms return an `easylocal::search_result`:
+Built-in algorithms return an `easylocal::search_result` (Pareto Late
+Acceptance a `pareto_search_result`, which adds the front):
 
 | Member | Meaning |
 | --- | --- |
@@ -121,7 +129,7 @@ Built-in algorithms return an `easylocal::search_result`:
 | `cost` | its cost |
 | `evaluations` | evaluations performed, including the initial one |
 | `iterations` | committed moves (First/Best Improvement, Tabu Search), proposed moves (Hill Climbing, Late Acceptance, Great Deluge, Simulated Annealing) |
-| `termination` | `local_optimum`, `evaluation_budget_exhausted`, `cancelled`, `target_reached`, `idle_limit_reached` or `completed` |
+| `termination` | `local_optimum`, `evaluation_budget_exhausted`, `time_limit_reached`, `cancelled`, `target_reached`, `idle_limit_reached` or `completed` |
 
 Solvers and tools only rely on `solution` and `cost`, the
 `easylocal::search_result_for` concept.

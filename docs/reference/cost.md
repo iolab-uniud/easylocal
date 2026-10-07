@@ -102,10 +102,9 @@ solution_manager<SM>()
 
 The structured types are constructed directly, with deduced types:
 `cost::hierarchical{hard, soft}`, `cost::lexicographic{a, b}`,
-`cost::pareto{a, b}`. Traits: `cost::is_lexicographic`,
-`cost::is_lexicographic_v`, `cost::lexicographic_type`,
-`cost::is_hierarchical_v`, `cost::hierarchical_type`, `cost::is_pareto_v`,
-`cost::pareto_type`.
+`cost::pareto{a, b}`. Traits: `cost::is_lexicographic` (and `_v`),
+`cost::is_hierarchical` (and `_v`), `cost::is_pareto` (and `_v`); concepts:
+`cost::lexicographic_type`, `cost::hierarchical_type`, `cost::pareto_type`.
 
 ### Pareto costs
 

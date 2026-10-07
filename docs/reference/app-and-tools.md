@@ -107,6 +107,9 @@ registered twice (`"sa-fast"`, `"sa-slow"`).
 | `run("name", input, solution, rng, options...)` | run the runner or pipeline registered under a name; `std::optional<named_run_result>`, empty for an unknown name |
 | `make_runner<A>("name")` | a standalone `Runner` with that runner's parameters and the app's recipes, for a solver: `make_solver<Solver>(application.make_runner<A>("name"))` |
 | `check_registration_names()` | throws `std::invalid_argument` unless the names are valid |
+| `check_configuration()` | throws `std::invalid_argument` unless the names and every parameter are valid, each invalid block as `<path>: <message>`; `bind()` calls it |
+| `with_solution_manager(spec)`, `with_neighborhood(spec)`, `with_runner<A>("name"[, parameters[, neighborhood]])`, `with_pipeline(registration)` | the method spellings of the pipe |
+| `registration_count` | the number of runners and pipelines registered |
 
 `run` binds the app to the Input for that run only, with the current runner
 parameters: the app and the Input may be shared by concurrent runs. A
@@ -358,9 +361,10 @@ flowchart TB
 
 | Commands | |
 | --- | --- |
-| Input | `set_input`, `load_input` (the I/O hooks of [Problem model](problem-model.md#optional-hooks)), `input`, `has_input` |
-| Solution | `use_initial_solution`, `use_random_solution(rng)`, `set_solution`, `load_solution`, `save_solution`, `solution`, `is_valid`, `evaluate`, `check()` |
-| Move | select with `use_first_move`, `use_next_move`, `use_first_improving_move`, `use_best_move`, `use_random_move(rng)` or `set_move`; then `move_is_valid`, `evaluate_move`, `evaluate_move_fully`, `move_evaluation_matches_full([tolerance])`, `apply_move` |
+| Input | `set_input`, `load_input` (the I/O hooks of [Problem model](problem-model.md#optional-hooks)), `input`, `has_input`, `input_handle` (the shared Input, null without one) |
+| Solution | `use_initial_solution`, `use_random_solution(rng)`, `set_solution`, `load_solution`, `save_solution`, `solution`, `has_solution`, `is_valid`, `evaluate`, `check()` |
+| Move | select with `use_first_move`, `use_next_move`, `use_first_improving_move`, `use_best_move`, `use_random_move(rng)` or `set_move`; then `has_move`, `move`, `move_is_valid`, `evaluate_move`, `evaluate_move_fully`, `move_evaluation_matches_full([tolerance])`, `apply_move` |
+| RNG | `rng()`, the session's generator, and `set_seed(seed)`; each run draws its own generator from it |
 | Neighborhood | `neighborhood_preview`, `neighborhood_statistics`, `check_neighborhood_costs([tolerance])` (the delta and the full costs agree by `equivalent` or within a `cost::tolerance`, 1e-9 by default), `check_move_independence` (needs `solutions_equal`: the SolutionManager's `equal` or `Solution::operator==`), `check_random_move_distribution(rng)` (needs `Move::operator==`); with a totally ordered cost these two compare a value only with those of the same cost, about linear in the moves, otherwise with all of them, quadratic |
 | Runners | `runner_names` (the runners and pipelines), `run("name", options...)` (replaces the current solution; the options are run options: `with(control, tracer)`, `stop_at`, `timeout`, `max_evaluations`), `last_run_effort()`: the evaluations, iterations and termination of the last run, when its algorithm reports them (empty after a new Input or a run that did not complete); `last_run_front()`: with a `cost::pareto` cost, the front of the last run, a vector of `pareto_point{solution, cost}` (`front_type`), empty in the same cases |
 | Costs | `read_cost(text)`: a cost written as text, such as a target, by the problem's `read_cost` or `cost::from_text`; `cost_report()`: each cost component on the current solution, in the order of the recipe, as `component_report{name, value, description}`: its `name()` or `#<position>`, its own value without weights, and its `describe(solution)` text, empty without it |

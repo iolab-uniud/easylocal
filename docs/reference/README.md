@@ -27,17 +27,19 @@ Topic guides: [tracing](../tracing.md), [logging](../logging.md),
 ```text
 easylocal/
   easylocal.hpp   Core umbrella (all but adapters/, app/cli.hpp, app/tuning.hpp
-                  and the component checks of testing.hpp)
+                  and the component checks of testing.hpp, whose report and
+                  options types come with check(app))
   utils/          generator, limit, termination_reason, solution hashing,
                   logging; internal utilities
   config/         typed parameters, parameter sets, CLI/file frontends
   trace/          semantic search events, tracer protocol, recorders
-  cost/           cost models
+  cost/           cost models, cost expressions, semantics, costs as text
   helpers/        SolutionManager, NeighborhoodExplorer, neighborhood_union, recipes
   runners/        Runner, search_run, run_control, search algorithms
   solvers/        solvers
   testing/        component contract checks
-  app/            app, check, Session
+  app/            App and BoundApp, check(app), Session, I/O hooks,
+                  RunParameters, cli::run and irace tuning
   adapters/       optional components: toml.hpp, tui/, rest/
 ```
 

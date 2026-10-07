@@ -37,6 +37,15 @@ auto piped_application = el::app("tsp") | sm | nhe
   policy's and whose `max_evaluations` bounds the run.
 - The two spellings are equivalent: `with_*` calls, or pipes with
   `el::runner<Algorithm>(name, parameters)` for each registration.
+- A registration is checked when it is added: an algorithm that cannot run
+  on the app's neighborhood (First Improvement on an explorer without
+  `moves()`) does not compile there.
+- An app also registers pipelines of stages, `el::pipeline("name", stages...)`,
+  run by name like a runner; a stage may be an algorithm on the app's recipes,
+  `stage<A>(name, parameters)` (chapter 8).
+- `application.bind(tsp)` builds the services once for an Input, a `BoundApp`
+  whose `run("fi", solution, rng)` runs a registration on them; the Session
+  below does this for you.
 
 ## The Session
 
@@ -131,7 +140,8 @@ The parameters of an app are those of its parts, by path:
 `runners.<name>.*` for each runner's algorithm, `cost.*` for the weights of
 its cost expression and the parameters of its components and functions,
 `solution_manager.*` for its SolutionManager's, and `neighborhood.*` for its
-explorer's or the biases of a neighborhood union. The session changes them, and stops a run at a target cost:
+explorer's or the biases of a neighborhood union. The session changes them,
+and stops a run at a target cost:
 
 <!-- snippet: tutorial/main.cpp:session-parameters -->
 ```cpp
@@ -148,10 +158,11 @@ if (!session.run("sa", el::stop_at(session.read_cost("26"))))
 ```
 
 - `configure(changes)` applies `path = value` changes as chapter 9 does: all
-  of them, checked, or none. They change the session's own copy of the app;
-  when they touch the cost or the neighborhood, the session rebuilds its
-  services, so `evaluate()` and the moves follow. `configuration()` lists the
-  parameters with their current values.
+  of them, checked, or none. They change the session's own copy of the app,
+  and the session rebuilds its services, so `evaluate()` and the moves follow;
+  the current solution stays. Its result lists the errors, and must be read:
+  a misspelt path is one. `configuration()` lists the parameters with their
+  current values.
 - `read_cost("26")` reads a cost written as text: a number, `[hard, soft]` for
   a hierarchical cost, or the problem's own notation when it provides
   `read_cost(const Tsp&, std::string_view)`. `el::stop_at(cost)` makes the run
@@ -388,9 +399,12 @@ line, or as `path = value` lines in a configuration file (chapter 9).
 `--tuning.print=cost` prints (`cost_time` adds the running time in seconds).
 A number is itself; a hierarchical cost is `hard * W + soft`, and a
 lexicographic one weighs each value by a power of `W`, with `W` from
-`--tuning.hard_weight` (10^9 by default), which must exceed every soft cost. A
-problem can give its own number with a `scalar_cost(const Input&, const
-Cost&)` function next to its Input, found as `read_cost` is. The parameters of
+`--tuning.hard_weight` (10^9 by default), which must exceed every soft cost.
+The number is a `double`, exact up to 2^53 (about 9 * 10^15): with the default
+weight, a lexicographic cost of three or more levels, or a hard cost above
+about 9 * 10^6, loses its lower levels to rounding. A problem can give its own
+number with a `scalar_cost(const Input&, const Cost&)` function next to its
+Input, found as `read_cost` is, which is the remedy then. The parameters of
 the cost, such as the weights of a `cost::sum`, are never tuned: they define
 the cost that irace compares.
 
