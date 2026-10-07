@@ -118,6 +118,10 @@ def test_buttons_shortcuts_and_help_name_an_action_alike(tui):
     tui.expect("Keyboard help")
     tui.expect("U Distribution")
     tui.expect("X in the progress window stops the run")
+    # ? closes the help as Escape does, and cannot be read as the start of an
+    # escape sequence on a slow runner, which left the help open and q unread.
+    tui.press("?")
+    tui.expect_absent("Keyboard help")
 
 
 def test_a_problem_without_parameters_says_so(tui):
