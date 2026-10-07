@@ -209,19 +209,32 @@ int main()
     }
 
     {
-        auto runner = make_runner<runners::BestImprovement>({.max_evaluations = 3}) | sm
+        auto runner = make_runner<runners::BestImprovement>({}) | sm
             | neighborhood_union(
                 neighborhood<DownExplorer>(),
-                neighborhood<StrideExplorer>(StepParameters{.stride = 2}));
-        const auto configuration = runner.configuration();
+                neighborhood<StrideExplorer>(StepParameters{.stride = 3}, 10));
         ok &= expect(
-            has_parameter(configuration, "neighborhood.1.stride", "2")
+            runner.bind(instance).run(Position{0}).solution.value == 9,
+            "a union builds its children with their parameters and arguments");
+
+        auto configuration = runner.configuration();
+        ok &= expect(
+            has_parameter(configuration, "neighborhood.1.stride", "3")
                 && std::ranges::none_of(
                     configuration.parameters(),
                     [](const config::parameter_info& parameter) {
                         return parameter.path.starts_with("neighborhood.0.");
                     }),
             "a union exposes its children's parameters under their positions");
+        const std::array invalid{config::text_override{"neighborhood.1.stride", "0"}};
+        ok &= expect(
+            !configuration.apply(invalid),
+            "a union validates its children's parameters");
+        const std::array valid{config::text_override{"neighborhood.1.stride", "4"}};
+        ok &= expect(
+            static_cast<bool>(configuration.apply(valid))
+                && runner.bind(instance).run(Position{0}).solution.value == 8,
+            "a changed parameter of a union child applies from the next bind");
     }
 
     return ok ? 0 : 1;
