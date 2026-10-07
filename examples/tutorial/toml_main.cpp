@@ -37,13 +37,8 @@ int main(int argc, char* argv[])
         el::config::load_toml_file(argc > 1 ? argv[1] : EASYLOCAL_TUTORIAL_CONFIG);
     if (!file)
     {
-        // A value's diagnostic names its path; a parse error, its line.
-        for (const auto& diagnostic : file.diagnostics)
-        {
-            if (!diagnostic.path.empty())
-                std::cerr << diagnostic.path << ": ";
-            std::cerr << diagnostic.message << '\n';
-        }
+        // Each error with its line; a value's names its path.
+        el::config::print_diagnostics(std::cerr, file);
         return 2;
     }
 

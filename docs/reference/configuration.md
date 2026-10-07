@@ -243,13 +243,13 @@ position (`element 2: expected a number`), and the size of an array
 | `config::overlay_overrides(base, top)` | one batch of two: the overrides of `top` replace those of `base` with the same path |
 | `config::require_valid(set)` | throws `std::invalid_argument` unless every block is valid |
 | `config::undeclared_domains(set)` | the paths of the parameters that declare no domain |
-| `config::load_and_apply(argc, argv, parameters)` | apply `--config <file>` and `--path.to.field=value` |
+| `config::load_and_apply(argc, argv, parameters[, read_config])` | apply `--config <file>` and `--path.to.field=value`; the file is read by `read_config`, a `config_file_reader`, `load_config_file` by default, `load_toml_file` for a TOML file |
 | `config::load_config_file(path)` | the overrides of a file of `path = value` lines: `#` starts a whole-line comment (a `#` after a value is part of it), a UTF-8 byte order mark is skipped, a directory is an error |
 | `config::cli_help(program, parameters)` | help text: each parameter that can be changed, with its description, its values (the domain; `true` or `false` for a boolean), when it matters (`only if ...`) and its current value |
-| `config::print_diagnostics(out, result)` | report errors |
+| `config::print_diagnostics(out, result)` | report the errors of `load_and_apply`, or of a `config_file_parse_result`, one per line, those of a file with their line and column |
 | `config::apply_overrides(parameters, text_overrides)` | the same as `parameters.apply(...)` |
 | `config::format_value(value)` | a value as text, in the syntax overrides use |
-| `config::load_toml_file(path)` (TOML adapter) | the overrides of a TOML file, each value by its TOML type (a boolean, an integer, a float that sets only a floating-point field, a string, or an array of numbers, booleans and such arrays; not of strings); a parse error gives its `line` and `column`, and its message starts with `file:line:column:` |
+| `config::load_toml_file(path)` (TOML adapter) | a `config_file_reader`: the overrides of a TOML file, each value by its TOML type (a boolean, an integer, a float that sets only a floating-point field, a string, or an array of numbers, booleans and such arrays; not of strings), as a `config_file_parse_result`; a `parse_error` gives its `line` and `column` and the file as its `text`, an `unsupported_value` its path |
 
 ## Design choices
 

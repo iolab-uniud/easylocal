@@ -14,6 +14,7 @@
 #include <easylocal/app/session.hpp>
 #include <easylocal/app/tuning.hpp>
 #include <easylocal/config/cli.hpp>
+#include <easylocal/config/file.hpp>
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/config/setup.hpp>
@@ -167,6 +168,9 @@ struct options
     /// The values to try for parameters when tuning, by path, instead of the
     /// domains of their schemas: what --tuning.irace writes as their ranges.
     std::vector<tuning_range> tuning{};
+    /// How the file of `--config` is read: config::load_config_file, a file of
+    /// `path = value` lines, or config::load_toml_file of the TOML adapter.
+    config::config_file_reader read_config{config::load_config_file};
     /// Where the help and the results go: the cost, the effort, the report and
     /// the solution, when no output file is given.
     std::ostream* out{&std::cout};
@@ -486,7 +490,8 @@ int run(App application, const int argc, char* argv[], options settings = {})
     configuration.add("tuning", tuning);
     const auto defaults = configuration.parameters();
 
-    const auto configured = config::load_and_apply(argc, argv, configuration);
+    const auto configured =
+        config::load_and_apply(argc, argv, configuration, settings.read_config);
     if (configured.help_requested)
     {
         out << config::cli_help(argc > 0 ? argv[0] : "program", configuration);

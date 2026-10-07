@@ -137,6 +137,18 @@ reviewed by hand before tagging.
   `config::check_schema` gives the same reason as the validation of a
   parameter set, with the field first, `cooling_rate: expected a value in (0,
   1), got 2`, where it read `cooling_rate is out of its range`.
+- **Breaking:** a TOML file reaches `load_and_apply` and `cli::run`: the
+  `--config` file is read by a `config::config_file_reader`, the new last
+  argument of `load_and_apply` and `cli::options::read_config`, by default
+  `config::load_config_file`; `config::load_toml_file` of the TOML adapter is
+  one. The TOML adapter returns a `config_file_parse_result`, with
+  `config_file_diagnostic`s, whose `config_file_error` gains `parse_error`
+  and `unsupported_value` and whose diagnostic gains a `column`:
+  `toml_config_parse_result`, `toml_config_diagnostic` and
+  `toml_config_error` are removed, the path of an unsupported value is its
+  `text`, and the place of a parse error is in its `line`, `column` and
+  `text` (the file) rather than in its message. `print_diagnostics` also
+  takes a `config_file_parse_result`, and prints the column after the line.
 
 ### Apps and tools
 
@@ -475,9 +487,8 @@ reviewed by hand before tagging.
   (`target_reached`, `cancelled`, ...), its `cost` and its final counts. A run
   is `cancelled` when its runner says so, no longer when a cancellation came
   after it had ended on its own terms.
-- TOML: a parse error says where it is: `config::toml_config_diagnostic` has
-  the `line` and the `column` of the error, and its message starts with
-  `file:line:column:`. An array of arrays, `[[1, 2], [3]]`, sets a list of
+- TOML: a parse error says where it is: its diagnostic has the `line` and
+  the `column` of the error, and the name of the file. An array of arrays, `[[1, 2], [3]]`, sets a list of
   lists, as on the command line, and an unsupported value says what it is (a
   date or time, or an array holding strings) instead of naming the "textual
   override mapper".

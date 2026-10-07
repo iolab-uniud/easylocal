@@ -311,13 +311,8 @@ const auto file =
     el::config::load_toml_file(argc > 1 ? argv[1] : EASYLOCAL_TUTORIAL_CONFIG);
 if (!file)
 {
-    // A value's diagnostic names its path; a parse error, its line.
-    for (const auto& diagnostic : file.diagnostics)
-    {
-        if (!diagnostic.path.empty())
-            std::cerr << diagnostic.path << ": ";
-        std::cerr << diagnostic.message << '\n';
-    }
+    // Each error with its line; a value's names its path.
+    el::config::print_diagnostics(std::cerr, file);
     return 2;
 }
 
@@ -331,8 +326,8 @@ if (!applied)
 }
 ```
 
-- `load_toml_file` fails on a malformed file, whose diagnostic starts with
-  `file:line:column:`, and on values that have no parameter counterpart, such
+- `load_toml_file` fails on a malformed file, whose diagnostic gives its line
+  and column, and on values that have no parameter counterpart, such
   as dates or an array of strings; their diagnostics give the path. An array
   of arrays, `[[1, 2], [3]]`, sets a list of lists.
 - Each value is read by its TOML type: `true` and `false` set a `bool`, an
@@ -344,9 +339,11 @@ if (!applied)
 - The runner here has default parameters and a cost with two weights; with
   the file, Simulated Annealing finds the cost 66, the length 26 plus 5 times
   the longest edge, 8.
-- To let the command line override the file, merge the two lists with
-  `overlay_overrides(file.overrides, cli.overrides)`, where `cli` is
-  `parse_cli(argc, argv)`, and apply the result.
+- To let the command line override the file, give `load_toml_file` to
+  `load_and_apply`, which reads it for `--config`:
+  `el::config::load_and_apply(argc, argv, configuration,
+  el::config::load_toml_file)`; an app does the same with
+  `cli::options::read_config` (chapter 11).
 
 The program is `examples/tutorial/toml_main.cpp`, built when the component is
 enabled (`-DEASYLOCAL_ENABLE_CONFIG_TOML=ON`), and linked with

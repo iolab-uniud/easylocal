@@ -183,7 +183,9 @@ focused control (Tab, arrows).
 `timeout`, `max_evaluations`, `report`, `trace`), the
 app's `configuration()`, and `options.parameters`, the program's own set;
 `options.defaults`, a `cli::parameters`, gives the values of its switches
-before the command line. It
+before the command line, and `options.read_config` reads the `--config` file:
+`config::load_config_file` by default, `config::load_toml_file` for a TOML
+file (TOML adapter). It
 then builds a `Session` with the seed, loads the Input, takes the starting
 solution (`--solution`, else `--start`: `random` by default when the problem
 has `random_solution`, `initial` otherwise), runs the runner by name, with

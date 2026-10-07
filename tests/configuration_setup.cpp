@@ -162,6 +162,53 @@ void cli_overrides_are_applied()
     assert(solver.cooling_rate == 0.8);
 }
 
+// The file of --config is read by the reader given to load_and_apply, as a
+// TOML adapter is plugged in; its errors are reported with their line and
+// column.
+void a_reader_reads_the_config_file()
+{
+    AppParameters app{};
+    SolverParameters solver{};
+    easylocal::config::parameter_set tree;
+    tree.add("application", app);
+    tree.add("solver", solver);
+
+    std::filesystem::path read;
+    const easylocal::config::config_file_reader reader =
+        [&read](const std::filesystem::path& path) {
+            read = path;
+            easylocal::config::config_file_parse_result result;
+            result.overrides.push_back({"application.seed", "7"});
+            return result;
+        };
+    char program[] = "solver";
+    char config[] = "--config=solver.custom";
+    char* argv[]{program, config};
+    assert(easylocal::config::load_and_apply(2, argv, tree, reader));
+    assert(read == std::filesystem::path{"solver.custom"});
+    assert(app.seed == 7U);
+
+    const easylocal::config::config_file_reader failing =
+        [](const std::filesystem::path& path) {
+            easylocal::config::config_file_parse_result result;
+            result.diagnostics.push_back({
+                .error = easylocal::config::config_file_error::parse_error,
+                .line = 3,
+                .text = path.string(),
+                .message = "unexpected character",
+                .column = 5,
+            });
+            return result;
+        };
+    const auto result = easylocal::config::load_and_apply(2, argv, tree, failing);
+    assert(!result);
+    std::ostringstream output;
+    easylocal::config::print_diagnostics(output, result);
+    assert(
+        output.str()
+        == "error: config line 3, column 5: unexpected character ('solver.custom')\n");
+}
+
 void cli_has_precedence_over_file()
 {
     temporary_file file{
@@ -388,6 +435,7 @@ int main()
 {
     tree_validation_reports_invalid_untouched_blocks();
     cli_overrides_are_applied();
+    a_reader_reads_the_config_file();
     cli_has_precedence_over_file();
     invalid_batch_is_transactional();
     invalid_baseline_can_be_repaired_by_overrides();

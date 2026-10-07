@@ -2,8 +2,9 @@
 
 /// \file
 /// load_and_apply: the usual setup of a program's parameters, from its
-/// defaults, then an optional configuration file, then the command line, with
-/// all the diagnostics collected and printed together.
+/// defaults, then an optional configuration file, in the format of a
+/// config_file_reader, then the command line, with all the diagnostics
+/// collected and printed together.
 
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/file.hpp>
@@ -28,7 +29,7 @@ enum class setup_diagnostic_source
     validation,
     /// The command line (parse_cli).
     command_line,
-    /// The configuration file (load_config_file).
+    /// The configuration file (its config_file_reader).
     config_file,
     /// The application of the overrides (parameter_set::apply()).
     override,
@@ -48,6 +49,9 @@ struct setup_diagnostic
     std::size_t line{};
     /// A description of the error.
     std::string message;
+    /// The number of the column of the configuration file, from 1; 0
+    /// otherwise.
+    std::size_t column{};
 };
 
 /// What load_and_apply did: whether help was requested, and the errors.
@@ -99,6 +103,7 @@ inline void append_diagnostics(
             .value = {},
             .line = diagnostic.line,
             .message = diagnostic.message,
+            .column = diagnostic.column,
         });
     }
 }
@@ -128,14 +133,18 @@ inline void append_diagnostics(
 /// Applies to the parameters the overrides of an optional `--config` file and
 /// then those of the command line, which take precedence.
 ///
-/// Nothing is changed unless every override applies and leaves its block
-/// valid, and every other block is valid. With `--help`, nothing is read or
-/// applied: the program prints cli_help() instead.
+/// The file is read with `read_config`: by default a plain-text file of
+/// `path = value` lines (load_config_file); config::load_toml_file, of the
+/// TOML adapter, reads a TOML file instead. Nothing is changed unless every
+/// override applies and leaves its block valid, and every other block is
+/// valid. With `--help`, nothing is read or applied: the program prints
+/// cli_help() instead.
 [[nodiscard]]
 inline setup_result load_and_apply(
     const int argc,
     char* const argv[],
-    const parameter_set& parameters)
+    const parameter_set& parameters,
+    const config_file_reader& read_config = load_config_file)
 {
     setup_result result{};
 
@@ -153,7 +162,7 @@ inline setup_result load_and_apply(
     config_file_parse_result file_configuration{};
     if (cli.config_file.has_value())
     {
-        file_configuration = load_config_file(*cli.config_file);
+        file_configuration = read_config(*cli.config_file);
         detail::append_diagnostics(result, file_configuration);
     }
 
@@ -197,7 +206,10 @@ inline void print_diagnostics(
         case setup_diagnostic_source::config_file:
             if (diagnostic.line != 0)
             {
-                output << "config line " << diagnostic.line << ": ";
+                output << "config line " << diagnostic.line;
+                if (diagnostic.column != 0)
+                    output << ", column " << diagnostic.column;
+                output << ": ";
             }
             output << diagnostic.message;
             if (!diagnostic.subject.empty())
@@ -221,6 +233,15 @@ inline void print_diagnostics(
 
         output << '\n';
     }
+}
+
+/// Writes each error of a configuration file to `output`, as for a setup:
+/// one per line, after `error: `, with its line and column.
+inline void print_diagnostics(std::ostream& output, const config_file_parse_result& file)
+{
+    setup_result result;
+    detail::append_diagnostics(result, file);
+    print_diagnostics(output, result);
 }
 
 } // namespace easylocal::config

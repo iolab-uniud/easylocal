@@ -2,12 +2,15 @@
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/config/parameters.hpp>
+#include <easylocal/config/setup.hpp>
 #include <easylocal/utils/limit.hpp>
 
 #include <array>
 #include <cassert>
 #include <cstddef>
 #include <filesystem>
+#include <fstream>
+#include <sstream>
 #include <string>
 
 namespace
@@ -120,6 +123,56 @@ rate = 2
     assert(flags.count == 3);
 }
 
+// load_toml_file is a config_file_reader: load_and_apply reads the file of
+// --config with it, under the command line, and reports its errors as those
+// of a configuration file.
+void load_and_apply_reads_a_toml_file()
+{
+    const auto file =
+        std::filesystem::temp_directory_path() / "easylocal_load_and_apply.toml";
+    {
+        std::ofstream output{file};
+        output << "[flags]\ncount = 4\nrate = 0.25\n";
+    }
+
+    FlagParameters flags{};
+    easylocal::config::parameter_set tree;
+    tree.add("flags", flags);
+    auto path = file.string();
+    char program[] = "program";
+    char config[] = "--config";
+    char rate[] = "--flags.rate=0.75";
+    char* argv[] = {program, config, path.data(), rate};
+    const auto applied = easylocal::config::load_and_apply(
+        4,
+        argv,
+        tree,
+        easylocal::config::load_toml_file);
+    assert(applied);
+    assert(flags.count == 4);
+    assert(flags.rate == 0.75);
+
+    {
+        std::ofstream output{file};
+        output << "[flags]\ncount = = 4\n";
+    }
+    const auto malformed = easylocal::config::load_and_apply(
+        3,
+        argv,
+        tree,
+        easylocal::config::load_toml_file);
+    assert(!malformed);
+    assert(
+        malformed.diagnostics.front().source
+        == easylocal::config::setup_diagnostic_source::config_file);
+    assert(malformed.diagnostics.front().line == 2);
+    std::ostringstream printed;
+    easylocal::config::print_diagnostics(printed, malformed);
+    assert(printed.str().starts_with("error: config line 2, column "));
+    assert(flags.count == 4);
+    std::filesystem::remove(file);
+}
+
 } // namespace
 
 int main()
@@ -159,31 +212,35 @@ max_iterations = 500
     const auto malformed = easylocal::config::parse_toml_text("x = [1,");
     assert(!malformed);
     assert(!malformed.diagnostics.empty());
-    assert(malformed.diagnostics.front().error ==
-           easylocal::config::toml_config_error::parse_error);
+    assert(
+        malformed.diagnostics.front().error
+        == easylocal::config::config_file_error::parse_error);
     // A parse error says where it is: the file, the line and the column.
     const auto misplaced =
         easylocal::config::parse_toml_text("a = 1\nb = = 2\n", "annealing.toml");
     assert(!misplaced);
     assert(misplaced.diagnostics.front().line == 2);
     assert(misplaced.diagnostics.front().column > 0);
-    assert(misplaced.diagnostics.front().message.starts_with("annealing.toml:2:"));
+    assert(misplaced.diagnostics.front().text == "annealing.toml");
 
     const auto unsupported = easylocal::config::parse_toml_text(
         "date = 1979-05-27\n");
     assert(!unsupported);
     assert(unsupported.diagnostics.size() == 1);
-    assert(unsupported.diagnostics.front().error ==
-           easylocal::config::toml_config_error::unsupported_value);
-    assert(unsupported.diagnostics.front().path == "date");
+    assert(
+        unsupported.diagnostics.front().error
+        == easylocal::config::config_file_error::unsupported_value);
+    assert(unsupported.diagnostics.front().text == "date");
+    assert(unsupported.diagnostics.front().line == 1);
 
     const auto string_array = easylocal::config::parse_toml_text(
         "names = [\"a\", \"b\"]\n");
     assert(!string_array);
     assert(string_array.diagnostics.size() == 1);
-    assert(string_array.diagnostics.front().error ==
-           easylocal::config::toml_config_error::unsupported_value);
-    assert(string_array.diagnostics.front().path == "names");
+    assert(
+        string_array.diagnostics.front().error
+        == easylocal::config::config_file_error::unsupported_value);
+    assert(string_array.diagnostics.front().text == "names");
     assert(string_array.diagnostics.front().message.find("strings") != std::string::npos);
 
     // Arrays of arrays are lists of lists, as on the command line.
@@ -195,4 +252,5 @@ max_iterations = 500
     assert(!nested_strings);
 
     values_are_read_by_their_toml_type();
+    load_and_apply_reads_a_toml_file();
 }

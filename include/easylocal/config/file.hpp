@@ -2,7 +2,8 @@
 
 /// \file
 /// Plain-text configuration files: one path = value per line, whole-line #
-/// comments, read as the overrides of a parameter_set.
+/// comments, read as the overrides of a parameter_set; and the reader of a
+/// file, which another format, such as the TOML adapter's, replaces.
 
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/utils/detail/text.hpp>
@@ -10,6 +11,7 @@
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -32,6 +34,11 @@ enum class config_file_error
     empty_path,
     /// A path already set on an earlier line.
     duplicate_path,
+    /// A text that is not valid in the format of the file, as a TOML reader
+    /// reports it.
+    parse_error,
+    /// A value that is not a parameter value, such as a TOML date.
+    unsupported_value,
 };
 
 /// An error of a configuration file, with the line that caused it.
@@ -39,12 +46,17 @@ struct config_file_diagnostic
 {
     /// The kind of error.
     config_file_error error;
-    /// The number of the line, from 1; 0 when the file cannot be opened.
+    /// The number of the line, from 1; 0 when it is not known, as when the
+    /// file cannot be opened.
     std::size_t line{};
-    /// The line as written, or the path of a file that cannot be opened.
+    /// The line as written; the name of a file that cannot be opened or
+    /// parsed; the path of an `unsupported_value`.
     std::string text;
     /// A description of the error.
     std::string message;
+    /// The number of the column, from 1; 0 when it is not known, as for a
+    /// line of a plain-text file.
+    std::size_t column{};
 };
 
 /// The overrides of a configuration file, and its errors.
@@ -180,5 +192,11 @@ inline config_file_parse_result load_config_file(const std::filesystem::path& pa
     buffer << input.rdbuf();
     return parse_config_text(buffer.str());
 }
+
+/// How a program reads the file given with `--config`: load_config_file, or
+/// load_toml_file of the TOML adapter, or a reader of another format that
+/// gives the overrides of the file and its errors.
+using config_file_reader =
+    std::function<config_file_parse_result(const std::filesystem::path&)>;
 
 } // namespace easylocal::config

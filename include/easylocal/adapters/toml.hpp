@@ -3,8 +3,12 @@
 /// \file
 /// TOML configuration files (optional component, needs toml++): a TOML document
 /// read as the path = value overrides of a config::parameter_set, nested tables
-/// giving the dotted paths.
+/// giving the dotted paths, with the errors of a configuration file.
+///
+/// load_toml_file is a config_file_reader: given to load_and_apply, or as
+/// cli::options::read_config, it reads the file of `--config`.
 
+#include <easylocal/config/file.hpp>
 #include <easylocal/config/overrides.hpp>
 
 #include <cstddef>
@@ -20,52 +24,6 @@
 
 namespace easylocal::config
 {
-
-/// The kind of an error found while reading a TOML document.
-enum class toml_config_error
-{
-    /// The text is not valid TOML.
-    parse_error,
-    /// A value that is not a string, a number, a boolean or an array of
-    /// numbers, booleans and such arrays: a date, a time, or an array holding a
-    /// string.
-    unsupported_value,
-};
-
-/// An error found while reading a TOML document.
-struct toml_config_diagnostic
-{
-    /// The kind of the error.
-    toml_config_error error;
-    /// The dotted path of the value, empty for a parse error.
-    std::string path;
-    /// The description of the error; for a parse error, after the place of
-    /// the error, `file:line:column: ` (`line:column: ` without a file name).
-    std::string message;
-    /// The line of a parse error, from 1; 0 when it is not known.
-    std::size_t line{};
-    /// The column of a parse error, from 1; 0 when it is not known.
-    std::size_t column{};
-};
-
-/// The overrides read from a TOML document, and the errors found.
-///
-/// A value that cannot be read is reported and skipped, the others are still
-/// read; a parse error leaves no overrides.
-struct toml_config_parse_result
-{
-    /// The path = value overrides, nested tables giving the dotted paths.
-    std::vector<owned_text_override> overrides;
-    /// The errors found, empty when the document was read in full.
-    std::vector<toml_config_diagnostic> diagnostics;
-
-    /// Whether the document was read without errors.
-    [[nodiscard]]
-    explicit operator bool() const noexcept
-    {
-        return diagnostics.empty();
-    }
-};
 
 namespace detail
 {
@@ -149,7 +107,7 @@ inline std::string_view toml_value_text(const toml::node& node, std::string& out
 inline void flatten_toml_table(
     const toml::table& table,
     const std::string& prefix,
-    toml_config_parse_result& result)
+    config_file_parse_result& result)
 {
     for (const auto& [key, node] : table)
     {
@@ -165,10 +123,13 @@ inline void flatten_toml_table(
         std::string value;
         if (const auto error = toml_value_text(node, value); !error.empty())
         {
+            const auto& source = node.source();
             result.diagnostics.push_back({
-                .error = toml_config_error::unsupported_value,
-                .path = std::move(path),
+                .error = config_file_error::unsupported_value,
+                .line = static_cast<std::size_t>(source.begin.line),
+                .text = std::move(path),
                 .message = std::string{error},
+                .column = static_cast<std::size_t>(source.begin.column),
             });
             continue;
         }
@@ -181,37 +142,31 @@ inline void flatten_toml_table(
 }
 
 inline void append_toml_parse_error(
-    toml_config_parse_result& result,
+    config_file_parse_result& result,
+    const std::string_view source_path,
     const std::string_view message)
 {
     result.diagnostics.push_back({
-        .error = toml_config_error::parse_error,
-        .path = {},
+        .error = config_file_error::parse_error,
+        .line = 0,
+        .text = std::string{source_path},
         .message = std::string{message},
     });
 }
 
-// A parse error with its place: file:line:column: description.
+// A parse error with its place: its line and column.
 inline void append_toml_parse_error(
-    toml_config_parse_result& result,
+    config_file_parse_result& result,
+    const std::string_view source_path,
     const toml::parse_error& error)
 {
     const auto& source = error.source();
-    const auto line = static_cast<std::size_t>(source.begin.line);
-    const auto column = static_cast<std::size_t>(source.begin.column);
-    std::string place;
-    if (source.path && !source.path->empty())
-        place = *source.path + ':';
-    if (line != 0)
-        place += std::to_string(line) + ':' + std::to_string(column) + ':';
     result.diagnostics.push_back({
-        .error = toml_config_error::parse_error,
-        .path = {},
-        .message = place.empty()
-            ? std::string{error.description()}
-            : place + ' ' + std::string{error.description()},
-        .line = line,
-        .column = column,
+        .error = config_file_error::parse_error,
+        .line = static_cast<std::size_t>(source.begin.line),
+        .text = std::string{source_path},
+        .message = std::string{error.description()},
+        .column = static_cast<std::size_t>(source.begin.column),
     });
 }
 
@@ -223,9 +178,11 @@ inline void append_toml_parse_error(
 // still matches, and is reported as a parse error.
 template<class Parse>
 [[nodiscard]]
-toml_config_parse_result parse_toml_overrides(Parse&& parse)
+config_file_parse_result parse_toml_overrides(
+    const std::string_view source_path,
+    Parse&& parse)
 {
-    toml_config_parse_result result{};
+    config_file_parse_result result{};
 #if TOML_EXCEPTIONS
     std::optional<toml::table> table;
     try
@@ -234,11 +191,11 @@ toml_config_parse_result parse_toml_overrides(Parse&& parse)
     }
     catch (const toml::parse_error& error)
     {
-        append_toml_parse_error(result, error);
+        append_toml_parse_error(result, source_path, error);
     }
     catch (const std::exception& error)
     {
-        append_toml_parse_error(result, error.what());
+        append_toml_parse_error(result, source_path, error.what());
     }
     if (table)
     {
@@ -248,7 +205,7 @@ toml_config_parse_result parse_toml_overrides(Parse&& parse)
     const auto parsed = std::forward<Parse>(parse)();
     if (!parsed)
     {
-        append_toml_parse_error(result, parsed.error());
+        append_toml_parse_error(result, source_path, parsed.error());
         return result;
     }
     flatten_toml_table(parsed.table(), {}, result);
@@ -260,22 +217,29 @@ toml_config_parse_result parse_toml_overrides(Parse&& parse)
 
 /// The overrides of a TOML document given as text, with its errors.
 ///
-/// `source_path` names the document in the parse error messages.
+/// A value that cannot be read is an `unsupported_value`, with its path, and
+/// the others are still read; a `parse_error`, with its line and column,
+/// leaves no overrides. `source_path` names the document in the text of a
+/// parse error.
 [[nodiscard]]
-inline toml_config_parse_result parse_toml_text(
+inline config_file_parse_result parse_toml_text(
     const std::string_view text,
     const std::string_view source_path = {})
 {
-    return detail::parse_toml_overrides([&] { return toml::parse(text, source_path); });
+    return detail::parse_toml_overrides(source_path, [&] {
+        return toml::parse(text, source_path);
+    });
 }
 
-/// The overrides of a TOML file, with its errors.
+/// The overrides of a TOML file, with its errors, as parse_toml_text reads
+/// them: a config_file_reader.
 ///
 /// A file that cannot be read is reported as a parse error.
 [[nodiscard]]
-inline toml_config_parse_result load_toml_file(const std::filesystem::path& path)
+inline config_file_parse_result load_toml_file(const std::filesystem::path& path)
 {
-    return detail::parse_toml_overrides([&] { return toml::parse_file(path.string()); });
+    const auto name = path.string();
+    return detail::parse_toml_overrides(name, [&] { return toml::parse_file(name); });
 }
 
 } // namespace easylocal::config
