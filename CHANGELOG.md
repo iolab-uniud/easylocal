@@ -387,6 +387,13 @@ reviewed by hand before tagging.
   `docs/stability.md` lists the conditions of reproducibility (no time limit,
   the same commands in order, a solver's stream across `solve()` calls, REST
   seeds, the same standard library).
+- **Breaking:** `named_run_result`, what `run("name", ...)` returns, carries
+  the effort as `search_result` does, in `evaluations`, `iterations` and
+  `termination`, instead of `std::optional<run_effort> effort`; a custom
+  result without them gives 0, 0 and `completed`. `Session::last_run_effort()`
+  is set by every run that completes, `cli::run` always writes the
+  iterations, evaluations and termination, REST always gives `termination`,
+  and the TextUI's Last run box always shows how the run ended.
 - `Session::run` runs on the session's bound app instead of binding the app
   again for every run, as `App::run` does; when the parameters of the app
   have changed through `app()` since it was bound, it binds it again first,

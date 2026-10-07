@@ -142,7 +142,7 @@ int main()
     auto bound_runner = standalone.bind(input);
     const auto direct = bound_runner.run(start);
     assert(by_name->solution.order == direct.solution.order);
-    assert(by_name->effort->evaluations == direct.evaluations);
+    assert(by_name->evaluations == direct.evaluations);
 
     // make_runner gives the same runner, with its neighborhood.
     auto made = application.make_runner<BestImprovement>("swap");
@@ -159,7 +159,7 @@ int main()
             {"runners.swap.neighborhood.window", "4"}});
     assert(overridden);
     const auto wider = application.run("swap", input, start, rng);
-    assert(wider && wider->effort->evaluations > by_name->effort->evaluations);
+    assert(wider && wider->evaluations > by_name->evaluations);
 
     // check(app) checks both neighborhoods.
     const auto report = el::check(application, input);

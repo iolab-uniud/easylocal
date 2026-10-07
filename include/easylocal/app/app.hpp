@@ -29,8 +29,8 @@
 namespace easylocal
 {
 
-/// The effort of a run, when its algorithm reports it: the built-in runners
-/// do, through search_result.
+/// The effort of a run, with the fields of search_result: what a Session keeps
+/// of its last run.
 struct run_effort
 {
     /// Solutions and moves evaluated, the initial evaluation included.
@@ -45,7 +45,9 @@ struct run_effort
 ///
 /// Each algorithm has its own result type; what every result provides
 /// (search_result_for) is the solution and its cost, and the effort and the
-/// front when the result has them.
+/// front when the result has them. The effort has the fields of
+/// search_result: a result without them gives no evaluations, no iterations
+/// and `termination_reason::completed`.
 template<class Solution, class Cost>
 struct named_run_result
 {
@@ -53,8 +55,14 @@ struct named_run_result
     Solution solution;
     /// Its cost.
     Cost cost;
-    /// The effort of the run; empty when the result does not report it.
-    std::optional<run_effort> effort;
+    /// Solutions and moves evaluated, the initial evaluation included; 0 when
+    /// the result does not report it.
+    std::size_t evaluations{};
+    /// Iterations, as the algorithm counts them; 0 when the result does not
+    /// report them.
+    std::size_t iterations{};
+    /// Why the run ended; `completed` when the result does not report it.
+    termination_reason termination{termination_reason::completed};
     /// The non-dominated solutions reached, ordered by their objectives, with
     /// a cost::pareto cost; empty when the result has no front.
     std::vector<pareto_point<Solution, Cost>> front{};
@@ -529,7 +537,7 @@ public:
                 search_result_for<decltype(result), solution_type, cost_type>,
                 "running a runner by name requires its result to provide the "
                 "solution and its cost (see easylocal::search_result_for)");
-            std::optional<run_effort> effort;
+            run_effort effort;
             if constexpr (requires {
                               { result.evaluations } -> std::convertible_to<std::size_t>;
                               { result.iterations } -> std::convertible_to<std::size_t>;
@@ -557,7 +565,9 @@ public:
                 named_run_result<solution_type, cost_type>{
                     .solution = std::move(result.solution),
                     .cost = result.cost,
-                    .effort = effort,
+                    .evaluations = effort.evaluations,
+                    .iterations = effort.iterations,
+                    .termination = effort.termination,
                     .front = std::move(front),
                 });
         };

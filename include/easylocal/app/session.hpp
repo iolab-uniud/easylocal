@@ -668,14 +668,18 @@ public:
             return false;
 
         solution_ = std::make_unique<solution_type>(std::move(result->solution));
-        last_run_effort_ = result->effort;
+        last_run_effort_ = run_effort{
+            .evaluations = result->evaluations,
+            .iterations = result->iterations,
+            .termination = result->termination,
+        };
         last_run_front_ = std::move(result->front);
         clear_move_state();
         return true;
     }
 
-    /// The effort of the last run (evaluations, iterations, termination), when
-    /// its algorithm reports it; empty before the first run, after a run that
+    /// The effort of the last run (evaluations, iterations, termination), as
+    /// named_run_result has it; empty before the first run, after a run that
     /// did not complete (an unknown name, an exception) and after a new Input.
     [[nodiscard]]
     const std::optional<run_effort>& last_run_effort() const noexcept

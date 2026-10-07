@@ -520,7 +520,7 @@ private:
         std::optional<solution_type> solution;
         std::optional<crow::json::wvalue> encoded_cost; // by the codec, once
         typename session_type::front_type front; // with a cost::pareto cost
-        std::optional<run_effort> effort;        // when the runner reports it
+        std::optional<run_effort> effort;        // once the run has completed
         std::string error;
         easylocal::shared_run_progress progress;
         easylocal::shared_best_cost<cost_type> best_cost; // found so far
@@ -1110,11 +1110,10 @@ private:
                         record->encoded_cost.emplace(std::move(encoded_cost));
                         record->front = session.last_run_front();
                         record->effort = session.last_run_effort();
-                        // Cancelled when the run says so; without an effort,
-                        // when its cancellation was requested.
-                        const bool cancelled = record->effort
-                            ? record->effort->termination == termination_reason::cancelled
-                            : record->stop_source.stop_requested();
+                        // Cancelled when the run says so.
+                        assert(record->effort);
+                        const bool cancelled =
+                            record->effort->termination == termination_reason::cancelled;
                         record->state =
                             cancelled ? run_state::cancelled : run_state::succeeded;
                     }

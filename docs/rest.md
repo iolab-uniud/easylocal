@@ -341,11 +341,12 @@ evaluated its first solution, and is the best of all the runs of a
 MultiStart or a pipeline (of the stages on the app's cost). Once the run
 has succeeded, or was cancelled with a partial solution, the status also gives
 its final `progress`, its `cost` and `"solution_url"`, the address of `GET
-/runs/<id>/solution`, and, when the runner reports it, `termination`: why the
-run ended (`completed`, `local_optimum`, `evaluation_budget_exhausted`,
-`cancelled`, `target_reached`, `idle_limit_reached`, `time_limit_reached`). A
+/runs/<id>/solution`, and `termination`: why the run ended (`completed`,
+`local_optimum`, `evaluation_budget_exhausted`, `cancelled`, `target_reached`,
+`idle_limit_reached`, `time_limit_reached`). A
 run is `cancelled` when its termination says so: one whose cancellation came
-after it ended on its own terms is `succeeded`. A failed run gives
+after it ended on its own terms is `succeeded`, as is the run of a custom
+runner whose result has no termination (`completed`). A failed run gives
 `"error": {"code": "run_failed", "message": ...}` instead.
 
 ```json

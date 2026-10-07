@@ -122,11 +122,12 @@ do not share an algorithm's state. `Runner::bind` returns a
 `BoundRunner`, with `input()`, `solution_manager()`, `initial_solution()`,
 `random_solution(rng)`, `better(a, b)` and `run(solution, args...)`.
 
-`named_run_result{solution, cost, effort, front}` keeps what every runner
-result provides (`search_result_for`): a runner chosen by name may be any
-algorithm, built-in or your own, each with its own result type. `effort` is a
-`run_effort{evaluations, iterations, termination}` when the result has those
-members, as `search_result` does, and empty otherwise. `front` holds the
+`named_run_result{solution, cost, evaluations, iterations, termination,
+front}` keeps what every runner result provides (`search_result_for`): a
+runner chosen by name may be any algorithm, built-in or your own, each with its
+own result type. `evaluations`, `iterations` and `termination` are the
+result's, as in `search_result`, and 0, 0 and `completed` for a result without
+those members. `front` holds the
 non-dominated solutions of a run with a `cost::pareto` cost, as
 `pareto_search_result` does (see [Runners](runners.md#results)), and is empty
 otherwise. The Session keeps the front of its last run
@@ -193,8 +194,8 @@ has `random_solution`, `initial` otherwise), runs the runner by name, with
 unless that stage has a target of its own, which then decides when the run
 ends `target_reached`), `timeout` when `--timeout` is (seconds) and
 `max_evaluations` when `--max_evaluations` is, and writes `cost`, `time`, the session's
-`last_run_effort()` when the runner reports it (`iterations`, `evaluations`,
-`termination`), with `--report`
+`last_run_effort()` (`iterations`, `evaluations`, `termination`), with
+`--report`
 the session's `cost_report()` (a line `component <name> <value>` for each
 component, followed by its description, indented), and the solution
 (or saves it to `--output`) to `options.out`; errors go to `options.err`.
@@ -371,7 +372,7 @@ flowchart TB
 | Move | select with `use_first_move`, `use_next_move`, `use_first_improving_move`, `use_best_move`, `use_random_move(rng)` or `set_move`; then `has_move`, `move`, `move_is_valid`, `evaluate_move`, `evaluate_move_fully`, `move_evaluation_matches_full([tolerance])`, `apply_move` |
 | RNG | `rng()`, the session's generator, and `set_seed(seed)`; each run draws its own generator from it |
 | Neighborhood | `neighborhood_preview`, `neighborhood_statistics`, `check_neighborhood_costs([tolerance])` (the delta and the full costs agree by `equivalent` or within a `cost::tolerance`, 1e-9 by default), `check_move_independence` (needs `solutions_equal`: the SolutionManager's `equal` or `Solution::operator==`), `check_random_move_distribution(rng)` (needs `Move::operator==`); with a totally ordered cost these two compare a value only with those of the same cost, about linear in the moves, otherwise with all of them, quadratic. Each takes a `std::stop_token` as its last argument (none by default), stops at the next move once it is requested, and says so in its result's `stopped` |
-| Runners | `runner_names` (the runners and pipelines), `run("name", options...)` (replaces the current solution; the options are run options: `with(control, tracer)`, `stop_at`, `timeout`, `max_evaluations`), `last_run_effort()`: the evaluations, iterations and termination of the last run, when its algorithm reports them (empty after a new Input or a run that did not complete); `last_run_front()`: with a `cost::pareto` cost, the front of the last run, a vector of `pareto_point{solution, cost}` (`front_type`), empty in the same cases |
+| Runners | `runner_names` (the runners and pipelines), `run("name", options...)` (replaces the current solution; the options are run options: `with(control, tracer)`, `stop_at`, `timeout`, `max_evaluations`), `last_run_effort()`: the evaluations, iterations and termination of the last run, as `named_run_result` has them (empty before the first run, after a new Input or a run that did not complete); `last_run_front()`: with a `cost::pareto` cost, the front of the last run, a vector of `pareto_point{solution, cost}` (`front_type`), empty in the same cases |
 | Costs | `read_cost(text)`: a cost written as text, such as a target, by the problem's `read_cost` or `cost::from_text`; `cost_report()`: each cost component on the current solution, in the order of the recipe, as `component_report{name, value, description}`: its `name()` or `#<position>`, its own value without weights, and its `describe(solution)` text, empty without it |
 | Parameters | `configuration()`, the app's; `configure(text_overrides)` applies them all or none and rebuilds the bound services (the current solution stays, the selected move is cleared); its result lists the errors and must be read: a misspelt path is one |
 

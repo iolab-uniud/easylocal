@@ -346,11 +346,11 @@ void pipelines_are_registered_and_run_by_name()
     const auto initial = application.bind(instance).solution_manager().initial_solution();
     std::mt19937_64 rng{3};
     const auto by_name = application.run("cascade", instance, initial, rng);
-    assert(by_name && by_name->effort);
+    assert(by_name);
     std::mt19937_64 same_rng{3};
     const auto direct = stages().run(instance, initial, same_rng);
     assert(by_name->solution == direct.solution);
-    assert(by_name->effort->evaluations == direct.evaluations);
+    assert(by_name->evaluations == direct.evaluations);
 
     // The stages' parameters under runners.<name>, also in the read-only set.
     const auto has =
@@ -391,7 +391,7 @@ void pipelines_are_registered_and_run_by_name()
     std::mt19937_64 algorithm_rng{3};
     const auto by_algorithm = algorithms.run("cascade", instance, initial, algorithm_rng);
     assert(by_algorithm && by_algorithm->solution == direct.solution);
-    assert(by_algorithm->effort->evaluations == direct.evaluations);
+    assert(by_algorithm->evaluations == direct.evaluations);
     const auto algorithm_parameters = algorithms.configuration();
     assert(has(algorithm_parameters, "runners.cascade.feasible.attempts"));
     assert(has(algorithm_parameters, "runners.cascade.best.search.max_evaluations"));

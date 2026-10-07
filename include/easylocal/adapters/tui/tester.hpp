@@ -264,23 +264,18 @@ template<class Solution>
 struct async_runner_result
 {
     bool cancelled{};
-    // Why the run ended and its evaluations, when the runner reports them.
-    std::optional<easylocal::run_effort> effort;
+    // Why the run ended and its evaluations, with the solution.
+    easylocal::run_effort effort;
     std::optional<Solution> solution;
     std::string error;
 };
 
-// How a run ended, for the Last run box: " (target reached, 12 evaluations)";
-// " (stopped)" for a cancelled run without an effort, empty otherwise.
-[[nodiscard]] inline std::string run_ending(
-    const std::optional<easylocal::run_effort>& effort,
-    const bool cancelled)
+// How a run ended, for the Last run box: " (target reached, 12 evaluations)".
+[[nodiscard]] inline std::string run_ending(const easylocal::run_effort& effort)
 {
-    if (!effort)
-        return cancelled ? " (stopped)" : "";
-    return " (" + std::string{easylocal::to_string(effort->termination)}
-    + ", " + std::to_string(effort->evaluations)
-        + (effort->evaluations == 1 ? " evaluation)" : " evaluations)");
+    return " (" + std::string{easylocal::to_string(effort.termination)}
+    + ", " + std::to_string(effort.evaluations)
+        + (effort.evaluations == 1 ? " evaluation)" : " evaluations)");
 }
 
 // The shortest time between two progress events of a run: the run's worker
@@ -2003,7 +1998,11 @@ private:
                         {
                             completion.solution.emplace(std::move(result->solution));
                             completion.cancelled = stop_token.stop_requested();
-                            completion.effort = result->effort;
+                            completion.effort = easylocal::run_effort{
+                                .evaluations = result->evaluations,
+                                .iterations = result->iterations,
+                                .termination = result->termination,
+                            };
                         }
                     }
                     catch (const std::exception& error)
@@ -2298,7 +2297,7 @@ private:
         if (!tester_.is_valid())
         {
             last_run_result_ = run_name_ + ": " + run_before_ + " -> INVALID solution"
-                + detail::run_ending(completion.effort, completion.cancelled);
+                + detail::run_ending(completion.effort);
             set_status(
                 status_kind::error,
                 "Runner completed: " + run_name_ +
@@ -2309,14 +2308,14 @@ private:
         {
             const auto after = tester_.evaluate();
             last_run_result_ = run_name_ + ": " + run_before_ + " -> " + value_text(after)
-                + detail::run_ending(completion.effort, true);
+                + detail::run_ending(completion.effort);
             set_status(status_kind::warning, "Runner stopped: " + last_run_result_);
             return;
         }
 
         const auto after = tester_.evaluate();
         last_run_result_ = run_name_ + ": " + run_before_ + " -> " + value_text(after)
-            + detail::run_ending(completion.effort, false);
+            + detail::run_ending(completion.effort);
         set_status(status_kind::success, "Runner completed: " + last_run_result_);
     }
 
