@@ -14,6 +14,7 @@
 
 #include <cassert>
 #include <clocale>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <initializer_list>
@@ -580,6 +581,149 @@ void parameters_get_irace_identifiers()
     std::filesystem::remove_all(directory);
 }
 
+// A block whose requirements name tuned parameters (low, high, in [0, 1]) and
+// untuned ones of every kind: a number without a finite domain, a boolean, an
+// unlimited limit and a text.
+struct Related
+{
+    double low{0.2};
+    double high{0.8};
+    double scale{5.0};
+    bool verbose{false};
+    easylocal::limit budget{easylocal::unlimited};
+    std::string label{"plain"};
+
+    static consteval auto parameter_schema()
+    {
+        return config::fields(
+            config::field<"low", &Related::low>("Low", config::range(0.0, 1.0)),
+            config::field<"high", &Related::high>("High", config::range(0.0, 1.0)),
+            config::field<"scale", &Related::scale>("Scale"),
+            config::field<"verbose", &Related::verbose>("Verbose"),
+            config::field<"budget", &Related::budget>("Budget"),
+            config::field<"label", &Related::label>("Label"),
+            config::require(
+                config::value<"low"> < config::value<"high">,
+                "low must be below high"),
+            config::require(
+                config::value<"low"> < config::value<"scale">,
+                "low must be below scale"),
+            config::require(
+                config::value<"verbose"> || config::value<"high"> > 0.5,
+                "a quiet run needs high above 0.5"),
+            config::require(
+                config::value<"budget"> > 10 || config::value<"high"> < 1.0,
+                "a small budget needs high below 1"),
+            config::require(
+                config::value<"label"> != "none" || config::value<"low"> > 0.0,
+                "an unlabelled run needs low above 0"),
+            // Only untuned parameters: no forbidden line.
+            config::require(config::value<"scale"> > 0.0, "scale must be positive"));
+    }
+
+    config::validation_result validate() const
+    {
+        return config::check_schema(*this);
+    }
+};
+
+// The requirements become [forbidden] lines in which a tuned parameter is
+// its irace name and an untuned one its value, as R reads it; a line that
+// names an untuned parameter also gives the expression with every name.
+void requirements_become_forbidden_lines()
+{
+    const auto directory = fresh_directory("easylocal-tuning-forbidden");
+    Related related;
+    config::parameter_set set;
+    set.add("block", related);
+    easylocal::irace_stub stub{
+        .directory = directory,
+        .program = "solver",
+        .parameters = set.parameters(),
+        .ranges = {},
+        .requirements = set.requirements(),
+        .runners = {},
+        .fixed = {},
+        .instance = {},
+    };
+    const auto result = easylocal::write_irace_stub(stub);
+    assert(result);
+    assert(result.tuned == 2);
+    const auto parameters = read_file(directory / "parameters.txt");
+    const auto forbidden = parameters.substr(parameters.find("[forbidden]\n"));
+    assert(
+        forbidden
+        == "[forbidden]\n"
+           "# low must be below high\n"
+           "!(block.low < block.high)\n"
+           "# low must be below scale\n"
+           "# with every parameter it names tuned: !(block.low < block.scale)\n"
+           "!(block.low < 5)\n"
+           "# a quiet run needs high above 0.5\n"
+           "# with every parameter it names tuned: !((block.verbose == \"true\") || "
+           "(block.high > 0.5))\n"
+           "!(FALSE || (block.high > 0.5))\n"
+           "# a small budget needs high below 1\n"
+           "# with every parameter it names tuned: !((block.budget > 10) || (block.high "
+           "< 1))\n"
+           "!((Inf > 10) || (block.high < 1))\n"
+           "# an unlabelled run needs low above 0\n"
+           "# with every parameter it names tuned: !((block.label != \"none\") || "
+           "(block.low > 0))\n"
+           "!((\"plain\" != \"none\") || (block.low > 0))\n");
+    std::filesystem::remove_all(directory);
+}
+
+#ifndef _WIN32
+// target-runner, run as irace runs it, passes the instance, the seed and the
+// candidate's switches to the program after fixed.conf, with or without the
+// bound irace may insert before the switches, and prints what the program
+// prints.
+void the_target_runner_runs_the_program()
+{
+    const auto directory = fresh_directory("easylocal-tuning-target-runner");
+    std::filesystem::create_directories(directory);
+    const auto program = directory / "fake solver";
+    std::ofstream{program}
+        << "#!/bin/sh\n"
+           "printf '%s\\n' \"$@\" > \"$(dirname \"$0\")/arguments.txt\"\n"
+           "echo 42\n";
+    std::filesystem::permissions(
+        program,
+        std::filesystem::perms::owner_exec,
+        std::filesystem::perm_options::add);
+    easylocal::irace_stub stub{
+        .directory = directory,
+        .program = program,
+        .parameters = {parameter(
+            "rate",
+            "0.5",
+            config::parameter_kind::real,
+            config::describe_domain(config::range(0.0, 1.0)))},
+        .ranges = {},
+        .requirements = {},
+        .runners = {},
+        .fixed = {},
+        .instance = {},
+    };
+    assert(easylocal::write_irace_stub(stub));
+
+    const auto runner = directory / "target-runner";
+    const auto output = directory / "output.txt";
+    const auto expected = "--config\n" + (directory / "fixed.conf").string()
+        + "\n--tuning.print=cost\n--instance=my instance.tsp\n--seed=7\n--rate=0.25\n";
+    for (const std::string bound : {"", " 100"})
+    {
+        const auto command = "'" + runner.string() + "' 3 1 7 'my instance.tsp'" + bound
+            + " --rate=0.25 > '" + output.string() + "'";
+        assert(std::system(command.c_str()) == 0);
+        assert(read_file(output) == "42\n");
+        assert(read_file(directory / "arguments.txt") == expected);
+    }
+    std::filesystem::remove_all(directory);
+}
+#endif
+
 } // namespace
 
 void the_stub_filters_and_says_when_nothing_is_tuned()
@@ -633,4 +777,8 @@ int main()
     an_unlimited_limit_starts_at_its_upper_bound();
     bounds_keep_their_precision();
     parameters_get_irace_identifiers();
+    requirements_become_forbidden_lines();
+#ifndef _WIN32
+    the_target_runner_runs_the_program();
+#endif
 }

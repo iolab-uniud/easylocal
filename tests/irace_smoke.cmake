@@ -45,7 +45,11 @@ endif()
 
 # The smallest budget irace accepts for this scenario is about 100 runs.
 file(READ "${EASYLOCAL_WORK_DIR}/scenario.txt" _scenario)
-string(REPLACE "maxExperiments = 1000" "maxExperiments = 120" _scenario "${_scenario}")
+string(REPLACE "maxExperiments = 1000" "maxExperiments = 120" _smoke_scenario "${_scenario}")
+if(_smoke_scenario STREQUAL _scenario)
+    message(FATAL_ERROR "scenario.txt has no \"maxExperiments = 1000\" to lower:\n${_scenario}")
+endif()
+set(_scenario "${_smoke_scenario}")
 file(WRITE "${EASYLOCAL_WORK_DIR}/scenario.txt" "${_scenario}")
 
 foreach(_mode IN ITEMS --check "")
