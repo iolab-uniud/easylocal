@@ -29,8 +29,7 @@ struct StructuredCost
     int hard{};
     int soft{};
 
-    friend auto operator<(const StructuredCost& lhs, const StructuredCost& rhs) noexcept
-        -> bool
+    friend bool operator<(const StructuredCost& lhs, const StructuredCost& rhs) noexcept
     {
         return lhs.hard < rhs.hard;
     }
@@ -44,11 +43,11 @@ public:
 
     explicit SolutionManager(const Instance& instance) noexcept : instance_{instance} {}
 
-    [[nodiscard]] auto input() const noexcept -> const Instance&
+    [[nodiscard]] const Instance& input() const noexcept
     {
         return instance_;
     }
-    [[nodiscard]] static auto is_valid(const Solution&) noexcept -> bool
+    [[nodiscard]] static bool is_valid(const Solution&) noexcept
     {
         return true;
     }
@@ -59,8 +58,7 @@ private:
 
 struct StructuredValue
 {
-    [[nodiscard]] static auto evaluate(const Solution& solution) noexcept
-        -> StructuredCost
+    [[nodiscard]] static StructuredCost evaluate(const Solution& solution) noexcept
     {
         return {.hard = solution.value, .soft = 0};
     }
@@ -78,23 +76,23 @@ public:
     {
     }
 
-    [[nodiscard]] auto input() const noexcept -> const Instance&
+    [[nodiscard]] const Instance& input() const noexcept
     {
         return instance_;
     }
 
     template<std::uniform_random_bit_generator RNG>
-    [[nodiscard]] static auto random_move(const Solution&, RNG&) -> std::optional<Move>
+    [[nodiscard]] static std::optional<Move> random_move(const Solution&, RNG&)
     {
         return Move{.delta = -1};
     }
 
-    [[nodiscard]] static auto moves(const Solution&) -> easylocal::generator<Move>
+    [[nodiscard]] static easylocal::generator<Move> moves(const Solution&)
     {
         co_yield Move{.delta = -1};
     }
 
-    [[nodiscard]] static auto is_valid(const Solution&, const Move&) noexcept -> bool
+    [[nodiscard]] static bool is_valid(const Solution&, const Move&) noexcept
     {
         return true;
     }

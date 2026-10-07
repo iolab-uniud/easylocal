@@ -10,8 +10,7 @@ struct UnsignedComponent
     explicit UnsignedComponent(const compile_fail_fixture::Instance&) noexcept {}
 
     [[nodiscard]]
-    auto evaluate(const compile_fail_fixture::Solution& solution) const noexcept
-        -> std::size_t
+    std::size_t evaluate(const compile_fail_fixture::Solution& solution) const noexcept
     {
         return static_cast<std::size_t>(solution.value);
     }

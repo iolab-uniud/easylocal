@@ -19,11 +19,11 @@ struct SM
     using input_type = Instance;
     using solution_type = Solution;
     explicit SM(const Instance& instance) : instance_{instance} {}
-    auto input() const -> const Instance&
+    const Instance& input() const
     {
         return instance_;
     }
-    static auto is_valid(const Solution&) -> bool
+    static bool is_valid(const Solution&)
     {
         return true;
     }
@@ -35,7 +35,7 @@ private:
 struct NHE : easylocal::neighborhood_explorer_base<SM, Move>
 {
     using neighborhood_explorer_base::neighborhood_explorer_base;
-    static auto is_valid(const Solution&, const Move&) -> bool
+    static bool is_valid(const Solution&, const Move&)
     {
         return true;
     }

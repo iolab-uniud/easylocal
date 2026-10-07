@@ -26,11 +26,11 @@ public:
 
     explicit SolutionManager(const Instance& instance) noexcept : instance_{instance} {}
 
-    [[nodiscard]] auto input() const noexcept -> const Instance&
+    [[nodiscard]] const Instance& input() const noexcept
     {
         return instance_;
     }
-    [[nodiscard]] static auto is_valid(const Solution&) noexcept -> bool
+    [[nodiscard]] static bool is_valid(const Solution&) noexcept
     {
         return true;
     }
@@ -41,7 +41,7 @@ private:
 
 struct Value
 {
-    [[nodiscard]] static auto evaluate(const Solution& solution) noexcept -> int
+    [[nodiscard]] static int evaluate(const Solution& solution) noexcept
     {
         return solution.value;
     }
@@ -51,13 +51,14 @@ struct Value
 // Metropolis criterion reads.
 struct Maximize
 {
-    [[nodiscard]] constexpr auto operator()(const int value) const noexcept -> int
+    [[nodiscard]] constexpr int operator()(const int value) const noexcept
     {
         return value;
     }
 
-    [[nodiscard]] constexpr auto compare(const int lhs, const int rhs) const noexcept
-        -> std::partial_ordering
+    [[nodiscard]] constexpr std::partial_ordering compare(
+        const int lhs,
+        const int rhs) const noexcept
     {
         return rhs <=> lhs;
     }
@@ -75,18 +76,18 @@ public:
     {
     }
 
-    [[nodiscard]] auto input() const noexcept -> const Instance&
+    [[nodiscard]] const Instance& input() const noexcept
     {
         return instance_;
     }
 
     template<std::uniform_random_bit_generator RNG>
-    [[nodiscard]] static auto random_move(const Solution&, RNG&) -> std::optional<Move>
+    [[nodiscard]] static std::optional<Move> random_move(const Solution&, RNG&)
     {
         return Move{.delta = -1};
     }
 
-    [[nodiscard]] static auto is_valid(const Solution&, const Move&) noexcept -> bool
+    [[nodiscard]] static bool is_valid(const Solution&, const Move&) noexcept
     {
         return true;
     }

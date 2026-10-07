@@ -9,13 +9,16 @@ class BrokenSolutionManager
     : public easylocal::solution_manager_base<Instance, Solution>
 {
 public:
-    [[nodiscard]] auto is_valid(const Solution&) const noexcept -> bool { return true; }
+    [[nodiscard]] bool is_valid(const Solution&) const noexcept
+    {
+        return true;
+    }
 };
 
 struct Component
 {
     explicit Component(const Instance&) noexcept {}
-    [[nodiscard]] auto evaluate(const Solution& solution) const noexcept -> int
+    [[nodiscard]] int evaluate(const Solution& solution) const noexcept
     {
         return solution.value;
     }

@@ -41,13 +41,13 @@ public:
     }
 
     [[nodiscard]]
-    auto input() const noexcept -> const Instance&
+    const Instance& input() const noexcept
     {
         return instance_;
     }
 
     [[nodiscard]]
-    auto is_valid(const Solution&) const noexcept -> bool
+    bool is_valid(const Solution&) const noexcept
     {
         return true;
     }
@@ -59,13 +59,13 @@ private:
 struct CostFunction
 {
     [[nodiscard]]
-    auto operator()(const int first) const noexcept -> Cost
+    Cost operator()(const int first) const noexcept
     {
         return Cost{first};
     }
 
     [[nodiscard]]
-    auto operator()(const int first, const int second) const noexcept -> Cost
+    Cost operator()(const int first, const int second) const noexcept
     {
         return Cost{first + second};
     }
@@ -80,7 +80,7 @@ struct ComponentA
     }
 
     [[nodiscard]]
-    auto evaluate(const Solution& solution) const noexcept -> int
+    int evaluate(const Solution& solution) const noexcept
     {
         return solution.value;
     }
@@ -95,7 +95,7 @@ struct ComponentB
     }
 
     [[nodiscard]]
-    auto evaluate(const Solution& solution) const noexcept -> int
+    int evaluate(const Solution& solution) const noexcept
     {
         return solution.value;
     }
@@ -114,7 +114,7 @@ public:
     }
 
     [[nodiscard]]
-    auto input() const noexcept -> const Instance&
+    const Instance& input() const noexcept
     {
         return solution_manager_.input();
     }
@@ -125,7 +125,10 @@ public:
         return std::views::single(Move{});
     }
 
-    [[nodiscard]] static auto is_valid(const Solution&, const Move&) noexcept -> bool { return true; }
+    [[nodiscard]] static bool is_valid(const Solution&, const Move&) noexcept
+    {
+        return true;
+    }
 
     void make_move(Solution& solution, const Move& move) const noexcept
     {
@@ -149,7 +152,7 @@ struct DeltaA
     }
 
     [[nodiscard]]
-    auto delta_evaluate(const Solution&, const Move& move) const noexcept -> int
+    int delta_evaluate(const Solution&, const Move& move) const noexcept
     {
         return move.delta;
     }
@@ -162,7 +165,7 @@ struct AnotherDeltaA
     }
 
     [[nodiscard]]
-    auto delta_evaluate(const Solution&, const Move& move) const noexcept -> int
+    int delta_evaluate(const Solution&, const Move& move) const noexcept
     {
         return move.delta;
     }
@@ -175,7 +178,7 @@ struct DeltaB
     }
 
     [[nodiscard]]
-    auto delta_evaluate(const Solution&, const Move& move) const noexcept -> int
+    int delta_evaluate(const Solution&, const Move& move) const noexcept
     {
         return move.delta;
     }
@@ -188,8 +191,7 @@ struct MalformedDeltaA
     }
 
     [[nodiscard]]
-    auto delta_evaluate(const Solution&, const Move&) const noexcept
-        -> const char*
+    const char* delta_evaluate(const Solution&, const Move&) const noexcept
     {
         return "not applicable";
     }
@@ -207,7 +209,7 @@ struct NonConstructibleDeltaA
     NonConstructibleDeltaA() = delete;
 
     [[nodiscard]]
-    auto delta_evaluate(const Solution&, const Move& move) const noexcept -> int
+    int delta_evaluate(const Solution&, const Move& move) const noexcept
     {
         return move.delta;
     }
@@ -220,7 +222,7 @@ struct NonConstructibleComponent
     NonConstructibleComponent() = delete;
 
     [[nodiscard]]
-    auto evaluate(const Solution& solution) const noexcept -> int
+    int evaluate(const Solution& solution) const noexcept
     {
         return solution.value;
     }

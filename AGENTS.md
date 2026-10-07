@@ -76,6 +76,9 @@ previews the site, `scripts/coverage.sh` measures the coverage of
 
 ## Code style
 
+The tests follow the rules of the library, and a test file written otherwise
+is converted when a change touches it.
+
 - Return types come first, in the library as in the examples: `double
   evaluate(...) const`. Trailing return types only in deduction guides and
   lambdas. `auto f()` only where the type cannot be spelled.

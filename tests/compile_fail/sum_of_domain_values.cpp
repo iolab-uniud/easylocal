@@ -13,8 +13,7 @@ struct DomainComponent
     explicit DomainComponent(const compile_fail_fixture::Instance&) noexcept {}
 
     [[nodiscard]]
-    auto evaluate(const compile_fail_fixture::Solution& solution) const noexcept
-        -> DomainValue
+    DomainValue evaluate(const compile_fail_fixture::Solution& solution) const noexcept
     {
         return {solution.value};
     }

@@ -16,8 +16,7 @@ struct Parameters
     }
 
     [[nodiscard]]
-    constexpr auto validate() const noexcept
-        -> easylocal::config::validation_result
+    constexpr easylocal::config::validation_result validate() const noexcept
     {
         return easylocal::config::validation_result::success();
     }

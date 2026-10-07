@@ -20,7 +20,7 @@ public:
     using solution_manager_base::solution_manager_base;
 
     [[nodiscard]]
-    static auto is_valid(const Solution&) noexcept -> bool
+    static bool is_valid(const Solution&) noexcept
     {
         return true;
     }
@@ -29,7 +29,7 @@ public:
 struct ZeroCost
 {
     [[nodiscard]]
-    static auto evaluate(const Solution&) noexcept -> int
+    static int evaluate(const Solution&) noexcept
     {
         return 0;
     }
@@ -41,7 +41,7 @@ public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
     [[nodiscard]]
-    static auto is_valid(const Solution&, const Move&) noexcept -> bool
+    static bool is_valid(const Solution&, const Move&) noexcept
     {
         return true;
     }

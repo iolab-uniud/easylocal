@@ -11,7 +11,10 @@ class SolutionManager
 {
 public:
     using solution_manager_base::solution_manager_base;
-    [[nodiscard]] auto is_valid(const Solution&) const noexcept -> bool { return true; }
+    [[nodiscard]] bool is_valid(const Solution&) const noexcept
+    {
+        return true;
+    }
 };
 
 class BrokenNeighborhood
