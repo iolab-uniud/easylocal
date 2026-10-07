@@ -165,10 +165,15 @@ void load_and_apply_reads_a_toml_file()
     assert(
         malformed.diagnostics.front().source
         == easylocal::config::setup_diagnostic_source::config_file);
-    assert(malformed.diagnostics.front().line == 2);
     std::ostringstream printed;
     easylocal::config::print_diagnostics(printed, malformed);
+#if TOML_HEADER_ONLY
+    // Where toml++ can give the place of the error, as parse_toml_text says.
+    assert(malformed.diagnostics.front().line == 2);
     assert(printed.str().starts_with("error: config line 2, column "));
+#else
+    assert(printed.str().starts_with("error: "));
+#endif
     assert(flags.count == 4);
     std::filesystem::remove(file);
 }
