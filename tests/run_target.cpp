@@ -117,6 +117,35 @@ struct RunCounter
     }
 };
 
+// Requests a stop at the end of the first run it sees: a solve of several runs
+// is cancelled between the first and the second.
+struct StopAfterFirstRun
+{
+    template<class Event>
+    static constexpr bool observes = false;
+
+    template<class Cost>
+    static constexpr bool observes<easylocal::trace::event::run_started<Cost>> = true;
+
+    template<class Cost>
+    static constexpr bool observes<easylocal::trace::event::run_finished<Cost>> = true;
+
+    std::stop_source* stop{};
+    std::size_t runs{};
+
+    template<class Cost>
+    void emit(const easylocal::trace::event::run_started<Cost>&) noexcept
+    {
+        ++runs;
+    }
+
+    template<class Cost>
+    void emit(const easylocal::trace::event::run_finished<Cost>&) noexcept
+    {
+        stop->request_stop();
+    }
+};
+
 // Whether with(control) and with(control, tracer) take a control of this kind:
 // not a temporary, which the options would outlive.
 template<class Control>
@@ -483,6 +512,20 @@ int main()
     ok &= expect(multi_cancelled.termination == termination_reason::cancelled &&
                      multi_cancelled.evaluations == 1,
                  "MultiStart does not start again after a cancellation");
+
+    // A stop requested once the first start has finished: the first start's
+    // result, cancelled, and no second start.
+    {
+        std::stop_source source;
+        const run_control control{source.get_token()};
+        StopAfterFirstRun stopper{.stop = &source};
+        const auto between = multi_start.solve(ten, with(control, stopper));
+        ok &= expect(
+            between.termination == termination_reason::cancelled && stopper.runs == 1
+                && between.evaluations == unbounded.evaluations
+                && between.cost == unbounded.cost,
+            "MultiStart checks for a stop between its starts");
+    }
 
     return ok ? 0 : 1;
 }

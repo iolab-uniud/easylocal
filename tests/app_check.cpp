@@ -338,6 +338,22 @@ void check_names_the_runner_with_invalid_parameters()
                 && failure.message.starts_with("runner climb: "));
     }
     assert(reported);
+
+    // From a given solution too, without binding the app, which would throw.
+    const AssignmentSolution solution{
+        .assignment = {0, 1, 0},
+    };
+    const auto from_solution = easylocal::check(application, instance, solution);
+    assert(!from_solution.passed());
+    bool reported_from_solution = false;
+    for (const auto& failure : from_solution.failures())
+    {
+        reported_from_solution = reported_from_solution
+            || (failure.check == "runner configuration"
+                && failure.message.starts_with("runner climb: "));
+    }
+    assert(reported_from_solution);
+    assert(from_solution.composition().solution_managers == 0);
 }
 
 void check_reports_parameters_that_are_not_a_block()
