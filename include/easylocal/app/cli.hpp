@@ -480,17 +480,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
     TuningParameters tuning;
     config::parameter_set configuration;
     configuration.add(command_line);
-    try
-    {
-        // A pipeline with two stages of the same name, or one without a name,
-        // has no parameters to give.
-        configuration.add(application.configuration());
-    }
-    catch (const std::invalid_argument& error)
-    {
-        err << "error: " << error.what() << '\n';
-        return 2;
-    }
+    configuration.add(application.configuration());
     configuration.add(settings.parameters);
     configuration.add("tuning", tuning);
     const auto defaults = configuration.parameters();

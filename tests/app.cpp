@@ -605,6 +605,21 @@ void registration_names_are_validated()
             | easylocal::runner<FirstImprovement>("first.improvement"),
         "'first.improvement'");
 
+    // The names of a pipeline's stages are checked when it is registered.
+    namespace solvers = easylocal::solvers;
+    const auto stages = invalid_argument_of([] {
+        static_cast<void>(easylocal::pipeline(
+            "twice",
+            solvers::stage<FirstImprovement>("same", {}),
+            solvers::stage<BestImprovement>("same", {})));
+    });
+    assert(stages.find("two pipeline stages are named 'same'") != std::string::npos);
+    const auto unnamed = invalid_argument_of([] {
+        static_cast<void>(
+            easylocal::pipeline("unnamed", solvers::stage<FirstImprovement>("", {})));
+    });
+    assert(unnamed.find("a pipeline stage needs a name") != std::string::npos);
+
     const auto valid = easylocal::app("valid") | sm | nhe
         | easylocal::runner<FirstImprovement>("first-improvement_2");
     const auto names = invalid_argument_of([&] {

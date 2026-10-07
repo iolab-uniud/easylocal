@@ -134,6 +134,9 @@ reviewed by hand before tagging.
 
 ### Apps and tools
 
+- `pipeline(name, stages...)` checks the names of the stages when the
+  registration is made, and throws `std::invalid_argument` there, instead of
+  at every `configuration()` of the app; `cli::run` no longer catches it.
 - **Breaking:** `App::runner_count`, which counted the pipelines too, is
   `App::registration_count`.
 - The scalar number of a cost for tuning (`cost::scalar`, `--tuning.print`)

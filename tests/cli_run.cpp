@@ -340,35 +340,6 @@ int main()
     assert(bad_target.status == 2);
     assert(bad_target.err.starts_with("error: target: "));
 
-    // A pipeline whose stages share a name has no parameters to give: an
-    // error, not an exception out of cli::run.
-    {
-        using namespace tutorial;
-        namespace solvers = easylocal::solvers;
-        auto sm = easylocal::solution_manager<TourManager>()
-            | easylocal::component<TourLength>();
-        auto nhe = easylocal::neighborhood<TwoOptExplorer>()
-            | easylocal::delta<TourLength, TwoOptLengthDelta>();
-        auto descent =
-            easylocal::make_runner<easylocal::runners::FirstImprovement>({}) | sm | nhe;
-        auto twice = easylocal::app("tsp") | sm | nhe
-            | easylocal::pipeline(
-                "twice",
-                solvers::stage("same", descent),
-                solvers::stage("same", descent));
-        std::string program{"cli_run"};
-        std::vector<char*> argv{program.data()};
-        std::ostringstream out;
-        std::ostringstream err;
-        const int status = easylocal::cli::run(
-            std::move(twice),
-            1,
-            argv.data(),
-            {.out = &out, .err = &err});
-        assert(status == 2);
-        assert(err.str().starts_with("error: "));
-    }
-
     // A pipeline is run by name, and configured under runners.<name>.
     const auto cascaded = run(
         {"--instance",

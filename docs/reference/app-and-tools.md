@@ -85,6 +85,8 @@ whose own neighborhood does not fit is rejected at compile time.
 
 A stage of a runner keeps its own recipes; the stages must have the app's
 Input and Solution, and the last one the app's cost (checked at compile time).
+`pipeline(name, ...)` throws `std::invalid_argument` when two stages have the
+same name, or one has none.
 For every tool a pipeline is one more runner: it is listed among the runners,
 run by name from the current solution (`pipeline.run(input, solution, rng)`,
 so its first stage's attempts all start from that solution), and configured

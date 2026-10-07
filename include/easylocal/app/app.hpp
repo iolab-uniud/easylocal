@@ -1122,7 +1122,6 @@ private:
             config::parameter_set stages;
             std::apply(
                 [&stages](auto&... stage) {
-                    solvers::detail::check_stage_names(stage...);
                     (solvers::detail::add_stage_configuration(stages, stage), ...);
                 },
                 registration.stages);
@@ -1362,13 +1361,16 @@ detail::app_pipeline_registration<Stages...> pipeline(
 /// runs on the app's recipes: its SolutionManager and cost, so the app's
 /// `cost.*` apply to it, and the app's neighborhood or its own. A stage of a
 /// runner, `stage(name, runner)`, runs on the runner's own recipes. The
-/// parameters are each stage's under `runners.<name>.<stage>`. Requires stages
-/// with the app's Input and Solution, the last one with the app's cost.
+/// parameters are each stage's under `runners.<name>.<stage>`. Throws
+/// std::invalid_argument when two stages have the same name, or one has none.
+/// Requires stages with the app's Input and Solution, the last one with the
+/// app's cost.
 template<class... Stages>
     requires(sizeof...(Stages) > 0) && (solvers::detail::any_stage<Stages> && ...)
 [[nodiscard]]
 detail::app_pipeline_registration<Stages...> pipeline(std::string name, Stages... stages)
 {
+    solvers::detail::check_stage_names(stages...);
     return {
         .name = std::move(name),
         .stages = std::tuple<Stages...>{std::move(stages)...}};
