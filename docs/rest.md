@@ -466,7 +466,8 @@ enqueue work, and return the run identifier.
 Each accepted job owns a `Session` on the run's Input, created when the run is
 submitted: configured with the run's parameters, then bound to the Input once,
 with the initial solution and the run's seed. The worker calls
-`session.run("name", with(control))`, which binds fresh services for that run,
+`session.run("name", with(control))`, which runs on the services of that
+Session, bound for that run alone,
 and stores the resulting solution and its cost, encoded once for every status
 poll. Mutable SolutionManager, neighborhood,
 algorithm, Runner, RNG, and Solution state therefore belongs to that run only.

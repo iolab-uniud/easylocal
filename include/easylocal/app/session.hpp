@@ -346,12 +346,15 @@ public:
         auto new_bound =
             std::unique_ptr<bound_app_type>{new bound_app_type(app_.bind(*new_input))};
 
+        auto values = parameter_values();
+
         clear_solution_state();
         last_run_effort_.reset();
         last_run_front_.clear();
         bound_.reset();
         input_ = std::move(new_input);
         bound_ = std::move(new_bound);
+        bound_values_ = std::move(values);
     }
 
     /// Reads the Input from a stream with the problem's read hook, as
@@ -578,6 +581,7 @@ public:
             {
                 bound_ = std::unique_ptr<bound_app_type>{
                     new bound_app_type(app_.bind(*input_))};
+                bound_values_ = parameter_values();
             }
             catch (...)
             {
@@ -609,11 +613,12 @@ public:
     /// session's RNG (`rng_type{rng()()}`), so successive runs differ and a
     /// seed reproduces them in order. The options are run options, such as
     /// with(control, tracer), stop_at,
-    /// timeout and max_evaluations. Like every app run, it uses freshly bound
-    /// services and the current runner parameters, not this session's bound
-    /// app. Throws `std::invalid_argument`, and changes nothing, when the
-    /// current solution is not valid for the Input (set_solution and
-    /// load_solution accept one, to inspect it).
+    /// timeout and max_evaluations. It runs on the session's bound app
+    /// (bound_app()), which is first bound again when the parameters of the app
+    /// have changed through app() since, so it uses the current ones. Throws
+    /// `std::invalid_argument`, and changes nothing, when the current solution
+    /// is not valid for the Input (set_solution and load_solution accept one,
+    /// to inspect it), or the changed parameters are not.
     template<class... Options>
     [[nodiscard]]
     bool run(const std::string_view name, Options&&... options)
@@ -636,13 +641,10 @@ public:
         // Each run draws its own generator from the session's, as the TextUI
         // does for its background runs: the same seed and the same commands
         // give the same runs in every frontend.
+        rebind_if_changed();
         rng_type run_rng{rng_()};
-        auto result = app_.run(
-            name,
-            *input_,
-            *solution_,
-            run_rng,
-            std::forward<Options>(options)...);
+        auto result =
+            bound_->run(name, *solution_, run_rng, std::forward<Options>(options)...);
         if (!result)
             return false;
 
@@ -1227,6 +1229,29 @@ private:
         return {bound_->solution_manager(), bound_->neighborhood()};
     }
 
+    // The values of the app's parameters, as text, in the order of its
+    // configuration(): bound_values_ are those the bound app was built with.
+    [[nodiscard]]
+    std::vector<std::string> parameter_values() const
+    {
+        std::vector<std::string> values;
+        if constexpr (requires(const App& application) { application.configuration(); })
+            for (auto& parameter : app_.configuration().parameters())
+                values.push_back(std::move(parameter.value));
+        return values;
+    }
+
+    // Binds the app to the Input again when its parameters have changed
+    // through app() since the bound app was built, which then has them.
+    void rebind_if_changed()
+    {
+        auto values = parameter_values();
+        if (values == bound_values_)
+            return;
+        bound_ = std::unique_ptr<bound_app_type>{new bound_app_type(app_.bind(*input_))};
+        bound_values_ = std::move(values);
+    }
+
     void clear_move_state() noexcept
     {
         move_.reset();
@@ -1263,6 +1288,7 @@ private:
     App app_;
     std::shared_ptr<const input_type> input_;
     std::unique_ptr<bound_app_type> bound_;
+    std::vector<std::string> bound_values_;
     std::unique_ptr<solution_type> solution_;
     std::optional<run_effort> last_run_effort_;
     front_type last_run_front_;

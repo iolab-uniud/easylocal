@@ -137,6 +137,10 @@ reviewed by hand before tagging.
 - `pipeline(name, stages...)` checks the names of the stages when the
   registration is made, and throws `std::invalid_argument` there, instead of
   at every `configuration()` of the app; `cli::run` no longer catches it.
+- `Session::run` runs on the session's bound app instead of binding the app
+  again for every run, as `App::run` does; when the parameters of the app
+  have changed through `app()` since it was bound, it binds it again first,
+  so a run still uses the current parameters.
 - **Breaking:** `App::runner_count`, which counted the pipelines too, is
   `App::registration_count`.
 - The scalar number of a cost for tuning (`cost::scalar`, `--tuning.print`)

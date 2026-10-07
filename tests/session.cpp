@@ -151,10 +151,19 @@ class CountedNeighborhood
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
-    [[nodiscard]]
-    static easylocal::generator<CountedStep> moves(const CountedSolution&)
+    // The explorers built: one for each binding of the app.
+    static inline std::size_t constructions = 0;
+
+    explicit CountedNeighborhood(const CountedSolutionManager& solution_manager) noexcept
+        : neighborhood_explorer_base{solution_manager}
     {
-        for (std::uint64_t step = 1; step <= 3; ++step)
+        ++constructions;
+    }
+
+    [[nodiscard]]
+    static easylocal::generator<CountedStep> moves(const CountedSolution& solution)
+    {
+        for (std::uint64_t step = 1; step <= 3 && step <= solution.value; ++step)
             co_yield CountedStep{.step = step};
     }
 
@@ -580,6 +589,33 @@ void session_evaluates_the_current_solution_once_per_scan()
     assert(improving);
     assert(session.move().step == 1);
     assert(CountedValue::evaluations == 2);
+}
+
+// A run is on the session's bound app, which is bound again only when the
+// parameters of the app have changed through app().
+void session_runs_on_its_bound_app()
+{
+    easylocal::Session session{make_counted_application()};
+    session.set_input(CountedInput{});
+    session.use_initial_solution();
+
+    CountedNeighborhood::constructions = 0;
+    assert(session.run("fi"));
+    assert(session.run("fi"));
+    assert(CountedNeighborhood::constructions == 0);
+
+    session.app()
+        .runner_parameters<easylocal::runners::FirstImprovement>("fi")
+        .max_evaluations = 1;
+    session.use_initial_solution();
+    assert(session.run("fi"));
+    assert(CountedNeighborhood::constructions == 1);
+    assert(session.last_run_effort());
+    assert(
+        session.last_run_effort()->termination
+        == easylocal::termination_reason::evaluation_budget_exhausted);
+    assert(session.run("fi"));
+    assert(CountedNeighborhood::constructions == 1);
 }
 
 void session_selects_random_moves_with_an_explicit_rng()
@@ -1125,6 +1161,7 @@ int main()
     session_selects_first_and_next_moves_deterministically();
     session_selects_first_improving_and_best_moves();
     session_evaluates_the_current_solution_once_per_scan();
+    session_runs_on_its_bound_app();
     session_selects_random_moves_with_an_explicit_rng();
     session_compares_move_evaluation_with_full_recomputation();
     session_reports_neighborhood_diagnostics();

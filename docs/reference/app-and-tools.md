@@ -342,17 +342,14 @@ flowchart TB
             rng["RNG (seed)"]
         end
     end
-    subgraph fresh["each run(&quot;name&quot;)"]
-        direction LR
-        fbound["fresh bound app"]
+    subgraph each["each run(&quot;name&quot;)"]
         runner["runner"]
     end
     app -- copied --> copy
     copy -- "bind, again on configure" --> bound
-    copy -- "app.run" --> fresh
+    bound -- "runs" --> each
     bound -. borrows .-> input
-    fresh -. borrows .-> input
-    fresh -- "result replaces" --> sol
+    each -- "result replaces" --> sol
 ```
 
 | Constructor | |
@@ -396,9 +393,9 @@ The selections and `run` return `false` when there is nothing to select or no
 runner with that name, and are `[[nodiscard]]`. `set_solution` and
 `load_solution` accept a solution that is not valid for the Input, to inspect
 it; `run` does not start from one: it throws `std::invalid_argument` and
-changes nothing. `run` uses fresh services and
-the current runner parameters, like `app.run`, and executes on the calling
-thread. The REST service gives every run a Session of its own and calls `run`
+changes nothing. `run` runs on the session's bound app, with the current
+parameters: when they have changed through `app()` since it was bound, it is
+bound again first; it executes on the calling thread. The REST service gives every run a Session of its own and calls `run`
 on a worker thread, with `with(control)` for progress and cancellation. The
 TextUI, which keeps reading its Session while a runner works, runs it with
 `app.run("name", ...)` on copies of the app, Input and solution instead.
