@@ -96,13 +96,21 @@ public:
         return solution_manager_.input();
     }
 
+    // The move, until it is applied: then the neighborhood is empty.
     [[nodiscard]]
-    auto moves(const AssignmentSolution&) const
+    auto moves(const AssignmentSolution& solution) const
     {
-        return std::views::single(move_);
+        return std::views::single(move_)
+            | std::views::take(is_valid(solution, move_) ? 1 : 0);
     }
 
-    [[nodiscard]] static auto is_valid(const AssignmentSolution&, const ReassignJobMove&) noexcept -> bool { return true; }
+    [[nodiscard]]
+    static bool is_valid(
+        const AssignmentSolution& solution,
+        const ReassignJobMove& move) noexcept
+    {
+        return solution.assignment[move.job] != move.destination;
+    }
 
     void make_move(AssignmentSolution& solution, const ReassignJobMove& move) const noexcept
     {
@@ -190,8 +198,7 @@ int main()
     };
 
     int delta_accept_make_moves = 0;
-    auto delta_accept_runner =
-        easylocal::make_runner<FirstImprovement>({.max_evaluations = 2})
+    auto delta_accept_runner = easylocal::make_runner<FirstImprovement>()
         | default_solution_manager_recipe()
         | (neighborhood<SingleMoveNeighborhoodExplorer>(
                relieving_move,
@@ -207,10 +214,14 @@ int main()
     ok &= expect(
         delta_accept_make_moves == 1,
         "all-delta candidate applies make_move only once, at acceptance");
+    ok &= expect(
+        delta_accept_result.evaluations == 2
+            && delta_accept_result.termination
+                == easylocal::termination_reason::local_optimum,
+        "the descent ends at a local optimum once the only move is applied");
 
     int delta_reject_make_moves = 0;
-    auto delta_reject_runner =
-        easylocal::make_runner<FirstImprovement>({.max_evaluations = 2})
+    auto delta_reject_runner = easylocal::make_runner<FirstImprovement>()
         | default_solution_manager_recipe()
         | (neighborhood<SingleMoveNeighborhoodExplorer>(
                worsening_move,
@@ -226,10 +237,14 @@ int main()
     ok &= expect(
         delta_reject_make_moves == 0,
         "rejected all-delta candidate never materializes an AssignmentSolution");
+    ok &= expect(
+        delta_reject_result.evaluations == 2
+            && delta_reject_result.termination
+                == easylocal::termination_reason::local_optimum,
+        "the descent ends at a local optimum when the only move worsens the cost");
 
     int fallback_make_moves = 0;
-    auto fallback_runner =
-        easylocal::make_runner<FirstImprovement>({.max_evaluations = 2})
+    auto fallback_runner = easylocal::make_runner<FirstImprovement>()
         | (solution_manager<FallbackSolutionManager>()
             | easylocal::cost::apply(
                 FallbackAggregator{},
@@ -251,8 +266,7 @@ int main()
         "fallback components share one materialized candidate and acceptance reuses it");
 
     int fallback_reject_make_moves = 0;
-    auto fallback_reject_runner =
-        easylocal::make_runner<FirstImprovement>({.max_evaluations = 2})
+    auto fallback_reject_runner = easylocal::make_runner<FirstImprovement>()
         | (solution_manager<FallbackSolutionManager>()
             | easylocal::cost::apply(
                 FallbackAggregator{},
@@ -274,8 +288,7 @@ int main()
         "mixed delta/fallback rejection materializes the candidate exactly once");
 
     int no_delta_accept_make_moves = 0;
-    auto no_delta_accept_runner =
-        easylocal::make_runner<FirstImprovement>({.max_evaluations = 2})
+    auto no_delta_accept_runner = easylocal::make_runner<FirstImprovement>()
         | default_solution_manager_recipe()
         | neighborhood<SingleMoveNeighborhoodExplorer>(
             relieving_move,
@@ -292,8 +305,7 @@ int main()
         "no-delta accepted candidate is materialized exactly once and then promoted");
 
     int no_delta_reject_make_moves = 0;
-    auto no_delta_reject_runner =
-        easylocal::make_runner<FirstImprovement>({.max_evaluations = 2})
+    auto no_delta_reject_runner = easylocal::make_runner<FirstImprovement>()
         | default_solution_manager_recipe()
         | neighborhood<SingleMoveNeighborhoodExplorer>(
             worsening_move,

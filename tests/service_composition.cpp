@@ -192,13 +192,21 @@ public:
         return solution_manager_.input();
     }
 
+    // The move, until it is applied: then the neighborhood is empty.
     [[nodiscard]]
-    auto moves(const AssignmentSolution&) const
+    auto moves(const AssignmentSolution& solution) const
     {
-        return std::views::single(move_);
+        return std::views::single(move_)
+            | std::views::take(is_valid(solution, move_) ? 1 : 0);
     }
 
-    [[nodiscard]] static auto is_valid(const AssignmentSolution&, const ReassignJobMove&) noexcept -> bool { return true; }
+    [[nodiscard]]
+    static bool is_valid(
+        const AssignmentSolution& solution,
+        const ReassignJobMove& move) noexcept
+    {
+        return solution.assignment[move.job] != move.destination;
+    }
 
     void make_move(AssignmentSolution& solution, const ReassignJobMove& move) const noexcept
     {
@@ -538,8 +546,7 @@ int main()
         "a delta cost component may be stateless and constructed without an Instance");
 
     int variant_make_moves = 0;
-    auto variant_runner = easylocal::make_runner<FirstImprovement>({.max_evaluations = 2})
-        | two_capacity_recipe
+    auto variant_runner = easylocal::make_runner<FirstImprovement>() | two_capacity_recipe
         | (neighborhood<CountingSingleMoveNeighborhood>(
                relieving_move,
                std::ref(variant_make_moves))
@@ -562,8 +569,8 @@ int main()
             std::ref(hard_make_moves))
         | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>();
 
-    auto hard_runner = easylocal::make_runner<FirstImprovement>({.max_evaluations = 2})
-        | hard_manager_recipe | hard_nhe;
+    auto hard_runner =
+        easylocal::make_runner<FirstImprovement>() | hard_manager_recipe | hard_nhe;
 
     const auto hard_result = hard_runner.bind(instance).run(initial);
 
@@ -584,8 +591,8 @@ int main()
               AssignmentCardinalityComponent,
               AssignmentCardinalityDeltaEvaluator>();
 
-    auto full_runner = easylocal::make_runner<FirstImprovement>({.max_evaluations = 2})
-        | full_manager_recipe | full_nhe;
+    auto full_runner =
+        easylocal::make_runner<FirstImprovement>() | full_manager_recipe | full_nhe;
 
     const auto full_result = full_runner.bind(instance).run(initial);
 
