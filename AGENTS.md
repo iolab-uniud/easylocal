@@ -116,6 +116,11 @@ is converted when a change touches it.
   tracing types (`parameter_set`, `memory_recorder`), and every name in
   `detail`. What a factory returns to be added to something else (a recipe, a
   registration) is infrastructure: its brief says "registration" or "recipe".
+- Concepts are snake_case and named by what the type is (`hierarchical_cost`,
+  `temperature_policy`), with `has_` for an optional capability
+  (`has_random_solution`) and `_for` when other parameters set the role
+  (`random_neighborhood_for`); a public concept never ends in `_type` or
+  starts with `is_`, and `is_*_v` traits stay in `detail`.
 - Prefer `struct` for transparent value types; prefer `class` for
   encapsulated abstractions. A type with an invariant (fields that must stay
   consistent, state changed only through its members) is a `class`, with its

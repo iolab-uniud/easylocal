@@ -67,7 +67,7 @@ constexpr double scalar(const Cost& cost, const double weight) noexcept
 {
     if constexpr (detail::scalar_number_v<Cost>)
         return static_cast<double>(cost);
-    else if constexpr (hierarchical_type<Cost>)
+    else if constexpr (hierarchical_cost<Cost>)
         return scalar(cost.hard(), weight) * weight + scalar(cost.soft(), weight);
     else
     {

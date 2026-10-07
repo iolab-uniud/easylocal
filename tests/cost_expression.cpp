@@ -125,8 +125,8 @@ int main()
     using HierarchicalCost = cost::hierarchical<LexicographicCost, long>;
 
     static_assert(std::three_way_comparable<LexicographicCost>);
-    static_assert(cost::lexicographic_type<LexicographicCost>);
-    static_assert(!cost::lexicographic_type<int>);
+    static_assert(cost::lexicographic_cost<LexicographicCost>);
+    static_assert(!cost::lexicographic_cost<int>);
     static_assert(cost::arithmetic<int> && cost::arithmetic<double>);
     static_assert(!cost::arithmetic<unsigned> && !cost::arithmetic<std::size_t>);
     static_assert(!cost::arithmetic<unsigned char> && !cost::arithmetic<bool>);

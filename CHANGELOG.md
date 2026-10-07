@@ -70,6 +70,12 @@ reviewed by hand before tagging.
   compile with a message: the difference of two unsigned costs wraps around,
   so Simulated Annealing never accepted an improving move.
   `cost::arithmetic` excludes them, weights included.
+- **Breaking:** the concepts of the structured costs are named by what the
+  type is: `cost::hierarchical_cost`, `cost::lexicographic_cost` and
+  `cost::pareto_cost` replace `cost::hierarchical_type`,
+  `cost::lexicographic_type` and `cost::pareto_type`. The traits
+  `cost::is_hierarchical`, `cost::is_lexicographic` and `cost::is_pareto`
+  (and their `_v`) are no longer public: test a type with the concepts.
 - `cost::from_text` rejects NaN, which compares with no cost (infinity is
   still read).
 - The tutorial (chapter 2) and the reference say that costs are minimized,

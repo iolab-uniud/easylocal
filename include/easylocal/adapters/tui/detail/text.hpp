@@ -55,12 +55,12 @@ template<class T>
     {
         return easylocal::detail::report_text(value);
     }
-    else if constexpr (easylocal::cost::hierarchical_type<T>)
+    else if constexpr (easylocal::cost::hierarchical_cost<T>)
     {
         return "[" + value_text(value.hard()) + ", " + value_text(value.soft()) + "]";
     }
-    else if constexpr (easylocal::cost::lexicographic_type<T>
-        || easylocal::cost::pareto_type<T>)
+    else if constexpr (easylocal::cost::lexicographic_cost<T>
+        || easylocal::cost::pareto_cost<T>)
     {
         std::string result{"["};
         [&]<std::size_t... Index>(std::index_sequence<Index...>) {

@@ -68,26 +68,29 @@ struct zero_cost<lexicographic<Values...>>
     }
 };
 
-/// Whether `T` is a `cost::lexicographic`.
+namespace detail
+{
+
+// Whether T is a cost::lexicographic.
 template<class T>
 struct is_lexicographic : std::false_type
 {
 };
 
-/// A `cost::lexicographic` is one.
 template<class... Values>
 struct is_lexicographic<lexicographic<Values...>> : std::true_type
 {
 };
 
-/// Whether `T`, without cv and reference qualifiers, is a
-/// `cost::lexicographic`.
+// Whether T, without cv and reference qualifiers, is a cost::lexicographic.
 template<class T>
 inline constexpr bool is_lexicographic_v =
     is_lexicographic<std::remove_cvref_t<T>>::value;
 
+} // namespace detail
+
 /// A `cost::lexicographic`, possibly cv- or reference-qualified.
 template<class T>
-concept lexicographic_type = is_lexicographic_v<T>;
+concept lexicographic_cost = detail::is_lexicographic_v<T>;
 
 } // namespace easylocal::cost

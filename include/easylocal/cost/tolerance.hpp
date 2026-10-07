@@ -33,7 +33,7 @@ namespace detail
 
 template<class T>
 inline constexpr bool cost_model_v =
-    is_hierarchical_v<T> || is_lexicographic_v<T> || is_pareto_v<T>;
+    hierarchical_cost<T> || lexicographic_cost<T> || pareto_cost<T>;
 
 } // namespace detail
 
@@ -163,14 +163,14 @@ constexpr std::partial_ordering approximate_compare(
             return std::partial_ordering::equivalent;
         return static_cast<std::partial_ordering>(lhs <=> rhs);
     }
-    else if constexpr (is_hierarchical_v<Cost>)
+    else if constexpr (hierarchical_cost<Cost>)
     {
         const auto hard = approximate_compare(lhs.hard(), rhs.hard(), within);
         if (hard != 0)
             return hard;
         return approximate_compare(lhs.soft(), rhs.soft(), within);
     }
-    else if constexpr (is_lexicographic_v<Cost>)
+    else if constexpr (lexicographic_cost<Cost>)
     {
         return [&]<std::size_t... Index>(std::index_sequence<Index...>) {
             auto order = std::partial_ordering::equivalent;
@@ -184,7 +184,7 @@ constexpr std::partial_ordering approximate_compare(
             return order;
         }(std::make_index_sequence<Cost::levels>{});
     }
-    else if constexpr (is_pareto_v<Cost>)
+    else if constexpr (pareto_cost<Cost>)
     {
         return [&]<std::size_t... Index>(std::index_sequence<Index...>) {
             bool lhs_better = false;

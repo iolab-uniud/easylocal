@@ -22,8 +22,8 @@ auto same_name(const std::string& lhs, const std::string& rhs) -> bool
     return lhs == rhs;
 }
 
-static_assert(easylocal::cost::pareto_type<cost_type>);
-static_assert(!easylocal::cost::pareto_type<easylocal::cost::lexicographic<int, double>>);
+static_assert(easylocal::cost::pareto_cost<cost_type>);
+static_assert(!easylocal::cost::pareto_cost<easylocal::cost::lexicographic<int, double>>);
 static_assert(easylocal::cost::text_readable<cost_type>);
 
 } // namespace

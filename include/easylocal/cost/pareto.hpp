@@ -112,24 +112,28 @@ struct zero_cost<pareto<Values...>>
     }
 };
 
-/// Whether `T` is a `cost::pareto`.
+namespace detail
+{
+
+// Whether T is a cost::pareto.
 template<class T>
 struct is_pareto : std::false_type
 {
 };
 
-/// A `cost::pareto` is one.
 template<class... Values>
 struct is_pareto<pareto<Values...>> : std::true_type
 {
 };
 
-/// Whether `T`, without cv and reference qualifiers, is a `cost::pareto`.
+// Whether T, without cv and reference qualifiers, is a cost::pareto.
 template<class T>
 inline constexpr bool is_pareto_v = is_pareto<std::remove_cvref_t<T>>::value;
 
+} // namespace detail
+
 /// A `cost::pareto`, possibly cv- or reference-qualified.
 template<class T>
-concept pareto_type = is_pareto_v<T>;
+concept pareto_cost = detail::is_pareto_v<T>;
 
 } // namespace easylocal::cost

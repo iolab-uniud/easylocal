@@ -307,9 +307,9 @@ private:
 // A composed SolutionManager whose cost is hierarchical (hard and soft), the
 // cost with_hard_cost() requires.
 template<class SM>
-concept hierarchical_solution_manager =
-    requires { typename SM::cost_type; } &&
-    cost::hierarchical_type<typename SM::cost_type>;
+concept hierarchical_solution_manager = requires {
+    typename SM::cost_type;
+} && cost::hierarchical_cost<typename SM::cost_type>;
 
 // The user's SolutionManager under SM, what the hard layer's base() returns
 // (the neighborhood explorers are built from it): SM::base() when SM is a

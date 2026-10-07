@@ -981,7 +981,7 @@ public:
     // the same tolerance.
     [[nodiscard]]
     tolerance_order hard_semantics() const noexcept
-        requires cost::hierarchical_type<cost_type>
+        requires cost::hierarchical_cost<cost_type>
     {
         return tolerance_order{within_};
     }

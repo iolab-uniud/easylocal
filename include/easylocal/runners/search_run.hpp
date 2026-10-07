@@ -404,7 +404,7 @@ public:
     /// The evaluation of a move, which commit() applies.
     using candidate_type = typename evaluation_facility_type::candidate_type;
     /// Whether the run keeps a front: with a cost::pareto cost.
-    static constexpr bool archives_front = cost::pareto_type<cost_type>;
+    static constexpr bool archives_front = cost::pareto_cost<cost_type>;
     /// What finish() returns: pareto_search_result with a front, search_result
     /// otherwise.
     using result_type = std::conditional_t<

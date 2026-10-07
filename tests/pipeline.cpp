@@ -301,7 +301,7 @@ struct FullStage
     template<class Context>
     [[nodiscard]] auto run(const Context& context, Solution solution) const
     {
-        static_assert(easylocal::cost::hierarchical_type<typename Context::cost_type>);
+        static_assert(easylocal::cost::hierarchical_cost<typename Context::cost_type>);
         solution.soft = 1;
         return Result<typename Context::cost_type>{
             solution,

@@ -108,7 +108,7 @@ Cost from_text(std::string_view text)
         }
         return *value;
     }
-    else if constexpr (hierarchical_type<cost_type>)
+    else if constexpr (hierarchical_cost<cost_type>)
     {
         const auto elements =
             detail::elements_of(text, 2, "a hierarchical cost [hard, soft]");
@@ -130,7 +130,7 @@ Cost from_text(std::string_view text)
                 detail::elements_of(
                     text,
                     cost_type::levels,
-                    pareto_type<cost_type> ? "a pareto cost" : "a lexicographic cost"));
+                    pareto_cost<cost_type> ? "a pareto cost" : "a lexicographic cost"));
     }
 }
 
@@ -145,7 +145,7 @@ std::string to_text(const Cost& value)
     {
         return easylocal::detail::number_text(value);
     }
-    else if constexpr (hierarchical_type<cost_type>)
+    else if constexpr (hierarchical_cost<cost_type>)
     {
         return "[" + to_text(value.hard()) + ", " + to_text(value.soft()) + "]";
     }

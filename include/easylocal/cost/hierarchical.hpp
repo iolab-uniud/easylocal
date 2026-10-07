@@ -169,26 +169,30 @@ struct zero_cost<hierarchical<HardCost, SoftCost>>
     }
 };
 
-/// Whether `T` is a `cost::hierarchical`.
+namespace detail
+{
+
+// Whether T is a cost::hierarchical.
 template<class T>
 struct is_hierarchical : std::false_type
 {
 };
 
-/// A `cost::hierarchical` is one.
 template<class HardCost, class SoftCost>
 struct is_hierarchical<hierarchical<HardCost, SoftCost>>
     : std::true_type
 {
 };
 
-/// Whether `T`, without cv and reference qualifiers, is a `cost::hierarchical`.
+// Whether T, without cv and reference qualifiers, is a cost::hierarchical.
 template<class T>
 inline constexpr bool is_hierarchical_v =
     is_hierarchical<std::remove_cvref_t<T>>::value;
 
+} // namespace detail
+
 /// A `cost::hierarchical`, possibly cv- or reference-qualified.
 template<class T>
-concept hierarchical_type = is_hierarchical_v<T>;
+concept hierarchical_cost = detail::is_hierarchical_v<T>;
 
 } // namespace easylocal::cost
