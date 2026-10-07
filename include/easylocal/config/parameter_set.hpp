@@ -214,9 +214,11 @@ bool validate_block(
 /// Components give their parameters with paths relative to themselves; who
 /// composes them adds prefixes:
 ///
-///     config::parameter_set parameters;
-///     parameters.add("application", program_parameters);
-///     parameters.add("solver", runner.configuration());
+/// \code
+/// config::parameter_set parameters;
+/// parameters.add("application", program_parameters);
+/// parameters.add("solver", runner.configuration());
+/// \endcode
 class parameter_set
 {
 public:
