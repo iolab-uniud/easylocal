@@ -7,8 +7,8 @@ abstract: >-
   algorithms and metaheuristics. Version 4 is a complete redesign of
   EasyLocal++.
 type: software
-version: 4.0.0-alpha.1
-date-released: 2026-10-04
+version: 4.0.0-alpha.2
+date-released: 2026-10-07
 license: MIT
 repository-code: "https://github.com/iolab-uniud/easylocal"
 keywords:

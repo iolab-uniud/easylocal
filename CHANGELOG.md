@@ -9,7 +9,7 @@ reviewed by hand before tagging.
 
 ## [Unreleased]
 
-## [4.0.0-alpha.2] — not yet released
+## [4.0.0-alpha.2] — 2026-10-07
 
 ### Problem model
 
@@ -1286,5 +1286,6 @@ old concepts onto the new ones.
   covers the matrix, every optional component with
   installed and fetched dependencies, and reports test coverage.
 
-[Unreleased]: https://github.com/iolab-uniud/easylocal/compare/v4.0.0-alpha.1...HEAD
+[Unreleased]: https://github.com/iolab-uniud/easylocal/compare/v4.0.0-alpha.2...HEAD
 [4.0.0-alpha.1]: https://github.com/iolab-uniud/easylocal/releases/tag/v4.0.0-alpha.1
+[4.0.0-alpha.2]: https://github.com/iolab-uniud/easylocal/releases/tag/v4.0.0-alpha.2
