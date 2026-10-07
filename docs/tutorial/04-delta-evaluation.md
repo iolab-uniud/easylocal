@@ -114,7 +114,7 @@ private:
 ```
 
 The component is attached as before, and `delta` names only the component,
-which is also the evaluator:
+which is also its delta cost component:
 
 <!-- snippet: tutorial/main.cpp:co-located-recipe -->
 ```cpp
@@ -129,13 +129,13 @@ organised:
 
 | | Separate | Co-located |
 | --- | --- | --- |
-| classes | the component, and one evaluator per neighborhood | one |
+| classes | the component, and one delta cost component per neighborhood | one |
 | recipe | `delta<TourLength, TwoOptLengthDelta>()` | `delta<TourLengthWithDelta>()` |
-| fits | a component reused by several neighborhoods, each with its own evaluator, or one without an evaluator | a component that serves a single neighborhood |
+| fits | a component reused by several neighborhoods, each with its own delta, or one without a delta | a component that serves a single neighborhood |
 
-A separate evaluator keeps the component unaware of the moves: `TourLength`
+A separate delta cost component keeps the component unaware of the moves: `TourLength`
 does not mention `TwoOpt`, so it serves unchanged any neighborhood, with or
-without an evaluator, and a new neighborhood only adds a new evaluator.
+without a delta, and a new neighborhood only adds a new delta cost component.
 `TourLengthWithDelta` instead depends on the move type of its delta. In
 exchange it is one class instead of two, and since `evaluate` and
 `delta_evaluate` run on the same object, they can share data the component

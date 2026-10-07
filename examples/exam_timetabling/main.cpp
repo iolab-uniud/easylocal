@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
     auto nhe =
         easylocal::neighborhood<MoveExamNeighborhoodExplorer>()
             .with_delta<StudentConflictComponent>()
-            .with_delta<ConsecutiveExamComponent, ConsecutiveExamDeltaEvaluator>();
+            .with_delta<ConsecutiveExamComponent, ConsecutiveExamDelta>();
     // TimeslotLoadComponent has no delta (see cost_deltas.hpp): EasyLocal
     // re-evaluates it on a candidate solution.
 

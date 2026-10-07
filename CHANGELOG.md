@@ -11,6 +11,15 @@ reviewed by hand before tagging.
 
 ## [4.0.0-alpha.3] — not yet released
 
+### Checking tools
+
+- **Breaking:** `testing::check_delta_evaluator` is
+  `testing::check_delta_cost_component`, in
+  `<easylocal/testing/delta_cost_component.hpp>` (formerly
+  `<easylocal/testing/delta_evaluator.hpp>`), and its template parameter, like
+  that of `delta<Component, Delta>()`, is `Delta`: it checks a delta cost
+  component, as the documentation calls it.
+
 ## [4.0.0-alpha.2] — 2026-10-07
 
 ### Problem model

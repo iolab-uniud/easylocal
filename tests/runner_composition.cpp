@@ -36,9 +36,7 @@ auto default_solution_manager_recipe()
 auto default_neighborhood_recipe()
 {
     return easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-         | easylocal::delta<
-               CapacityCostComponent,
-               ReassignCapacityDeltaEvaluator>();
+        | easylocal::delta<CapacityCostComponent, ReassignCapacityDelta>();
 }
 
 template<class T>

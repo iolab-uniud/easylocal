@@ -71,11 +71,8 @@ auto make_application()
     auto sm = easylocal::solution_manager<AssignmentSolutionManager>()
         | assignment::assignment_cost();
 
-    auto nhe =
-        easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-        | easylocal::delta<
-              CapacityCostComponent,
-              ReassignCapacityDeltaEvaluator>();
+    auto nhe = easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
+        | easylocal::delta<CapacityCostComponent, ReassignCapacityDelta>();
 
     auto application =
         easylocal::app("assignment")
@@ -212,11 +209,8 @@ void direct_app_runs_use_fresh_bound_app_state()
     auto sm = easylocal::solution_manager<AssignmentSolutionManager>()
         | assignment::assignment_cost();
 
-    auto nhe =
-        easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-        | easylocal::delta<
-              CapacityCostComponent,
-              ReassignCapacityDeltaEvaluator>();
+    auto nhe = easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
+        | easylocal::delta<CapacityCostComponent, ReassignCapacityDelta>();
 
     auto application =
         easylocal::app("stateful")
@@ -309,7 +303,7 @@ void pipelines_are_registered_and_run_by_name()
     auto sm = easylocal::solution_manager<AssignmentSolutionManager>()
         | assignment::assignment_cost();
     auto nhe = easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-        | easylocal::delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>();
+        | easylocal::delta<CapacityCostComponent, ReassignCapacityDelta>();
     auto descent =
         easylocal::make_runner<FirstImprovement>({.max_evaluations = 100}) | sm | nhe;
     auto best =
@@ -449,11 +443,8 @@ void named_runner_registrations_can_be_selected_for_solver_creation()
     auto sm = easylocal::solution_manager<AssignmentSolutionManager>()
         | assignment::assignment_cost();
 
-    auto nhe =
-        easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-        | easylocal::delta<
-              CapacityCostComponent,
-              ReassignCapacityDeltaEvaluator>();
+    auto nhe = easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
+        | easylocal::delta<CapacityCostComponent, ReassignCapacityDelta>();
 
     auto application =
         easylocal::app("assignment")
@@ -512,11 +503,8 @@ void app_builder_pipes_and_registration_parameters()
 {
     auto sm = easylocal::solution_manager<AssignmentSolutionManager>()
         | assignment::assignment_cost();
-    auto nhe =
-        easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-        | easylocal::delta<
-              CapacityCostComponent,
-              ReassignCapacityDeltaEvaluator>();
+    auto nhe = easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
+        | easylocal::delta<CapacityCostComponent, ReassignCapacityDelta>();
 
     const auto fluent =
         easylocal::app("fluent")
@@ -589,7 +577,7 @@ void registration_names_are_validated()
     auto sm = easylocal::solution_manager<AssignmentSolutionManager>()
         | assignment::assignment_cost();
     auto nhe = easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-        | easylocal::delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>();
+        | easylocal::delta<CapacityCostComponent, ReassignCapacityDelta>();
     using easylocal::runners::BestImprovement;
     using easylocal::runners::FirstImprovement;
 

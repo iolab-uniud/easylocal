@@ -62,7 +62,8 @@ int main()
         std::cout,
         elt::check_neighborhood<SwapExplorer>(tsp),
         elt::check_neighborhood<TwoOptExplorer>(tsp),
-        elt::check_delta_evaluator<TwoOptExplorer, TourLength, TwoOptLengthDelta>(tsp));
+        elt::check_delta_cost_component<TwoOptExplorer, TourLength, TwoOptLengthDelta>(
+            tsp));
     if (passed != 0)
         return 1;
 

@@ -140,7 +140,7 @@ public:
         | assignment::assignment_cost();
 
     auto nhe = easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-        | easylocal::delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>();
+        | easylocal::delta<CapacityCostComponent, ReassignCapacityDelta>();
 
     // A pipeline of two descents, run by name like a runner.
     auto descent =

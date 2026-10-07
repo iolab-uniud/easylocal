@@ -36,9 +36,7 @@ auto default_solution_manager_recipe()
 auto default_neighborhood_recipe()
 {
     return easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-         | easylocal::delta<
-               CapacityCostComponent,
-               ReassignCapacityDeltaEvaluator>();
+        | easylocal::delta<CapacityCostComponent, ReassignCapacityDelta>();
 }
 
 class AssignmentCardinalityComponent
@@ -203,7 +201,7 @@ int main()
         | (neighborhood<SingleMoveNeighborhoodExplorer>(
                relieving_move,
                std::ref(delta_accept_make_moves))
-            | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>());
+            | delta<CapacityCostComponent, ReassignCapacityDelta>());
 
     const auto delta_accept_result =
         delta_accept_runner.bind(instance).run(initial);
@@ -226,7 +224,7 @@ int main()
         | (neighborhood<SingleMoveNeighborhoodExplorer>(
                worsening_move,
                std::ref(delta_reject_make_moves))
-            | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>());
+            | delta<CapacityCostComponent, ReassignCapacityDelta>());
 
     const auto delta_reject_result =
         delta_reject_runner.bind(instance).run(initial);
@@ -253,7 +251,7 @@ int main()
         | (neighborhood<SingleMoveNeighborhoodExplorer>(
                relieving_move,
                std::ref(fallback_make_moves))
-            | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>());
+            | delta<CapacityCostComponent, ReassignCapacityDelta>());
 
     const auto fallback_result =
         fallback_runner.bind(instance).run(initial);
@@ -275,7 +273,7 @@ int main()
         | (neighborhood<SingleMoveNeighborhoodExplorer>(
                worsening_move,
                std::ref(fallback_reject_make_moves))
-            | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>());
+            | delta<CapacityCostComponent, ReassignCapacityDelta>());
 
     const auto fallback_reject_result =
         fallback_reject_runner.bind(instance).run(initial);
@@ -327,7 +325,7 @@ int main()
         | default_solution_manager_recipe()
         | (neighborhood<ConstructionTrackingNeighborhoodExplorer>(
                std::ref(construction_marker))
-            | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>());
+            | delta<CapacityCostComponent, ReassignCapacityDelta>());
 
     ok &= expect(
         construction_marker == 0,

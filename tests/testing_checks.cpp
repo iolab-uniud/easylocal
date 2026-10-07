@@ -9,7 +9,7 @@
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/testing/check.hpp>
 #include <easylocal/testing/cost_component.hpp>
-#include <easylocal/testing/delta_evaluator.hpp>
+#include <easylocal/testing/delta_cost_component.hpp>
 #include <easylocal/testing/neighborhood.hpp>
 #include <easylocal/testing/solution_manager.hpp>
 
@@ -196,12 +196,12 @@ int main()
         elt::check_cost_component<CapacityCostComponent>(assignment);
     const auto scalar_component_report =
         elt::check_cost_component<LoadImbalanceCostComponent>(assignment);
-    const auto delta_report = elt::check_delta_evaluator<
+    const auto delta_report = elt::check_delta_cost_component<
         ReassignJobNeighborhoodExplorer,
         CapacityCostComponent,
-        ReassignCapacityDeltaEvaluator>(assignment);
+        ReassignCapacityDelta>(assignment);
     const auto colocated_delta_report =
-        elt::check_delta_evaluator<TinyNeighborhood, TinyColocatedComponent>(tiny);
+        elt::check_delta_cost_component<TinyNeighborhood, TinyColocatedComponent>(tiny);
     const auto neighborhood_report =
         elt::check_neighborhood<ReassignJobNeighborhoodExplorer>(assignment);
 
@@ -235,7 +235,10 @@ int main()
             elt::check_cost_component(
                 assignment,
                 CapacityCostComponent{assignment.input()}),
-            elt::check_delta_evaluator(tiny, tiny_neighborhood, TinyColocatedComponent{}),
+            elt::check_delta_cost_component(
+                tiny,
+                tiny_neighborhood,
+                TinyColocatedComponent{}),
             elt::check_neighborhood(tiny, tiny_neighborhood))
         != 0)
     {

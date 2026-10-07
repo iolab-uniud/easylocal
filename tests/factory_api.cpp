@@ -88,7 +88,7 @@ struct MoveDelta
     return value + delta.value;
 }
 
-struct DeltaEvaluator
+struct CostDelta
 {
     [[nodiscard]] static auto delta_evaluate(const Solution&, const Move&) noexcept -> MoveDelta
     {
@@ -264,10 +264,10 @@ private:
     double weight_;
 };
 
-class ScaledDeltaEvaluator
+class ScaledDelta
 {
 public:
-    explicit ScaledDeltaEvaluator(double weight) : weight_{weight} {}
+    explicit ScaledDelta(double weight) : weight_{weight} {}
 
     MoveDelta delta_evaluate(const Solution&, const ScaledMove&) const noexcept
     {
@@ -304,7 +304,7 @@ void recipe_arguments_convert_as_constructors_take_them()
     auto runner = make_runner<IdentityAlgorithm>()
         | (solution_manager<ScaledSolutionManager>(2) | component<ScaledComponent>(3))
         | (neighborhood<ScaledNeighborhoodExplorer>(4)
-            | delta<ScaledComponent, ScaledDeltaEvaluator>(5));
+            | delta<ScaledComponent, ScaledDelta>(5));
     auto solver =
         make_solver<solvers::LocalSearch>(runner)
             .initialization(initialization::initial)
@@ -316,7 +316,7 @@ void recipe_arguments_convert_as_constructors_take_them()
     const auto one_move = make_runner<OneMoveAlgorithm>()
         | (solution_manager<ScaledSolutionManager>(2) | component<ScaledComponent>(3))
         | (neighborhood<ScaledNeighborhoodExplorer>(4)
-            | delta<ScaledComponent, ScaledDeltaEvaluator>(5));
+            | delta<ScaledComponent, ScaledDelta>(5));
     const auto moved = one_move.bind(instance).run(Solution{initial_value});
     assert(moved.solution.value == initial_value);
     assert(moved.cost == 3 * initial_value + 5);
@@ -380,11 +380,9 @@ int main()
         std::remove_cvref_t<decltype(sm_fluent)>>);
 
     const auto nhe_pipe =
-        neighborhood<NeighborhoodExplorer>()
-        | delta<CostComponent, DeltaEvaluator>();
+        neighborhood<NeighborhoodExplorer>() | delta<CostComponent, CostDelta>();
     const auto nhe_fluent =
-        neighborhood<NeighborhoodExplorer>()
-            .with_delta<CostComponent, DeltaEvaluator>();
+        neighborhood<NeighborhoodExplorer>().with_delta<CostComponent, CostDelta>();
     static_assert(std::same_as<
         std::remove_cvref_t<decltype(nhe_pipe)>,
         std::remove_cvref_t<decltype(nhe_fluent)>>);

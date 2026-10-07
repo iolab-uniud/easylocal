@@ -1,7 +1,7 @@
 #include <easylocal/easylocal.hpp>
 #include <easylocal/testing/check.hpp>
 #include <easylocal/testing/cost_component.hpp>
-#include <easylocal/testing/delta_evaluator.hpp>
+#include <easylocal/testing/delta_cost_component.hpp>
 #include <easylocal/testing/neighborhood.hpp>
 #include <easylocal/testing/solution_manager.hpp>
 

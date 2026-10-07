@@ -28,11 +28,8 @@ using namespace assignment;
     auto sm = easylocal::solution_manager<AssignmentSolutionManager>()
         | assignment::assignment_cost();
 
-    auto nhe =
-        easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-        | easylocal::delta<
-              CapacityCostComponent,
-              ReassignCapacityDeltaEvaluator>();
+    auto nhe = easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
+        | easylocal::delta<CapacityCostComponent, ReassignCapacityDelta>();
 
     auto application =
         easylocal::app("assignment")
@@ -317,9 +314,7 @@ void check_names_the_runner_with_invalid_parameters()
                 | assignment::assignment_cost())
             .with_neighborhood(
                 easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-                | easylocal::delta<
-                    CapacityCostComponent,
-                    ReassignCapacityDeltaEvaluator>())
+                | easylocal::delta<CapacityCostComponent, ReassignCapacityDelta>())
             .with_runner<easylocal::runners::HillClimbing>("climb");
     application.runner_parameters<easylocal::runners::HillClimbing>("climb")
         .max_idle_iterations = 0;
@@ -393,9 +388,7 @@ void check_reports_an_invalid_nested_group()
                 | assignment::assignment_cost())
             .with_neighborhood(
                 easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-                | easylocal::delta<
-                    CapacityCostComponent,
-                    ReassignCapacityDeltaEvaluator>())
+                | easylocal::delta<CapacityCostComponent, ReassignCapacityDelta>())
             .with_runner<Annealing>("anneal");
     // An invalid temperature schedule, a group of the runner's parameters.
     application.runner_parameters<Annealing>("anneal").temperature.cooling_rate = 2.0;

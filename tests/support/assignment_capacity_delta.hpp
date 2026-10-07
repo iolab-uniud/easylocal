@@ -46,10 +46,10 @@ inline quantity_type machine_load(
     return load;
 }
 
-class ReassignCapacityDeltaEvaluator
+class ReassignCapacityDelta
 {
 public:
-    explicit ReassignCapacityDeltaEvaluator(const AssignmentInstance& instance)
+    explicit ReassignCapacityDelta(const AssignmentInstance& instance)
         : instance_{instance}
     {
     }

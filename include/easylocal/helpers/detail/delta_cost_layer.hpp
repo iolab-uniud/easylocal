@@ -2,7 +2,7 @@
 
 // NeighborhoodExplorer composition, the delta cost layer (symmetric to the
 // SolutionManager cost layer): the user NeighborhoodExplorer plus the delta
-// evaluator bound to each cost component (separate or co-located). Deltas are
+// cost component bound to each cost component (separate or co-located). Deltas are
 // per component; the move cost is always recomputed by the cost expression.
 
 #include <easylocal/config/parameter_set.hpp>
@@ -20,43 +20,38 @@
 namespace easylocal::detail
 {
 
-template<class Component, class DeltaEvaluator>
+template<class Component, class Delta>
 class delta_binding
 {
 public:
     using component_type = Component;
 
-    explicit delta_binding(DeltaEvaluator evaluator)
-        : evaluator_{std::move(evaluator)}
-    {
-    }
+    explicit delta_binding(Delta delta) : delta_{std::move(delta)} {}
 
     template<class Value, class Solution, class Move>
         requires requires(
             const Value& value,
-            const DeltaEvaluator& evaluator,
+            const Delta& delta,
             const Solution& solution,
             const Move& move) {
-            {
-                value + evaluator.delta_evaluate(solution, move)
-            } -> std::same_as<Value>;
+            { value + delta.delta_evaluate(solution, move) } -> std::same_as<Value>;
         }
     [[nodiscard]]
     Value apply(const Value& value, const Solution& solution, const Move& move) const
     {
-        return value + evaluator_.delta_evaluate(solution, move);
+        return value + delta_.delta_evaluate(solution, move);
     }
 
 private:
-    EASYLOCAL_NO_UNIQUE_ADDRESS DeltaEvaluator evaluator_;
+    EASYLOCAL_NO_UNIQUE_ADDRESS Delta delta_;
 };
 
-template<class Component, class DeltaEvaluator, class... StoredArgs>
+template<class Component, class Delta, class... StoredArgs>
 class delta_spec
 {
 public:
     using component_type = Component;
-    using binding_type = delta_binding<Component, DeltaEvaluator>;
+    using binding_type = delta_binding<Component, Delta>;
 
     explicit delta_spec(StoredArgs... args)
         : args_{std::move(args)...}
@@ -71,22 +66,22 @@ public:
             [&](const auto&... args) -> binding_type {
                 using input_type = typename std::remove_cvref_t<Dependency>::input_type;
                 if constexpr (std::constructible_from<
-                                  DeltaEvaluator,
+                                  Delta,
                                   const input_type&,
                                   const StoredArgs&...>)
                 {
                     return binding_type{
-                        DeltaEvaluator(dependency.input(), args...),
+                        Delta(dependency.input(), args...),
                     };
                 }
                 else
                 {
                     static_assert(
-                        std::constructible_from<DeltaEvaluator, const StoredArgs&...>,
+                        std::constructible_from<Delta, const StoredArgs&...>,
                         "a delta cost component must be constructible either from the "
                         "bound Input followed by its recipe arguments or from "
                         "its recipe arguments alone");
-                    return binding_type{DeltaEvaluator(args...)};
+                    return binding_type{Delta(args...)};
                 }
             },
             args_);

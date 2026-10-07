@@ -22,8 +22,9 @@ int main()
         elt::check_cost_component<TourLength>(tsp),
         elt::check_neighborhood<SwapExplorer>(tsp),
         elt::check_neighborhood<TwoOptExplorer>(tsp),
-        elt::check_delta_evaluator<TwoOptExplorer, TourLength, TwoOptLengthDelta>(tsp),
+        elt::check_delta_cost_component<TwoOptExplorer, TourLength, TwoOptLengthDelta>(
+            tsp),
         // No delta cost component: the check uses the component's own delta_evaluate.
-        elt::check_delta_evaluator<TwoOptExplorer, TourLengthWithDelta>(tsp));
+        elt::check_delta_cost_component<TwoOptExplorer, TourLengthWithDelta>(tsp));
     // [run-checks]
 }

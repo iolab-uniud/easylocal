@@ -30,7 +30,7 @@ int main()
     const TspSolutionManager solution_manager{instance};
     const TwoOptNeighborhoodExplorer neighborhood{solution_manager};
     const TourLengthComponent component{instance};
-    const TwoOptTourLengthDelta delta_evaluator{instance};
+    const TwoOptTourLengthDelta length_delta{instance};
 
     const auto current = component.evaluate(solution);
 
@@ -41,7 +41,7 @@ int main()
 
         const auto full_value = component.evaluate(candidate);
         const auto incremental_value =
-            current + delta_evaluator.delta_evaluate(solution, move);
+            current + length_delta.delta_evaluate(solution, move);
 
         ok &= expect(
             incremental_value == full_value,
@@ -53,7 +53,7 @@ int main()
         .second_edge = 2,
     };
     ok &= expect(
-        delta_evaluator.delta_evaluate(solution, improving_move) == -2.0,
+        length_delta.delta_evaluate(solution, improving_move) == -2.0,
         "known improving 2-opt move has the expected exact delta");
 
     return ok ? 0 : 1;

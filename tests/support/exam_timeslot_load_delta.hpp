@@ -13,10 +13,10 @@
 namespace exam_timetabling
 {
 
-class TimeslotLoadDeltaEvaluator
+class TimeslotLoadDelta
 {
 public:
-    explicit TimeslotLoadDeltaEvaluator(const ExamTimetablingInstance& instance)
+    explicit TimeslotLoadDelta(const ExamTimetablingInstance& instance)
         : instance_{instance}
     {
     }

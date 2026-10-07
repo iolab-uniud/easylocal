@@ -292,7 +292,7 @@ auto make_application()
         | assignment::assignment_cost();
 
     auto nhe = easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-        | easylocal::delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>();
+        | easylocal::delta<CapacityCostComponent, ReassignCapacityDelta>();
 
     auto application =
         easylocal::app("assignment")
@@ -313,7 +313,7 @@ auto make_multi_runner_application()
         | assignment::assignment_cost();
 
     auto nhe = easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-        | easylocal::delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>();
+        | easylocal::delta<CapacityCostComponent, ReassignCapacityDelta>();
 
     auto application =
         easylocal::app("assignment-multi-runner")
@@ -421,9 +421,7 @@ void a_run_that_throws_leaves_the_session_as_it_was()
                 | assignment::assignment_cost())
             .with_neighborhood(
                 easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-                | easylocal::delta<
-                    CapacityCostComponent,
-                    ReassignCapacityDeltaEvaluator>())
+                | easylocal::delta<CapacityCostComponent, ReassignCapacityDelta>())
             .with_runner<easylocal::runners::FirstImprovement>("fi")
             .with_runner<throwing::ThrowingRunner>("throwing");
     easylocal::Session session{std::move(application), make_input(3), 1};

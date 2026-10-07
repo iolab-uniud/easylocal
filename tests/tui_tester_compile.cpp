@@ -18,7 +18,7 @@ int main()
     auto sm = easylocal::solution_manager<AssignmentSolutionManager>()
         | assignment::assignment_cost();
     auto nhe = easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-        | easylocal::delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>();
+        | easylocal::delta<CapacityCostComponent, ReassignCapacityDelta>();
     auto descent =
         easylocal::make_runner<easylocal::runners::FirstImprovement>({}) | sm | nhe;
 

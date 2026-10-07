@@ -90,7 +90,7 @@ int main()
     // A delta is a separate, materialized value. Applying it to the current
     // component value must match full evaluation after the move.
     const CapacityCostComponent capacity_component{instance};
-    const ReassignCapacityDeltaEvaluator capacity_delta{instance};
+    const ReassignCapacityDelta capacity_delta{instance};
     const AssignmentSolutionManager neighborhood_manager{instance};
     const ReassignJobNeighborhoodExplorer neighborhood{neighborhood_manager};
 

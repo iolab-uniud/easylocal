@@ -36,8 +36,8 @@ int main()
     const exam::ConsecutiveExamComponent consecutive{instance};
     const exam::TimeslotLoadComponent load{instance};
     const exam::StudentConflictComponent conflict_component{instance};
-    const exam::ConsecutiveExamDeltaEvaluator consecutive_delta{instance};
-    const exam::TimeslotLoadDeltaEvaluator load_delta{instance};
+    const exam::ConsecutiveExamDelta consecutive_delta{instance};
+    const exam::TimeslotLoadDelta load_delta{instance};
 
     const auto initial_conflicts = conflicts.evaluate(initial);
     const auto initial_consecutive = consecutive.evaluate(initial);

@@ -153,10 +153,10 @@ public:
 
     // A recipe attaches at most one delta cost component to each component,
     // to an explorer the delta layer can derive from. The delta_evaluate of
-    // Evaluator, the delta cost component or the component itself, is checked
+    // Delta, the delta cost component or the component itself, is checked
     // on the Solution and Move the explorer declares, as the delta is written;
     // with an explorer that does not declare its Solution, when it is bound.
-    template<class Component, class Evaluator = Component>
+    template<class Component, class Delta = Component>
     static consteval bool check_new_delta()
     {
         static_assert(
@@ -176,9 +176,9 @@ public:
             using solution_type = typename BaseNHE::solution_type;
             using move_type = typename BaseNHE::move_type;
             constexpr bool callable = requires(
-                const Evaluator& evaluator,
+                const Delta& delta,
                 const solution_type& solution,
-                const move_type& move) { evaluator.delta_evaluate(solution, move); };
+                const move_type& move) { delta.delta_evaluate(solution, move); };
             static_assert(
                 callable,
                 "a delta cost component has `delta_evaluate(const Solution&, const "
@@ -196,11 +196,11 @@ public:
                 static_assert(
                     requires(
                         const value_type& value,
-                        const Evaluator& evaluator,
+                        const Delta& delta,
                         const solution_type& solution,
                         const move_type& move) {
                         {
-                            value + evaluator.delta_evaluate(solution, move)
+                            value + delta.delta_evaluate(solution, move)
                         } -> std::same_as<value_type>;
                     },
                     "the delta_evaluate of a delta cost component returns the change "
@@ -268,16 +268,13 @@ public:
     // gone. Configure the object that will run.
     config::parameter_set configuration() const&& = delete;
 
-    template<class Component, class DeltaEvaluator, class... Args>
+    template<class Component, class Delta, class... Args>
     [[nodiscard]]
-    auto with_delta(Args&&... args) const &
+    auto with_delta(Args&&... args) const&
     {
-        static_assert(check_new_delta<Component, DeltaEvaluator>());
+        static_assert(check_new_delta<Component, Delta>());
 
-        using spec_type = delta_spec<
-            Component,
-            DeltaEvaluator,
-            std::decay_t<Args>...>;
+        using spec_type = delta_spec<Component, Delta, std::decay_t<Args>...>;
         using result_type = neighborhood_recipe<
             BaseNHE,
             BaseArgsTuple,
@@ -293,16 +290,13 @@ public:
         };
     }
 
-    template<class Component, class DeltaEvaluator, class... Args>
+    template<class Component, class Delta, class... Args>
     [[nodiscard]]
     auto with_delta(Args&&... args) &&
     {
-        static_assert(check_new_delta<Component, DeltaEvaluator>());
+        static_assert(check_new_delta<Component, Delta>());
 
-        using spec_type = delta_spec<
-            Component,
-            DeltaEvaluator,
-            std::decay_t<Args>...>;
+        using spec_type = delta_spec<Component, Delta, std::decay_t<Args>...>;
         using result_type = neighborhood_recipe<
             BaseNHE,
             BaseArgsTuple,
@@ -405,21 +399,17 @@ template<
     class BaseArgsTuple,
     class... DeltaSpecs,
     class Component,
-    class DeltaEvaluator,
+    class Delta,
     class... Args>
 [[nodiscard]]
 auto operator|(
-    neighborhood_recipe<
-        BaseNHE,
-        BaseArgsTuple,
-        DeltaSpecs...> recipe,
-    delta_spec<Component, DeltaEvaluator, Args...> spec)
+    neighborhood_recipe<BaseNHE, BaseArgsTuple, DeltaSpecs...> recipe,
+    delta_spec<Component, Delta, Args...> spec)
 {
     return std::apply(
         [&]<class... StoredArgs>(StoredArgs&&... args) {
-            return std::move(recipe)
-                .template with_delta<Component, DeltaEvaluator>(
-                    std::forward<StoredArgs>(args)...);
+            return std::move(recipe).template with_delta<Component, Delta>(
+                std::forward<StoredArgs>(args)...);
         },
         std::move(spec).args());
 }

@@ -1,9 +1,9 @@
 #pragma once
 
 /// \file
-/// check_delta_evaluator: for the moves of the fixture Solution and of random
-/// solutions, value + delta equals the component's value after the move, for
-/// separate and co-located delta cost components.
+/// check_delta_cost_component: for the moves of the fixture Solution and of
+/// random solutions, value + delta equals the component's value after the
+/// move, for separate and co-located delta cost components.
 
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/testing/check.hpp>
@@ -55,9 +55,7 @@ template<class Fixture, class NHE, class Component, class Delta>
     check_report report{"delta cost component"};
 
     if (!check_fixture_solution(report, fixture))
-    {
         return report;
-    }
 
     using value_type =
         std::remove_cvref_t<decltype(component.evaluate(fixture.solution()))>;
@@ -84,7 +82,7 @@ template<class Fixture, class NHE, class Component, class Delta>
                     } -> std::same_as<value_type>;
                 },
                 "delta evaluation must satisfy Value + "
-                "evaluator.delta_evaluate(solution, move) -> Value");
+                "delta.delta_evaluate(solution, move) -> Value");
             return delta.delta_evaluate(solution, move);
         }
     };
@@ -199,21 +197,21 @@ template<class Fixture, class NHE, class Component, class Delta>
 ///
 /// A failure names the move, the solution it starts from, value + delta and
 /// the component's value; an exception of a hook is a failure too.
-template<check_fixture Fixture, class NHE, class Component, class DeltaEvaluator>
-[[nodiscard]] check_report check_delta_evaluator(
+template<check_fixture Fixture, class NHE, class Component, class Delta>
+[[nodiscard]] check_report check_delta_cost_component(
     const Fixture& fixture,
     const NHE& neighborhood,
     const Component& component,
-    const DeltaEvaluator& delta_evaluator)
+    const Delta& delta)
 {
-    return detail::check_delta_law(fixture, neighborhood, component, delta_evaluator);
+    return detail::check_delta_law(fixture, neighborhood, component, delta);
 }
 
 /// Checks the component's own delta_evaluate (co-located): for the valid moves
 /// of the fixture Solution and of the random solutions of the options, value +
 /// delta equals the component's value after the move.
 template<check_fixture Fixture, class NHE, class Component>
-[[nodiscard]] check_report check_delta_evaluator(
+[[nodiscard]] check_report check_delta_cost_component(
     const Fixture& fixture,
     const NHE& neighborhood,
     const Component& component)
@@ -225,24 +223,24 @@ template<check_fixture Fixture, class NHE, class Component>
         detail::colocated_delta{});
 }
 
-/// The same, with every object built from the fixture; omit DeltaEvaluator for
-/// a co-located delta.
-template<class NHE, class Component, class DeltaEvaluator = void, check_fixture Fixture>
-[[nodiscard]] check_report check_delta_evaluator(const Fixture& fixture)
+/// The same, with every object built from the fixture; omit Delta for a
+/// co-located delta.
+template<class NHE, class Component, class Delta = void, check_fixture Fixture>
+[[nodiscard]] check_report check_delta_cost_component(const Fixture& fixture)
 {
     const auto neighborhood = detail::make_neighborhood<NHE>(fixture.solution_manager());
     const auto component = detail::make_from_input<Component>(fixture.input());
-    if constexpr (std::is_void_v<DeltaEvaluator>)
+    if constexpr (std::is_void_v<Delta>)
     {
-        return check_delta_evaluator(fixture, neighborhood, component);
+        return check_delta_cost_component(fixture, neighborhood, component);
     }
     else
     {
-        return check_delta_evaluator(
+        return check_delta_cost_component(
             fixture,
             neighborhood,
             component,
-            detail::make_from_input<DeltaEvaluator>(fixture.input()));
+            detail::make_from_input<Delta>(fixture.input()));
     }
 }
 

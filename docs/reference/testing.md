@@ -13,7 +13,7 @@ const easylocal::testing::fixture<TourManager> f{input, solution};
 return easylocal::testing::run_checks(
     easylocal::testing::check_solution_manager(f),
     easylocal::testing::check_neighborhood<TwoOptExplorer>(f),
-    easylocal::testing::check_delta_evaluator<TwoOptExplorer, TourLength, TwoOptDelta>(f));
+    easylocal::testing::check_delta_cost_component<TwoOptExplorer, TourLength, TwoOptDelta>(f));
 ```
 
 ## Fixture
@@ -30,7 +30,7 @@ SolutionManager `SM{input}`; it is neither copyable nor movable.
 (default 1024), `random_solutions` (default 4), `walk_length` (default 8),
 `seed` and `tolerance`: the randomized checks draw from a `std::mt19937_64`
 seeded with `seed`, so the same seed repeats the same draws. The move checks
-(`check_neighborhood`, `check_delta_evaluator`) start from the fixture's
+(`check_neighborhood`, `check_delta_cost_component`) start from the fixture's
 Solution and from `random_solutions` others, each a `random_solution()` (the
 fixture's when the SolutionManager draws none) walked by `walk_length` random
 moves: a delta right on one solution only, such as one that mixes up positions
@@ -59,8 +59,8 @@ last bits): with an exact comparison the delta check would report them.
 | `check_solution_manager(f)` | input binding; the fixture, initial and random solutions are valid |
 | `check_cost_component<C>(f)` | evaluating the same solution twice gives equivalent values (values the comparison cannot compare do not compile) |
 | `check_neighborhood<N>(f)` | enumerated and sampled moves are valid; applying them keeps the solution valid; with solutions that compare, not every move leaves the solution unchanged (`null moves`, a `make_move` taking the Solution by value); with moves that compare and a neighborhood that enumerates and draws, random moves are enumerated ones, found whenever a valid move exists, and drawn again by a generator with the same seed |
-| `check_delta_evaluator<N, C, D>(f)` | for each valid enumerated (or, failing that, sampled) move, `value + delta` equals the component value after the move |
-| `check_delta_evaluator<N, C>(f)` | the same, with the co-located `C::delta_evaluate` |
+| `check_delta_cost_component<N, C, D>(f)` | for each valid enumerated (or, failing that, sampled) move, `value + delta` equals the component value after the move |
+| `check_delta_cost_component<N, C>(f)` | the same, with the co-located `C::delta_evaluate` |
 
 A failure names the move (with its `describe` hook or `operator<<`), the
 solution it starts from and the values that disagree. A hook that throws
@@ -69,10 +69,10 @@ exception says, instead of leaving it. `print_report` groups the failures of a
 check: their number and the first three.
 
 The type form builds the object under test as an app does: components and delta
-evaluators from the Input (or default-constructed), NeighborhoodExplorers from
+cost components from the Input (or default-constructed), NeighborhoodExplorers from
 the fixture's SolutionManager. For other constructors pass the objects instead:
 `check_cost_component(f, c)`, `check_neighborhood(f, n)`,
-`check_delta_evaluator(f, n, c[, d])`.
+`check_delta_cost_component(f, n, c[, d])`.
 
 For a composed problem, `easylocal::check(app, input[, solution][, options])`
 (`<easylocal/app/check.hpp>`) runs the same kinds of checks on an app, with

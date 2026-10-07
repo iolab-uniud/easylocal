@@ -35,9 +35,7 @@ using namespace assignment;
                 | assignment::assignment_cost())
             .with_neighborhood(
                 easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-                | easylocal::delta<
-                    CapacityCostComponent,
-                    ReassignCapacityDeltaEvaluator>())
+                | easylocal::delta<CapacityCostComponent, ReassignCapacityDelta>())
             .with_runner<easylocal::runners::FirstImprovement>("fi")
             .with_runner<easylocal::runners::BestImprovement>("bi");
 

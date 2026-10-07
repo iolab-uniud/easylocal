@@ -84,7 +84,7 @@ int main()
     // tour: the random solutions of the check catch it, and the failure names
     // the move, the solution and the two values.
     const elt::fixture<broken::TourManager> from_identity{cities(8), identity(8)};
-    const auto positions = elt::check_delta_evaluator<
+    const auto positions = elt::check_delta_cost_component<
         TwoOptExplorer,
         TourLength,
         broken::PositionsAsCitiesDelta>(from_identity);
@@ -94,13 +94,13 @@ int main()
             && failed(positions, "delta law", "value + delta is"),
         "the delta law catches a delta right on the identity tour only");
     const auto correct =
-        elt::check_delta_evaluator<TwoOptExplorer, TourLength, TwoOptLengthDelta>(
+        elt::check_delta_cost_component<TwoOptExplorer, TourLength, TwoOptLengthDelta>(
             from_identity);
     ok &= expect(correct.passed(), "the tutorial's 2-opt delta passes");
     const elt::fixture<broken::TourManager>
         identity_only{cities(8), identity(8), {.random_solutions = 0}};
     ok &= expect(
-        elt::check_delta_evaluator<
+        elt::check_delta_cost_component<
             TwoOptExplorer,
             TourLength,
             broken::PositionsAsCitiesDelta>(identity_only)

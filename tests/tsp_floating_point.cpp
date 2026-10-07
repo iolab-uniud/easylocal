@@ -13,7 +13,7 @@
 #include <easylocal/app/session.hpp>
 #include <easylocal/cost/tolerance.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
-#include <easylocal/testing/delta_evaluator.hpp>
+#include <easylocal/testing/delta_cost_component.hpp>
 #include <easylocal/testing/fixture.hpp>
 
 #include <compare>
@@ -86,7 +86,7 @@ auto evaluate_move(
     const TspSolutionManager solution_manager{instance};
     const TwoOptNeighborhoodExplorer neighborhood{solution_manager};
     const TourLengthComponent component{instance};
-    const TwoOptTourLengthDelta delta_evaluator{instance};
+    const TwoOptTourLengthDelta length_delta{instance};
 
     const auto current = component.evaluate(solution);
 
@@ -96,7 +96,7 @@ auto evaluate_move(
     return EvaluatedMove{
         .current = current,
         .full_candidate = component.evaluate(candidate),
-        .incremental_candidate = current + delta_evaluator.delta_evaluate(solution, move),
+        .incremental_candidate = current + length_delta.delta_evaluate(solution, move),
     };
 }
 
@@ -211,7 +211,7 @@ int main()
     // tolerance the delta law holds, compared exactly it does not.
     namespace elt = easylocal::testing;
     const auto check_delta = [](const auto& fixture) {
-        return elt::check_delta_evaluator<
+        return elt::check_delta_cost_component<
             TwoOptNeighborhoodExplorer,
             TourLengthComponent,
             TwoOptTourLengthDelta>(fixture)

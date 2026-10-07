@@ -34,7 +34,7 @@ then one line `first second students` per pair of exams that share students
 | `solution.hpp` | the solution, `ExamTimetable`: the timeslot of each exam, with `read`, `write` and `describe` |
 | `solution_manager.hpp` | `ExamTimetablingSolutionManager`: the initial timetable and the validity check |
 | `cost_components.hpp` | the three cost components |
-| `cost_deltas.hpp` | `ConsecutiveExamDeltaEvaluator`, the delta cost component of `ConsecutiveExamComponent` |
+| `cost_deltas.hpp` | `ConsecutiveExamDelta`, the delta cost component of `ConsecutiveExamComponent` |
 | `move.hpp` | the move, `MoveExam`: an exam and its new timeslot |
 | `neighborhood_explorer.hpp` | `MoveExamNeighborhoodExplorer`: the moves (a generator), a random move, `make_move` |
 | `main.cpp` | the program: the cost, the neighborhood with its delta cost components, the app with the runner `sa` |
@@ -44,7 +44,7 @@ conflicts of the moved exam only. They are written in two ways:
 `StudentConflictComponent` has a member `delta_evaluate`, attached with
 `with_delta<StudentConflictComponent>()`, while `ConsecutiveExamComponent` has
 a class of its own, attached with
-`with_delta<ConsecutiveExamComponent, ConsecutiveExamDeltaEvaluator>()`.
+`with_delta<ConsecutiveExamComponent, ConsecutiveExamDelta>()`.
 `TimeslotLoadComponent` has none: counting the loads visits every exam, as a
 full evaluation does, so EasyLocal evaluates each move on a candidate solution.
 

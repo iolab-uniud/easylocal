@@ -84,7 +84,7 @@ private:
     std::size_t offset_{};
 };
 
-class StatelessCardinalityDeltaEvaluator
+class StatelessCardinalityDelta
 {
 public:
     [[nodiscard]]
@@ -133,12 +133,10 @@ public:
     }
 };
 
-class AssignmentCardinalityDeltaEvaluator
+class AssignmentCardinalityDelta
 {
 public:
-    explicit AssignmentCardinalityDeltaEvaluator(const AssignmentInstance&) noexcept
-    {
-    }
+    explicit AssignmentCardinalityDelta(const AssignmentInstance&) noexcept {}
 
     [[nodiscard]]
     auto delta_evaluate(const AssignmentSolution&, const ReassignJobMove&) const noexcept
@@ -148,12 +146,10 @@ public:
     }
 };
 
-class IncompatibleCapacityDeltaEvaluator
+class IncompatibleCapacityDelta
 {
 public:
-    explicit IncompatibleCapacityDeltaEvaluator(const AssignmentInstance&) noexcept
-    {
-    }
+    explicit IncompatibleCapacityDelta(const AssignmentInstance&) noexcept {}
 
     [[nodiscard]]
     auto delta_evaluate(const AssignmentSolution&, const ReassignJobMove&) const noexcept
@@ -302,12 +298,10 @@ int main()
 
     using CapacitySpec = decltype(component<CapacityCostComponent>());
     using CardinalitySpec = decltype(component<AssignmentCardinalityComponent>());
-    using CapacityDeltaSpec = decltype(delta<
-        CapacityCostComponent,
-        ReassignCapacityDeltaEvaluator>());
-    using SecondCapacityDeltaSpec = decltype(delta<
-        CapacityCostComponent,
-        IncompatibleCapacityDeltaEvaluator>());
+    using CapacityDeltaSpec =
+        decltype(delta<CapacityCostComponent, ReassignCapacityDelta>());
+    using SecondCapacityDeltaSpec =
+        decltype(delta<CapacityCostComponent, IncompatibleCapacityDelta>());
 
     using FluentSMRecipe = decltype(
         solution_manager<TwoStageSolutionManager>()
@@ -317,20 +311,12 @@ int main()
         | component<CapacityCostComponent>());
     static_assert(std::same_as<FluentSMRecipe, PipedSMRecipe>);
 
-    using FluentNHERecipe = decltype(
-        neighborhood<CountingSingleMoveNeighborhood>(
-            ReassignJobMove{.job = 1, .destination = 1},
-            std::ref(type_only_make_move_count))
-            .with_delta<
-                CapacityCostComponent,
-                ReassignCapacityDeltaEvaluator>());
-    using PipedNHERecipe = decltype(
-        neighborhood<CountingSingleMoveNeighborhood>(
-            ReassignJobMove{.job = 1, .destination = 1},
-            std::ref(type_only_make_move_count))
-        | delta<
-              CapacityCostComponent,
-              ReassignCapacityDeltaEvaluator>());
+    using FluentNHERecipe = decltype(neighborhood<CountingSingleMoveNeighborhood>(
+        ReassignJobMove{.job = 1, .destination = 1},
+        std::ref(type_only_make_move_count))
+            .with_delta<CapacityCostComponent, ReassignCapacityDelta>());
+    using PipedNHERecipe =
+        decltype(neighborhood<CountingSingleMoveNeighborhood>(ReassignJobMove{.job = 1, .destination = 1}, std::ref(type_only_make_move_count)) | delta<CapacityCostComponent, ReassignCapacityDelta>());
     static_assert(std::same_as<FluentNHERecipe, PipedNHERecipe>);
 
     using ColocatedFluentNHERecipe = decltype(
@@ -404,7 +390,7 @@ int main()
         neighborhood<CountingSingleMoveNeighborhood>(
             ReassignJobMove{.job = 1, .destination = 1},
             std::ref(type_only_make_move_count))
-        | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>();
+        | delta<CapacityCostComponent, ReassignCapacityDelta>();
 
     // The previous recipe is used only for type-level checks; no construction
     // occurs, so the placeholder reference is never observed.
@@ -417,14 +403,12 @@ int main()
         neighborhood<CountingSingleMoveNeighborhood>(
             ReassignJobMove{.job = 1, .destination = 1},
             std::ref(type_only_make_move_count))
-        | delta<
-              AssignmentCardinalityComponent,
-              AssignmentCardinalityDeltaEvaluator>();
+        | delta<AssignmentCardinalityComponent, AssignmentCardinalityDelta>();
     using InactiveNHE =
         typename decltype(inactive_delta_recipe)::service_type;
     static_assert(!all_delta_components_active<HardSM, InactiveNHE>);
 
-    // An incompatible delta, IncompatibleCapacityDeltaEvaluator, is rejected
+    // An incompatible delta, IncompatibleCapacityDelta, is rejected
     // as it is attached to an explorer that declares its Solution and Move
     // (compile_fail/delta_evaluate_signature.cpp).
 
@@ -527,9 +511,7 @@ int main()
             .construct(instance);
     const auto stateless_delta_neighborhood =
         (neighborhood<ReassignJobNeighborhoodExplorer>()
-         | delta<
-               AssignmentCardinalityComponent,
-               StatelessCardinalityDeltaEvaluator>())
+            | delta<AssignmentCardinalityComponent, StatelessCardinalityDelta>())
             .construct(stateless_delta_manager);
     ok &= expect(
         std::tuple_size_v<
@@ -542,8 +524,8 @@ int main()
         | (neighborhood<CountingSingleMoveNeighborhood>(
                relieving_move,
                std::ref(variant_make_moves))
-            | delta<CapacityVariantA, ReassignCapacityDeltaEvaluator>()
-            | delta<CapacityVariantB, ReassignCapacityDeltaEvaluator>());
+            | delta<CapacityVariantA, ReassignCapacityDelta>()
+            | delta<CapacityVariantB, ReassignCapacityDelta>());
 
     const auto variant_result = variant_runner.bind(instance).run(initial);
 
@@ -559,7 +541,7 @@ int main()
         neighborhood<CountingSingleMoveNeighborhood>(
             relieving_move,
             std::ref(hard_make_moves))
-        | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>();
+        | delta<CapacityCostComponent, ReassignCapacityDelta>();
 
     auto hard_runner =
         easylocal::make_runner<FirstImprovement>() | hard_manager_recipe | hard_nhe;
@@ -578,10 +560,8 @@ int main()
         neighborhood<CountingSingleMoveNeighborhood>(
             relieving_move,
             std::ref(full_make_moves))
-        | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>()
-        | delta<
-              AssignmentCardinalityComponent,
-              AssignmentCardinalityDeltaEvaluator>();
+        | delta<CapacityCostComponent, ReassignCapacityDelta>()
+        | delta<AssignmentCardinalityComponent, AssignmentCardinalityDelta>();
 
     auto full_runner =
         easylocal::make_runner<FirstImprovement>() | full_manager_recipe | full_nhe;

@@ -27,9 +27,10 @@ return elt::run_checks(
     elt::check_cost_component<TourLength>(tsp),
     elt::check_neighborhood<SwapExplorer>(tsp),
     elt::check_neighborhood<TwoOptExplorer>(tsp),
-    elt::check_delta_evaluator<TwoOptExplorer, TourLength, TwoOptLengthDelta>(tsp),
+    elt::check_delta_cost_component<TwoOptExplorer, TourLength, TwoOptLengthDelta>(
+        tsp),
     // No delta cost component: the check uses the component's own delta_evaluate.
-    elt::check_delta_evaluator<TwoOptExplorer, TourLengthWithDelta>(tsp));
+    elt::check_delta_cost_component<TwoOptExplorer, TourLengthWithDelta>(tsp));
 ```
 
 | Check | Verifies |
@@ -37,7 +38,7 @@ return elt::run_checks(
 | `check_solution_manager(f)` | the fixture, initial and random solutions are valid |
 | `check_cost_component<Component>(f)` | evaluating the same solution twice gives equivalent values |
 | `check_neighborhood<NHE>(f)` | enumerated and sampled moves are valid, keep the solution valid and change it; random moves are enumerated ones, drawn from the generator given |
-| `check_delta_evaluator<NHE, Component, Delta>(f)` | `value + delta` equals the full re-evaluation after each valid move |
+| `check_delta_cost_component<NHE, Component, Delta>(f)` | `value + delta` equals the full re-evaluation after each valid move |
 
 The move checks start from the fixture's Solution and from a few random
 solutions (`random_solution`, then some random moves): a delta can be right on

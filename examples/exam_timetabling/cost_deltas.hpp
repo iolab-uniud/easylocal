@@ -13,10 +13,10 @@
 namespace exam_timetabling
 {
 
-class ConsecutiveExamDeltaEvaluator
+class ConsecutiveExamDelta
 {
 public:
-    explicit ConsecutiveExamDeltaEvaluator(const ExamTimetablingInstance& instance)
+    explicit ConsecutiveExamDelta(const ExamTimetablingInstance& instance)
         : conflicts_by_exam_{conflicts_by_exam(instance)}
     {
     }

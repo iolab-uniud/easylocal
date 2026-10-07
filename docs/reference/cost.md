@@ -294,9 +294,9 @@ errors (see [Testing](testing.md)).
 | `delta_evaluate(const Solution&, const Move&) const -> Delta` | yes |
 
 - Law: `Value + Delta -> Value`, equal to the value of the component after the
-  move. Check it with `testing::check_delta_evaluator`.
+  move. Check it with `testing::check_delta_cost_component`.
 - Bound per component and per neighborhood: `delta<C, D>(args...)` for a
-  separate evaluator, `delta<C>()` for one co-located in the component.
+  separate delta cost component, `delta<C>()` for one co-located in the component.
 - Components without a delta for a neighborhood are re-evaluated on a candidate
   solution; with full coverage no candidate is built.
 

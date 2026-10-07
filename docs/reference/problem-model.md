@@ -62,7 +62,7 @@ the argument-dependent lookup of a problem's own hook never finds them.
 - **Who receives the Input.** Three kinds of code, three rules:
   - values (Input, Solution, Move) hold no Input;
   - services (SolutionManager, NeighborhoodExplorers, cost components, delta
-    evaluators) receive it once, in their constructor, when a runner or an
+    cost components) receive it once, in their constructor, when a runner or an
     app is bound, and keep it; their members take only the solution and the
     move;
   - hooks, free functions that are not services (`read_solution`,

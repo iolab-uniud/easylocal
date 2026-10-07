@@ -247,21 +247,19 @@ auto delta()
     return detail::colocated_delta_spec<Component>{};
 }
 
-/// The delta cost component `DeltaEvaluator` of `Component`, constructed from
+/// The delta cost component `Delta` of `Component`, constructed from
 /// the Input and `args` (or from `args` alone), bound to a neighborhood recipe
 /// with `neighborhood<NHE>() | delta<C, D>(args...)`.
 ///
 /// Its `delta_evaluate(const Solution&, const Move&) const` returns the change
 /// of the component's value. The explorer cannot be final: the delta layer
 /// derives from it.
-template<class Component, class DeltaEvaluator, class... Args>
+template<class Component, class Delta, class... Args>
 [[nodiscard]]
 auto delta(Args&&... args)
 {
-    return detail::delta_spec<
-        Component,
-        DeltaEvaluator,
-        std::decay_t<Args>...>{std::forward<Args>(args)...};
+    return detail::delta_spec<Component, Delta, std::decay_t<Args>...>{
+        std::forward<Args>(args)...};
 }
 
 } // namespace easylocal

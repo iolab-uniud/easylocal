@@ -539,7 +539,9 @@ private:
   change is computed on a copy of the solution with the move applied.
 
 To check a delta against the full evaluation, as the `MoveTester`'s "check
-neighborhood costs" did, use the Session ([chapter 14](tutorial/14-checking.md)):
+neighborhood costs" did, use the Session ([chapter 14](tutorial/14-checking.md)),
+or `testing::check_delta_cost_component` for one delta cost component on its
+own ([chapter 10](tutorial/10-testing.md)):
 
 <!-- snippet: tutorial/main.cpp:session-checks -->
 ```cpp title="EasyLocal 4"

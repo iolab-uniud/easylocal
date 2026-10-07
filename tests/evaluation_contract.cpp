@@ -142,15 +142,10 @@ private:
     std::reference_wrapper<Counters> counters_;
 };
 
-class FirstDeltaEvaluator
+class FirstDelta
 {
 public:
-    FirstDeltaEvaluator(
-        const Instance&,
-        Counters& counters) noexcept
-        : counters_{counters}
-    {
-    }
+    FirstDelta(const Instance&, Counters& counters) noexcept : counters_{counters} {}
 
     [[nodiscard]]
     auto delta_evaluate(const Solution&, const Move& move) const noexcept -> int
@@ -163,15 +158,10 @@ private:
     std::reference_wrapper<Counters> counters_;
 };
 
-class SecondDeltaEvaluator
+class SecondDelta
 {
 public:
-    SecondDeltaEvaluator(
-        const Instance&,
-        Counters& counters) noexcept
-        : counters_{counters}
-    {
-    }
+    SecondDelta(const Instance&, Counters& counters) noexcept : counters_{counters} {}
 
     [[nodiscard]]
     auto delta_evaluate(const Solution&, const Move& move) const noexcept -> int
@@ -339,18 +329,15 @@ int main()
     {
         Counters counters;
 
-        auto runner =
-            Runner{ProbeOneMove<false>{accepted}}
+        auto runner = Runner{ProbeOneMove<false>{accepted}}
             | (solution_manager<SolutionManager>(std::ref(counters))
-               | easylocal::cost::apply(
-                     CountingAggregator{counters},
-                     component<FirstComponent>(std::ref(counters)),
-                     component<SecondComponent>(std::ref(counters))))
+                | easylocal::cost::apply(
+                    CountingAggregator{counters},
+                    component<FirstComponent>(std::ref(counters)),
+                    component<SecondComponent>(std::ref(counters))))
             | (neighborhood<NeighborhoodExplorer>(std::ref(counters))
-               | delta<FirstComponent, FirstDeltaEvaluator>(
-                     std::ref(counters))
-               | delta<SecondComponent, SecondDeltaEvaluator>(
-                     std::ref(counters)));
+                | delta<FirstComponent, FirstDelta>(std::ref(counters))
+                | delta<SecondComponent, SecondDelta>(std::ref(counters)));
 
         const auto result = runner.bind(instance).run(Solution{.value = 1});
 
@@ -385,8 +372,8 @@ int main()
                     component<FirstComponent>(std::ref(counters)),
                     component<SecondComponent>(std::ref(counters))))
             | (neighborhood<NeighborhoodExplorer>(std::ref(counters))
-                | delta<SecondComponent, SecondDeltaEvaluator>(std::ref(counters))
-                | delta<FirstComponent, FirstDeltaEvaluator>(std::ref(counters)));
+                | delta<SecondComponent, SecondDelta>(std::ref(counters))
+                | delta<FirstComponent, FirstDelta>(std::ref(counters)));
 
         const auto result = runner.bind(instance).run(Solution{.value = 1});
 
@@ -411,16 +398,14 @@ int main()
     {
         Counters counters;
 
-        auto runner =
-            Runner{ProbeOneMove<true>{accepted}}
+        auto runner = Runner{ProbeOneMove<true>{accepted}}
             | (solution_manager<SolutionManager>(std::ref(counters))
-               | easylocal::cost::apply(
-                     CountingAggregator{counters},
-                     component<FirstComponent>(std::ref(counters)),
-                     component<SecondComponent>(std::ref(counters))))
+                | easylocal::cost::apply(
+                    CountingAggregator{counters},
+                    component<FirstComponent>(std::ref(counters)),
+                    component<SecondComponent>(std::ref(counters))))
             | (neighborhood<NeighborhoodExplorer>(std::ref(counters))
-               | delta<FirstComponent, FirstDeltaEvaluator>(
-                     std::ref(counters)));
+                | delta<FirstComponent, FirstDelta>(std::ref(counters)));
 
         const auto result = runner.bind(instance).run(Solution{.value = 1});
 

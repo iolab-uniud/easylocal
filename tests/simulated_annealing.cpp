@@ -1053,10 +1053,8 @@ int main()
             | solution_manager_recipe
             | (neighborhood<exam::MoveExamNeighborhoodExplorer>()
                 | delta<exam::StudentConflictComponent>()
-                | delta<
-                    exam::ConsecutiveExamComponent,
-                    exam::ConsecutiveExamDeltaEvaluator>()
-                | delta<exam::TimeslotLoadComponent, exam::TimeslotLoadDeltaEvaluator>());
+                | delta<exam::ConsecutiveExamComponent, exam::ConsecutiveExamDelta>()
+                | delta<exam::TimeslotLoadComponent, exam::TimeslotLoadDelta>());
 
         auto bound_runner = runner.bind(instance);
         std::mt19937 rng_a{2026U};

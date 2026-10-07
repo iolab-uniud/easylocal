@@ -135,10 +135,10 @@ private:
     const AssignmentSolutionManager& solution_manager_;
 };
 
-class SwapCapacityDeltaEvaluator
+class SwapCapacityDelta
 {
 public:
-    explicit SwapCapacityDeltaEvaluator(const AssignmentInstance& instance) noexcept
+    explicit SwapCapacityDelta(const AssignmentInstance& instance) noexcept
         : instance_{instance}
     {
     }
@@ -455,11 +455,11 @@ int main()
 
     using AllDeltaUnionExplorer = typename decltype(neighborhood_union(
         neighborhood<ReassignJobNeighborhoodExplorer>()
-            | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>(),
+            | delta<CapacityCostComponent, ReassignCapacityDelta>(),
         neighborhood<SwapNeighborhoodExplorer>()
-            | delta<CapacityCostComponent, SwapCapacityDeltaEvaluator>(),
+            | delta<CapacityCostComponent, SwapCapacityDelta>(),
         neighborhood<DestinationZeroNeighborhoodExplorer>()
-            | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>()))::service_type;
+            | delta<CapacityCostComponent, ReassignCapacityDelta>()))::service_type;
 
     static_assert(
         std::tuple_size_v<typename AllDeltaUnionExplorer::delta_bindings_type> == 1,
@@ -472,7 +472,7 @@ int main()
 
     using PartialDeltaUnionExplorer = typename decltype(neighborhood_union(
         neighborhood<ReassignJobNeighborhoodExplorer>()
-            | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>(),
+            | delta<CapacityCostComponent, ReassignCapacityDelta>(),
         neighborhood<SwapNeighborhoodExplorer>()))::service_type;
 
     static_assert(
@@ -578,11 +578,11 @@ int main()
         | default_solution_manager_recipe()
         | neighborhood_union(
             neighborhood<ReassignJobNeighborhoodExplorer>()
-                | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>(),
+                | delta<CapacityCostComponent, ReassignCapacityDelta>(),
             neighborhood<SwapNeighborhoodExplorer>()
-                | delta<CapacityCostComponent, SwapCapacityDeltaEvaluator>(),
+                | delta<CapacityCostComponent, SwapCapacityDelta>(),
             neighborhood<DestinationZeroNeighborhoodExplorer>()
-                | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>());
+                | delta<CapacityCostComponent, ReassignCapacityDelta>());
 
     auto bound_all_delta = all_delta_runner.bind(instance);
     const auto all_delta_result = bound_all_delta.run(initial);
@@ -598,11 +598,11 @@ int main()
         | neighborhood_union(
             neighborhood_union(
                 neighborhood<ReassignJobNeighborhoodExplorer>()
-                    | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>(),
+                    | delta<CapacityCostComponent, ReassignCapacityDelta>(),
                 neighborhood<SwapNeighborhoodExplorer>()
-                    | delta<CapacityCostComponent, SwapCapacityDeltaEvaluator>()),
+                    | delta<CapacityCostComponent, SwapCapacityDelta>()),
             neighborhood<DestinationZeroNeighborhoodExplorer>()
-                | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>());
+                | delta<CapacityCostComponent, ReassignCapacityDelta>());
 
     auto bound_nested_all_delta = nested_all_delta_runner.bind(instance);
     const auto nested_all_delta_result = bound_nested_all_delta.run(initial);
