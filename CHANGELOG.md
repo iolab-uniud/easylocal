@@ -11,29 +11,16 @@ reviewed by hand before tagging.
 
 ## [4.0.0-alpha.2] — not yet released
 
-### Cost
-
-- `cost::from_text` rejects NaN, which compares with no cost (infinity is
-  still read).
-- The tutorial (chapter 2) and the reference say that costs are minimized,
-  and how to maximize; chapter 2 lists `cost::objectives` and the Pareto
-  cost among the structured costs. The reference says how to use one
-  parametric component twice (a named type for each).
-
-- **Breaking:** unsigned integers are no longer costs. A cost component or a
-  `cost::apply` function that returns one, and a `cost::lexicographic`,
-  `cost::pareto` or `cost::hierarchical` level of an unsigned type, fail to
-  compile with a message: the difference of two unsigned costs wraps around,
-  so Simulated Annealing never accepted an improving move.
-  `cost::arithmetic` excludes them, weights included.
-
 ### Problem model
 
+- **Breaking:** `neighborhood_explorer_for<NHE, SM>` requires what the library
+  used: `input_type` and `solution_type`, those of the SolutionManager, and
+  `input()`, which debug builds and unions called. An explorer without them is
+  rejected where it is composed; `neighborhood_explorer_base` provides them.
 - `EASYLOCAL_VERIFY_DELTAS`, defined when compiling, makes every search
   compare the component values its deltas gave with a full evaluation after
   each move it keeps, and stop at the first disagreement naming the
   component (tutorial chapter 4).
-
 - A neighborhood recipe checks the explorer's contract member by member when
   it is written (when the explorer declares its `solution_type`, else when it
   is bound): a missing `move_type` or `is_valid`, and a `make_move` that is
@@ -63,6 +50,33 @@ reviewed by hand before tagging.
   of an app and of a neighborhood union, and `check(app, ...)`, use it only
   when the explorer has it.
 
+### Cost
+
+- **Breaking:** the cost semantics are defined with one hook: the function of
+  a root `cost::apply` defines `compare(a, b)`, returning a
+  `std::partial_ordering`, from which `better`, `equivalent` and
+  `better_or_equivalent` all follow. A function that defined only some of the
+  three mixed them silently with the defaults (a maximizing `better()` with the
+  default `<=` made Hill Climbing walk downhill while it recorded the bests
+  uphill); its `better`, `equivalent` or `better_or_equivalent` members now
+  fail to compile with a message, as does a `compare` below the root of the
+  expression. The sign of `cost::delta` must agree with `better()` for the
+  algorithms that read it (Simulated Annealing, Great Deluge, the aspiration
+  levels of Tabu Search): Simulated Annealing and Great Deluge reject a
+  `compare` that provably finds a larger cost better.
+- **Breaking:** unsigned integers are no longer costs. A cost component or a
+  `cost::apply` function that returns one, and a `cost::lexicographic`,
+  `cost::pareto` or `cost::hierarchical` level of an unsigned type, fail to
+  compile with a message: the difference of two unsigned costs wraps around,
+  so Simulated Annealing never accepted an improving move.
+  `cost::arithmetic` excludes them, weights included.
+- `cost::from_text` rejects NaN, which compares with no cost (infinity is
+  still read).
+- The tutorial (chapter 2) and the reference say that costs are minimized,
+  and how to maximize; chapter 2 lists `cost::objectives` and the Pareto
+  cost among the structured costs. The reference says how to use one
+  parametric component twice (a named type for each).
+
 ### Parameters
 
 - **Breaking:** one rule makes a class configurable: its `parameters_type` is
@@ -84,11 +98,6 @@ reviewed by hand before tagging.
   the expression. A function's `configuration()`, which `cost::apply` used to
   read, no longer compiles. The tutorial's hierarchical cost has its bound of
   8 as a parameter, `cost.excess.bound` (chapter 9).
-- A SolutionManager follows the rule too: one whose `parameters_type` is a
-  parameter block is constructed from the Input and it,
-  `solution_manager<SM>(parameters, args...)`, and its parameters are at the
-  root of a runner and of an app, `solution_manager.*`, beside `cost.*`;
-  the TextUI's problem parameters (`P`) show them.
 - **Breaking:** `easylocal::unlimited` is a tag of its own type,
   `unlimited_t`, which converts to the unlimited `limit`, rather than a
   `limit`. `config::field` and `config::range` take the tag: a count where a
@@ -96,6 +105,40 @@ reviewed by hand before tagging.
   (`range(0.0, 1)`, `range(1, std::size_t{1000})`), which compiled and threw
   `std::invalid_argument`, or picked the unlimited overload, no longer
   compile. `limit x = unlimited;` and `limit{unlimited}` are unchanged.
+- **Breaking:** `config::validation_result` owns its message, a `std::string`
+  where it held a `std::string_view` that had to outlive it:
+  `validation_result::failure()` takes a reason built at run time too.
+  `config::check_schema` gives the same reason as the validation of a
+  parameter set, with the field first, `cooling_rate: expected a value in (0,
+  1), got 2`, where it read `cooling_rate is out of its range`.
+- **Breaking:** invalid parameters throw `std::invalid_argument` in every
+  build, instead of an assert that Release builds skipped (a Simulated
+  Annealing schedule then reached undefined behaviour, or never ended): the
+  constructors of the runners, of the temperature schedules and of the tabu
+  lists, `make_runner`, the neighborhood recipes, the binding of a runner or
+  of an app, and the construction of a `Session` and of a REST blueprint. The
+  message names the parameter, `runners.sa.temperature.cooling_rate: expected
+  a value in (0, 1), got 2`. The constructors that validate are no longer
+  `noexcept`. `config::require_valid(block)` and `config::require_valid(set)`
+  give the same check to custom code, and `check(app, ...)` reports invalid
+  app parameters as `app configuration` before binding.
+- **Breaking:** a TOML file reaches `load_and_apply` and `cli::run`: the
+  `--config` file is read by a `config::config_file_reader`, the new last
+  argument of `load_and_apply` and `cli::options::read_config`, by default
+  `config::load_config_file`; `config::load_toml_file` of the TOML adapter is
+  one. The TOML adapter returns a `config_file_parse_result`, with
+  `config_file_diagnostic`s, whose `config_file_error` gains `parse_error`
+  and `unsupported_value` and whose diagnostic gains a `column`:
+  `toml_config_parse_result`, `toml_config_diagnostic` and
+  `toml_config_error` are removed, the path of an unsupported value is its
+  `text`, and the place of a parse error is in its `line`, `column` and
+  `text` (the file) rather than in its message. `print_diagnostics` also
+  takes a `config_file_parse_result`, and prints the column after the line.
+- A SolutionManager follows the rule too: one whose `parameters_type` is a
+  parameter block is constructed from the Input and it,
+  `solution_manager<SM>(parameters, args...)`, and its parameters are at the
+  root of a runner and of an app, `solution_manager.*`, beside `cost.*`;
+  the TextUI's problem parameters (`P`) show them.
 - A schema is computed once, at compile time: a mistake in it, such as an
   inverted range, is reported where the schema is first read, naming
   `parameter_schema()`, rather than in a `validate()` or at run time. The
@@ -134,42 +177,174 @@ reviewed by hand before tagging.
   declares a schema for its `max_evaluations`, configurable as
   `search.max_evaluations` in a runner and `runners.<name>.max_evaluations`
   in an app.
-- **Breaking:** `config::validation_result` owns its message, a `std::string`
-  where it held a `std::string_view` that had to outlive it:
-  `validation_result::failure()` takes a reason built at run time too.
-  `config::check_schema` gives the same reason as the validation of a
-  parameter set, with the field first, `cooling_rate: expected a value in (0,
-  1), got 2`, where it read `cooling_rate is out of its range`.
-- **Breaking:** a TOML file reaches `load_and_apply` and `cli::run`: the
-  `--config` file is read by a `config::config_file_reader`, the new last
-  argument of `load_and_apply` and `cli::options::read_config`, by default
-  `config::load_config_file`; `config::load_toml_file` of the TOML adapter is
-  one. The TOML adapter returns a `config_file_parse_result`, with
-  `config_file_diagnostic`s, whose `config_file_error` gains `parse_error`
-  and `unsupported_value` and whose diagnostic gains a `column`:
-  `toml_config_parse_result`, `toml_config_diagnostic` and
-  `toml_config_error` are removed, the path of an unsupported value is its
-  `text`, and the place of a parse error is in its `line`, `column` and
-  `text` (the file) rather than in its message. `print_diagnostics` also
-  takes a `config_file_parse_result`, and prints the column after the line.
+
+### Runners and solvers
+
+- **Breaking:** one naming rule for counts and budgets. A `max_<count>` of a
+  run is an `easylocal::limit` cap that ends it: `max_idle_iterations` of Hill
+  Climbing, Late Acceptance and the tabu searches is a limit (`unlimited` can
+  be written in a configuration), and `FixedTemperature`'s `accepted_ratio` is
+  `max_accepted`, unlimited by default. The size of a schedule is
+  `allowed_<x>`: the `max_iterations` of `FixedLength`, `Cutoff`, `Hybrid` and
+  `FixedTemperature` is `allowed_iterations`
+  (`runners.sa.temperature.allowed_iterations`), Reheating's `max_reheats` is
+  `allowed_reheats`, and `Hybrid::sample_limit()` is
+  `samples_per_temperature()`, as in `FixedLength`. Pareto Late Acceptance's
+  `max_iterations`, the iterations before it may stop, is `min_iterations`.
+  The evaluation budget of `run_options` is the field `evaluation_limit` (a
+  limit, unlimited by default) instead of the optional `evaluation_budget`; it
+  is set with `max_evaluations(n)`, as the time limit `time_limit` with
+  `timeout(...)`, and `search_run::no_evaluation_limit` is gone:
+  `easylocal::unlimited`.
+- **Breaking:** the four tabu searches share one parameter block,
+  `TabuSearchParameters<ListParameters, CandidateParameters>`: the parameters
+  of the candidate strategy are the group `candidates`
+  (`runners::candidates::FirstImprovementParameters`,
+  `AspirationPlusParameters`, `EliteListParameters`; none for `TabuSearch`),
+  `{.tabu_list = {...}, .candidates = {.min_moves = 10}}` in the code and
+  `search.candidates.min_moves` in a configuration.
+  `FirstImprovementTabuSearchParameters`, `AspirationPlusTabuSearchParameters`
+  and `EliteCandidateTabuSearchParameters` are gone.
+- **Breaking:** `search_run::with_context(ctx)` is replaced by
+  `run.with_evaluation(wrap)`, which keeps the run's context and swaps only its
+  evaluation facility for `wrap(run.evaluation())`. A decorated context
+  without `better_or_equivalent()` or a SolutionManager silently dropped the
+  target, the solution events and the archive identity: the assignment
+  example's `slow-fi` ignored `--target`. `search_run` takes the facility as a
+  third template parameter, and `run.evaluation()` returns the one it
+  evaluates with.
+- **Breaking:** `BoundRunner::run()` is const, and each run starts from a new
+  algorithm (built from its parameters, or copied): state a custom algorithm
+  keeps no longer passes from one run to the next, as for the runs of an app.
+  An algorithm without a parameter block must be copyable to run.
+- **Breaking:** the solvers are configured one way: `LocalSearch{runner}`,
+  `MultiStart{runner, {.starts = n}}` and a pipeline all take `.seed(n)` and
+  `.initialization(tag)`, which return the solver (itself on an lvalue, by
+  value on a temporary). `LocalSearchConfig` and `MultiStartConfig` are
+  removed, and so are the runtime `initialization::Mode`, `supports(Mode)`
+  and `initialization_mode()`: an initialization is a tag, checked at compile
+  time. A custom RNG is the solver's last constructor argument
+  (`MultiStart{runner, parameters, RNG{seed}}`).
+- **Breaking:** every solver starts by default from `initialization::automatic`,
+  a random solution when the SolutionManager builds one, else its initial
+  solution, with seed 0: LocalSearch and MultiStart required
+  `random_solution` unless told otherwise, while a pipeline adapted.
+- **Breaking:** MultiStart and the attempts of a pipeline stage run in one
+  loop, so they stop, count their budget and merge their fronts the same way;
+  MultiStart's termination is now, like a stage's, the last start's when no
+  start, cancellation or budget ended it early (it was always `completed`).
+- **Breaking:** a pipeline checks the names of its stages when it is built,
+  once, instead of at every `solve()` and `configuration()`, which no longer
+  throw. A stage rejects run options with a control (`stage & with(control)`
+  dropped it: the control goes to `solve()`), with `std::invalid_argument`,
+  and a floating-point target for an integer cost (`target(0.5)` was
+  truncated), at compile time. `pipeline_stage::limits()`, which returned a
+  detail type, is private.
+- **Breaking:** a pipeline stage of a deterministic algorithm (First and Best
+  Improvement declare `static constexpr bool deterministic = true`) with more
+  than one attempt, all from the same solution and without `restart(...)`,
+  throws `std::invalid_argument`, which suggests
+  `restart(initialization::random)`: its attempts repeated the same run. A
+  later stage is checked when the pipeline is built, the first one when it
+  runs from a fixed start.
+- **Breaking:** the Pareto archive keeps one point per non-dominated cost by
+  default, the first reached: it kept every distinct solution of equal cost,
+  an unbounded front that made each offer scan a whole plateau (Hill Climbing
+  on a plateau ran thousands of times slower). `run_options::keep_front(
+  {.keep_equivalent = true, .max_front_size = n})`, the new
+  `pareto_archive_parameters`, keeps them all, up to `n` points; the solvers
+  merge the fronts of their runs with the same parameters.
+  `pareto_archive::offer` takes the relations to compare with, and `first()`
+  returns the first point of `sorted()` without sorting.
+- **Breaking:** `pareto_search_result` derives from `search_result`, whose
+  fields it repeated, and adds the `front`: code that takes a
+  `search_result&` takes a Pareto result, and one built with designated
+  initializers builds its `search_result` base first.
+- **Breaking:** `tabu_candidate<Run, WithCost>` has `cost()` and
+  `equivalent_cost()` only `WithCost`, the candidate a list whose state
+  declares `needs_cost` receives: a custom list that read the cost without
+  declaring it dereferenced a null pointer in a Release build. When every
+  move is tabu, Tabu Search applies the least tabu move with the evaluation
+  its scan made, instead of evaluating (and tracing) it again.
+- The real parameters of Great Deluge, Simulated Annealing and the tabu
+  searches with no upper bound (the levels, the temperatures, the running
+  time of `TimeBased`, `reheat_ratio`, `increase`, the fluctuations,
+  `aspiration_level`, `quality`) exclude infinity in their domains
+  (`(0, unlimited)`, `[1, unlimited)`), instead of a check of their own in
+  `validate()`: an infinite value is reported as out of its domain, by the
+  block and by a configuration (`expected a value in (0, unlimited), got
+  inf`), and `--help` lists the domain as it is.
+- The best cost of a run in progress:
+  `run_control::observe_best_cost<Cost>(observer)` calls the observer with the
+  run's first cost and then with each better one, on the commits that improve;
+  the runs of MultiStart and of a pipeline report only costs better than those
+  of the runs before. `shared_best_cost<Cost>` keeps the last one for another
+  thread, and `run_control::observing_progress` copies a control with another
+  progress observer. REST's run status has `progress.best`, encoded by the codec
+  as the cost is, and the TextUI's progress line shows `best=` after the counts.
+- The progress that MultiStart and a pipeline report to the caller's observer
+  is the solve's: each run adds to the evaluations and iterations of the runs
+  before it, and the evaluation limit is the solve's, so progress bars no
+  longer jump back at every start, attempt or stage. `run_control` gives its
+  `stop_token()`.
+- A pipeline stage may restart its attempts: `stage(...) & attempts(10) &
+  restart(initialization::random)` starts the attempts after the first from a
+  new solution rather than from the one the stage received, so a pipeline
+  registered in an app, which runs from the current solution, can
+  multi-start.
+- A complete `Runner` and `LocalSearch` name their `cost_type`, the Cost of a
+  recorder for their runs; a const `Runner` of a parameterized algorithm that
+  cannot be copied binds, since it holds only the parameters.
+  **Breaking:** `run_control::stop_possible()`, which nothing used, is
+  removed.
+- Great Deluge, the aspiration plus and elite candidate Tabu Searches and
+  Pareto Late Acceptance reject a cost they cannot use with one message that
+  names what they need (an arithmetic cost, a `cost::pareto` cost), as
+  Simulated Annealing does, whose message now names `cost::delta` rather than
+  a difference of costs; the rejected run no longer adds a second error.
+- The TimeBased annealing schedule reads its clock as a run checks its time
+  limit, at an interval of proposals that adapts to about a millisecond
+  between readings, and at each early cooling, instead of at every proposal.
+- A move whose cost needs the candidate solution (a component without a
+  delta) is evaluated on a scratch solution reused from one move to the next,
+  instead of a new copy per move; a candidate keeps its move, and its commit
+  swaps the scratch solution in when it is the last one evaluated, or makes
+  the move again otherwise (Best Improvement, Tabu Search). Debug builds no
+  longer check the whole current solution at every evaluation.
+- `easylocal::moves()` and a run's `moves()` keep the reference an explorer's
+  `moves()` returns to moves it keeps, which they copied at every call, and
+  `random_move()` moves the move it gets instead of copying it.
+- A runner rejects, with a message, a neighborhood whose `make_move` takes the
+  Solution by value or by const reference (`runner | neighborhood<NHE>()`): it
+  changed a copy, and Hill Climbing ran forever.
+- The policy contracts of Simulated Annealing and Tabu Search are public
+  concepts: `acceptance_policy_for<Acceptance, Cost, RNG>` (formerly in
+  `detail`) and the new `aspiration_for<A, Run>`, which constrains the four
+  tabu searches.
+- Hill Climbing, First Improvement and Best Improvement emit
+  `incumbent_updated` at each improving move, as the other runners do, through
+  the new `search_run::commit_improvement()`: every built-in runner reports
+  its new best costs.
+- The Pareto archive compares costs with the run's `better()` and
+  `equivalent()` instead of the cost's `<` and `==`: with a root `compare`
+  that maximizes, Pareto Late Acceptance returned the worst point of its
+  front.
+- `named_run_result` has the `front` of a run with a `cost::pareto` cost, so
+  `app.run("name", ...)` no longer drops it; the TextUI does not show it yet.
+- The front of a run with a `cost::pareto` cost reaches the tools: the
+  Session keeps the front of its last run (`last_run_front()`, a `front_type`
+  of `pareto_point{solution, cost}`, empty when `last_run_effort()` is);
+  `cli::run` writes `front <n>` after the solution, then each point as
+  `point <i> cost <cost>` followed by its solution, or with `--output
+  best.txt` saves the solutions to `best.1.txt`, `best.2.txt`, ...; the REST
+  solution resource has a `front` array of `{cost, solution}`, encoded as the
+  run's cost and solution are.
+- A solver with an RNG whose result is narrower than 64 bits
+  (`std::minstd_rand`) compiles: its seed was narrowed in a braced
+  initializer.
 
 ### Apps and tools
 
-- `pipeline(name, stages...)` checks the names of the stages when the
-  registration is made, and throws `std::invalid_argument` there, instead of
-  at every `configuration()` of the app; `cli::run` no longer catches it.
-- The help of `--target` and the reference say that a pipeline gives the
-  target to its last stage, unless that stage has a target of its own.
-- `Session::run` runs on the session's bound app instead of binding the app
-  again for every run, as `App::run` does; when the parameters of the app
-  have changed through `app()` since it was bound, it binds it again first,
-  so a run still uses the current parameters.
-- **Breaking:** `App::runner_count`, which counted the pipelines too, is
-  `App::registration_count`.
-- The scalar number of a cost for tuning (`cost::scalar`, `--tuning.print`)
-  documents where it stops ordering costs: past 2^53, as a lexicographic cost
-  of three levels or a large hard cost with the default weight reach, its
-  lower levels round away; a `scalar_cost` hook is the remedy.
 - **Breaking:** the types of an app are public and documented: `App`, what
   `app()` and each `|` return (formerly `detail::app_builder`), `BoundApp`,
   what `App::bind` returns (formerly `detail::bound_app`), and `BoundRunner`,
@@ -185,6 +360,31 @@ reviewed by hand before tagging.
   `for_each_runner_registration`) are no longer public: an algorithm
   registered twice (`"sa-fast"`, `"sa-slow"`) had no single runner. A solver
   is `make_solver<Solver>(application.make_runner<A>("name"))`.
+- **Breaking:** a `BoundApp` holds the Input, its services and a copy of the
+  registrations, and builds the algorithm of each run from the registration's
+  parameters: it no longer builds an instance of every registered algorithm
+  at bind (which the Session built and never ran), and runs on the same
+  bound app no longer share an algorithm's state.
+- **Breaking:** `App::runner_count`, which counted the pipelines too, is
+  `App::registration_count`.
+- **Breaking:** `RunParameters` is the block of a run's limits: `target`,
+  `timeout` (seconds, as text) and `max_evaluations`, with
+  `options<Cost>(input[, base])`, which gives their run options. `cli::run`
+  reads its `--target`, `--timeout` and `--max_evaluations` through it
+  (`cli::parameters::run_parameters()`), and
+  `cli::parameters::timeout_seconds()` moves to `RunParameters`.
+- **Breaking:** `Session::run` gives each run a generator of its own, seeded
+  with one draw of the session's RNG, as the TextUI already did: the same seed
+  and the same commands now give the same runs in `Session`, `cli::run`, the
+  TextUI and REST, where the TextUI's runs differed from the others'. Runs of
+  stochastic runners differ from those of alpha.1 with the same seed.
+  `docs/stability.md` lists the conditions of reproducibility (no time limit,
+  the same commands in order, a solver's stream across `solve()` calls, REST
+  seeds, the same standard library).
+- `Session::run` runs on the session's bound app instead of binding the app
+  again for every run, as `App::run` does; when the parameters of the app
+  have changed through `app()` since it was bound, it binds it again first,
+  so a run still uses the current parameters.
 - A runner registered in an app may bring its own neighborhood, the third
   argument of `runner` (`runner<SA>("sa", {...}, neighborhood<Swap>() |
   delta<...>())`, or of `with_runner`): it is built over the app's
@@ -202,52 +402,26 @@ reviewed by hand before tagging.
   `runners.<pipeline>.<stage>.search.*`, the stage's own `attempts`,
   `timeout` and `max_evaluations`, and `.neighborhood.*` for their own
   neighborhood; stages of runners stay, with their own recipes.
-- **Breaking:** a `BoundApp` holds the Input, its services and a copy of the
-  registrations, and builds the algorithm of each run from the registration's
-  parameters: it no longer builds an instance of every registered algorithm
-  at bind (which the Session built and never ran), and runs on the same
-  bound app no longer share an algorithm's state.
+- `pipeline(name, stages...)` checks the names of the stages when the
+  registration is made, and throws `std::invalid_argument` there, instead of
+  at every `configuration()` of the app; `cli::run` no longer catches it.
+- The help of `--target` and the reference say that a pipeline gives the
+  target to its last stage, unless that stage has a target of its own.
 - `cli::run` checks what the problem cannot do (`--solution` or `--output`
   without the I/O hooks, a `--start` it has no solutions for) before it reads
   the Input and runs, where `--output` failed after the run; saves the
   solution with `--tuning.print` too, which ignored `--output`; and prints
   every error after `error: ` (`unknown runner`, `tuning.irace: ...`, `trace:
   ...`). Its "time" is documented as including the binding of the app.
-- `--tuning.irace`: `write_irace_stub` leaves out the cost's and the read-only
-  parameters itself, as its contract says, where `cli::run` did it for it; it
-  writes no `configurations.txt` while nothing is tuned, and `cli::run` then
-  says so, and asks for the instances when it has none; a boolean and an
-  unlimited count say how to tune them; a default runner in the program's
-  options no longer restricts the tuning to it; and the program's path stays
-  as given when it cannot be made canonical. `write_irace_stub` is
-  `[[nodiscard]]`.
-- **Breaking:** `RunParameters` is the block of a run's limits: `target`,
-  `timeout` (seconds, as text) and `max_evaluations`, with
-  `options<Cost>(input[, base])`, which gives their run options. `cli::run`
-  reads its `--target`, `--timeout` and `--max_evaluations` through it
-  (`cli::parameters::run_parameters()`), and `cli::parameters::timeout_seconds()`
-  moves to `RunParameters`.
-- **Breaking:** `Session::run` gives each run a generator of its own, seeded
-  with one draw of the session's RNG, as the TextUI already did: the same seed
-  and the same commands now give the same runs in `Session`, `cli::run`, the
-  TextUI and REST, where the TextUI's runs differed from the others'. Runs of
-  stochastic runners differ from those of alpha.1 with the same seed.
-  `docs/stability.md` lists the conditions of reproducibility (no time limit,
-  the same commands in order, a solver's stream across `solve()` calls, REST
-  seeds, the same standard library).
+- The scalar number of a cost for tuning (`cost::scalar`, `--tuning.print`)
+  documents where it stops ordering costs: past 2^53, as a lexicographic cost
+  of three levels or a large hard cost with the default weight reach, its
+  lower levels round away; a `scalar_cost` hook is the remedy.
+- The logging API (`<easylocal/utils/logging.hpp>`) is Experimental, since the
+  library emits no records yet; the documentation no longer presents it as
+  framework diagnostics. `stderr_sink` writes a record in one write (up to 1
+  KiB), and `set_sink` is no longer `[[nodiscard]]`.
 
-- **Breaking:** the cost semantics are defined with one hook: the function of
-  a root `cost::apply` defines `compare(a, b)`, returning a
-  `std::partial_ordering`, from which `better`, `equivalent` and
-  `better_or_equivalent` all follow. A function that defined only some of the
-  three mixed them silently with the defaults (a maximizing `better()` with the
-  default `<=` made Hill Climbing walk downhill while it recorded the bests
-  uphill); its `better`, `equivalent` or `better_or_equivalent` members now
-  fail to compile with a message, as does a `compare` below the root of the
-  expression. The sign of `cost::delta` must agree with `better()` for the
-  algorithms that read it (Simulated Annealing, Great Deluge, the aspiration
-  levels of Tabu Search): Simulated Annealing and Great Deluge reject a
-  `compare` that provably finds a larger cost better.
 ### Checking tools
 
 - **Breaking:** the contract checks compare floating-point values within a
@@ -263,6 +437,13 @@ reviewed by hand before tagging.
   tolerance), and the Session's `check_neighborhood_costs(tolerance)` and
   `move_evaluation_matches_full(tolerance)` accept a cost agreeing by
   `equivalent()` or within it. `{0, 0}` compares exactly.
+- **Breaking:** `check(app)`'s `app_check_coverage` and `coverage()` are
+  `app_check_composition` and `composition()`, its `neighborhood_graphs`
+  `neighborhoods`, and `print_report` writes `composition:`: they count what
+  the app composes, which both forms of `check` now fill. The form without a
+  solution binds the app once, and checks the runners once. `check(app)`
+  compares the repeated evaluation with the cost's equivalence, and reports
+  each invalid parameter block of the app with its path.
 - `cost::approximately(expression, {.relative, .absolute})`, a root node of
   the cost expression whose costs the search compares within a tolerance:
   equal within it is equivalent, better is better by more than it. It keeps a
@@ -292,13 +473,6 @@ reviewed by hand before tagging.
   neighborhood has valid ones, and one that draws from another source than
   its generator. `check(app)` reports the same about its neighborhoods, and
   random solutions that are not valid.
-- **Breaking:** `check(app)`'s `app_check_coverage` and `coverage()` are
-  `app_check_composition` and `composition()`, its `neighborhood_graphs`
-  `neighborhoods`, and `print_report` writes `composition:`: they count what
-  the app composes, which both forms of `check` now fill. The form without a
-  solution binds the app once, and checks the runners once. `check(app)`
-  compares the repeated evaluation with the cost's equivalence, and reports
-  each invalid parameter block of the app with its path.
 - `testing::run_checks` takes the report of `check(app)` with the component
   reports; `check_cost_component` no longer counts a check that cannot fail,
   and values its comparison cannot compare are a compile error.
@@ -319,182 +493,88 @@ reviewed by hand before tagging.
   current solution: the interface answers during a long scan, and leaving the
   Move page, applying a move or starting another scan stops it.
 
-### Runners and solvers
+### Tracing
 
-- The real parameters of Great Deluge, Simulated Annealing and the tabu
-  searches with no upper bound (the levels, the temperatures, the running
-  time of `TimeBased`, `reheat_ratio`, `increase`, the fluctuations,
-  `aspiration_level`, `quality`) exclude infinity in their domains
-  (`(0, unlimited)`, `[1, unlimited)`), instead of a check of their own in
-  `validate()`: an infinite value is reported as out of its domain, by the
-  block and by a configuration (`expected a value in (0, unlimited), got
-  inf`), and `--help` lists the domain as it is.
-- The best cost of a run in progress:
-  `run_control::observe_best_cost<Cost>(observer)` calls the observer with
-  the run's first cost and then with each better one, on the commits that
-  improve; the runs of MultiStart and of
-  a pipeline report only costs better than those of the runs before.
-  `shared_best_cost<Cost>` keeps the last one for another thread, and
-  `run_control::observing_progress` copies a control with another progress
-  observer. REST's run status has `progress.best`, encoded by the codec as the
-  cost is, and the TextUI's progress line shows `best=` after the counts.
-- **Breaking:** the Pareto archive keeps one point per non-dominated cost by
-  default, the first reached: it kept every distinct solution of equal cost,
-  an unbounded front that made each offer scan a whole plateau (Hill Climbing
-  on a plateau ran thousands of times slower). `run_options::keep_front(
-  {.keep_equivalent = true, .max_front_size = n})`, the new
-  `pareto_archive_parameters`, keeps them all, up to `n` points; the solvers
-  merge the fronts of their runs with the same parameters.
-  `pareto_archive::offer` takes the relations to compare with, and `first()`
-  returns the first point of `sorted()` without sorting.
-- The Pareto archive compares costs with the run's `better()` and
-  `equivalent()` instead of the cost's `<` and `==`: with a root `compare`
-  that maximizes, Pareto Late Acceptance returned the worst point of its
-  front.
-- `named_run_result` has the `front` of a run with a `cost::pareto` cost, so
-  `app.run("name", ...)` no longer drops it; the TextUI does not show it yet.
-- The front of a run with a `cost::pareto` cost reaches the tools: the
-  Session keeps the front of its last run (`last_run_front()`, a `front_type`
-  of `pareto_point{solution, cost}`, empty when `last_run_effort()` is);
-  `cli::run` writes `front <n>` after the solution, then each point as
-  `point <i> cost <cost>` followed by its solution, or with `--output
-  best.txt` saves the solutions to `best.1.txt`, `best.2.txt`, ...; the REST
-  solution resource has a `front` array of `{cost, solution}`, encoded as the
-  run's cost and solution are.
-  `app.run("name", ...)` no longer drops it; the Session, `cli::run`, REST and
-  the TextUI do not show it yet.
-- **Breaking:** the solvers are configured one way: `LocalSearch{runner}`,
-  `MultiStart{runner, {.starts = n}}` and a pipeline all take `.seed(n)` and
-  `.initialization(tag)`, which return the solver (itself on an lvalue, by
-  value on a temporary). `LocalSearchConfig` and `MultiStartConfig` are
-  removed, and so are the runtime `initialization::Mode`, `supports(Mode)`
-  and `initialization_mode()`: an initialization is a tag, checked at compile
-  time. A custom RNG is the solver's last constructor argument
-  (`MultiStart{runner, parameters, RNG{seed}}`).
-- **Breaking:** every solver starts by default from `initialization::automatic`,
-  a random solution when the SolutionManager builds one, else its initial
-  solution, with seed 0: LocalSearch and MultiStart required
-  `random_solution` unless told otherwise, while a pipeline adapted.
-- **Breaking:** MultiStart and the attempts of a pipeline stage run in one
-  loop, so they stop, count their budget and merge their fronts the same way;
-  MultiStart's termination is now, like a stage's, the last start's when no
-  start, cancellation or budget ended it early (it was always `completed`).
-- A pipeline stage may restart its attempts: `stage(...) & attempts(10) &
-  restart(initialization::random)` starts the attempts after the first from a
-  new solution rather than from the one the stage received, so a pipeline
-  registered in an app, which runs from the current solution, can
-  multi-start.
-- A complete `Runner` and `LocalSearch` name their `cost_type`, the Cost of a
-  recorder for their runs; a const `Runner` of a parameterized algorithm that
-  cannot be copied binds, since it holds only the parameters.
-  **Breaking:** `run_control::stop_possible()`, which nothing used, is
-  removed.
-- Great Deluge, the aspiration plus and elite candidate Tabu Searches and
-  Pareto Late Acceptance reject a cost they cannot use with one message that
-  names what they need (an arithmetic cost, a `cost::pareto` cost), as
-  Simulated Annealing does, whose message now names `cost::delta` rather than
-  a difference of costs; the rejected run no longer adds a second error.
-- The TimeBased annealing schedule reads its clock as a run checks its time
-  limit, at an interval of proposals that adapts to about a millisecond
-  between readings, and at each early cooling, instead of at every proposal.
-- A move whose cost needs the candidate solution (a component without a
-  delta) is evaluated on a scratch solution reused from one move to the next,
-  instead of a new copy per move; a candidate keeps its move, and its commit
-  swaps the scratch solution in when it is the last one evaluated, or makes
-  the move again otherwise (Best Improvement, Tabu Search). Debug builds no
-  longer check the whole current solution at every evaluation.
-- `easylocal::moves()` and a run's `moves()` keep the reference an explorer's
-  `moves()` returns to moves it keeps, which they copied at every call, and
-  `random_move()` moves the move it gets instead of copying it.
-- **Breaking:** `tabu_candidate<Run, WithCost>` has `cost()` and
-  `equivalent_cost()` only `WithCost`, the candidate a list whose state
-  declares `needs_cost` receives: a custom list that read the cost without
-  declaring it dereferenced a null pointer in a Release build. When every
-  move is tabu, Tabu Search applies the least tabu move with the evaluation
-  its scan made, instead of evaluating (and tracing) it again.
-- **Breaking:** a pipeline checks the names of its stages when it is built,
-  once, instead of at every `solve()` and `configuration()`, which no longer
-  throw. A stage rejects run options with a control (`stage & with(control)`
-  dropped it: the control goes to `solve()`), with `std::invalid_argument`,
-  and a floating-point target for an integer cost (`target(0.5)` was
-  truncated), at compile time. `pipeline_stage::limits()`, which returned a
-  detail type, is private.
-- The progress that MultiStart and a pipeline report to the caller's observer
-  is the solve's: each run adds to the evaluations and iterations of the runs
-  before it, and the evaluation limit is the solve's, so progress bars no
-  longer jump back at every start, attempt or stage. `run_control` gives its
-  `stop_token()`.
-- A runner rejects, with a message, a neighborhood whose `make_move` takes the
-  Solution by value or by const reference (`runner | neighborhood<NHE>()`): it
-  changed a copy, and Hill Climbing ran forever.
-- The policy contracts of Simulated Annealing and Tabu Search are public
-  concepts: `acceptance_policy_for<Acceptance, Cost, RNG>` (formerly in
-  `detail`) and the new `aspiration_for<A, Run>`, which constrains the four
-  tabu searches.
-- **Breaking:** `pareto_search_result` derives from `search_result`, whose
-  fields it repeated, and adds the `front`: code that takes a
-  `search_result&` takes a Pareto result, and one built with designated
-  initializers builds its `search_result` base first.
-- Hill Climbing, First Improvement and Best Improvement emit
-  `incumbent_updated` at each improving move, as the other runners do, through
-  the new `search_run::commit_improvement()`: every built-in runner reports
-  its new best costs.
-- Simulated Annealing traces its temperature: `trace::event::temperature_changed`,
-  a core event without a cost (ELTR tag 13, JSONL, memory record
-  `temperature_changed_record`), at the start of a run and at each change of
-  the schedule's temperature, only for a tracer that observes it. The
-  tracing guide's example of an application event is now `weight_changed`.
+- **Breaking:** a recorder observes the core events of its cost type, its new
+  `cost_type`, and those without a cost, instead of declaring every event
+  observed: the memory and JSONL recorders silently dropped an event of
+  another cost type, and the binary recorders converted its cost to theirs.
+  The memory and JSONL recorders no longer claim the application events,
+  which are ELTR records only, and `memory_recorder::stored_as_is` is
+  private. `trace::emit` rejects at compile time a tracer whose
+  `observes<Event>` is true but that has no `emit()` taking the event, such
+  as an `emit` declared for another cost type.
 - **Breaking:** a run rejects at compile time a recorder whose `cost_type` is
   not the runner's cost, which recorded nothing of the run; a pipeline gives a
   stage on another cost (`until_feasible()`) the caller's recorder through a
   tracer that forwards only the events without a cost.
-- **Breaking:** `BoundRunner::run()` is const, and each run starts from a new
-  algorithm (built from its parameters, or copied): state a custom algorithm
-  keeps no longer passes from one run to the next, as for the runs of an app.
-  An algorithm without a parameter block must be copyable to run.
-- **Breaking:** a pipeline stage of a deterministic algorithm (First and Best
-  Improvement declare `static constexpr bool deterministic = true`) with more
-  than one attempt, all from the same solution and without `restart(...)`,
-  throws `std::invalid_argument`, which suggests
-  `restart(initialization::random)`: its attempts repeated the same run. A
-  later stage is checked when the pipeline is built, the first one when it
-  runs from a fixed start.
-- **Breaking:** `neighborhood_explorer_for<NHE, SM>` requires what the library
-  used: `input_type` and `solution_type`, those of the SolutionManager, and
-  `input()`, which debug builds and unions called. An explorer without them is
-  rejected where it is composed; `neighborhood_explorer_base` provides them.
-- A solver with an RNG whose result is narrower than 64 bits
-  (`std::minstd_rand`) compiles: its seed was narrowed in a braced
-  initializer.
-
-### Added
-
+- **Breaking:** `trace::jsonl_recorder` starts with a header line,
+  `{"event":"trace","version":1,"metadata":{...}}`, the first line of
+  `eltr.py`'s JSONL output without the cost layout; the new
+  `trace::jsonl_options` gives its metadata, to the recorder and to
+  `write_jsonl`. A reader of the events skips the line with event `trace`.
+- **Breaking:** the JSONL recorder writes the library's structured costs:
+  its default cost writer, `trace::default_json_cost_writer` (was
+  `ostream_json_cost_writer`), writes a `cost::lexicographic` or a
+  `cost::pareto` as the array of its levels and a `cost::hierarchical` as
+  `{"hard": ..., "soft": ...}`, nested as the types are, the shape `eltr.py`
+  decodes ELTR costs to; a JSONL trace of such a cost, and `cli::run`'s
+  `--trace file.jsonl`, no longer fail to compile or stop with an error. It
+  no longer falls back to `operator<<`, whose text need not be JSON: another
+  cost type takes a cost writer of its own.
+- **Breaking:** the solution hashes of `solution_visited` are strings of 16
+  hexadecimal digits in JSONL (`jsonl_recorder`) and in the output of
+  `eltr.py`, the STN's nodes and edges included: as JSON numbers, JavaScript
+  and jq rounded them to doubles. ELTR keeps them as `u64`.
+- **Breaking:** `solution_visited` has a `previous_hash`, the hash of the
+  solution the move was applied to, 0 at the start of a run and for a
+  solution no move reached (`evaluate_solution()`, such as a sample of
+  Pareto Late Acceptance's history); it ends the event in ELTR and in JSONL.
+  `eltr.py --format stn` draws an edge per move, from `previous_hash` to
+  `hash`, instead of one per pair of consecutive visits, which was wrong for
+  an algorithm that keeps several solutions. A run that traces visits hashes
+  the solution before and after each move.
 - `trace::event::run_context`, a core event without a cost (ELTR tag 12): the
   solvers emit it before each run, with the pipeline stage's name and index
   and the attempt (or MultiStart's start), so the runs of a solve can be told
   apart in a trace, the stages on the hard cost included. The memory and JSONL
   recorders keep it, and `eltr.py --format summary` gives each run its stage
   and attempt.
+- Simulated Annealing traces its temperature:
+  `trace::event::temperature_changed`, a core event without a cost (ELTR tag 13,
+  JSONL, memory record `temperature_changed_record`), at the start of a run and
+  at each change of the schedule's temperature, only for a tracer that observes
+  it. The tracing guide's example of an application event is now
+  `weight_changed`.
+- Timestamps in traces, as a recorder option: with `timestamps` in
+  `binary_buffer_options` or `jsonl_options`, each core event ends with
+  `elapsed_ns`, the nanoseconds since the recorder was constructed (a `u64`
+  field of the ELTR schemas, a field of the JSONL line), for anytime and
+  time-to-target analyses. Without it, no clock is read.
+- `cli::run` records the trace of the run with `--trace <file>`: JSON Lines
+  for a `.jsonl` name, ELTR otherwise, with timestamps and with the program and
+  its parameters as metadata. A pipeline stage on another cost than the app's
+  (`until_feasible()`) records only its `run_context`.
+- `trace::without<Types...>(tracer)`, with the new `trace::without_event_types`,
+  hides events by their type: the events without a cost
+  (`neighborhood_selection`, `tabu_escape`, `tabu_tenure_changed`,
+  `run_context`) and application events, which the template form
+  (`without<event::solution_visited>`) could not name.
+- `eltr.py --format summary` marks `"unfinished": true` a run without
+  `run_finished`, which an exception ended or a truncated trace cut. The
+  solvers reference says how an exception thrown mid-run propagates.
+- `eltr.py --format stn` attributes the network to the runs of the trace:
+  each node and edge lists the runs that visit it (their indices, as the
+  summary lists them), and `starts` and `ends` give the first and the last
+  solution each run visits.
+
+### Optional components
+
 - **Breaking:** a REST run starts as `cli::run` does: the new `start` field
   chooses `"random"` (drawn from the run's seed) or `"initial"`, and without
   it or an `initial_solution` a problem with random solutions starts from a
   random one, where every run started from `initial_solution()`. Run
   resources report the `start`.
-- The REST examples listen on `127.0.0.1` only, not on every interface, and
-  exit with status 1 when they cannot listen on their port, where they exited
-  with 0.
-- `rest::blueprint_options::max_timeout` bounds the time of the runs of a REST
-  service: a request with a longer `timeout` is rejected with `422`, and a run
-  without one gets that limit.
-- REST: the status of a run that ended gives its `termination`
-  (`target_reached`, `cancelled`, ...), its `cost` and its final counts. A run
-  is `cancelled` when its runner says so, no longer when a cancellation came
-  after it had ended on its own terms.
-- TOML: a parse error says where it is: its diagnostic has the `line` and
-  the `column` of the error, and the name of the file. An array of arrays, `[[1, 2], [3]]`, sets a list of
-  lists, as on the command line, and an unsupported value says what it is (a
-  date or time, or an array holding strings) instead of naming the "textual
-  override mapper".
 - **Breaking:** REST: the `parameters` of a run accept arrays of arrays, and
   reject a string inside an array with `422`, as a TOML file does: `["a, b"]`
   was split at the comma into two elements. The tutorial's TOML program
@@ -509,27 +589,29 @@ reviewed by hand before tagging.
   `read_solution` and `write_solution`, the costs as JSON numbers (or
   `cost::to_text`). A codec may leave out any of its members, and that value
   goes through the hook. The tutorial's service shows it first (`/tsp-text`).
-- `eltr.py --format summary` marks `"unfinished": true` a run without
-  `run_finished`, which an exception ended or a truncated trace cut. The
-  solvers reference says how an exception thrown mid-run propagates.
-- `cli::run` records the trace of the run with `--trace <file>`: JSON Lines
-  for a `.jsonl` name, ELTR otherwise, with timestamps and with the program and
-  its parameters as metadata. A pipeline stage on another cost than the app's
-  (`until_feasible()`) records only its `run_context`.
-- Timestamps in traces, as a recorder option: with `timestamps` in
-  `binary_buffer_options` or `jsonl_options`, each core event ends with
-  `elapsed_ns`, the nanoseconds since the recorder was constructed (a `u64`
-  field of the ELTR schemas, a field of the JSONL line), for anytime and
-  time-to-target analyses. Without it, no clock is read.
-- `trace::without<Types...>(tracer)`, with the new `trace::without_event_types`,
-  hides events by their type: the events without a cost
-  (`neighborhood_selection`, `tabu_escape`, `tabu_tenure_changed`,
-  `run_context`) and application events, which the template form
-  (`without<event::solution_visited>`) could not name.
-- `eltr.py --format stn` attributes the network to the runs of the trace:
-  each node and edge lists the runs that visit it (their indices, as the
-  summary lists them), and `starts` and `ends` give the first and the last
-  solution each run visits.
+- `rest::blueprint_options::max_timeout` bounds the time of the runs of a REST
+  service: a request with a longer `timeout` is rejected with `422`, and a run
+  without one gets that limit.
+- REST: the status of a run that ended gives its `termination`
+  (`target_reached`, `cancelled`, ...), its `cost` and its final counts. A run
+  is `cancelled` when its runner says so, no longer when a cancellation came
+  after it had ended on its own terms.
+- The REST examples listen on `127.0.0.1` only, not on every interface, and
+  exit with status 1 when they cannot listen on their port, where they exited
+  with 0.
+- TOML: a parse error says where it is: its diagnostic has the `line` and the
+  `column` of the error, and the name of the file. An array of arrays,
+  `[[1, 2], [3]]`, sets a list of lists, as on the command line, and an
+  unsupported value says what it is (a date or time, or an array holding
+  strings) instead of naming the "textual override mapper".
+- `--tuning.irace`: `write_irace_stub` leaves out the cost's and the read-only
+  parameters itself, as its contract says, where `cli::run` did it for it; it
+  writes no `configurations.txt` while nothing is tuned, and `cli::run` then
+  says so, and asks for the instances when it has none; a boolean and an
+  unlimited count say how to tune them; a default runner in the program's
+  options no longer restricts the tuning to it; and the program's path stays
+  as given when it cannot be made canonical. `write_irace_stub` is
+  `[[nodiscard]]`.
 
 ### Platforms
 
@@ -566,6 +648,11 @@ reviewed by hand before tagging.
 
 ### Documentation and examples
 
+- The stability levels no longer contradict each other (`docs/stability.md`):
+  the Stable level excludes what the Experimental one lists, which now names
+  the adapters' headers, tracing beyond the tracer protocol, `tuning_range`
+  and `cli::options::tuning`, logging and the `with_*` spellings of the
+  composition.
 - Tuning with irace is a tutorial chapter of its own, chapter 12, after the
   applications of chapter 11; the interactive tester, the checks, the REST
   service and the observation of a run are now chapters 13 to 16.
@@ -576,6 +663,9 @@ reviewed by hand before tagging.
   lists every member (`check_configuration`, the `with_*` spellings,
   `has_move`, `rng`, `input_handle`...) and describes `configure` as it is;
   the reference index lists what `app/` and `cost/` hold.
+- The briefs of the `LimDynamic`, `Foo` and `RandomFoo` tabu lists and the
+  runners reference expand their names (limited dynamic tenure, Fluctuation Of
+  the Objective) and give their sources.
 - The README and the quick start say not to build with `-ffast-math` (or
   `-ffinite-math-only`, `/fp:fast`), which lets the compiler drop the
   library's checks for NaN and infinite values.
@@ -585,7 +675,6 @@ reviewed by hand before tagging.
   chapter 11 gives Simulated Annealing's parameter block and the header of
   `cli::run`; the configuration reference warns that `-ffast-math` breaks
   the handling of NaN and infinity.
-
 - The tutorial no longer takes the launcher of chapter 12 from `examples/tsp`:
   `examples/tutorial/launcher_main.cpp` opens a 2-opt and a swap app of the
   tutorial's own TSP. `AGENTS.md` says what each example directory is.
@@ -654,151 +743,51 @@ reviewed by hand before tagging.
   (class template specializations included), and on a link to a missing
   page; an adapter enabled in the build is always in it.
 
-### Changed
-
-- The stability levels no longer contradict each other (`docs/stability.md`):
-  the Stable level excludes what the Experimental one lists, which now names
-  the adapters' headers, tracing beyond the tracer protocol, `tuning_range`
-  and `cli::options::tuning`, logging and the `with_*` spellings of the
-  composition.
-- The logging API (`<easylocal/utils/logging.hpp>`) is Experimental, since the
-  library emits no records yet; the documentation no longer presents it as
-  framework diagnostics. `stderr_sink` writes a record in one write (up to 1
-  KiB), and `set_sink` is no longer `[[nodiscard]]`.
-- **Breaking:** `trace::jsonl_recorder` starts with a header line,
-  `{"event":"trace","version":1,"metadata":{...}}`, the first line of
-  `eltr.py`'s JSONL output without the cost layout; the new
-  `trace::jsonl_options` gives its metadata, to the recorder and to
-  `write_jsonl`. A reader of the events skips the line with event `trace`.
-- **Breaking:** the solution hashes of `solution_visited` are strings of 16
-  hexadecimal digits in JSONL (`jsonl_recorder`) and in the output of
-  `eltr.py`, the STN's nodes and edges included: as JSON numbers, JavaScript
-  and jq rounded them to doubles. ELTR keeps them as `u64`.
-- **Breaking:** one naming rule for counts and budgets. A `max_<count>` of a
-  run is an `easylocal::limit` cap that ends it: `max_idle_iterations` of Hill
-  Climbing, Late Acceptance and the tabu searches is a limit (`unlimited` can
-  be written in a configuration), and `FixedTemperature`'s `accepted_ratio` is
-  `max_accepted`, unlimited by default. The size of a schedule is
-  `allowed_<x>`: the `max_iterations` of `FixedLength`, `Cutoff`, `Hybrid` and
-  `FixedTemperature` is `allowed_iterations`
-  (`runners.sa.temperature.allowed_iterations`), Reheating's `max_reheats` is
-  `allowed_reheats`, and `Hybrid::sample_limit()` is
-  `samples_per_temperature()`, as in `FixedLength`. Pareto Late Acceptance's
-  `max_iterations`, the iterations before it may stop, is `min_iterations`.
-  The evaluation budget of `run_options` is the field `evaluation_limit` (a
-  limit, unlimited by default) instead of the optional `evaluation_budget`; it
-  is set with `max_evaluations(n)`, as the time limit `time_limit` with
-  `timeout(...)`, and `search_run::no_evaluation_limit` is gone:
-  `easylocal::unlimited`.
-- The briefs of the `LimDynamic`, `Foo` and `RandomFoo` tabu lists and the
-  runners reference expand their names (limited dynamic tenure, Fluctuation Of
-  the Objective) and give their sources.
-- **Breaking:** the four tabu searches share one parameter block,
-  `TabuSearchParameters<ListParameters, CandidateParameters>`: the parameters
-  of the candidate strategy are the group `candidates`
-  (`runners::candidates::FirstImprovementParameters`,
-  `AspirationPlusParameters`, `EliteListParameters`; none for `TabuSearch`),
-  `{.tabu_list = {...}, .candidates = {.min_moves = 10}}` in the code and
-  `search.candidates.min_moves` in a configuration.
-  `FirstImprovementTabuSearchParameters`, `AspirationPlusTabuSearchParameters`
-  and `EliteCandidateTabuSearchParameters` are gone.
-- **Breaking:** invalid parameters throw `std::invalid_argument` in every
-  build, instead of an assert that Release builds skipped (a Simulated
-  Annealing schedule then reached undefined behaviour, or never ended): the
-  constructors of the runners, of the temperature schedules and of the tabu
-  lists, `make_runner`, the neighborhood recipes, the binding of a runner or
-  of an app, and the construction of a `Session` and of a REST blueprint. The
-  message names the parameter, `runners.sa.temperature.cooling_rate: expected
-  a value in (0, 1), got 2`. The constructors that validate are no longer
-  `noexcept`. `config::require_valid(block)` and `config::require_valid(set)`
-  give the same check to custom code, and `check(app, ...)` reports invalid
-  app parameters as `app configuration` before binding.
-- **Breaking:** `search_run::with_context(ctx)` is replaced by
-  `run.with_evaluation(wrap)`, which keeps the run's context and swaps only its
-  evaluation facility for `wrap(run.evaluation())`. A decorated context
-  without `better_or_equivalent()` or a SolutionManager silently dropped the
-  target, the solution events and the archive identity: the assignment
-  example's `slow-fi` ignored `--target`. `search_run` takes the facility as a
-  third template parameter, and `run.evaluation()` returns the one it
-  evaluates with.
-- **Breaking:** a recorder observes the core events of its cost type, its new
-  `cost_type`, and those without a cost, instead of declaring every event
-  observed: the memory and JSONL recorders silently dropped an event of
-  another cost type, and the binary recorders converted its cost to theirs.
-  The memory and JSONL recorders no longer claim the application events,
-  which are ELTR records only, and `memory_recorder::stored_as_is` is
-  private. `trace::emit` rejects at compile time a tracer whose
-  `observes<Event>` is true but that has no `emit()` taking the event, such
-  as an `emit` declared for another cost type.
-- **Breaking:** the JSONL recorder writes the library's structured costs:
-  its default cost writer, `trace::default_json_cost_writer` (was
-  `ostream_json_cost_writer`), writes a `cost::lexicographic` or a
-  `cost::pareto` as the array of its levels and a `cost::hierarchical` as
-  `{"hard": ..., "soft": ...}`, nested as the types are, the shape `eltr.py`
-  decodes ELTR costs to; a JSONL trace of such a cost, and `cli::run`'s
-  `--trace file.jsonl`, no longer fail to compile or stop with an error. It
-  no longer falls back to `operator<<`, whose text need not be JSON: another
-  cost type takes a cost writer of its own.
-- **Breaking:** `solution_visited` has a `previous_hash`, the hash of the
-  solution the move was applied to, 0 at the start of a run and for a
-  solution no move reached (`evaluate_solution()`, such as a sample of
-  Pareto Late Acceptance's history); it ends the event in ELTR and in JSONL.
-  `eltr.py --format stn` draws an edge per move, from `previous_hash` to
-  `hash`, instead of one per pair of consecutive visits, which was wrong for
-  an algorithm that keeps several solutions. A run that traces visits hashes
-  the solution before and after each move.
-
 ### Fixed
 
-- The Metropolis criterion of Simulated Annealing computes in `double`, and
-  `cost::delta` of a `cost::hierarchical` returns a `double` (a `long double`
-  only when the soft delta is one): every worsening move did `long double`
-  arithmetic, software on aarch64 Linux and x87 on x86-64.
-- `trace::jsonl_recorder` writes its numbers in the classic locale: a stream
-  imbued with a locale that groups digits wrote `"evaluations":1,234`, which
-  is not JSON. The line keeps the stream's flags and precision only.
-- `cli::run` writes the time, the iterations, the evaluations and the front's
-  indices as they read back, whatever the locale of its stream (`time 0,42`
-  and `evaluations 2.000` under a decimal-comma locale), and the TextUI's
-  progress line writes its seconds with a point under any global locale.
-- A floating-point cost updated by deltas reaches its target: deltas that
-  leave it a rounding error away (`0.1 + 0.2 - 0.1 - 0.2` is 2.8e-17) kept a
-  run, and `until_feasible()` with its zero hard cost, from ever stopping. A
-  committed cost that misses the target only within `cost::tolerance{}` is
-  evaluated in full before the run decides, without counting in the budget.
-- The aspiration level of `AspirationPlusTabuSearch` and the quality level of
-  `EliteCandidateTabuSearch` are `b + (factor - 1) * |b|` for the best cost
-  `b`, unchanged for a positive one: `factor * b` put them below a negative or
-  zero best cost, so the elite list evaluated more moves than plain Tabu
-  Search.
-- The randomized contract checks (`easylocal::testing` and `check(app, ...)`)
-  draw from a `std::mt19937_64` seeded with the new `check_options::seed`,
-  instead of `deterministic_rng`'s four fixed values: a `random_move()` that
-  rejects draws until one fits, such as the tutorial's on 40 cities, no longer
-  loops forever, and the random samples differ from each other.
-  `deterministic_rng` remains for unit tests that script the draws.
-- The ELTR recorders write and flush the header at construction: a run that
-  crashes leaves a trace that decodes, without the events of the last block,
-  instead of an empty file. `eltr.py` reports an empty file as an empty trace.
-- An output error of `trace::async_binary_recorder` stops the recording, not
-  the search: `emit` drops the events instead of throwing mid-search, and
-  `good()` and `flush()` report the error, a failed final flush included.
-- `trace::async_binary_recorder` rejects an unlimited `async_queue_blocks` with
-  `std::invalid_argument`, instead of deadlocking at construction.
-- A cost writer or an `encode_binary_event` that throws no longer leaves half a
-  record in the trace, which made an ELTR file undecodable: the binary
-  recorders drop the whole record, and `jsonl_recorder` writes each line at
-  once.
-- `eltr.py` writes NaN and the infinities as `null`, as `jsonl_recorder` does,
-  instead of `NaN` and `Infinity`, which are not JSON; a missing file or a
-  string that is not UTF-8 is reported in one line, without a traceback.
+- **Breaking:** the expressions of conditions and requirements compute
+  numbers in `double`, as their irace export does: `7 / 2` is 3.5 (it was 3),
+  `unlimited` is +infinity (`unlimited + 1` overflowed), and a minus applies
+  after the conversion (`-count` wrapped an unsigned count). Their R text
+  writes infinity and NaN as `Inf` and `NaN` and escapes the quotes and
+  backslashes of a text; `text_with`'s second parameter is now `r_syntax`.
+- **Breaking:** TextUI: `tui::options::input_path` and `solution_path` are
+  `std::filesystem::path`, as `path_base` is, and `exit_label` is gone: q
+  quits a tester, and leads back to the list from a launcher's. The fields
+  say their units and what 0 means (`max_render_chars` in bytes, 0 for no
+  limit), and the tutorial's chapter 12 lists them.
 - `neighborhood_union(...) | random_biases(...)` compiles for explorers that
   derive from no EasyLocal base, in a namespace that does not use `easylocal`:
   the operator is a hidden friend of the union's recipe, found by ADL.
 - `solution_manager_base` and `neighborhood_explorer_base` no longer bind a
   temporary Input or SolutionManager, which dangled: their constructors from
   an rvalue are deleted.
-
+- The recipes construct their components with parentheses, as their
+  `std::constructible_from` checks do: `neighborhood<X>(2)` for a `double`
+  parameter failed with a narrowing error inside the library (also in
+  `solution_manager`, `component`, `delta` and the `random_move` of a move
+  built from another type).
+- `with_hard_cost()`, `until_feasible()` and `two_stage()` compile with
+  co-located deltas (`delta<C>()`): every SolutionManager layer, the hard-cost
+  projection included, reaches the cost components.
+- `easylocal::describe` and `easylocal::write_solution` are function objects,
+  which the lookup of a problem's own hooks does not find: they work for types
+  with `easylocal` among their associated namespaces, which recursed into their
+  own constraints.
+- The Metropolis criterion of Simulated Annealing computes in `double`, and
+  `cost::delta` of a `cost::hierarchical` returns a `double` (a `long double`
+  only when the soft delta is one): every worsening move did `long double`
+  arithmetic, software on aarch64 Linux and x87 on x86-64.
+- A floating-point cost updated by deltas reaches its target: deltas that
+  leave it a rounding error away (`0.1 + 0.2 - 0.1 - 0.2` is 2.8e-17) kept a
+  run, and `until_feasible()` with its zero hard cost, from ever stopping. A
+  committed cost that misses the target only within `cost::tolerance{}` is
+  evaluated in full before the run decides, without counting in the budget.
+- The weights of a `cost::sum` must be finite: a configuration that sets one
+  to NaN or infinity is rejected (a negative weight is still accepted).
+- `cost::hierarchical` compares a branch that has only `<` and `==`, as its
+  `delta` already accepted: its `operator<=>` was deleted for such a hard
+  cost.
 - `config::check_schema`, and so the `validate()` of a parameter block, checks
   the block's nested groups: an invalid temperature schedule of Simulated
   Annealing or tabu list of Tabu Search is rejected by the runner's
@@ -806,40 +795,20 @@ reviewed by hand before tagging.
   aborting. A parameter set reports such a group once, under its own path.
 - `config::one_of` holds numbers of different types as their common type:
   `one_of(1, 1.5, 2)` holds 1.5, where it narrowed it to 1.
-- **Breaking:** the expressions of conditions and requirements compute
-  numbers in `double`, as their irace export does: `7 / 2` is 3.5 (it was 3),
-  `unlimited` is +infinity (`unlimited + 1` overflowed), and a minus applies
-  after the conversion (`-count` wrapped an unsigned count). Their R text
-  writes infinity and NaN as `Inf` and `NaN` and escapes the quotes and
-  backslashes of a text; `text_with`'s second parameter is now `r_syntax`.
-- The weights of a `cost::sum` must be finite: a configuration that sets one
-  to NaN or infinity is rejected (a negative weight is still accepted).
-- `cost::hierarchical` compares a branch that has only `<` and `==`, as its
-  `delta` already accepted: its `operator<=>` was deleted for such a hard
-  cost.
-- The recipes construct their components with parentheses, as their
-  `std::constructible_from` checks do: `neighborhood<X>(2)` for a `double`
-  parameter failed with a narrowing error inside the library (also in
-  `solution_manager`, `component`, `delta` and the `random_move` of a move
-  built from another type).
-- The TOML adapter reads each value by its TOML type: `true` read as the
-  integer 1, so no boolean parameter could be set from TOML (nor an array of
-  booleans), and a float such as `3.0` set an integer parameter.
 - A configuration file (`--config`) that is a directory is an error, where it
   read as empty, and a UTF-8 byte order mark at its start is skipped instead
   of becoming part of the first path.
-
 - `timeout(d)` with a floating-point `std::chrono` duration that is NaN throws
   `std::invalid_argument`, as `timeout(seconds)` does, instead of converting
   NaN to the clock's integer ticks (undefined behaviour).
 - `with(control)` and `with(control, tracer)` with a temporary `run_control`,
   and a `search_run` built over a temporary context, no longer compile: each
   kept a reference that dangled once the expression ended.
-- A run with a `cost::pareto` cost that reached its target returned the first
-  point of its front, which need not meet the target, and reported
-  `target_reached`: it returns a point of the front that meets it, and
-  `best_so_far` keeps the first cost that meets the target even when it does
-  not dominate the best one.
+- The aspiration level of `AspirationPlusTabuSearch` and the quality level of
+  `EliteCandidateTabuSearch` are `b + (factor - 1) * |b|` for the best cost
+  `b`, unchanged for a positive one: `factor * b` put them below a negative or
+  zero best cost, so the elite list evaluated more moves than plain Tabu
+  Search.
 - The `Classic` and `TimeBased` annealing schedules ran one temperature level
   more than they count with decimal cooling rates (1 to 0.001 by 0.1 took four
   levels, as 0.1 * 0.1 * 0.1 is a little above 0.001): they end after the
@@ -876,10 +845,11 @@ reviewed by hand before tagging.
   orders. The cost reference says which runners accept a pareto cost. A run
   with a pareto cost on a problem without solution equality no longer warns
   about an unused lambda capture.
-
-- `with_hard_cost()`, `until_feasible()` and `two_stage()` compile with
-  co-located deltas (`delta<C>()`): every SolutionManager layer, the hard-cost
-  projection included, reaches the cost components.
+- A run with a `cost::pareto` cost that reached its target returned the first
+  point of its front, which need not meet the target, and reported
+  `target_reached`: it returns a point of the front that meets it, and
+  `best_so_far` keeps the first cost that meets the target even when it does
+  not dominate the best one.
 - With a `cost::pareto` cost, MultiStart and the attempts of a pipeline stage
   return the front merged from all their runs, not the first run's front.
 - A pipeline stage's termination, and the solve's, say why the stage stopped
@@ -890,6 +860,10 @@ reviewed by hand before tagging.
   instead of binding and running each one past the budget.
 - `Pipeline::seed()` and `Pipeline::initialization()` on a temporary return the
   pipeline by value, not a `Pipeline&&` that could dangle.
+- A run without a tracer builds no `move_evaluated`, `move_accepted` or
+  `incumbent_updated` event, no route of a union's move (a `std::visit` per
+  evaluation) and no copy of the cost before each move: Best Improvement over
+  a union of two 2-opt explorers runs about 20% faster.
 - `configuration()` does not compile on a temporary (a runner, an app, a
   pipeline, a recipe, a solver or a Session), whose parameter set would refer
   to an object already gone.
@@ -899,19 +873,51 @@ reviewed by hand before tagging.
   deltas that may index out of bounds.
 - `Session::last_run_effort()` is empty after a new Input and after a run that
   does not complete, instead of keeping an older run's effort.
+- `cli::run` writes the time, the iterations, the evaluations and the front's
+  indices as they read back, whatever the locale of its stream (`time 0,42`
+  and `evaluations 2.000` under a decimal-comma locale), and the TextUI's
+  progress line writes its seconds with a point under any global locale.
 - `cli::run` exits with status 1 and `error: unknown exception` when a run
   throws something other than a `std::exception`, instead of terminating.
 - `save_solution` (and `Session::save_solution` to a file) report the errors
   of the final flush and close, and every write error names the file.
-- `easylocal::describe` and `easylocal::write_solution` are function objects,
-  which the lookup of a problem's own hooks does not find: they work for types
-  with `easylocal` among their associated namespaces, which recursed into their
-  own constraints.
 - The names of an app's runners and pipelines are validated: non-empty,
   distinct, of letters, digits, `_` and `-`; `configuration()` and `bind()`
   throw `std::invalid_argument` otherwise, and `check(app, ...)` reports it
   (and the real cause of an invalid app configuration) instead of blaming the
   pipelines.
+- The randomized contract checks (`easylocal::testing` and `check(app, ...)`)
+  draw from a `std::mt19937_64` seeded with the new `check_options::seed`,
+  instead of `deterministic_rng`'s four fixed values: a `random_move()` that
+  rejects draws until one fits, such as the tutorial's on 40 cities, no longer
+  loops forever, and the random samples differ from each other.
+  `deterministic_rng` remains for unit tests that script the draws.
+- `Session::check_move_independence` and `check_random_move_distribution`
+  (the Move page's `D` and `U`) compare a state or a drawn move only with
+  those of the same cost when the cost is totally ordered: on a 400-city
+  2-opt neighborhood they take 0.1 s and 0.6 s, where the independence check
+  took 254 s. Their briefs give the complexity.
+- `trace::jsonl_recorder` writes its numbers in the classic locale: a stream
+  imbued with a locale that groups digits wrote `"evaluations":1,234`, which
+  is not JSON. The line keeps the stream's flags and precision only.
+- The ELTR recorders write and flush the header at construction: a run that
+  crashes leaves a trace that decodes, without the events of the last block,
+  instead of an empty file. `eltr.py` reports an empty file as an empty trace.
+- An output error of `trace::async_binary_recorder` stops the recording, not
+  the search: `emit` drops the events instead of throwing mid-search, and
+  `good()` and `flush()` report the error, a failed final flush included.
+- `trace::async_binary_recorder` rejects an unlimited `async_queue_blocks` with
+  `std::invalid_argument`, instead of deadlocking at construction.
+- A cost writer or an `encode_binary_event` that throws no longer leaves half a
+  record in the trace, which made an ELTR file undecodable: the binary
+  recorders drop the whole record, and `jsonl_recorder` writes each line at
+  once.
+- `eltr.py` writes NaN and the infinities as `null`, as `jsonl_recorder` does,
+  instead of `NaN` and `Infinity`, which are not JSON; a missing file or a
+  string that is not UTF-8 is reported in one line, without a traceback.
+- The TOML adapter reads each value by its TOML type: `true` read as the
+  integer 1, so no boolean parameter could be set from TOML (nor an array of
+  booleans), and a float such as `3.0` set an integer parameter.
 - `--tuning.irace` leaves `--solution` out of fixed.conf (a starting solution
   belongs to an instance) and writes path parameters there as absolute paths.
 - `--tuning.hard_weight`, given when the irace stub is written, goes to
@@ -926,15 +932,14 @@ reviewed by hand before tagging.
   of the range in configurations.txt, not at the lower one.
 - The irace scenario keeps the precision of real bounds with more than 4
   decimals (`digits` in the `[global]` section of parameters.txt, at most 15),
-  which irace rejected, and
-  open integer bounds that are fractional are no longer off by one.
+  which irace rejected, and open integer bounds that are fractional are no
+  longer off by one.
 - Each parameter of an irace scenario gets an irace identifier (other
   characters than letters, digits, `.` and `_` turned into `_`, a numeric
   suffix on a collision, `runner` reserved), used in parameters.txt, its
   conditions and `[forbidden]` lines and configurations.txt, while its switch
   stays the path: a runner such as `slow-fi` gave a parameters.txt that irace
   rejected.
-
 - REST: a request body whose arrays and objects nest deeper than 64 levels is
   rejected with `400 invalid_json` before it is parsed, instead of exhausting
   the stack of the parser's thread.
@@ -950,8 +955,8 @@ reviewed by hand before tagging.
 - REST: a submission whose response cannot be built (a codec that fails to
   encode the target) no longer leaves a run that stays `queued` forever.
 - REST: an arithmetic target outside the range of the cost type (`300` for a
-  `signed char` cost) is rejected with `422` instead of wrapping, and so is an empty
-  key among the `parameters`.
+  `signed char` cost) is rejected with `422` instead of wrapping, and so is an
+  empty key among the `parameters`.
 - REST: an `initial_solution` that is not valid for the Input is rejected
   with `422` when the run is submitted, instead of reaching the runner's
   deltas, which could read out of bounds.
@@ -962,16 +967,6 @@ reviewed by hand before tagging.
   twice (the run's session is configured before it gets the Input), and the
   target and the cost of a run are encoded once: status polls no longer wait
   for the codec.
-- **Breaking:** TextUI: `tui::options::input_path` and `solution_path` are
-  `std::filesystem::path`, as `path_base` is, and `exit_label` is gone: q
-  quits a tester, and leads back to the list from a launcher's. The fields
-  say their units and what 0 means (`max_render_chars` in bytes, 0 for no
-  limit), and the tutorial's chapter 12 lists them.
-- `Session::check_move_independence` and `check_random_move_distribution`
-  (the Move page's `D` and `U`) compare a state or a drawn move only with
-  those of the same cost when the cost is totally ordered: on a 400-city
-  2-opt neighborhood they take 0.1 s and 0.6 s, where the independence check
-  took 254 s. Their briefs give the complexity.
 - TextUI: values are shown as the Session's cost report writes them, a cost
   in the syntax the target field reads even when it also has a `describe`
   hook; only composites of printable parts, such as tuples, are the
@@ -1021,10 +1016,6 @@ reviewed by hand before tagging.
   yielded rvalue, as `std::generator` does. Best Improvement over a 2-opt
   `moves()` generator with an O(1) delta runs about 2.5 times faster
   (15 to 6 ns per evaluation).
-- A run without a tracer builds no `move_evaluated`, `move_accepted` or
-  `incumbent_updated` event, no route of a union's move (a `std::visit` per
-  evaluation) and no copy of the cost before each move: Best Improvement over
-  a union of two 2-opt explorers runs about 20% faster.
 
 ## [4.0.0-alpha.1] — 2026-10-04
 
