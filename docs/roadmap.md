@@ -16,7 +16,12 @@ a few members and options keep older words.
 **What.** The `with_*` members leave the public API (`detail`), so the
 documentation and the examples show only `|` and `&`; the remaining
 terminology moves in one breaking batch, such as `check_delta_evaluator` to
-`check_delta_cost_component`. Alongside: messages naming what each algorithm
+`check_delta_cost_component`, the concepts of the cost kinds to
+`cost::hierarchical_cost`, `cost::lexicographic_cost` and `cost::pareto_cost`
+(their `is_*_v` traits to `detail`, with a naming rule for concepts in the
+contributor guide), `binary_buffer_options` to `binary_recorder_options` with
+one name for the synchronous binary recorder, and the effort of a named run in
+the fields of `search_result`. Alongside: messages naming what each algorithm
 needs when a runner is registered on a neighborhood it cannot use, Pareto Late
 Acceptance committing a move in place if a benchmark shows it pays, and a
 restructured chapter 2 of the tutorial.
