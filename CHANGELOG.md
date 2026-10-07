@@ -72,6 +72,29 @@ reviewed by hand before tagging.
   that of `delta<Component, Delta>()`, is `Delta`: it checks a delta cost
   component, as the documentation calls it.
 
+### Documentation and examples
+
+- *Coming from EasyLocal 3* (`docs/from-easylocal-3.md`) is organized as a map
+  of the two frameworks, a walkthrough of a port and a checklist. The map
+  covers the whole of EasyLocal 3.4.1, kickers, the parallel explorer, the
+  tracing channel and the modelling layer included, and says for each runner
+  and solver with no counterpart which roadmap item would bring it; EasyLocal
+  3's `SimulatedAnnealing` is `temperature::Hybrid`, not `Classic`. The
+  walkthrough gathers reading and writing in one step, which starts from the
+  stream operators an EasyLocal 3 program already has and keeps working, with
+  the order in which the library tries them and the hooks (`read_input`,
+  `read_solution`, `write_solution`, `describe`) beside them; it shows how the
+  objects wired in an EasyLocal 3 `main`
+  become recipes, maps the menus of the `Tester` and of the `MoveTester` to
+  the pages and keys of the TextUI, and lists the switches `cli::run` adds to
+  those of `CommandLineParameters` (`--target`, `--timeout`,
+  `--max_evaluations`, `--report`, `--trace`, `--tuning.irace`). Two new
+  sections say how to check a port (`EASYLOCAL_VERIFY_DELTAS`, the component
+  checks, `check(app, input)`, the neighborhood checks of a Session) and what
+  EasyLocal 4 adds to an EasyLocal 3 program: tracing, run control,
+  configuration files, tuning, the REST service, several objectives and
+  solvers as pipelines.
+
 ## [4.0.0-alpha.2] — 2026-10-07
 
 ### Problem model
