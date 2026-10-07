@@ -232,6 +232,10 @@ void values_read_back_from_their_text()
     assert(round_trip(easylocal::limit{3}));
     assert(round_trip(std::string{"two words"}));
     assert(round_trip(std::filesystem::path{"data/five.tsp"}));
+    // A path is UTF-8 text, on Windows too, where the ANSI code page is not.
+    const std::filesystem::path accented{u8"dati/citt\u00e0.tsp"};
+    assert(round_trip(accented));
+    assert(config::format_value(accented) == "dati/citt\xc3\xa0.tsp");
     assert(round_trip(std::vector<std::string>{"a", "b"}));
     // The documented limit: no quoting, so a list element cannot hold a comma.
     assert(!round_trip(std::vector<std::string>{"a, b"}));

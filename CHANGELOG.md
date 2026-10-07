@@ -555,6 +555,11 @@ reviewed by hand before tagging.
   when EasyLocal is the top-level project, enables its install rules. The
   installed package version file is architecture-independent unless it
   bundles the compiled FTXUI of the TUI.
+- On Windows, a path parameter is UTF-8 text, as TOML, REST and the TextUI
+  give it: an override reads it, and `format_value` writes it, in UTF-8 where
+  they used the ANSI code page, and so do the TOML file names, the name of a
+  configuration file in its diagnostics, and the paths the TextUI shows and
+  edits.
 
 ### Documentation and examples
 

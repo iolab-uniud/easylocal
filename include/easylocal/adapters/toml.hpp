@@ -238,7 +238,8 @@ inline config_file_parse_result parse_toml_text(
 [[nodiscard]]
 inline config_file_parse_result load_toml_file(const std::filesystem::path& path)
 {
-    const auto name = path.string();
+    // toml++ reads the name of a file as UTF-8.
+    const auto name = easylocal::detail::utf8_text(path);
     return detail::parse_toml_overrides(name, [&] { return toml::parse_file(name); });
 }
 

@@ -214,12 +214,13 @@ template<class Tester>
     switch (mode)
     {
     case path_display_mode::absolute:
-        return absolute.string();
+        return easylocal::detail::utf8_text(absolute);
     case path_display_mode::both:
-        return relative.string() + "  [" + absolute.string() + ']';
+        return easylocal::detail::utf8_text(relative) + "  ["
+            + easylocal::detail::utf8_text(absolute) + ']';
     case path_display_mode::relative:
     default:
-        return relative.string();
+        return easylocal::detail::utf8_text(relative);
     }
 }
 
@@ -230,9 +231,9 @@ template<class Tester>
 {
     if (mode == path_display_mode::absolute)
     {
-        return absolute_path_from(path, base).string();
+        return easylocal::detail::utf8_text(absolute_path_from(path, base));
     }
-    return relative_path_from(path, base).string();
+    return easylocal::detail::utf8_text(relative_path_from(path, base));
 }
 
 enum class status_kind
@@ -1342,7 +1343,9 @@ private:
 
     [[nodiscard]] std::filesystem::path resolve_path(std::string_view value) const
     {
-        return absolute_path_from(std::filesystem::path{value}, options_.path_base);
+        return absolute_path_from(
+            easylocal::detail::path_from_utf8(value),
+            options_.path_base);
     }
 
     [[nodiscard]] std::string format_path(const std::filesystem::path& path) const
@@ -2684,8 +2687,9 @@ private:
 
     [[nodiscard]] std::string current_instance_name() const
     {
-        const auto basename =
-            tester_.has_input() ? loaded_input_path_.filename().string() : std::string{};
+        const auto basename = tester_.has_input()
+            ? easylocal::detail::utf8_text(loaded_input_path_.filename())
+            : std::string{};
         if (!basename.empty())
         {
             return basename;
@@ -2861,7 +2865,7 @@ private:
             browser_labels_.reserve(browser_entries_.size());
             for (const auto& entry : browser_entries_)
             {
-                auto label = entry.path.filename().string();
+                auto label = easylocal::detail::utf8_text(entry.path.filename());
                 browser_labels_.push_back(
                     entry.directory ? "[dir] " + label + "/" : "      " + label);
             }

@@ -223,7 +223,7 @@ writes it back in that syntax:
 | an integer | a decimal number within the type's range (no sign for an unsigned type) |
 | a floating-point number | a decimal or scientific number, `inf`, `-inf` |
 | `easylocal::limit` | a count, or `unlimited` |
-| `std::string`, `std::filesystem::path` | the text as it is |
+| `std::string`, `std::filesystem::path` | the text as it is; a path in UTF-8, on Windows too |
 | `std::array`, `std::vector` | `[a, b, c]`, the brackets optional; `[]` is an empty vector, and an array needs exactly its size |
 
 Spaces around a value or an element are ignored, except in a text. A list is

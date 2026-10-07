@@ -4,6 +4,8 @@
 /// The files of the interactive tester: paths relative to a base, and the
 /// entries of a directory as its browser lists them.
 
+#include <easylocal/config/overrides.hpp>
+
 #include <algorithm>
 #include <filesystem>
 #include <string>
@@ -18,7 +20,8 @@ namespace easylocal::tui::detail
 {
     if (path.empty())
         return {};
-    return std::filesystem::path{std::string{path}}.filename().string();
+    return easylocal::detail::utf8_text(
+        easylocal::detail::path_from_utf8(path).filename());
 }
 
 struct file_entry

@@ -1,14 +1,33 @@
 #pragma once
 
 // Text of the formats EasyLocal reads back (configuration values, costs, TOML
-// and REST overrides): trimming, and the elements of a list.
+// and REST overrides): trimming, the elements of a list, and paths as UTF-8.
 
 #include <cstddef>
+#include <filesystem>
+#include <string>
 #include <string_view>
 #include <vector>
 
 namespace easylocal::detail
 {
+
+// The path that a UTF-8 text names, as TOML, REST and the TextUI give it: on
+// Windows, path(std::string) reads the text in the ANSI code page.
+[[nodiscard]]
+inline std::filesystem::path path_from_utf8(const std::string_view text)
+{
+    return std::filesystem::path{std::u8string{text.begin(), text.end()}};
+}
+
+// The text of a path in UTF-8: on Windows, path::string() writes it in the ANSI
+// code page, and throws for a character the code page lacks.
+[[nodiscard]]
+inline std::string utf8_text(const std::filesystem::path& path)
+{
+    const auto text = path.u8string();
+    return std::string{text.begin(), text.end()};
+}
 
 // The text without the spaces, tabs and line ends around it.
 [[nodiscard]]

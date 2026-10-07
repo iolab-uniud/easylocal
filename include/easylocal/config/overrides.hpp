@@ -226,7 +226,7 @@ std::string parse_text_value(const std::string_view text, Value& value)
     }
     else if constexpr (std::same_as<value_type, std::filesystem::path>)
     {
-        value = std::filesystem::path{std::string{text}};
+        value = easylocal::detail::path_from_utf8(text);
         return {};
     }
     else if constexpr (std::same_as<value_type, std::string>)
@@ -329,7 +329,8 @@ std::string parse_text_value(const std::string_view text, Value& value)
 } // namespace detail
 
 /// A parameter value as text, in the syntax overrides are read in: true/false,
-/// numbers, "unlimited" for an unlimited limit, [a, b] for arrays and vectors.
+/// numbers, "unlimited" for an unlimited limit, [a, b] for arrays and vectors,
+/// a path in UTF-8.
 template<class Value>
 [[nodiscard]]
 std::string format_value(const Value& value)
@@ -348,7 +349,7 @@ std::string format_value(const Value& value)
     }
     else if constexpr (std::same_as<value_type, std::filesystem::path>)
     {
-        return value.string();
+        return easylocal::detail::utf8_text(value);
     }
     else if constexpr (std::same_as<value_type, std::string>)
     {

@@ -175,7 +175,7 @@ inline config_file_parse_result load_config_file(const std::filesystem::path& pa
         result.diagnostics.push_back({
             .error = config_file_error::open_error,
             .line = 0,
-            .text = path.string(),
+            .text = easylocal::detail::utf8_text(path),
             .message = std::move(message),
         });
         return result;
