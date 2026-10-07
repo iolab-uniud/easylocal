@@ -129,6 +129,13 @@ void iteration_exposes_names_descriptions_and_typed_references()
             static_assert(std::is_const_v<
                 std::remove_reference_t<decltype(value)>>);
         });
+
+    // A temporary block too.
+    std::size_t fields = 0;
+    for_each_parameter(decltype(parameters){}, [&](const auto, const auto&) {
+        ++fields;
+    });
+    assert(fields == names.size());
 }
 
 void fixed_length_validation_checks_cross_field_invariants()

@@ -377,12 +377,12 @@ inline constexpr auto schema_v = std::remove_cvref_t<Block>::parameter_schema();
 } // namespace detail
 
 /// Calls `function(descriptor, value)` on each field of a block, without its
-/// nested groups.
-template<parameter_block Parameters, class Function>
-constexpr void for_each_parameter(
-    Parameters& parameters,
-    Function&& function)
+/// nested groups; the value is const when the block is.
+template<class Parameters, class Function>
+    requires parameter_block<std::remove_cvref_t<Parameters>>
+constexpr void for_each_parameter(Parameters&& parameters, Function&& function)
 {
+    using block_type = std::remove_cvref_t<Parameters>;
     std::apply(
         [&parameters, &function](auto... descriptors) {
             (
@@ -391,7 +391,7 @@ constexpr void for_each_parameter(
                     if constexpr (!is_parameter_requirement_v<descriptor_type>)
                         static_assert(std::same_as<
                             std::remove_cv_t<typename descriptor_type::owner_type>,
-                            std::remove_cv_t<Parameters>>);
+                            block_type>);
                     if constexpr (is_parameter_field_v<descriptor_type>)
                         std::invoke(
                             function,
@@ -400,33 +400,7 @@ constexpr void for_each_parameter(
                 }(),
                 ...);
         },
-        detail::schema_v<Parameters>);
-}
-
-/// The same, on a const block.
-template<parameter_block Parameters, class Function>
-constexpr void for_each_parameter(
-    const Parameters& parameters,
-    Function&& function)
-{
-    std::apply(
-        [&parameters, &function](auto... descriptors) {
-            (
-                [&] {
-                    using descriptor_type = decltype(descriptors);
-                    if constexpr (!is_parameter_requirement_v<descriptor_type>)
-                        static_assert(std::same_as<
-                            std::remove_cv_t<typename descriptor_type::owner_type>,
-                            std::remove_cv_t<Parameters>>);
-                    if constexpr (is_parameter_field_v<descriptor_type>)
-                        std::invoke(
-                            function,
-                            descriptors,
-                            parameters.*descriptor_type::member);
-                }(),
-                ...);
-        },
-        detail::schema_v<Parameters>);
+        detail::schema_v<block_type>);
 }
 
 namespace detail
