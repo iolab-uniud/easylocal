@@ -1487,6 +1487,14 @@ easylocal_add_test(
 )
 
 easylocal_add_test(
+    union-delta-calls
+    SOURCES
+        union_delta_calls.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
+
+easylocal_add_test(
     session-io
     SOURCES
         session_io.cpp
