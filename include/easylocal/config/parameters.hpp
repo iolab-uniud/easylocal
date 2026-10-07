@@ -426,7 +426,14 @@ template<fixed_string Path, std::size_t Begin = 0, class Block>
 constexpr const auto& field_at(const Block& block) noexcept
 {
     constexpr auto path = Path.view();
-    constexpr auto dot = path.find('.', Begin);
+    // By index, not with find(): GCC 16 with UBSan does not evaluate find() on
+    // a template parameter object as a constant.
+    constexpr auto dot = [] {
+        for (std::size_t index = Begin; index < Path.view().size(); ++index)
+            if (Path.value[index] == '.')
+                return index;
+        return std::string_view::npos;
+    }();
     constexpr auto name = path.substr(
         Begin,
         dot == std::string_view::npos ? std::string_view::npos : dot - Begin);
