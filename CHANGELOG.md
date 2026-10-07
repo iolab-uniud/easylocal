@@ -134,6 +134,12 @@ reviewed by hand before tagging.
 
 ### Apps and tools
 
+- **Breaking:** `App::runner_count`, which counted the pipelines too, is
+  `App::registration_count`.
+- The scalar number of a cost for tuning (`cost::scalar`, `--tuning.print`)
+  documents where it stops ordering costs: past 2^53, as a lexicographic cost
+  of three levels or a large hard cost with the default weight reach, its
+  lower levels round away; a `scalar_cost` hook is the remedy.
 - **Breaking:** the types of an app are public and documented: `App`, what
   `app()` and each `|` return (formerly `detail::app_builder`), `BoundApp`,
   what `App::bind` returns (formerly `detail::bound_app`), and `BoundRunner`,
@@ -470,6 +476,13 @@ reviewed by hand before tagging.
 
 ### Documentation and examples
 
+- Chapter 5 lists the algorithms with their header and needs, linking the
+  runners reference for their parameters, with Pareto Late Acceptance and
+  `time_limit_reached`; chapters 9 and 11 show `RunParameters`, the checks of
+  a registration, pipelines and `BoundApp`; the app and Session reference
+  lists every member (`check_configuration`, the `with_*` spellings,
+  `has_move`, `rng`, `input_handle`...) and describes `configure` as it is;
+  the reference index lists what `app/` and `cost/` hold.
 - The README and the quick start say not to build with `-ffast-math` (or
   `-ffinite-math-only`, `/fp:fast`), which lets the compiler drop the
   library's checks for NaN and infinite values.

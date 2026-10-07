@@ -56,7 +56,11 @@ concept scalar_convertible = detail::scalar_convertible_trait<Cost>::value;
 /// value times `weight` to the power of the number of values after it.
 ///
 /// The order of the numbers agrees with the order of the costs when the weight
-/// exceeds every lower-priority value, such as the soft cost of any solution.
+/// exceeds every lower-priority value, such as the soft cost of any solution,
+/// and when the result stays within the 53 bits of a double's mantissa: with
+/// the default weight of 10^9, a lexicographic cost of three or more levels,
+/// or a hard cost above about 9 * 10^6, loses the lower levels to rounding. A
+/// problem then gives its own number, with a scalar_cost(input, cost) hook.
 template<scalar_convertible Cost>
 [[nodiscard]]
 constexpr double scalar(const Cost& cost, const double weight) noexcept

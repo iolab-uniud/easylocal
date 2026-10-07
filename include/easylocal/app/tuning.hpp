@@ -52,7 +52,8 @@ struct TuningParameters
     std::string print{};
     /// The weight of a hard cost over a soft one, and of each lexicographic
     /// value over the next, when a cost is turned into one number; it must
-    /// exceed every soft cost.
+    /// exceed every soft cost, and the number must stay below 2^53, where a
+    /// double still holds the lower levels exactly.
     double hard_weight{1e9};
 
     /// The names, members and descriptions of the parameters.
