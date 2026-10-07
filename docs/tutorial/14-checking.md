@@ -37,6 +37,7 @@ floating-point cost updated by deltas:
 | delta sign | with a `compare` at the root of the cost expression, a `cost::delta` whose sign disagrees with it (chapter 2) |
 | random proposal, random proposal application | a sampled move that is not valid, or that breaks the solution |
 | random move in the neighborhood, availability, reproducibility | with moves that compare, a sampled move that the enumeration does not contain, a `random_move` that finds nothing while the neighborhood has moves, or one that does not draw from the generator given |
+| registration names | a runner or pipeline name that is empty, repeated, or made of other characters than letters, digits, `_` and `-` |
 | runner parameters | a registered runner whose `parameters_type` is not a parameter block (chapter 7), so no frontend can change it; an empty one has nothing to configure |
 | runner configuration, runner construction | invalid registered parameters, or a runner that cannot be built |
 | app configuration | invalid parameters of the app, or pipeline stages without distinct names |
