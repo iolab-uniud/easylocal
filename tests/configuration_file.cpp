@@ -11,7 +11,6 @@
 namespace
 {
 
-using easylocal::config::apply_overrides;
 using easylocal::config::config_file_error;
 using easylocal::config::load_config_file;
 using easylocal::config::overlay_overrides;
@@ -169,9 +168,7 @@ solver.temperature.cooling_rate = 0.7
     tree.add("application", app);
     tree.add("solver.temperature", temperature);
 
-    const auto applied = apply_overrides(
-        tree,
-        std::span<const text_override>{views});
+    const auto applied = tree.apply(std::span<const text_override>{views});
 
     assert(applied);
     assert(app.seed == 42U);
@@ -204,9 +201,7 @@ solver.temperature.cooling_rate = 1.5
     tree.add("application", app);
     tree.add("solver.temperature", temperature);
 
-    const auto applied = apply_overrides(
-        tree,
-        std::span<const text_override>{views});
+    const auto applied = tree.apply(std::span<const text_override>{views});
 
     assert(!applied);
     assert(app.seed == 17U);

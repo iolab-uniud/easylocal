@@ -454,8 +454,7 @@ int main()
             "solver.cost.weights",
             "[4, 2]"},
     };
-    const auto sum_override_result =
-        easylocal::config::apply_overrides(sum_configuration, sum_override);
+    const auto sum_override_result = sum_configuration.apply(sum_override);
     ok &= expect(
         static_cast<bool>(sum_override_result),
         "the weights of a sum are exposed through configuration");
@@ -477,9 +476,7 @@ int main()
             "[4]"},
     };
     const auto aggregation_override_result =
-        easylocal::config::apply_overrides(
-            aggregation_configuration,
-            aggregation_override);
+        aggregation_configuration.apply(aggregation_override);
     ok &= expect(
         static_cast<bool>(aggregation_override_result),
         "the weights of a sum are exposed through the SolutionManager recipe configuration");

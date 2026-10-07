@@ -14,7 +14,6 @@ namespace
 {
 
 using easylocal::NeighborhoodUnionParameters;
-using easylocal::config::apply_overrides;
 using easylocal::config::override_error;
 using easylocal::config::text_override;
 using easylocal::runners::SimulatedAnnealing;
@@ -73,7 +72,7 @@ void text_overrides_apply_to_multiple_typed_blocks()
         text_override{"solver.neighborhood.random_biases", "[3, 1]"},
     };
 
-    const auto result = apply_overrides(tree, overrides);
+    const auto result = tree.apply(overrides);
     assert(result);
     assert(result.applied_parameter_blocks == 3);
     assert(app.instance_file == std::filesystem::path{"sample.tsp"});
@@ -102,7 +101,7 @@ void cross_field_overrides_are_validated_as_one_block()
         text_override{"solver.temperature.final_temperature", "0.05"},
     };
 
-    const auto result = apply_overrides(tree, overrides);
+    const auto result = tree.apply(overrides);
     assert(result);
     assert(result.applied_parameter_blocks == 1);
     assert(temperature.initial_temperature == 0.10);
@@ -128,7 +127,7 @@ void invalid_batch_is_globally_atomic()
         text_override{"solver.temperature.cooling_rate", "1.5"},
     };
 
-    const auto result = apply_overrides(tree, overrides);
+    const auto result = tree.apply(overrides);
     assert(!result);
     assert(result.applied_parameter_blocks == 0);
     assert(result.diagnostics.size() == 1);
@@ -158,7 +157,7 @@ void parse_unknown_and_duplicate_errors_are_reported_without_commit()
         text_override{"solver.temperature.unknown", "10"},
     };
 
-    const auto result = apply_overrides(tree, overrides);
+    const auto result = tree.apply(overrides);
     assert(!result);
     assert(result.applied_parameter_blocks == 0);
 
@@ -188,7 +187,7 @@ void unbracketed_fixed_arrays_are_supported()
         text_override{"neighborhood.random_biases", "2.5, 0"},
     };
 
-    const auto result = apply_overrides(tree, overrides);
+    const auto result = tree.apply(overrides);
     assert(result);
     assert((neighborhood.random_biases == std::array{2.5, 0.0}));
 }
@@ -215,7 +214,7 @@ void parameter_group_local_values_can_be_overridden()
         text_override{"solver.random_biases", "[4, 1]"},
     };
 
-    const auto result = apply_overrides(tree, overrides);
+    const auto result = tree.apply(overrides);
     assert(result);
     assert(result.applied_parameter_blocks == 1);
     assert((neighborhood.random_biases == std::array{4.0, 1.0}));
@@ -247,7 +246,7 @@ void diagnostics_accumulate_across_independent_failures()
         text_override{"solver.unknown", "17"},
     };
 
-    const auto result = apply_overrides(tree, overrides);
+    const auto result = tree.apply(overrides);
     assert(!result);
     assert(result.applied_parameter_blocks == 0);
 
@@ -345,7 +344,7 @@ void cost_expression_weights_are_runtime_configurable()
         text_override{"cost.soft.1.weights", "[5]"},
     };
 
-    const auto result = apply_overrides(tree, overrides);
+    const auto result = tree.apply(overrides);
     assert(result);
     assert(result.applied_parameter_blocks == 2);
 
@@ -368,14 +367,14 @@ void cost_expression_weights_must_be_finite()
     for (const auto* const weights : {"[inf, 1]", "[1, nan]", "[-inf, 1]"})
     {
         const std::array overrides{text_override{"cost.weights", weights}};
-        const auto result = apply_overrides(tree, overrides);
+        const auto result = tree.apply(overrides);
         assert(!result);
         assert(result.applied_parameter_blocks == 0);
     }
 
     // A negative weight may be intended: it is kept.
     constexpr std::array negative{text_override{"cost.weights", "[-1.5, 1]"}};
-    assert(apply_overrides(tree, negative));
+    assert(tree.apply(negative));
 }
 
 void const_parameter_nodes_are_reported_as_read_only()
@@ -388,7 +387,7 @@ void const_parameter_nodes_are_reported_as_read_only()
         text_override{"application.seed", "99"},
     };
 
-    const auto result = apply_overrides(tree, overrides);
+    const auto result = tree.apply(overrides);
     assert(!result);
     assert(result.applied_parameter_blocks == 0);
     assert(result.diagnostics.size() == 1);

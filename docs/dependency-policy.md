@@ -137,7 +137,7 @@ strings, integers, floating-point values, booleans, and numeric/bool arrays are
 converted to owned textual overrides. TOML date/time values, arrays of tables,
 and string arrays are rejected with adapter diagnostics rather than silently
 changing semantics. Typed lookup, parsing, cross-field validation, and atomic
-commit remain the responsibility of the existing `apply_overrides` layer.
+commit remain the responsibility of `parameter_set::apply`.
 
 CI verifies `ConfigTOML` through both supported dependency providers: a
 system-installed toml++ with fetching disabled, and a forced FetchContent path

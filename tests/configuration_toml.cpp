@@ -110,7 +110,7 @@ rate = 2
     easylocal::config::parameter_set tree;
     tree.add("flags", flags);
     const auto views = easylocal::config::override_views(parsed.overrides);
-    assert(easylocal::config::apply_overrides(tree, views));
+    assert(tree.apply(views));
     assert(flags.verbose);
     assert((flags.enabled == std::array<bool, 2>{false, true}));
     assert(flags.count == 3);
@@ -119,7 +119,7 @@ rate = 2
     const auto real_count = easylocal::config::parse_toml_text("flags.count = 3.0\n");
     assert(real_count);
     const auto real_views = easylocal::config::override_views(real_count.overrides);
-    assert(!easylocal::config::apply_overrides(tree, real_views));
+    assert(!tree.apply(real_views));
     assert(flags.count == 3);
 }
 
@@ -204,7 +204,7 @@ max_iterations = 500
     tree.add("solver.search", search);
 
     const auto views = easylocal::config::override_views(parsed.overrides);
-    const auto applied = easylocal::config::apply_overrides(tree, views);
+    const auto applied = tree.apply(views);
     assert(applied);
     assert(app.instance_file == std::filesystem::path{"instances/small.tsp"});
     assert(app.seed == 2026);

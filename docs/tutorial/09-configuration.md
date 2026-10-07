@@ -299,7 +299,7 @@ weights = [1.0, 5.0]
 
 The program reads the file with `load_toml_file`, which turns every key into
 the same `path = value` override as the command line, and applies them with
-`apply_overrides`:
+the set's `apply`:
 
 <!-- snippet: tutorial/toml_main.cpp:toml -->
 ```cpp
@@ -317,7 +317,7 @@ if (!file)
 }
 
 // Apply the overrides: all of them, validated, or none.
-const auto applied = el::config::apply_overrides(configuration, file.overrides);
+const auto applied = configuration.apply(file.overrides);
 if (!applied)
 {
     for (const auto& diagnostic : applied.diagnostics)
@@ -333,7 +333,7 @@ if (!applied)
 - Each value is read by its TOML type: `true` and `false` set a `bool`, an
   integer sets a number, a float sets only a floating-point number (`3.0`
   does not set an integer).
-- `apply_overrides` checks every path and validates every value before
+- `apply` checks every path and validates every value before
   changing anything: an unknown key (a typo such as `coolin_rate`) or an
   invalid value (`cooling_rate = 2.0`) leaves the parameters as they were.
 - The runner here has default parameters and a cost with two weights; with

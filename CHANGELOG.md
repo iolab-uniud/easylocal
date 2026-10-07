@@ -11,6 +11,14 @@ reviewed by hand before tagging.
 
 ## [4.0.0-alpha.3] — not yet released
 
+### Parameters
+
+- **Breaking:** a parameter set is applied and validated by its members
+  only: the free `config::apply_overrides(set, overrides)` and
+  `config::validate(set)` are gone, use `set.apply(overrides)` and
+  `set.validate()`. `apply` is `[[nodiscard]]`: its result says whether the
+  overrides were applied.
+
 ### Apps and tools
 
 - **Breaking:** the explorer of an app has the name it has in a `Runner` and

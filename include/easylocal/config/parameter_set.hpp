@@ -333,6 +333,7 @@ public:
     /// and every other block is validated as it is; only when every override
     /// names a parameter and every block is valid are the copies committed. The
     /// set itself does not change, only the objects it refers to.
+    [[nodiscard]]
     override_result apply(const std::span<const text_override> overrides) const
     {
         override_result result;
@@ -405,6 +406,7 @@ public:
 
     /// The same, from overrides that own their text, as a configuration file
     /// or the TOML adapter gives them.
+    [[nodiscard]]
     override_result apply(const std::span<const owned_text_override> overrides) const
     {
         const auto views = override_views(overrides);
@@ -588,31 +590,6 @@ private:
 
     std::vector<entry_type> entries_;
 };
-
-/// The free spellings of the set's members.
-[[nodiscard]]
-inline override_result apply_overrides(
-    const parameter_set& parameters,
-    const std::span<const text_override> overrides)
-{
-    return parameters.apply(overrides);
-}
-
-/// The same, from overrides that own their text.
-[[nodiscard]]
-inline override_result apply_overrides(
-    const parameter_set& parameters,
-    const std::span<const owned_text_override> overrides)
-{
-    return parameters.apply(overrides);
-}
-
-/// Whether the parameters are valid, and why not.
-[[nodiscard]]
-inline configuration_validation_result validate(const parameter_set& parameters)
-{
-    return parameters.validate();
-}
 
 namespace detail
 {

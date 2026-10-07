@@ -326,14 +326,12 @@ int main()
     ok &= expect(
         std::ranges::find(paths, std::string{"second.timeout"}) != paths.end(),
         "a stage's time limit is a parameter");
-    const auto set = el::config::apply_overrides(
-        parameters,
+    const auto set = parameters.apply(
         std::vector<el::config::text_override>{{"second.timeout", "0.5"}});
     ok &= expect(
         set && timed.stage<1>().parameters().timeout == 0.5,
         "a stage's time limit is set through the parameters");
-    const auto invalid = el::config::apply_overrides(
-        parameters,
+    const auto invalid = parameters.apply(
         std::vector<el::config::text_override>{{"second.timeout", "-1"}});
     ok &= expect(!invalid, "a negative stage time limit is rejected");
 
@@ -493,8 +491,7 @@ int main()
             == 7,
         "with_max_evaluations sets the stage's budget");
     auto budget_parameters = budgeted_pipeline.configuration();
-    const auto budget_set = el::config::apply_overrides(
-        budget_parameters,
+    const auto budget_set = budget_parameters.apply(
         std::vector<el::config::text_override>{{"second.max_evaluations", "5"}});
     ok &= expect(
         budget_set && budgeted_pipeline.stage<1>().parameters().max_evaluations == 5,

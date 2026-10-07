@@ -151,7 +151,7 @@ parameters.add("solver", runner.configuration());  // another set, under a prefi
 | `parameters()` | every parameter: `path`, `description`, `value` (as text), `read_only`, `kind` (`boolean`, `integer`, `real`, `limit`, `text`, `path`, `list`), `domain` (a `domain_info`, empty when none is declared), `active` (whether its condition holds) and `condition` (an `expression_info` with full paths, empty when it has none) |
 | `requirements()` | the requirements of every block: `path` of the block, `message`, `expression` (full paths) and `satisfied` |
 | `validate()` | the fields outside their domains, the requirements that do not hold and the diagnostics of every block's `validate()`, by path |
-| `apply(text_overrides)` | apply `path = value` overrides (views, or overrides that own their text, as a file gives them), all or none |
+| `apply(text_overrides)` | apply `path = value` overrides (views, or overrides that own their text, as a file gives them), all or none; its result must be read |
 
 A set refers to the objects it was built from: they must outlive it and stay
 in place. Adding a path that is already in the set throws
@@ -247,7 +247,6 @@ position (`element 2: expected a number`), and the size of an array
 | `config::load_config_file(path)` | the overrides of a file of `path = value` lines: `#` starts a whole-line comment (a `#` after a value is part of it), a UTF-8 byte order mark is skipped, a directory is an error |
 | `config::cli_help(program, parameters)` | help text: each parameter that can be changed, with its description, its values (the domain; `true` or `false` for a boolean), when it matters (`only if ...`) and its current value |
 | `config::print_diagnostics(out, result)` | report the errors of `load_and_apply`, or of a `config_file_parse_result`, one per line, those of a file with their line and column |
-| `config::apply_overrides(parameters, text_overrides)` | the same as `parameters.apply(...)` |
 | `config::format_value(value)` | a value as text, in the syntax overrides use |
 | `config::load_toml_file(path)` (TOML adapter) | a `config_file_reader`: the overrides of a TOML file, each value by its TOML type (a boolean, an integer, a float that sets only a floating-point field, a string, or an array of numbers, booleans and such arrays; not of strings), as a `config_file_parse_result`; a `parse_error` gives its `line` and `column` and the file as its `text`, an `unsupported_value` its path |
 

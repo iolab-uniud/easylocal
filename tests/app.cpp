@@ -360,8 +360,7 @@ void pipelines_are_registered_and_run_by_name()
     assert(has(
         std::as_const(application).configuration(),
         "runners.cascade.feasible.attempts"));
-    const auto overridden = easylocal::config::apply_overrides(
-        parameters,
+    const auto overridden = parameters.apply(
         std::vector<easylocal::config::text_override>{
             {"runners.cascade.best.search.max_evaluations", "5"}});
     assert(overridden);

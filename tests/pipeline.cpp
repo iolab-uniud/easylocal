@@ -1046,8 +1046,7 @@ int main()
             paths,
             [](const std::string& path) { return path.starts_with("anneal.search."); }),
         "a stage's runner has its parameters under the stage's name");
-    const auto attempts_override = el::config::apply_overrides(
-        parameters,
+    const auto attempts_override = parameters.apply(
         std::vector<el::config::text_override>{{"anneal.attempts", "3"}});
     ok &= expect(
         attempts_override && configurable.stage<0>().parameters().attempts == 3,

@@ -11,7 +11,6 @@
 namespace
 {
 
-using easylocal::config::apply_overrides;
 using easylocal::config::cli_error;
 using easylocal::config::cli_help;
 using easylocal::config::parse_cli;
@@ -188,9 +187,8 @@ void cli_batch_reuses_transactional_textual_overrides()
         std::span<const std::string_view>{arguments.data(), arguments.size()});
     assert(parsed);
 
-    const auto applied = apply_overrides(
-        tree,
-        std::span<const easylocal::config::text_override>{parsed.overrides});
+    const auto applied =
+        tree.apply(std::span<const easylocal::config::text_override>{parsed.overrides});
 
     assert(applied);
     assert(app.instance_file == std::filesystem::path{"sample.tsp"});
@@ -221,9 +219,8 @@ void cli_validation_errors_leave_configuration_unchanged()
         std::span<const std::string_view>{arguments.data(), arguments.size()});
     assert(parsed);
 
-    const auto applied = apply_overrides(
-        tree,
-        std::span<const easylocal::config::text_override>{parsed.overrides});
+    const auto applied =
+        tree.apply(std::span<const easylocal::config::text_override>{parsed.overrides});
 
     assert(!applied);
     assert(app.seed == 17U);

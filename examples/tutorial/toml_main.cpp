@@ -43,7 +43,7 @@ int main(int argc, char* argv[])
     }
 
     // Apply the overrides: all of them, validated, or none.
-    const auto applied = el::config::apply_overrides(configuration, file.overrides);
+    const auto applied = configuration.apply(file.overrides);
     if (!applied)
     {
         for (const auto& diagnostic : applied.diagnostics)

@@ -132,7 +132,7 @@ void tree_validation_reports_invalid_untouched_blocks()
     tree.add("application", app);
     tree.add("solver", solver);
 
-    const auto validation = easylocal::config::validate(tree);
+    const auto validation = tree.validate();
 
     assert(!validation);
     assert(validation.diagnostics.size() == 1);

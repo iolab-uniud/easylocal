@@ -153,8 +153,7 @@ int main()
     auto parameters = application.configuration();
     assert(has(parameters, "runners.swap.neighborhood.window"));
     assert(has(parameters, "neighborhood") == false);
-    const auto overridden = el::config::apply_overrides(
-        parameters,
+    const auto overridden = parameters.apply(
         std::vector<el::config::text_override>{
             {"runners.swap.neighborhood.window", "4"}});
     assert(overridden);

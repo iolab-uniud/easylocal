@@ -462,7 +462,7 @@ bool check_configuration(const App& application, app_check_report& report)
 {
     try
     {
-        const auto validation = config::validate(application.configuration());
+        const auto validation = application.configuration().validate();
         for (const auto& diagnostic : validation.diagnostics)
             report.check(
                 false,
