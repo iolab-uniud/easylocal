@@ -278,6 +278,26 @@ private:
     double weight_;
 };
 
+// Evaluates one move and commits it: the cost of the result is the initial
+// cost plus the typed delta, since make_move changes nothing.
+struct OneMoveAlgorithm
+{
+    template<class Context>
+    auto run(const Context& context, typename Context::solution_type solution) const
+    {
+        struct Result
+        {
+            typename Context::solution_type solution;
+            typename Context::cost_type cost;
+        };
+        const auto evaluation = context.evaluation();
+        auto current = evaluation.evaluate(solution);
+        auto candidate = evaluation.evaluate_move(solution, current, ScaledMove{1.0});
+        evaluation.commit(solution, current, std::move(candidate));
+        return Result{solution, current.cost()};
+    }
+};
+
 void recipe_arguments_convert_as_constructors_take_them()
 {
     using namespace easylocal;
@@ -291,6 +311,15 @@ void recipe_arguments_convert_as_constructors_take_them()
             .seed(17);
     const Instance instance{};
     assert(solver.solve(instance).cost == 3 * initial_value);
+
+    // The MoveDelta of the delta, built with its weight, is added to the cost.
+    const auto one_move = make_runner<OneMoveAlgorithm>()
+        | (solution_manager<ScaledSolutionManager>(2) | component<ScaledComponent>(3))
+        | (neighborhood<ScaledNeighborhoodExplorer>(4)
+            | delta<ScaledComponent, ScaledDeltaEvaluator>(5));
+    const auto moved = one_move.bind(instance).run(Solution{initial_value});
+    assert(moved.solution.value == initial_value);
+    assert(moved.cost == 3 * initial_value + 5);
 
     ScaledSolutionManager sm{instance, 2.0};
     const ScaledNeighborhoodExplorer explorer{sm, 4.0};
