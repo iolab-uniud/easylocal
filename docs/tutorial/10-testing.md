@@ -69,6 +69,14 @@ neighborhoods and delta cost components. The component checks are not in the
 Core umbrella, which brings only what `check(app)` uses (the options and the
 reports): include `testing.hpp` from your test executables.
 
+These checks sample the solutions they try. To check every move a real
+search keeps, build the program with `EASYLOCAL_VERIFY_DELTAS` defined
+([chapter 4](04-delta-evaluation.md#checking-the-deltas-during-a-run)): after
+each committed move the search evaluates the solution in full and, at the
+first component whose value from the deltas disagrees, prints its position
+and aborts. It costs a full evaluation per accepted move, so it belongs to
+debugging builds.
+
 For a whole composed problem, `easylocal::check(app, input)` runs the same
 checks against an app ([chapter 13](13-checking.md)).
 
