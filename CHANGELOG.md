@@ -137,6 +137,8 @@ reviewed by hand before tagging.
 - `pipeline(name, stages...)` checks the names of the stages when the
   registration is made, and throws `std::invalid_argument` there, instead of
   at every `configuration()` of the app; `cli::run` no longer catches it.
+- The help of `--target` and the reference say that a pipeline gives the
+  target to its last stage, unless that stage has a target of its own.
 - `Session::run` runs on the session's bound app instead of binding the app
   again for every run, as `App::run` does; when the parameters of the app
   have changed through `app()` since it was bound, it binds it again first,

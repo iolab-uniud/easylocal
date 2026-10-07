@@ -113,7 +113,8 @@ struct parameters
                 easylocal::unlimited),
             config::field<"target", &parameters::target>(
                 "Stop when the solution reaches this cost, such as 0 or "
-                "[0, 120] (empty: no target)",
+                "[0, 120] (empty: no target); a pipeline gives it to its last "
+                "stage, unless that stage has a target of its own",
                 easylocal::unlimited),
             config::field<"timeout", &parameters::timeout>(
                 "Stop the run after this many seconds, such as 10 or 2.5 (empty: no "

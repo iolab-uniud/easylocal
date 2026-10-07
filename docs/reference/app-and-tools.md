@@ -186,7 +186,9 @@ before the command line. It
 then builds a `Session` with the seed, loads the Input, takes the starting
 solution (`--solution`, else `--start`: `random` by default when the problem
 has `random_solution`, `initial` otherwise), runs the runner by name, with
-`stop_at` when `--target` is set, `timeout` when `--timeout` is (seconds) and
+`stop_at` when `--target` is set (a pipeline gives it to its last stage,
+unless that stage has a target of its own, which then decides when the run
+ends `target_reached`), `timeout` when `--timeout` is (seconds) and
 `max_evaluations` when `--max_evaluations` is, and writes `cost`, `time`, the session's
 `last_run_effort()` when the runner reports it (`iterations`, `evaluations`,
 `termination`), with `--report`
