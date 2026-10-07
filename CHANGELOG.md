@@ -40,7 +40,10 @@ reviewed by hand before tagging.
   not `const`, are each reported with the signature to write. A `final` explorer
   given a delta cost component, and recipe arguments that construct no
   SolutionManager, get their own message; the hint about inherited
-  constructors appears only where it applies.
+  constructors appears only where it applies. `delta<...>()` checks the
+  `delta_evaluate(const Solution&, const Move&) const` of the delta cost
+  component on the explorer's Solution and Move, and that it returns a change
+  of the component's value, where only binding the recipe did.
 - An app checks a runner registration on its own neighborhood when it is
   added, as it already did for a runner with a neighborhood of its own: an
   algorithm that cannot run on it (First Improvement on an explorer without

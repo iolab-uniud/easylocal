@@ -236,6 +236,9 @@ auto neighborhood(Args&&... args)
 
 /// The delta cost component co-located in `Component`, its `delta_evaluate`,
 /// bound to a neighborhood recipe with `neighborhood<NHE>() | delta<C>()`.
+///
+/// `delta_evaluate(const Solution&, const Move&) const` returns the change of
+/// the component's value.
 template<class Component>
 [[nodiscard]]
 auto delta()
@@ -246,6 +249,9 @@ auto delta()
 /// The delta cost component `DeltaEvaluator` of `Component`, constructed from
 /// the Input and `args` (or from `args` alone), bound to a neighborhood recipe
 /// with `neighborhood<NHE>() | delta<C, D>(args...)`.
+///
+/// Its `delta_evaluate(const Solution&, const Move&) const` returns the change
+/// of the component's value.
 template<class Component, class DeltaEvaluator, class... Args>
 [[nodiscard]]
 auto delta(Args&&... args)

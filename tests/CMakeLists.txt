@@ -977,20 +977,26 @@ easylocal_add_compile_failure_test(
 easylocal_add_compile_failure_test(
     incompatible-delta
     incompatible_delta.cpp
-    "attached delta cost component is incompatible with the bound component value, Solution, or Move type"
+    "the delta_evaluate of a delta cost component returns the change of its component's value"
     "MalformedDeltaA"
 )
 easylocal_add_compile_failure_test(
     incompatible-union-child-delta
     incompatible_union_child_delta.cpp
-    "attached delta cost component is incompatible with the bound component value, Solution, or Move type"
+    "the delta_evaluate of a delta cost component returns the change of its component's value"
     "MalformedDeltaA"
 )
 easylocal_add_compile_failure_test(
     missing-delta-evaluate
     missing_delta_evaluate.cpp
-    "attached delta cost component is incompatible with the bound component value, Solution, or Move type"
+    "a delta cost component has `delta_evaluate(const Solution&, const Move&) const`, on the Solution and Move of its NeighborhoodExplorer"
     "MissingDeltaEvaluateA"
+)
+easylocal_add_compile_failure_test(
+    delta-evaluate-signature
+    delta_evaluate_signature.cpp
+    "a delta cost component has `delta_evaluate(const Solution&, const Move&) const`, on the Solution and Move of its NeighborhoodExplorer"
+    "MutableSolutionDeltaA"
 )
 easylocal_add_compile_failure_test(
     delta-not-constructible

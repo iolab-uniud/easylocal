@@ -424,17 +424,9 @@ int main()
         typename decltype(inactive_delta_recipe)::service_type;
     static_assert(!all_delta_components_active<HardSM, InactiveNHE>);
 
-    const auto incompatible_delta_recipe =
-        neighborhood<CountingSingleMoveNeighborhood>(
-            ReassignJobMove{.job = 1, .destination = 1},
-            std::ref(type_only_make_move_count))
-        | delta<
-              CapacityCostComponent,
-              IncompatibleCapacityDeltaEvaluator>();
-    using IncompatibleNHE =
-        typename decltype(incompatible_delta_recipe)::service_type;
-    static_assert(all_delta_components_active<HardSM, IncompatibleNHE>);
-    static_assert(!all_delta_bindings_compatible<HardSM, IncompatibleNHE>);
+    // An incompatible delta, IncompatibleCapacityDeltaEvaluator, is rejected
+    // as it is attached to an explorer that declares its Solution and Move
+    // (compile_fail/delta_evaluate_signature.cpp).
 
     bool ok = true;
 

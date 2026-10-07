@@ -105,6 +105,14 @@ neighborhood<NHE>(args...)
 // equivalently: neighborhood<NHE>(args...).with_delta<C, D>(args...).with_delta<C>()
 ```
 
+- A delta cost component, `D` or the co-located `C`, has
+  `delta_evaluate(const Solution&, const Move&) const`, which returns the
+  change of the value of `C`: the value plus the change is a value of `C`'s
+  type. When the explorer declares its `solution_type` and `move_type`, as
+  `neighborhood_explorer_base` does, `delta<...>()` checks it as it is written,
+  with a message that names it; otherwise binding the recipe does.
+- A recipe attaches at most one delta to each component.
+
 ## Neighborhood unions
 
 ```cpp

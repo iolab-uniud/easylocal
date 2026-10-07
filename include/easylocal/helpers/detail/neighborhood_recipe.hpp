@@ -152,8 +152,11 @@ public:
     static_assert(check_declared_explorer_contract<BaseNHE>());
 
     // A recipe attaches at most one delta cost component to each component,
-    // to an explorer the delta layer can derive from.
-    template<class Component>
+    // to an explorer the delta layer can derive from. The delta_evaluate of
+    // Evaluator, the delta cost component or the component itself, is checked
+    // on the Solution and Move the explorer declares, as the delta is written;
+    // with an explorer that does not declare its Solution, when it is bound.
+    template<class Component, class Evaluator = Component>
     static consteval bool check_new_delta()
     {
         static_assert(
@@ -165,6 +168,47 @@ public:
             "a neighborhood recipe may attach at most one delta cost component "
             "to each component type; the conflicting component type is shown in "
             "the template instantiation context");
+        if constexpr (requires {
+                          typename BaseNHE::solution_type;
+                          typename BaseNHE::move_type;
+                      })
+        {
+            using solution_type = typename BaseNHE::solution_type;
+            using move_type = typename BaseNHE::move_type;
+            constexpr bool callable = requires(
+                const Evaluator& evaluator,
+                const solution_type& solution,
+                const move_type& move) { evaluator.delta_evaluate(solution, move); };
+            static_assert(
+                callable,
+                "a delta cost component has `delta_evaluate(const Solution&, const "
+                "Move&) const`, on the Solution and Move of its NeighborhoodExplorer; "
+                "the delta cost component type is shown in the template "
+                "instantiation context");
+            if constexpr (callable
+                && requires(const Component& component, const solution_type& solution) {
+                       component.evaluate(solution);
+                   })
+            {
+                using value_type =
+                    std::remove_cvref_t<decltype(std::declval<const Component&>()
+                            .evaluate(std::declval<const solution_type&>()))>;
+                static_assert(
+                    requires(
+                        const value_type& value,
+                        const Evaluator& evaluator,
+                        const solution_type& solution,
+                        const move_type& move) {
+                        {
+                            value + evaluator.delta_evaluate(solution, move)
+                        } -> std::same_as<value_type>;
+                    },
+                    "the delta_evaluate of a delta cost component returns the change "
+                    "of its component's value, which added to the value gives a value "
+                    "of the component's type; the delta cost component type is shown "
+                    "in the template instantiation context");
+            }
+        }
         return true;
     }
 
@@ -228,7 +272,7 @@ public:
     [[nodiscard]]
     auto with_delta(Args&&... args) const &
     {
-        static_assert(check_new_delta<Component>());
+        static_assert(check_new_delta<Component, DeltaEvaluator>());
 
         using spec_type = delta_spec<
             Component,
@@ -253,7 +297,7 @@ public:
     [[nodiscard]]
     auto with_delta(Args&&... args) &&
     {
-        static_assert(check_new_delta<Component>());
+        static_assert(check_new_delta<Component, DeltaEvaluator>());
 
         using spec_type = delta_spec<
             Component,
