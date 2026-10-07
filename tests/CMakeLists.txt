@@ -163,7 +163,7 @@ add_test(
 )
 
 # No raw [[no_unique_address]], which MSVC and clang-cl ignore; the check is
-# shown to catch one on a generated file.
+# shown to catch one on a generated file, on its line after an unbalanced [.
 add_test(
     NAME easylocal.portable-attributes
     COMMAND
@@ -173,7 +173,7 @@ add_test(
 )
 set(easylocal_raw_attribute_dir "${CMAKE_CURRENT_BINARY_DIR}/raw_attribute")
 file(WRITE "${easylocal_raw_attribute_dir}/raw.hpp"
-    "struct empty {};\nstruct holder { [[ no_unique_address ]] empty member; };\n")
+    "// a[\nstruct empty {};\nstruct holder { [[ no_unique_address ]] empty member; };\n")
 add_test(
     NAME easylocal.portable-attributes-catches-raw
     COMMAND
@@ -183,10 +183,11 @@ add_test(
 )
 set_tests_properties(
     easylocal.portable-attributes-catches-raw
-    PROPERTIES PASS_REGULAR_EXPRESSION "raw\\.hpp:2")
+    PROPERTIES PASS_REGULAR_EXPRESSION "raw\\.hpp:3")
 
 # No deduced std::tuple in the library, which some compilers find ambiguous
-# with one argument; the check is shown to catch one on a generated file.
+# with one argument; the check is shown to catch one on a generated file, on
+# its line after an unbalanced [.
 add_test(
     NAME easylocal.tuple-types
     COMMAND
@@ -196,7 +197,7 @@ add_test(
 )
 set(easylocal_deduced_tuple_dir "${CMAKE_CURRENT_BINARY_DIR}/deduced_tuple")
 file(WRITE "${easylocal_deduced_tuple_dir}/deduced.hpp"
-    "#include <tuple>\ninline auto one = std::tuple{1};\n")
+    "#include <tuple>\n// a[\ninline auto one = std::tuple{1};\n")
 add_test(
     NAME easylocal.tuple-types-catches-deduced
     COMMAND
@@ -206,7 +207,7 @@ add_test(
 )
 set_tests_properties(
     easylocal.tuple-types-catches-deduced
-    PROPERTIES PASS_REGULAR_EXPRESSION "deduced\\.hpp:2")
+    PROPERTIES PASS_REGULAR_EXPRESSION "deduced\\.hpp:3")
 
 
 
