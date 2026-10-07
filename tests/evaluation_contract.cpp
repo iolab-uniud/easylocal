@@ -85,6 +85,17 @@ private:
     std::reference_wrapper<Counters> counters_;
 };
 
+// An aggregation that tells the two components apart: a delta added to the
+// wrong one changes the cost.
+struct OrderedAggregator
+{
+    [[nodiscard]]
+    int operator()(const int first, const int second) const noexcept
+    {
+        return 1000 * first + second;
+    }
+};
+
 class FirstComponent
 {
 public:
@@ -359,6 +370,41 @@ int main()
         ok &= expect(
             counters.make_moves == (accepted ? 1 : 0),
             "all-delta candidate applies the move only when committed");
+    }
+
+    // Deltas attached in the reverse order of the components: each one still
+    // updates its own component.
+    for (const bool accepted : {false, true})
+    {
+        Counters counters;
+
+        auto runner = Runner{ProbeOneMove<false>{accepted}}
+            | (solution_manager<SolutionManager>(std::ref(counters))
+                | easylocal::cost::apply(
+                    OrderedAggregator{},
+                    component<FirstComponent>(std::ref(counters)),
+                    component<SecondComponent>(std::ref(counters))))
+            | (neighborhood<NeighborhoodExplorer>(std::ref(counters))
+                | delta<SecondComponent, SecondDeltaEvaluator>(std::ref(counters))
+                | delta<FirstComponent, FirstDeltaEvaluator>(std::ref(counters)));
+
+        const auto result = runner.bind(instance).run(Solution{.value = 1});
+
+        ok &= expect(
+            result.initial_cost == 1010,
+            "reversed deltas: the initial evaluation keeps the components apart");
+        ok &= expect(
+            result.candidate_cost == 2020,
+            "reversed deltas: each delta updates its own component");
+        ok &= expect(
+            result.current_cost == (accepted ? 2020 : 1010),
+            "reversed deltas: commit promotes the candidate's component values");
+        ok &= expect(
+            counters.first_delta_evaluations == 1
+                && counters.second_delta_evaluations == 1
+                && counters.first_full_evaluations == 1
+                && counters.second_full_evaluations == 1,
+            "reversed deltas: each delta runs once, no full evaluation");
     }
 
     for (const bool accepted : {false, true})
