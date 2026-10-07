@@ -36,7 +36,8 @@ def tui(binary):
     with Tui(binary) as driver:
         yield driver
     # A killed tester writes no coverage data: each flow must end quittable.
-    assert driver.exit_status == 0, "the tester did not quit with q"
+    assert driver.exit_status == 0, (
+        "the tester did not quit with q:\n" + driver.unquit_screen)
 
 
 @pytest.fixture
@@ -54,7 +55,8 @@ def terminal(binary):
     for driver in drivers:
         driver.close()
     for driver in drivers:
-        assert driver.exit_status == 0, "the tester did not quit with q"
+        assert driver.exit_status == 0, (
+        "the tester did not quit with q:\n" + driver.unquit_screen)
 
 
 @pytest.fixture

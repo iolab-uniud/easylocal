@@ -31,7 +31,8 @@ def started(binary, tmp_path):
     """The tester run in an empty directory, closed with q at the end."""
     with Tui(binary, cwd=tmp_path) as driver:
         yield driver
-    assert driver.exit_status == 0, "the tester did not quit with q"
+    assert driver.exit_status == 0, (
+        "the tester did not quit with q:\n" + driver.unquit_screen)
 
 
 def test_actions_ask_for_what_they_need(tui):

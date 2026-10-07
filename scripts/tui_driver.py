@@ -49,6 +49,8 @@ class Tui:
         self.pid = -1
         self.fd = -1
         self.exit_status: int | None = None
+        # The screen when close() gave up, to say why the tester did not quit.
+        self.unquit_screen = ""
 
     # -- lifetime -------------------------------------------------------------
 
@@ -97,6 +99,8 @@ class Tui:
             except OSError:
                 pass
             self.poll_exit(min(1.0, max(0.0, deadline - time.monotonic())))
+        if self.exit_status is None:
+            self.unquit_screen = self.text()
         self.kill()
 
     def kill(self) -> None:
