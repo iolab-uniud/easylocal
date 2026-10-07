@@ -1412,7 +1412,7 @@ auto pipeline(pipeline_stage<Runner> first, Stages... rest)
     return (
         Pipeline<RNG, first_type>{
             std::tuple<first_type>{std::move(first)},
-            RNG{std::uint64_t{0}}}
+            RNG(std::uint64_t{0})}
         | ... | std::move(rest));
 }
 

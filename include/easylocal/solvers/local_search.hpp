@@ -69,7 +69,7 @@ public:
     /// From a runner, with an RNG seeded with 0.
     explicit LocalSearch(RunnerType runner)
         requires std::constructible_from<RNG, std::uint64_t>
-        : LocalSearch(std::move(runner), RNG{std::uint64_t{0}})
+        : LocalSearch(std::move(runner), RNG(std::uint64_t{0}))
     {
     }
 

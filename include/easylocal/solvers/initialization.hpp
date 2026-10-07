@@ -151,7 +151,7 @@ public:
     builder_result_t<Self> seed(this Self&& self, const std::uint64_t seed)
     {
         solver_start& start = self;
-        start.rng_ = RNG{seed};
+        start.rng_ = RNG(seed);
         return std::forward<Self>(self);
     }
 

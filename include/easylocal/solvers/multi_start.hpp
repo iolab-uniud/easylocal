@@ -99,7 +99,7 @@ public:
     /// Throws `std::invalid_argument` when the parameters are not valid.
     explicit MultiStart(RunnerType runner, MultiStartParameters parameters = {})
         requires std::constructible_from<RNG, std::uint64_t>
-        : MultiStart(std::move(runner), parameters, RNG{std::uint64_t{0}})
+        : MultiStart(std::move(runner), parameters, RNG(std::uint64_t{0}))
     {
     }
 

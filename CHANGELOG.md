@@ -408,6 +408,9 @@ reviewed by hand before tagging.
   used: `input_type` and `solution_type`, those of the SolutionManager, and
   `input()`, which debug builds and unions called. An explorer without them is
   rejected where it is composed; `neighborhood_explorer_base` provides them.
+- A solver with an RNG whose result is narrower than 64 bits
+  (`std::minstd_rand`) compiles: its seed was narrowed in a braced
+  initializer.
 
 ### Added
 

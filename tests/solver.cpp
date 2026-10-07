@@ -1,5 +1,6 @@
 #include <easylocal/solvers.hpp>
 
+#include <algorithm>
 #include <concepts>
 #include <cstdint>
 #include <iostream>
@@ -95,7 +96,12 @@ struct PlainAlgorithm
     }
 };
 
-struct RandomResult { Solution solution; std::uint64_t draw; };
+struct RandomResult
+{
+    Solution solution;
+    std::uint64_t draw;
+    std::int64_t cost;
+};
 struct RandomAlgorithm
 {
     template<class Context, class RNG>
@@ -104,7 +110,8 @@ struct RandomAlgorithm
         typename Context::solution_type solution,
         RNG& rng) const -> RandomResult
     {
-        return {std::move(solution), rng()};
+        const auto draw = rng();
+        return {solution, draw, ValueCost::evaluate(solution)};
     }
 };
 
@@ -182,6 +189,47 @@ int main()
     ok &= expect(
         second.solution.value == reference() && second.draw == reference(),
         "Solver RNG state persists across solve calls");
+
+    // A custom RNG, given to the constructor, from which the solver deduces
+    // its type; the same draws as by hand.
+    solvers::LocalSearch minimal{random_runner, std::minstd_rand{5U}};
+    static_assert(std::same_as<decltype(minimal)::rng_type, std::minstd_rand>);
+    std::minstd_rand minimal_reference{5U};
+    const auto minimal_initial = minimal_reference();
+    ok &= expect(
+        minimal.solve(instance).solution.value == minimal_initial,
+        "LocalSearch draws from a custom RNG");
+    solvers::MultiStart
+        minimal_starts{random_runner, {.starts = 3}, std::minstd_rand{5U}};
+    static_assert(std::same_as<decltype(minimal_starts)::rng_type, std::minstd_rand>);
+    // Each start draws its solution and the run's draw from the stream: the
+    // best of three is the smallest of the three solutions drawn.
+    std::minstd_rand starts_reference{5U};
+    std::uint64_t smallest = ~std::uint64_t{0};
+    for (int start = 0; start < 3; ++start)
+    {
+        smallest = (std::min)(smallest, std::uint64_t{starts_reference()});
+        static_cast<void>(starts_reference());
+    }
+    ok &= expect(
+        minimal_starts.solve(instance).solution.value == smallest,
+        "MultiStart draws from a custom RNG");
+
+    // A pipeline seeded twice the same way repeats its solve, attempts
+    // included.
+    const auto seeded_solve = [&] {
+        auto pipeline =
+            solvers::pipeline<std::minstd_rand>(
+                solvers::stage("draw", random_runner) & solvers::attempts(3))
+                .seed(9);
+        return pipeline.solve(instance);
+    };
+    const auto once = seeded_solve();
+    const auto again = seeded_solve();
+    ok &= expect(
+        once.solution.value == again.solution.value && once.draw == again.draw
+            && once.stages[0].attempts == 3,
+        "a seeded pipeline is deterministic");
 
     auto selectable_runner = Runner{PlainAlgorithm{}}
         | (solution_manager<SelectableSM>() | component<ValueCost>())
