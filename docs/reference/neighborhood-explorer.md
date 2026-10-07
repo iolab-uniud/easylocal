@@ -111,6 +111,8 @@ neighborhood<NHE>(args...)
   type. When the explorer declares its `solution_type` and `move_type`, as
   `neighborhood_explorer_base` does, `delta<...>()` checks it as it is written,
   with a message that names it; otherwise binding the recipe does.
+- An explorer that takes a delta cannot be `final`: the delta layer derives
+  from it, and `delta<...>()` says so.
 - A recipe attaches at most one delta to each component.
 
 ## Neighborhood unions

@@ -238,7 +238,8 @@ auto neighborhood(Args&&... args)
 /// bound to a neighborhood recipe with `neighborhood<NHE>() | delta<C>()`.
 ///
 /// `delta_evaluate(const Solution&, const Move&) const` returns the change of
-/// the component's value.
+/// the component's value. The explorer cannot be final: the delta layer
+/// derives from it.
 template<class Component>
 [[nodiscard]]
 auto delta()
@@ -251,7 +252,8 @@ auto delta()
 /// with `neighborhood<NHE>() | delta<C, D>(args...)`.
 ///
 /// Its `delta_evaluate(const Solution&, const Move&) const` returns the change
-/// of the component's value.
+/// of the component's value. The explorer cannot be final: the delta layer
+/// derives from it.
 template<class Component, class DeltaEvaluator, class... Args>
 [[nodiscard]]
 auto delta(Args&&... args)
