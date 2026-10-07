@@ -523,6 +523,7 @@ private:
         std::optional<run_effort> effort;        // when the runner reports it
         std::string error;
         easylocal::shared_run_progress progress;
+        easylocal::shared_best_cost<cost_type> best_cost; // found so far
     };
 
     // The options, checked before the execution pool starts its threads.
@@ -737,6 +738,10 @@ private:
         const std::shared_ptr<run_record>& record) const
     {
         crow::json::wvalue body;
+        // The best cost so far, encoded outside the record's lock.
+        std::optional<crow::json::wvalue> best;
+        if (const auto cost = record->best_cost.load())
+            best.emplace(encode_cost(*cost));
         const std::lock_guard lock{record->mutex};
         body["id"] = record->id;
         body["runner"] = record->runner;
@@ -761,6 +766,8 @@ private:
             body["progress"]["evaluation_limit"] =
                 static_cast<std::uint64_t>(*progress.evaluation_limit);
         }
+        if (best)
+            body["progress"]["best"] = std::move(*best);
         if (record->effort)
         {
             // The final counts, which the last progress report may precede.
@@ -1068,9 +1075,13 @@ private:
                     auto observer = [record](const easylocal::run_progress& progress) {
                         record->progress.store(progress);
                     };
-                    const easylocal::run_control control{
+                    auto best_observer = [record](const cost_type& cost) {
+                        record->best_cost.store(cost);
+                    };
+                    easylocal::run_control control{
                         record->stop_source.get_token(),
                         observer};
+                    control.observe_best_cost<cost_type>(best_observer);
 
                     try
                     {

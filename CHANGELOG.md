@@ -308,6 +308,15 @@ reviewed by hand before tagging.
   `validate()`: an infinite value is reported as out of its range, by the
   block and by a configuration (`expected a value in (0, unlimited), got
   inf`), and `--help` lists the domain as it is.
+- The best cost of a run in progress:
+  `run_control::observe_best_cost<Cost>(observer)` calls the observer with
+  the run's first cost and then with each better one, on the commits that
+  improve; the runs of MultiStart and of
+  a pipeline report only costs better than those of the runs before.
+  `shared_best_cost<Cost>` keeps the last one for another thread, and
+  `run_control::observing_progress` copies a control with another progress
+  observer. REST's run status has `progress.best`, encoded by the codec as the
+  cost is, and the TextUI's progress line shows `best=` after the counts.
 - **Breaking:** the Pareto archive keeps one point per non-dominated cost by
   default, the first reached: it kept every distinct solution of equal cost,
   an unbounded front that made each offer scan a whole plateau (Hill Climbing

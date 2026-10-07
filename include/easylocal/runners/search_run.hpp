@@ -637,6 +637,7 @@ public:
         iterations_ = 0;
         stop_reason_ = termination_reason::completed;
         target_reached_ = false;
+        reported_best_.reset();
         observe_cost(current.cost());
 
         emit(trace::event::run_started<cost_type>{current.cost()});
@@ -1106,6 +1107,19 @@ private:
                 target_reached_ = true;
             }
         }
+        // The caller's observer of the best costs gets each one better than
+        // those it got.
+        if constexpr (requires(const Context& context, const cost_type& value) {
+                          { context.better(value, value) } -> std::convertible_to<bool>;
+                      })
+        {
+            if (reports_best_
+                && (!reported_best_ || context_.better(cost, *reported_best_)))
+            {
+                reported_best_ = cost;
+                control_.report_best_cost(cost);
+            }
+        }
     }
 
     void report() const
@@ -1124,6 +1138,10 @@ private:
     const Context& context_;
     evaluation_facility_type evaluation_;
     const run_control& control_;
+    // Whether the caller observes the best costs of this type, and the last
+    // one reported.
+    bool reports_best_{control_.template observes_best_cost<cost_type>()};
+    std::optional<cost_type> reported_best_;
     Tracer& tracer_;
     std::size_t evaluations_{};
     std::size_t iterations_{};

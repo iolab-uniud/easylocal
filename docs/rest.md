@@ -328,12 +328,17 @@ Experimental surface, as [Stability](stability.md) says of the adapters):
   "progress": {
     "evaluations": 237,
     "iterations": 14,
-    "evaluation_limit": 2000
+    "evaluation_limit": 2000,
+    "best": 31
   }
 }
 ```
 
-`evaluation_limit` is omitted when the Runner does not report one. Once the run
+`evaluation_limit` is omitted when the Runner does not report one. `best` is
+the best cost found so far, encoded as `cost` is (by the codec's
+`encode_cost`, else as a number or as text); it is omitted until the run has
+evaluated its first solution, and is the best of all the runs of a
+MultiStart or a pipeline (of the stages on the app's cost). Once the run
 has succeeded, or was cancelled with a partial solution, the status also gives
 its final `progress`, its `cost` and `"solution_url"`, the address of `GET
 /runs/<id>/solution`, and, when the runner reports it, `termination`: why the
@@ -350,7 +355,7 @@ after it ended on its own terms is `succeeded`. A failed run gives
   "seed": 42,
   "status": "succeeded",
   "cancellation_requested": false,
-  "progress": { "evaluations": 2000, "iterations": 118, "evaluation_limit": 2000 },
+  "progress": { "evaluations": 2000, "iterations": 118, "evaluation_limit": 2000, "best": 27 },
   "termination": "evaluation_budget_exhausted",
   "cost": { "...": "..." },
   "solution_url": "/assignment/runs/42/solution"
@@ -490,6 +495,12 @@ easylocal::run_control control{stop.get_token(), observer};
 
 The observer is non-owning and valid only for the controlled run. It is passed
 as the trailing run option, `run(solution, ..., easylocal::with(control))`.
+`control.observe_best_cost<Cost>(best)` adds a second observer, called with
+each better cost of type `Cost` the run finds (a solver's runs together: a
+cost better than those of the runs before). `shared_run_progress` and
+`shared_best_cost<Cost>` keep the last report for another thread: the REST
+service stores them in each run and reads them for each status, the TextUI
+for its progress line.
 Algorithms never see the control directly: `search_run::should_stop()` checks it
 and the `search_run` primitives report progress, so every runner honours
 cancellation through the same contract. A run without an explicit control uses

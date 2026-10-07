@@ -22,6 +22,8 @@ def test_a_slow_run_shows_its_progress_and_stops(slow_runner):
         first = evaluations(tui)
         tui.wait_until(lambda _: evaluations(tui) > first, what="the progress advancing")
         assert evaluations(tui) < BUDGET
+        # The best cost found so far, after the counts.
+        tui.expect(re.compile(r"Running slow-fi \[eval=\d+, iter=\d+, best=\S"))
 
         tui.press("X")
         tui.expect("Runner stopped: slow-fi", timeout=20)

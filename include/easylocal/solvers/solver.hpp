@@ -12,9 +12,11 @@
 #include <easylocal/trace/tracer.hpp>
 
 #include <algorithm>
+#include <any>
 #include <chrono>
 #include <concepts>
 #include <cstddef>
+#include <memory>
 #include <optional>
 #include <string_view>
 #include <type_traits>
@@ -170,16 +172,17 @@ const run_control* control_of(const Options&... options) noexcept
 // The progress of a solve, as the caller's observer sees it: each run gets the
 // caller's stop token with an observer that adds the evaluations and the
 // iterations of the runs before it, so that the progress of MultiStart's
-// starts and a pipeline's stages never goes back. Without an observer, the
-// runs get the caller's control itself. It refers to itself: it is neither
-// copied nor moved.
+// starts and a pipeline's stages never goes back, and an observer of the best
+// costs that passes on only those better than every one before. Without
+// observers, the runs get the caller's control itself. It refers to itself:
+// it is neither copied nor moved.
 class solve_progress
 {
 public:
     explicit solve_progress(const run_control* caller) : caller_{caller}
     {
         if (caller_ != nullptr && caller_->observes_progress())
-            control_.emplace(caller_->stop_token(), forwarder_);
+            control_.emplace(caller_->observing_progress(forwarder_));
     }
 
     solve_progress(const solve_progress&) = delete;
@@ -202,7 +205,53 @@ public:
         before_.add(result);
     }
 
+    // The runs that follow are on bound_runner, whose cost semantics compare
+    // their best costs with the best one before: run_attempts calls it, for
+    // each stage of a pipeline.
+    template<class BoundRunner>
+    void compare_best_by(const BoundRunner& bound_runner)
+    {
+        using cost_type = typename BoundRunner::cost_type;
+        if (caller_ == nullptr || !caller_->template observes_best_cost<cost_type>())
+            return;
+        auto* filter = std::any_cast<best_filter<cost_type>>(&best_filter_);
+        if (filter == nullptr)
+        {
+            filter = &best_filter_.emplace<best_filter<cost_type>>();
+            filter->caller = caller_;
+            if (!control_)
+                control_.emplace(*caller_);
+            control_->template observe_best_cost<cost_type>(*filter);
+        }
+        filter->runner = std::addressof(bound_runner);
+        filter->better = [](const void* runner,
+                             const cost_type& candidate,
+                             const cost_type& reference) {
+            return static_cast<bool>(
+                static_cast<const BoundRunner*>(runner)->better(candidate, reference));
+        };
+    }
+
 private:
+    // Passes on to the caller the best costs of the runs better than the best
+    // one before.
+    template<class Cost>
+    struct best_filter
+    {
+        const run_control* caller{};
+        const void* runner{};
+        bool (*better)(const void*, const Cost&, const Cost&){};
+        std::optional<Cost> best;
+
+        void operator()(const Cost& cost)
+        {
+            if (best && !better(runner, cost, *best))
+                return;
+            best = cost;
+            caller->report_best_cost(cost);
+        }
+    };
+
     struct forwarder
     {
         const solve_progress* self;
@@ -229,6 +278,7 @@ private:
     const run_control* caller_;
     search_effort before_;
     forwarder forwarder_{this};
+    std::any best_filter_;
     std::optional<run_control> control_;
 };
 
@@ -532,6 +582,8 @@ auto run_attempts(
     const Options&... options)
 {
     auto attempt_budget = budget.within(limits);
+    if (budget.progress != nullptr)
+        budget.progress->compare_best_by(bound_runner);
     auto best = run_attempt(std::size_t{0}, std::as_const(attempt_budget));
     using result_type = decltype(best);
     search_effort effort;

@@ -1925,6 +1925,8 @@ private:
             set_status(status_kind::info, "Runner executing: " + run_name_);
 
             run_progress_state_ = std::make_shared<easylocal::shared_run_progress>();
+            run_best_cost_ = std::make_shared<
+                easylocal::shared_best_cost<typename tester_type::cost_type>>();
             progress_event_pending_ = std::make_shared<std::atomic<bool>>(false);
 
             std::promise<async_runner_result<typename tester_type::solution_type>> promise;
@@ -1933,6 +1935,7 @@ private:
             const auto name = run_name_;
 
             const auto progress_state = run_progress_state_;
+            const auto best_cost = run_best_cost_;
             const auto event_pending = progress_event_pending_;
             // Each background run gets its own generator, seeded from the
             // session's RNG (itself seeded by options.seed), so runs are
@@ -1950,6 +1953,7 @@ private:
                     promise = std::move(promise),
                     event_app,
                     progress_state,
+                    best_cost,
                     event_pending](std::stop_token stop_token) mutable {
                     async_runner_result<typename tester_type::solution_type> completion;
                     // A progress event at the first report, then at most one
@@ -1969,7 +1973,13 @@ private:
                         last_event = now;
                         event_app->PostEvent(ftxui::Event::Custom);
                     };
-                    const easylocal::run_control control{stop_token, observer};
+                    auto best_observer =
+                        [&](const typename tester_type::cost_type& cost) {
+                            best_cost->store(cost);
+                        };
+                    easylocal::run_control control{stop_token, observer};
+                    control.observe_best_cost<typename tester_type::cost_type>(
+                        best_observer);
 
                     try
                     {
@@ -2017,6 +2027,7 @@ private:
             progress_visible_ = false;
             progress_ = {};
             run_progress_state_.reset();
+            run_best_cost_.reset();
             set_status(status_kind::error, "Run runner: " + std::string{error.what()});
         }
         catch (...)
@@ -2025,6 +2036,7 @@ private:
             progress_visible_ = false;
             progress_ = {};
             run_progress_state_.reset();
+            run_best_cost_.reset();
             set_status(status_kind::error, "Run runner: unknown error");
         }
     }
@@ -2231,9 +2243,11 @@ private:
         {
             const std::chrono::duration<double> elapsed =
                 std::chrono::steady_clock::now() - run_started_;
+            const auto best = run_best_cost_ ? run_best_cost_->load() : std::nullopt;
             progress_.label = "Running " + run_name_
                 + " [eval=" + std::to_string(progress.evaluations)
-                + ", iter=" + std::to_string(progress.iterations) + ", "
+                + ", iter=" + std::to_string(progress.iterations)
+                + (best ? ", best=" + value_text(*best) : std::string{}) + ", "
                 + detail::seconds_label(elapsed.count()) + "]";
         }
     }
@@ -2254,6 +2268,7 @@ private:
         progress_visible_ = false;
         progress_ = {};
         run_progress_state_.reset();
+        run_best_cost_.reset();
         progress_event_pending_.reset();
 
         // Every ending replaces the Last run box, a failure included.
@@ -3054,6 +3069,8 @@ private:
     std::jthread run_worker_{};
     std::future<async_runner_result<typename tester_type::solution_type>> run_future_{};
     std::shared_ptr<easylocal::shared_run_progress> run_progress_state_;
+    std::shared_ptr<easylocal::shared_best_cost<typename tester_type::cost_type>>
+        run_best_cost_;
     // Whether a progress event of the run is waiting for the event loop.
     std::shared_ptr<std::atomic<bool>> progress_event_pending_;
     std::string run_name_;

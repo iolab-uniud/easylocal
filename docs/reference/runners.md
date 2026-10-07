@@ -409,7 +409,16 @@ built-in runner reports each new best cost.
 progress from another thread stores it in a `shared_run_progress` from the
 observer and loads a copy when it draws, as the TextUI and the REST server do.
 `control.stop_token()` gives the token back, for a control of its own that
-shares it.
+shares it, and `control.observing_progress(observer)` a copy with another
+observer of the progress.
+
+`control.observe_best_cost<Cost>(best)` adds an observer of the best costs:
+the run calls `best(const Cost&)` with its first cost, then with each cost
+better, by its cost semantics, than those it reported, the last one being the
+best the run found. It is called on a commit that improves, not on each
+evaluation; costs of another type than `Cost` are not reported. A
+`shared_best_cost<Cost>` keeps the last one for another thread, behind a
+mutex: the TextUI's progress line (`best=`) and REST's `progress.best` show it.
 
 The options combine in any order:
 `with(control).timeout(30s).max_evaluations(100000).stop_at(0)`.

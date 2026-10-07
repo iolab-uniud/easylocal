@@ -67,7 +67,10 @@ The observer of the caller's `run_control` sees the progress of the whole
 solve: MultiStart and a pipeline give each run the caller's stop token with an
 observer that adds the evaluations and iterations of the runs before it, and
 the evaluation limit it reports is the solve's, so a progress bar never goes
-back from one start, attempt or stage to the next.
+back from one start, attempt or stage to the next. Its observer of the best
+costs gets only the costs better than those of the runs before, by the cost
+semantics of the runner of each run: a new start does not report a worse
+first cost. A stage on another cost than the observed one reports none.
 
 ## Pipeline
 

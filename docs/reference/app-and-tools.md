@@ -169,7 +169,8 @@ changes and stay for the rest of the session. Its *Target cost* field, when
 filled, stops each run at the first solution that reaches it; below it, the
 current cost is shown in the same syntax. Its *Stop after* row has two
 fields: *seconds*, when filled, stops each run after that many seconds (the
-progress shows the time elapsed); *evaluations* does the same with a number
+progress shows the time elapsed, after the evaluations, the iterations and
+the best cost found so far); *evaluations* does the same with a number
 of evaluations. The result of the last run is shown below the controls and in
 the status line: the costs before and after, why the run ended and its
 evaluations, such as "(time limit reached, 812 evaluations)", when the runner

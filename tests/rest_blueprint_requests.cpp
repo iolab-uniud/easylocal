@@ -499,6 +499,11 @@ void a_run_stops_at_its_target(crow::SimpleApp& server)
     assert(!untargeted.body.has("target"));
     const auto complete = wait_for(server, text(untargeted.body["id"]), "succeeded");
     assert(complete["progress"]["evaluations"].u() > 1);
+    // The best cost found, encoded by the codec as the cost is (an empty
+    // object here); none before the run starts.
+    assert(!untargeted.body["progress"].has("best"));
+    assert(complete["progress"].has("best"));
+    assert(complete["progress"]["best"].t() == crow::json::type::Object);
 
     const auto invalid = submit(server, "fi", R"({"input": {}, "target": 3})");
     assert(invalid.code == 422);

@@ -287,6 +287,9 @@ slow_run_id="$(json_string "$slow_submit_body" id)"
 
 slow_status_body="${tmp_dir}/slow-status.json"
 wait_for_progress "$slow_run_id" "$slow_status_body"
+# A running run shows the best cost it has found, as the codec encodes costs.
+grep -Eq '"best"[[:space:]]*:[[:space:]]*\{' "$slow_status_body" ||
+    fail "the progress of a running run has no best cost"
 
 not_ready_body="${tmp_dir}/not-ready.json"
 request GET "${base_url}/runs/${slow_run_id}/solution" 409 "$not_ready_body"
