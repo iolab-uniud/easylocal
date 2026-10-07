@@ -18,6 +18,13 @@ reviewed by hand before tagging.
   `config::validate(set)` are gone, use `set.apply(overrides)` and
   `set.validate()`. `apply` is `[[nodiscard]]`: its result says whether the
   overrides were applied.
+- **Breaking:** the result of `parameter_set::validate()` is named after the
+  parameters, as the rest of the model: `parameter_validation_result` and
+  `parameter_diagnostic` replace `configuration_validation_result` and
+  `configuration_validation_diagnostic`. The messages say "unknown parameter"
+  and "duplicate parameter path" (formerly "unknown configuration parameter"
+  and "duplicate configuration path"), and a configuration file's empty key
+  "parameter path must not be empty".
 
 ### Apps and tools
 

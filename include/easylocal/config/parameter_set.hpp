@@ -70,7 +70,7 @@ struct requirement_info
 };
 
 /// A block whose validate() fails, with the reason.
-struct configuration_validation_diagnostic
+struct parameter_diagnostic
 {
     /// The path of the block; empty for a block at the root of the set.
     std::string path;
@@ -81,10 +81,10 @@ struct configuration_validation_diagnostic
 /// The blocks of a set whose validate() fails.
 ///
 /// It converts to true when every block is valid.
-struct configuration_validation_result
+struct parameter_validation_result
 {
     /// One diagnostic for each invalid block.
-    std::vector<configuration_validation_diagnostic> diagnostics;
+    std::vector<parameter_diagnostic> diagnostics;
 
     /// Whether there are no diagnostics.
     [[nodiscard]]
@@ -163,7 +163,7 @@ template<class Block>
 bool validate_block(
     const Block& block,
     const std::string& prefix,
-    std::vector<configuration_validation_diagnostic>& diagnostics)
+    std::vector<parameter_diagnostic>& diagnostics)
 {
     bool valid = schema_diagnostics(
         block,
@@ -319,9 +319,9 @@ public:
 
     /// The diagnostics of every block's validate(), with the block's path.
     [[nodiscard]]
-    configuration_validation_result validate() const
+    parameter_validation_result validate() const
     {
-        configuration_validation_result result;
+        parameter_validation_result result;
         for (const auto& entry : entries_)
             entry.validate(entry.prefix, result.diagnostics);
         return result;
@@ -370,7 +370,7 @@ public:
             {
                 // An untouched block must be valid as it is: the batch would
                 // otherwise commit into an invalid set.
-                std::vector<configuration_validation_diagnostic> invalid;
+                std::vector<parameter_diagnostic> invalid;
                 entry.validate(entry.prefix, invalid);
                 for (auto& diagnostic : invalid)
                 {
@@ -391,7 +391,7 @@ public:
                     .error = override_error::unknown_parameter,
                     .path = std::string{overrides[index].path},
                     .value = std::string{overrides[index].value},
-                    .message = "unknown configuration parameter",
+                    .message = "unknown parameter",
                 });
             }
         }
@@ -418,8 +418,7 @@ private:
     {
         std::string prefix;
         std::function<void(std::string_view, std::vector<parameter_info>&)> list;
-        std::function<
-            void(std::string_view, std::vector<configuration_validation_diagnostic>&)>
+        std::function<void(std::string_view, std::vector<parameter_diagnostic>&)>
             validate;
         std::function<void(std::string_view, std::vector<requirement_info>&)>
             requirements;
@@ -492,9 +491,7 @@ private:
                 detail::walk_requirements(get(), std::string{at}, visit);
             };
         entry.validate =
-            [get](
-                const std::string_view at,
-                std::vector<configuration_validation_diagnostic>& result) {
+            [get](const std::string_view at, std::vector<parameter_diagnostic>& result) {
                 detail::validate_block(get(), std::string{at}, result);
             };
         entry.stage =
@@ -546,7 +543,7 @@ private:
             if (!touched || failed)
                 return {};
 
-            std::vector<configuration_validation_diagnostic> invalid;
+            std::vector<parameter_diagnostic> invalid;
             detail::validate_block(staged, std::string{at}, invalid);
             if (!invalid.empty())
             {
@@ -580,7 +577,7 @@ private:
                 if (candidate.path == present.path)
                 {
                     throw std::invalid_argument{
-                        "duplicate configuration path: " + candidate.path};
+                        "duplicate parameter path: " + candidate.path};
                 }
             }
         }
@@ -596,8 +593,7 @@ namespace detail
 
 // Throws std::invalid_argument with "<path>: <message>" for each diagnostic,
 // joined by "; ", unless there are none.
-inline void throw_diagnostics(
-    const std::vector<configuration_validation_diagnostic>& diagnostics)
+inline void throw_diagnostics(const std::vector<parameter_diagnostic>& diagnostics)
 {
     if (diagnostics.empty())
         return;
@@ -634,7 +630,7 @@ inline void require_valid(const parameter_set& parameters)
 template<parameter_block Block>
 const Block& require_valid(const Block& block)
 {
-    std::vector<configuration_validation_diagnostic> diagnostics;
+    std::vector<parameter_diagnostic> diagnostics;
     detail::validate_block(block, std::string{}, diagnostics);
     detail::throw_diagnostics(diagnostics);
     return block;

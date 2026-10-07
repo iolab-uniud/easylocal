@@ -150,7 +150,7 @@ parameters.add("solver", runner.configuration());  // another set, under a prefi
 | `add([prefix,] set)` | the parameters of another set |
 | `parameters()` | every parameter: `path`, `description`, `value` (as text), `read_only`, `kind` (`boolean`, `integer`, `real`, `limit`, `text`, `path`, `list`), `domain` (a `domain_info`, empty when none is declared), `active` (whether its condition holds) and `condition` (an `expression_info` with full paths, empty when it has none) |
 | `requirements()` | the requirements of every block: `path` of the block, `message`, `expression` (full paths) and `satisfied` |
-| `validate()` | the fields outside their domains, the requirements that do not hold and the diagnostics of every block's `validate()`, by path |
+| `validate()` | the fields outside their domains, the requirements that do not hold and the diagnostics of every block's `validate()`, by path: a `parameter_validation_result`, true when there are none, with a `parameter_diagnostic{path, message}` for each |
 | `apply(text_overrides)` | apply `path = value` overrides (views, or overrides that own their text, as a file gives them), all or none; its result must be read |
 
 A set refers to the objects it was built from: they must outlive it and stay

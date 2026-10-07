@@ -86,7 +86,7 @@ void expect_finite(
     rejected = rejected
         && std::ranges::any_of(
             diagnostics,
-            [&](const config::configuration_validation_diagnostic& diagnostic) {
+            [&](const config::parameter_diagnostic& diagnostic) {
                 return diagnostic.path.ends_with(field)
                     && diagnostic.message.starts_with("expected a value in");
             });

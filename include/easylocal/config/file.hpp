@@ -126,7 +126,7 @@ inline config_file_parse_result parse_config_text(std::string_view text)
                         .error = config_file_error::empty_path,
                         .line = line_number,
                         .text = std::string{raw_line},
-                        .message = "configuration path must not be empty",
+                        .message = "parameter path must not be empty",
                     });
                 }
                 else
@@ -140,8 +140,8 @@ inline config_file_parse_result parse_config_text(std::string_view text)
                             .error = config_file_error::duplicate_path,
                             .line = line_number,
                             .text = std::string{raw_line},
-                            .message = "duplicate configuration path; first defined on line " +
-                                std::to_string(position->second),
+                            .message = "duplicate parameter path; first defined on line "
+                                + std::to_string(position->second),
                         });
                     }
 
