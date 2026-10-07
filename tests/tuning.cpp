@@ -761,6 +761,8 @@ void the_stub_filters_and_says_when_nothing_is_tuned()
     assert(text.find("cost.excess") == std::string::npos);
     assert(text.find("max_evaluations") == std::string::npos);
     assert(text.find("a switch: uncomment it to tune it") != std::string::npos);
+    in.close();
+    std::filesystem::remove_all(directory);
 }
 
 int main()
