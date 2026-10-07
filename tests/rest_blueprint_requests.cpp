@@ -370,18 +370,18 @@ void a_pipeline_runs_by_name(crow::SimpleApp& server)
     const auto parameters = send(server, crow::HTTPMethod::GET, "/assignment/parameters");
     bool configurable = false;
     for (const auto& parameter : parameters.body["parameters"])
-        configurable =
-            configurable || text(parameter["path"]) == "runners.cascade.second.attempts";
+        configurable = configurable
+            || text(parameter["path"]) == "runners.cascade.second.max_evaluations";
     assert(configurable);
 
     // Run by name, with a parameter of its own for this run.
     const auto submitted = submit(
         server,
         "cascade",
-        R"({"input": {}, "parameters": {"runners.cascade.second.attempts": 2}})");
+        R"({"input": {}, "parameters": {"runners.cascade.second.max_evaluations": 50}})");
     assert(submitted.code == 202);
     const auto done = wait_for(server, text(submitted.body["id"]), "succeeded");
-    assert(text(done["parameters"]["runners.cascade.second.attempts"]) == "2");
+    assert(text(done["parameters"]["runners.cascade.second.max_evaluations"]) == "50");
 }
 
 void a_deeply_nested_body_is_rejected_before_parsing(crow::SimpleApp& server)
