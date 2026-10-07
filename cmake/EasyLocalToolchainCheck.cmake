@@ -17,7 +17,10 @@ function(easylocal_check_toolchain)
         "EASYLOCAL_FROM_CHARS_${CMAKE_OSX_DEPLOYMENT_TARGET}_${CMAKE_OSX_SYSROOT}"
         result)
     set(CMAKE_REQUIRED_QUIET ON)
-    set(CMAKE_REQUIRED_FLAGS "-std=c++17")
+    # The standard as a variable, not a flag: CMake adds its own -std= after
+    # the required flags, C++14 when the project sets no standard.
+    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
     check_cxx_source_compiles(
         [[
 #include <charconv>
