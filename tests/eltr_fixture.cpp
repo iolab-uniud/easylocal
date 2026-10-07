@@ -1,9 +1,15 @@
 // Writes the same events as ELTR and as JSON Lines, for the decoder test
 // (tests/eltr_decode.py): every core event with an integral cost, a run with
 // a structured cost, application events in the binary trace only (one with a
-// schema, one without), and a hierarchical cost with the default writers.
+// schema, one without), a hierarchical cost with the default writers, and the
+// events of a real pipeline solve.
 #include <easylocal/cost.hpp>
+#include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/runners/hill_climbing.hpp>
+#include <easylocal/runners/runner.hpp>
+#include <easylocal/solvers.hpp>
 #include <easylocal/trace.hpp>
+#include <easylocal/utils/generator.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -11,7 +17,9 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <optional>
 #include <ostream>
+#include <random>
 #include <type_traits>
 #include <vector>
 
@@ -227,6 +235,142 @@ void write_timed(const std::filesystem::path& directory)
     binary.flush();
 }
 
+// The problem of the pipeline solve: a counter, whose cost is its value,
+// lowered by one at each move down to 0.
+struct Counter
+{
+    int start{};
+};
+
+struct Count
+{
+    int value{};
+};
+
+class CounterManager
+{
+public:
+    using input_type = Counter;
+    using solution_type = Count;
+
+    explicit CounterManager(const Counter& input) : input_{input} {}
+
+    const Counter& input() const noexcept
+    {
+        return input_;
+    }
+    static bool is_valid(const Count& count) noexcept
+    {
+        return count.value >= 0;
+    }
+    Count initial_solution() const
+    {
+        return {input_.start};
+    }
+
+private:
+    const Counter& input_;
+};
+
+struct CountValue
+{
+    static int evaluate(const Count& count)
+    {
+        return count.value;
+    }
+};
+
+struct Decrement
+{
+    bool operator==(const Decrement&) const = default;
+};
+
+class DecrementExplorer
+{
+public:
+    using input_type = Counter;
+    using solution_type = Count;
+    using move_type = Decrement;
+
+    explicit DecrementExplorer(const CounterManager& sm) : sm_{sm} {}
+
+    const Counter& input() const noexcept
+    {
+        return sm_.input();
+    }
+    static easylocal::generator<Decrement> moves(const Count& count)
+    {
+        if (count.value > 0)
+            co_yield Decrement{};
+    }
+    template<std::uniform_random_bit_generator RNG>
+    static std::optional<Decrement> random_move(const Count& count, RNG&)
+    {
+        if (count.value > 0)
+            return Decrement{};
+        return std::nullopt;
+    }
+    static bool is_valid(const Count& count, const Decrement&) noexcept
+    {
+        return count.value > 0;
+    }
+    static void make_move(Count& count, const Decrement&) noexcept
+    {
+        --count.value;
+    }
+
+private:
+    const CounterManager& sm_;
+};
+
+// Sends each event to both recorders, which write the same solve.
+template<class First, class Second>
+struct both_recorders
+{
+    template<class Event>
+    static constexpr bool observes = easylocal::trace::observes<First, Event>
+        || easylocal::trace::observes<Second, Event>;
+
+    First& first;
+    Second& second;
+
+    template<class Event>
+    void emit(const Event& value)
+    {
+        easylocal::trace::emit(first, value);
+        easylocal::trace::emit(second, value);
+    }
+};
+
+// A two-stage pipeline from 6: two attempts of Hill Climbing, each stopped
+// at 3 by its budget of 4 evaluations, then First Improvement down to 0. Every
+// move improves, so the trace does not depend on the random numbers.
+void write_pipeline(const std::filesystem::path& directory)
+{
+    namespace el = easylocal;
+    std::ofstream binary_file{directory / "pipeline.eltr", std::ios::binary};
+    std::ofstream json_file{directory / "pipeline.jsonl"};
+    el::trace::binary_recorder<int> binary{binary_file};
+    el::trace::jsonl_recorder<int> json{json_file};
+    both_recorders<decltype(binary), decltype(json)> recorders{binary, json};
+
+    const auto sm = el::solution_manager<CounterManager>() | el::component<CountValue>();
+    const auto nhe = el::neighborhood<DecrementExplorer>();
+    auto pipeline = el::solvers::pipeline(
+        el::solvers::stage(
+            "climb",
+            el::make_runner<el::runners::HillClimbing>({.max_evaluations = 4}) | sm | nhe)
+            & el::solvers::attempts(2),
+        el::solvers::stage(
+            "descend",
+            el::make_runner<el::runners::FirstImprovement>() | sm | nhe));
+    const Counter input{.start = 6};
+    static_cast<void>(pipeline.initialization(el::initialization::initial)
+            .seed(1)
+            .solve(input, el::with(recorders)));
+    binary.flush();
+}
+
 } // namespace
 
 int main(int argc, char** argv)
@@ -241,5 +385,6 @@ int main(int argc, char** argv)
     write_structured(directory);
     write_hierarchical(directory);
     write_timed(directory);
+    write_pipeline(directory);
     return 0;
 }

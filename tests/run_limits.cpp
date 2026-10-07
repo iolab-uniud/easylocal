@@ -447,6 +447,47 @@ int main()
             && attempted_result.termination
                 == el::termination_reason::evaluation_budget_exhausted,
         "a stage stopped by the budget in its second attempt says so");
+
+    // A library recorder sees each attempt of a stage, then the next stage, as
+    // its run_context followed by its run, from run_started to run_finished.
+    {
+        using recorder_type = el::trace::memory_recorder<int>;
+        auto recorded = solvers::pipeline(
+            solvers::stage("only", idle_runner) & solvers::attempts(2),
+            solvers::stage("after", idle_runner));
+        recorder_type recorder;
+        static_cast<void>(recorded.initialization(el::initialization::initial)
+                .solve(instance, el::with(recorder)));
+        std::vector<std::string> contexts;
+        std::vector<std::size_t> evaluations;
+        bool in_order = true;
+        bool idle = true;
+        const auto& records = recorder.records();
+        for (std::size_t index = 0; index < records.size(); ++index)
+        {
+            if (const auto* context =
+                    std::get_if<recorder_type::run_context_record>(&records[index]))
+            {
+                contexts.push_back(
+                    context->stage + " " + std::to_string(context->stage_index) + " "
+                    + std::to_string(context->attempt));
+                in_order = in_order && index + 1 < records.size()
+                    && std::holds_alternative<recorder_type::run_started_record>(
+                        records[index + 1]);
+            }
+            else if (const auto* end =
+                         std::get_if<recorder_type::run_finished_record>(&records[index]))
+            {
+                evaluations.push_back(end->evaluations);
+                idle = idle
+                    && end->termination == el::termination_reason::idle_limit_reached;
+            }
+        }
+        ok &= expect(
+            contexts == std::vector<std::string>{"only 0 0", "only 0 1", "after 1 0"}
+                && in_order && idle && evaluations == std::vector<std::size_t>(3, 11),
+            "a memory recorder records each attempt and stage after its run_context");
+    }
     ok &= expect(
         solvers::stage("s", runner).with_max_evaluations(7).parameters().max_evaluations
             == 7,

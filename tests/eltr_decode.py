@@ -199,6 +199,36 @@ class FixtureTraces(unittest.TestCase):
         )
         self.assertEqual(result["distinct_solutions"], 2)
 
+    def test_a_pipeline_solve_decodes_like_the_jsonl_recorder(self):
+        decoded = decode(self.path / "pipeline.eltr")
+        self.assertEqual(decoded, self.expected("pipeline.jsonl"))
+        self.assertEqual([record["event"] for record in decoded].count("run_context"), 3)
+
+    def test_the_summary_of_a_pipeline_solve(self):
+        with open(self.path / "pipeline.eltr", "rb") as stream:
+            result = eltr.summary(eltr.Trace(stream))
+
+        def run(stage, stage_index, attempt, initial_cost, final_cost, termination):
+            return {
+                "stage": stage,
+                "stage_index": stage_index,
+                "attempt": attempt,
+                "initial_cost": initial_cost,
+                "final_cost": final_cost,
+                "evaluations": 4,
+                "iterations": 3,
+                "termination": termination,
+            }
+
+        self.assertEqual(
+            result["runs"],
+            [
+                run("climb", 0, 0, 6, 3, "evaluation budget exhausted"),
+                run("climb", 0, 1, 6, 3, "evaluation budget exhausted"),
+                run("descend", 1, 0, 3, 0, "local optimum"),
+            ],
+        )
+
     def test_a_run_without_run_finished_is_unfinished(self):
         schemas = [
             (1, "run_started", [("cost", 15)]),
