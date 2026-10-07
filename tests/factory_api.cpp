@@ -26,6 +26,10 @@ struct Solution
     int value{};
 };
 
+// The initial solution, whose cost is its value: a solver that returns it is
+// told from a default-constructed result.
+constexpr int initial_value = 5;
+
 struct SolutionManager
 {
     using input_type = Instance;
@@ -35,7 +39,10 @@ struct SolutionManager
 
     [[nodiscard]] auto input() const noexcept -> const Instance& { return instance_; }
     [[nodiscard]] auto is_valid(const Solution&) const noexcept -> bool { return true; }
-    [[nodiscard]] auto initial_solution() const -> Solution { return {}; }
+    [[nodiscard]] auto initial_solution() const -> Solution
+    {
+        return {initial_value};
+    }
 
 private:
     const Instance& instance_;
@@ -103,6 +110,8 @@ struct IdentityAlgorithm
     }
 };
 
+// Adds its token to the cost: a result shows that the runner was built with
+// the token given to make_runner.
 struct ConfiguredAlgorithm
 {
     explicit ConfiguredAlgorithm(int token) : token_{token} {}
@@ -115,7 +124,7 @@ struct ConfiguredAlgorithm
             typename Context::solution_type solution;
             typename Context::cost_type cost;
         };
-        return Result{solution, context.evaluation().evaluate(solution).cost() + token_ - token_};
+        return Result{solution, context.evaluation().evaluate(solution).cost() + token_};
     }
 
 private:
@@ -190,7 +199,7 @@ public:
     }
     Solution initial_solution() const
     {
-        return {};
+        return {initial_value};
     }
 
 private:
@@ -281,7 +290,7 @@ void recipe_arguments_convert_as_constructors_take_them()
             .initialization(initialization::initial)
             .seed(17);
     const Instance instance{};
-    assert(solver.solve(instance).cost == 0);
+    assert(solver.solve(instance).cost == 3 * initial_value);
 
     ScaledSolutionManager sm{instance, 2.0};
     const ScaledNeighborhoodExplorer explorer{sm, 4.0};
@@ -374,7 +383,13 @@ int main()
         typename std::remove_cvref_t<decltype(move_only)>::cost_type,
         typename decltype(configured_runner)::cost_type>);
     auto move_only_bound = move_only.bind(instance);
-    assert(move_only_bound.run(Solution{}).cost == 0);
+    assert(move_only_bound.run(Solution{initial_value}).cost == initial_value);
+
+    const auto configured_bound =
+        (configured | (solution_manager<SolutionManager>() | component<CostComponent>())
+            | neighborhood<NeighborhoodExplorer>())
+            .bind(instance);
+    assert(configured_bound.run(Solution{initial_value}).cost == initial_value + 7);
 
     // No state passes from one run to the next, on a const bound runner too.
     const auto counting = Runner{CountingAlgorithm{}}
@@ -385,8 +400,8 @@ int main()
     assert(counting_bound.run(Solution{}).run == 1);
 
     const auto local_result = local_solver.solve(instance);
-    assert(local_result.solution.value == 0);
-    assert(local_result.cost == 0);
+    assert(local_result.solution.value == initial_value);
+    assert(local_result.cost == initial_value);
 
     auto multistart_solver =
         make_solver<solvers::MultiStart>(
@@ -395,8 +410,8 @@ int main()
             .initialization(initialization::initial)
             .seed(17);
     const auto multistart_result = multistart_solver.solve(instance);
-    assert(multistart_result.solution.value == 0);
-    assert(multistart_result.cost == 0);
+    assert(multistart_result.solution.value == initial_value);
+    assert(multistart_result.cost == initial_value);
 
     recipe_arguments_convert_as_constructors_take_them();
     return 0;
