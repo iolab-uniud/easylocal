@@ -1012,10 +1012,12 @@ public:
     /// Throws std::invalid_argument when the registration names or the
     /// parameters are not valid (check_configuration).
     template<class Spec = SMSpec>
-        requires complete<Spec> && Spec::template
-    constructible_from<const typename detail::service_t<Spec>::input_type>&& NHESpec::
-        template constructible_from<detail::service_t<Spec>> [[nodiscard]]
-        auto bind(const typename detail::service_t<Spec>::input_type& input) const
+        requires complete<Spec>
+        && (Spec::template constructible_from<
+            const typename detail::service_t<Spec>::input_type>)
+        && (NHESpec::template constructible_from<detail::service_t<Spec>>)
+    [[nodiscard]]
+    auto bind(const typename detail::service_t<Spec>::input_type& input) const
     {
         check_configuration();
         return BoundApp<SMSpec, NHESpec, Registrations...>{
