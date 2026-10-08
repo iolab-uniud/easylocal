@@ -10,6 +10,7 @@
 #include <easylocal/utils/detail/number_text.hpp>
 
 #include <concepts>
+#include <cstdint>
 #include <type_traits>
 
 namespace easylocal::cost
@@ -24,6 +25,17 @@ template<class Value>
 inline constexpr bool unsigned_cost_v = std::unsigned_integral<std::remove_cv_t<Value>>
     && !std::same_as<std::remove_cv_t<Value>, bool>;
 
+// The domain in which the difference of two arithmetic costs is computed,
+// which their own type may not represent: INT_MAX - INT_MIN overflows an int.
+// A floating-point cost keeps its type; an integral cost narrower than 64 bits
+// widens to a 64-bit integer, which holds every difference, and a 64-bit one
+// to double, whose rounding of differences above 2^53 the delta documents.
+template<class Cost>
+using delta_t = std::conditional_t<
+    std::floating_point<Cost>,
+    Cost,
+    std::conditional_t<(sizeof(Cost) < sizeof(std::int64_t)), std::int64_t, double>>;
+
 } // namespace detail
 
 /// An arithmetic cost: a signed integral or floating-point type other than
@@ -36,13 +48,16 @@ concept arithmetic = easylocal::detail::number<Cost> && !detail::unsigned_cost_v
 /// The numeric difference `candidate - current` of two arithmetic costs.
 ///
 /// Delta-based acceptance criteria use it; other cost types provide their own
-/// `delta` as a free function found by ADL.
+/// `delta` as a free function found by ADL. The difference is computed in a
+/// type that represents it: a floating-point cost keeps its own, an integral
+/// cost narrower than 64 bits gives a 64-bit integer, a 64-bit one a double,
+/// which rounds differences above 2^53.
 template<arithmetic Cost>
 [[nodiscard]]
-constexpr auto delta(const Cost& candidate, const Cost& current)
-    noexcept(noexcept(candidate - current))
+constexpr detail::delta_t<Cost> delta(const Cost& candidate, const Cost& current) noexcept
 {
-    return candidate - current;
+    using result = detail::delta_t<Cost>;
+    return static_cast<result>(candidate) - static_cast<result>(current);
 }
 
 /// A cost type with a numeric difference: `delta(candidate, current)`,

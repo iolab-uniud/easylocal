@@ -8,6 +8,8 @@
 #include <compare>
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
+#include <limits>
 #include <utility>
 
 namespace
@@ -188,6 +190,23 @@ int main()
     ok &= expect(
         easylocal::cost::delta(13.5, 10.0) == 3.5,
         "numeric delta is the ordinary arithmetic difference");
+
+    // The difference is computed where it is representable: in the cost type,
+    // INT_MAX - INT_MIN would wrap around to -1 and read as an improvement.
+    static_assert(std::same_as<decltype(easylocal::cost::delta(0, 0)), std::int64_t>);
+    static_assert(std::same_as<decltype(easylocal::cost::delta(0.0f, 0.0f)), float>);
+    static_assert(
+        std::same_as<decltype(easylocal::cost::delta(0.0L, 0.0L)), long double>);
+    constexpr auto highest = (std::numeric_limits<int>::max)();
+    constexpr auto lowest = (std::numeric_limits<int>::min)();
+    ok &= expect(
+        easylocal::cost::delta(highest, lowest) > 0
+            && easylocal::cost::delta(lowest, highest) < 0,
+        "the delta of the extremes of an int keeps the sign of the change");
+    ok &= expect(
+        easylocal::cost::delta(highest, lowest)
+            == static_cast<std::int64_t>(highest) - static_cast<std::int64_t>(lowest),
+        "the delta of two ints is their exact difference");
     ok &= expect(
         delta(numeric_b, numeric_a) == 3.5L &&
             numeric_b - numeric_a == delta(numeric_b, numeric_a),

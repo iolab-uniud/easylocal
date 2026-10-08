@@ -861,6 +861,25 @@ int main()
         (void)metropolis.accept(11, 10, 2.0, rng);
         ok &= expect(rng.calls > 0,
             "Metropolis worsening branch consumes RNG state");
+
+        // The difference of the extremes of an int is not an int: computed in
+        // the cost type it would wrap around and read as an improvement.
+        ok &= expect(
+            !metropolis.accept(
+                (std::numeric_limits<int>::max)(),
+                (std::numeric_limits<int>::min)(),
+                1.0,
+                rng),
+            "Metropolis rejects the worsening from the lowest to the highest int");
+        const auto worsening_calls = rng.calls;
+        ok &= expect(
+            metropolis.accept(
+                (std::numeric_limits<int>::min)(),
+                (std::numeric_limits<int>::max)(),
+                1.0,
+                rng)
+                && rng.calls == worsening_calls,
+            "Metropolis accepts the improvement from the highest to the lowest int");
     }
 
     {

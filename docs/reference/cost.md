@@ -190,6 +190,14 @@ delta-based acceptance; user cost types provide it as a free function found by
 ADL (call it as `using cost::delta; delta(a, b)`). The concept
 `cost::has_delta<Cost>` tells whether it exists.
 
+The difference of two arithmetic costs is computed in a type that represents
+it, which the cost type itself need not: the delta of an integral cost narrower
+than 64 bits is an `std::int64_t`, exact for every pair of costs; that of a
+64-bit one a `double`, which rounds differences above 2^53; and a
+floating-point cost keeps its own type. A user cost type's own `delta` is
+responsible for the same: the difference of two costs that their type holds may
+not fit in it.
+
 `cost::zero<Cost>()` is the cost of no violation and no penalty: `Cost{}` for
 value-initializable types (0 for arithmetic costs) and the zero of every level
 for `lexicographic`, `hierarchical` and `pareto` costs. Other cost types provide it by

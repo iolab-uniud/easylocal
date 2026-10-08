@@ -11,6 +11,15 @@ reviewed by hand before tagging.
 
 ## [4.0.0-alpha.3] — not yet released
 
+### Fixed
+
+- `cost::delta(candidate, current)` computes the difference where it is
+  representable, not in the cost type: the delta of an integral cost narrower
+  than 64 bits is a 64-bit integer, that of a wider or 64-bit one a double,
+  and a floating-point cost keeps its own type. An `int` cost at the extremes
+  of its range (the worsening from `INT_MIN` to `INT_MAX`) wrapped around and
+  the Metropolis criterion read it as an improvement.
+
 ### Parameters
 
 - **Breaking:** a parameter set is applied and validated by its members
