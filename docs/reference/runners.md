@@ -274,7 +274,8 @@ applying them, and the policy starts from the temperature at which a worsening
 move of average size is accepted with probability `initial_acceptance` (0.5 by
 default; 0.2 suits a good initial solution), as in Johnson et al. (1989).
 Improving moves and infinite deltas (a hierarchical hard level) are ignored;
-without worsening moves `initial_temperature` stays, and the estimate is kept
+without worsening moves, or when the deltas ask for a temperature that is not a
+representable number, `initial_temperature` stays, and the estimate is kept
 above the final temperature. The sampled moves count as evaluations, not as
 iterations. A custom policy opts in by modelling
 `calibrating_temperature_policy`: `calibration_samples()` and

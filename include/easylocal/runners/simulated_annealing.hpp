@@ -105,13 +105,22 @@ inline std::size_t temperature_level_count(
     assert(final_temperature > 0.0 && final_temperature < initial_temperature);
     assert(cooling_rate > 0.0 && cooling_rate < 1.0);
 
-    const auto raw_levels =
-        std::log(final_temperature / initial_temperature) / std::log(cooling_rate);
+    // The difference of the logarithms, not the logarithm of the ratio, whose
+    // underflow or overflow would leave the count infinite and its rounding
+    // not a number.
+    const auto raw_levels = (std::log(final_temperature) - std::log(initial_temperature))
+        / std::log(cooling_rate);
 
     constexpr double rounding = 1e-9;
-    return (std::max)(std::size_t{1},
-        static_cast<std::size_t>(
-            std::ceil(raw_levels - rounding * (std::max)(1.0, raw_levels))));
+    const auto levels = std::ceil(raw_levels - rounding * (std::max)(1.0, raw_levels));
+
+    // Temperatures orders of magnitude apart, cooled by a rate just below one,
+    // give more levels than a size_t holds: the schedule then never finishes.
+    constexpr auto largest =
+        static_cast<double>((std::numeric_limits<std::size_t>::max)());
+    if (!(levels < largest))
+        return (std::numeric_limits<std::size_t>::max)();
+    return (std::max)(std::size_t{1}, static_cast<std::size_t>(levels));
 }
 
 // The fields of a cooling schedule, shared by the blocks that have one: its
@@ -162,25 +171,34 @@ consteval auto calibration_fields()
 // accepted with probability initial_acceptance (Johnson et al., 1989), from
 // the deltas of moves sampled at the initial solution; improving moves and
 // infinite deltas (a hierarchical hard level) are ignored. Empty when no
-// sampled move worsens the cost.
+// sampled move worsens the cost, or when the temperature they ask for is not
+// a representable one.
 [[nodiscard]]
 inline std::optional<double> estimate_temperature(
     const std::span<const double> deltas,
     const double initial_acceptance)
 {
-    double sum = 0.0;
+    // The mean is kept as it goes, never as a sum: the deltas of a costly
+    // problem are each finite, their sum need not be.
+    double mean = 0.0;
     std::size_t count = 0;
     for (const auto delta : deltas)
     {
         if (delta > 0.0 && std::isfinite(delta))
         {
-            sum += delta;
             ++count;
+            mean += (delta - mean) / static_cast<double>(count);
         }
     }
     if (count == 0)
         return std::nullopt;
-    return -(sum / static_cast<double>(count)) / std::log(initial_acceptance);
+
+    // Deltas large enough that the temperature accepting them is not a number
+    // leave the configured initial temperature in place.
+    const auto estimate = -mean / std::log(initial_acceptance);
+    if (!std::isfinite(estimate))
+        return std::nullopt;
+    return estimate;
 }
 
 // calibrate() for policies with an initial temperature: rebuild with the

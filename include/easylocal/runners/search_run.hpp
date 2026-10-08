@@ -854,11 +854,15 @@ public:
 
     /// Ends the run.
     ///
-    /// Without an explicit reason the termination is the one recorded by
-    /// should_stop(), or completed.
+    /// Without an explicit reason the termination is the one should_stop()
+    /// finds, or completed: an algorithm whose loop ends on its own condition
+    /// still reports a cancellation or an exhausted budget.
     [[nodiscard]]
     result_type finish(solution_type solution, cost_type cost)
     {
+        // Asked again, and not the reason of the last call: a loop that ends
+        // on its own condition may never have reached its stop check.
+        static_cast<void>(should_stop());
         return finish(
             std::move(solution),
             std::move(cost),

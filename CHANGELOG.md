@@ -19,6 +19,20 @@ reviewed by hand before tagging.
   and a floating-point cost keeps its own type. An `int` cost at the extremes
   of its range (the worsening from `INT_MIN` to `INT_MAX`) wrapped around and
   the Metropolis criterion read it as an improvement.
+- A run that ends without an explicit reason, `run.finish(solution, cost)`,
+  asks its control again instead of reporting the reason of the algorithm's
+  last `should_stop()`: a Simulated Annealing cancelled at its last proposal,
+  when the schedule ends too, reported a completed schedule. A reason the
+  algorithm gives, such as `local_optimum`, still stands: an empty
+  neighborhood is an optimum also when a stop was requested.
+- The number of temperature levels of a cooling schedule comes from the
+  difference of the logarithms of the temperatures, not from the logarithm of
+  their ratio, and is bounded before it becomes a count: temperatures orders
+  of magnitude apart (1e300 down to 1e-300) made the ratio underflow and the
+  rounded count not a number. The calibration averages the sampled deltas as it
+  goes, so that deltas whose sum is not representable still give an estimate,
+  and an estimated temperature that is not a number keeps the configured
+  `initial_temperature` instead of leaving the schedule invalid.
 
 ### Parameters
 

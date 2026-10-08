@@ -570,6 +570,15 @@ int main()
         ok &= expect(
             easylocal::runners::detail::temperature_level_count(1.0, 0.729, 0.9) == 3,
             "the level count is robust to rounding");
+
+        // Temperatures whose ratio is not representable: the count comes from
+        // the difference of the logarithms, and stays a number.
+        const auto extreme_levels =
+            easylocal::runners::detail::temperature_level_count(1e300, 1e-300, 0.95);
+        ok &= expect(
+            extreme_levels > 0
+                && extreme_levels < (std::numeric_limits<std::size_t>::max)(),
+            "the level count of temperatures orders of magnitude apart is finite");
     }
 
     {
@@ -772,6 +781,31 @@ int main()
         ok &= expect(
             !easylocal::runners::detail::estimate_temperature(improving, 0.5).has_value(),
             "no estimate without worsening moves");
+
+        // Deltas whose sum, and whose temperature, are not representable:
+        // the mean is kept as it goes, and an estimate that is not a number
+        // leaves the configured initial temperature in place.
+        const auto huge = (std::numeric_limits<double>::max)();
+        const std::array<double, 2> huge_deltas{huge, huge};
+        ok &= expect(
+            !easylocal::runners::detail::estimate_temperature(huge_deltas, 0.5)
+                .has_value(),
+            "no estimate from deltas whose temperature is not representable");
+        const std::array<double, 2> large_deltas{1e307, 3e307};
+        const auto large_estimate =
+            easylocal::runners::detail::estimate_temperature(large_deltas, 0.5);
+        ok &= expect(
+            large_estimate.has_value() && std::isfinite(*large_estimate),
+            "deltas whose sum overflows but whose mean does not are averaged");
+
+        temperature::Classic uncalibrated{temperature::ClassicParameters{
+            .initial_temperature = 7.0,
+            .calibration_samples = 10,
+        }};
+        uncalibrated.calibrate(huge_deltas);
+        ok &= expect(
+            uncalibrated.parameters().initial_temperature == 7.0,
+            "a calibration without an estimate keeps the configured temperature");
 
         temperature::Classic classic{
             temperature::ClassicParameters{.calibration_samples = 10}};
@@ -1043,6 +1077,25 @@ int main()
                 controlled.evaluations == 2 &&
                 controlled.termination == easylocal::termination_reason::cancelled,
             "SA controlled execution reports progress and cooperatively stops");
+
+        // The stop arrives at the last proposal, when the schedule is over
+        // too: the loop never checks it again, and the run still reports the
+        // cancellation rather than a completed schedule.
+        std::stop_source late_stop;
+        auto late_observer = [&](const easylocal::run_progress& progress) {
+            if (progress.evaluations >= 3)
+                late_stop.request_stop();
+        };
+        const easylocal::run_control late_control{late_stop.get_token(), late_observer};
+        std::mt19937 late_rng{7U};
+        const auto late_cancelled = runner.bind(instance).run(
+            ChainSolution{},
+            late_rng,
+            easylocal::with(late_control));
+        ok &= expect(
+            late_cancelled.evaluations == 3
+                && late_cancelled.termination == easylocal::termination_reason::cancelled,
+            "a stop at the last proposal of SA is reported, not a completed schedule");
     }
 
     {
