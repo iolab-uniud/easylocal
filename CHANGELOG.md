@@ -97,6 +97,13 @@ reviewed by hand before tagging.
 
 ### Documentation and examples
 
+- The tutorial's `RandomDescent` commits with `commit_improvement()`: a
+  descent only ever improves, so every accepted move is also a new incumbent,
+  and the trace recorded none. Chapter 7 lists `commit_improvement()` beside
+  `commit()` and says which algorithms use which, and the runners reference no
+  longer says that the events of a run "cannot be forgotten": counting an
+  iteration, checking `should_stop()` and reporting an incumbent are the
+  algorithm's own.
 - *Coming from EasyLocal 3* (`docs/from-easylocal-3.md`) is organized as a map
   of the two frameworks, a walkthrough of a port and a checklist. The map
   covers the whole of EasyLocal 3.4.1, kickers, the parallel explorer, the

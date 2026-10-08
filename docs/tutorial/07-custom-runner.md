@@ -55,8 +55,10 @@ public:
 
             run.next_iteration();
             auto candidate = run.evaluate_move(solution, current, *move);
+            // A descent only ever improves: every commit is a new incumbent,
+            // which commit_improvement() reports to the trace.
             if (run.better(candidate.cost(), current.cost()))
-                run.commit(solution, current, std::move(candidate), *move);
+                run.commit_improvement(solution, current, std::move(candidate), *move);
         }
         return run.finish(std::move(solution), current.cost()); // run_finished
     }
@@ -79,6 +81,7 @@ and the trace events. The algorithm only describes its logic:
 | `moves(solution)`, `random_move(solution, rng)` | neighborhood access |
 | `evaluate_move(solution, current, move)` | counts, emits `move_evaluated`, reports progress |
 | `commit(solution, current, candidate, move)` | applies the move, emits `move_accepted` |
+| `commit_improvement(solution, current, candidate, move)` | applies the move, emits `move_accepted` and `incumbent_updated`, for an algorithm whose current solution is its best |
 | `next_iteration()` | advances the iteration counter |
 | `incumbent_updated(previous, cost)` | for algorithms that keep a best-so-far solution |
 | `finish(solution, cost[, reason])` | emits `run_finished`, returns a `search_result` |
@@ -86,6 +89,11 @@ and the trace events. The algorithm only describes its logic:
 Every runner is cancellable by contract: checking `should_stop()` in the loop is
 all it takes. Per-run state lives in local variables, so `run` is `const` and a
 runner can be reused.
+
+A descent only ever moves to a better solution, so its current solution is also
+its best: it commits with `commit_improvement()`, which emits `incumbent_updated`
+as well. An algorithm that also accepts worsenings (Simulated Annealing) commits
+with `commit()` and keeps its best apart, with `best_so_far`.
 
 The runner is used like a built-in one:
 

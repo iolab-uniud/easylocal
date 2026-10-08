@@ -559,8 +559,10 @@ public:
 
             run.next_iteration();
             auto candidate = run.evaluate_move(solution, current, *move);
+            // A descent only ever improves: every commit is a new incumbent,
+            // which commit_improvement() reports to the trace.
             if (run.better(candidate.cost(), current.cost()))
-                run.commit(solution, current, std::move(candidate), *move);
+                run.commit_improvement(solution, current, std::move(candidate), *move);
         }
         return run.finish(std::move(solution), current.cost()); // run_finished
     }

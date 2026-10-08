@@ -453,7 +453,9 @@ the deltas left at 1e-17. The same options are accepted by every solver's
 
 - **One `run` member.** Algorithms describe their logic; counters, budget,
   cancellation, progress and events belong to `search_run`, so they behave the
-  same in every algorithm and cannot be forgotten.
+  same in every algorithm. What the algorithm alone knows stays its own:
+  counting an iteration, checking `should_stop()` and reporting a new incumbent
+  (`commit_improvement()`, `best_so_far`).
 - **Every runner is cancellable.** A run always carries a `run_control`; checking
   `should_stop()` is the whole contract. The cost of an inactive control is a
   null check.
