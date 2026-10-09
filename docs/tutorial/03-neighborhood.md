@@ -47,6 +47,8 @@ n(n − 1)/2 moves, 10 for five cities.
 class SwapExplorer : public easylocal::neighborhood_explorer_base<TourManager, SwapCities>
 {
 public:
+    // The constructor of the base: from the SolutionManager, whose Input the
+    // explorer reaches with input().
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
     // Every pair of positions i < j, one move at a time.
@@ -155,6 +157,8 @@ struct TwoOpt
 class TwoOptExplorer : public easylocal::neighborhood_explorer_base<TourManager, TwoOpt>
 {
 public:
+    // The constructor of the base: from the SolutionManager, whose Input the
+    // explorer reaches with input().
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
     // The moves are the pairs i + 2 <= j < n, by i and then by j: with

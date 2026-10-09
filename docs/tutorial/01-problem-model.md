@@ -99,6 +99,7 @@ to build one.
 class TourManager : public easylocal::solution_manager_base<Tsp, Tour>
 {
 public:
+    // The constructor of the base: from the Input, which input() gives back.
     using solution_manager_base::solution_manager_base;
 
     // The cities in index order: 0, 1, ..., n - 1.

@@ -156,6 +156,7 @@ int main(int argc, char* argv[])
             el::neighborhood<SwapExplorer>())
         | el::random_biases(3.0, 1.0);
 
+    // [union-runner]
     auto union_sa =
         el::make_runner<runners::SimulatedAnnealing<Classic>>({
             .temperature =
@@ -167,6 +168,7 @@ int main(int argc, char* argv[])
                 },
         })
         | sm | both;
+    // [union-runner]
     // [union] --------------------------------------------------------------
 
     // [custom-runner-use] --------------------------------------------------

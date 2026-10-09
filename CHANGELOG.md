@@ -147,6 +147,21 @@ reviewed by hand before tagging.
   EasyLocal 4 adds to an EasyLocal 3 program: tracing, run control,
   configuration files, tuning, the REST service, several objectives and
   solvers as pipelines.
+- *Coming from EasyLocal 3* now leads with the port and keeps the comparison
+  tables as a reference at the end, where the concepts say which step ports
+  them. It gains a makefile for a program built without CMake, a step that
+  explains the recipes, the binding, the bound runner and the app in full
+  rather than only what changed, and a section on the parameter blocks, their
+  domains, the configuration and TOML files and the irace scenario. The
+  checking section tells `EASYLOCAL_VERIFY_DELTAS`, the component checks,
+  `check(app, input)` and the neighborhood checks of a Session apart; the
+  tester step shows how to equip a tester and leaves its use to chapter 13;
+  reading and writing start from the stream operators an EasyLocal 3 program
+  already has. What EasyLocal 3 carried as tentative, the tracing channel and
+  the modelling layer, is no longer a concept to port, and the parallel
+  explorer and the modelling layer point to the roadmap.
+- The tutorial's TSP says in a comment what an inherited constructor brings:
+  the Input for a SolutionManager, the SolutionManager for an explorer.
 
 ## [4.0.0-alpha.2] — 2026-10-07
 

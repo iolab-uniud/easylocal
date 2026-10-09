@@ -69,6 +69,7 @@ struct SwapCities
 class TourManager : public easylocal::solution_manager_base<Tsp, Tour>
 {
 public:
+    // The constructor of the base: from the Input, which input() gives back.
     using solution_manager_base::solution_manager_base;
 
     // The cities in index order: 0, 1, ..., n - 1.
@@ -243,6 +244,8 @@ public:
 class SwapExplorer : public easylocal::neighborhood_explorer_base<TourManager, SwapCities>
 {
 public:
+    // The constructor of the base: from the SolutionManager, whose Input the
+    // explorer reaches with input().
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
     // Every pair of positions i < j, one move at a time.
@@ -294,6 +297,8 @@ struct TwoOpt
 class TwoOptExplorer : public easylocal::neighborhood_explorer_base<TourManager, TwoOpt>
 {
 public:
+    // The constructor of the base: from the SolutionManager, whose Input the
+    // explorer reaches with input().
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
     // [two-opt-name]

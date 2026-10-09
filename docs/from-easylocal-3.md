@@ -1,118 +1,21 @@
 # Coming from EasyLocal 3
 
-This page is for readers with an EasyLocal 3 program to port. It has three
-parts:
-
-- **[The map](#the-map)**: what each EasyLocal 3 concept, runner and solver
-  became, and what is not there yet.
-- **[The walkthrough](#porting-the-problem)**: a complete EasyLocal 3 program,
-  the TSP with 2-opt moves, migrated piece by piece up to the TSP of the
-  [tutorial](tutorial/README.md).
-- **[Checking the port](#checking-the-port)**, with a
-  [checklist](#a-porting-checklist) for when it compiles.
+This page is for readers with an EasyLocal 3 program to port. It migrates a
+complete EasyLocal 3 program, the TSP with 2-opt moves, piece by piece, up to
+the TSP of the [tutorial](tutorial/README.md): first the
+[problem](#porting-the-problem), then the
+[composition and the run](#composing-and-running), then
+[checking](#checking-the-port) that the port does what the original did.
+Two reference sections close it: the
+[parameters](#parameters-configuration-and-tuning) of a program and the
+[tables](#reference-the-two-frameworks-side-by-side) that put the two
+frameworks side by side, concept by concept and runner by runner.
 
 The EasyLocal 3 code quoted here is the TSP of the [benchmarks](benchmarks.md)
 that compare the two versions, abridged, on the last EasyLocal 3 release,
 [easylocal-legacy v3.4.1](https://github.com/iolab-uniud/easylocal-legacy/tree/v3.4.1);
 the EasyLocal 4 code is the tutorial's, which is compiled and tested at every
 build.
-
-## The map
-
-### The concepts
-
-| EasyLocal 3 | EasyLocal 4 |
-| --- | --- |
-| Input, Solution and Move (the State of `RandomState`, `PrintState`) | the same three values, plain: no base class, no back pointer to the Input |
-| `SolutionManager` (`RandomState`, `GreedyState`, `CheckConsistency`) | SolutionManager: construction and validity only |
-| `CostComponent::ComputeCost` | cost component (`evaluate`), attached with `component<C>()` |
-| `PrintViolations` | an optional `describe(solution)` member of the cost component |
-| the hard flag and the weight of a component, `HARD_WEIGHT` | cost expressions: `cost::hard_soft`, `cost::sum`, `cost::weighted`, `cost::in_order`, `cost::apply`, `cost::objectives` |
-| `CostStructure`, `DefaultCostStructure<CFtype>` | nothing to declare: the cost type follows from what the components return |
-| `DeltaCostComponent::ComputeDeltaCost` | delta cost component (`delta_evaluate`), attached with `delta<C, D>()` |
-| `NeighborhoodExplorer` (`FirstMove`, `NextMove`, `RandomMove`, `MakeMove`, `FeasibleMove`) | NeighborhoodExplorer: a cursor or a `moves()` generator, `random_move`, `make_move`, `is_valid` |
-| `MultimodalNeighborhoodExplorer`, `ActiveMove` | `neighborhood_union`, whose move is a variant of the children's moves |
-| `ParallelNeighborhoodExplorer` (TBB) | no counterpart |
-| `Kicker` | no counterpart ([roadmap](roadmap.md#kicks-iterated-local-search-and-variable-neighborhood-descent)) |
-| `Runner` subclasses, `MoveRunner` | algorithm classes in `easylocal::runners`, with one `run` member |
-| `Solver` (`SimpleLocalSearch`, `MultiStartSearch`, ...) | `easylocal::solvers`, or an app whose runners a Session runs by name |
-| `Tester`, `MoveTester` | the interactive tester: `tui::run(app, options)` (TextUI adapter); the checks of `check` and the Session |
-| `ComponentTester`, `KickerTester` | no counterpart: `easylocal::testing` checks the components in unit tests |
-| `Trace::Channel` and its sinks | `easylocal::trace`: typed events and tracers, written with `--trace` |
-| `Interruptible`, a runner's timeout parameter | `run_control` (cancellation and progress) and the run options `timeout` and `stop_at` |
-| `ParameterBox`, `Parameter<T>`, `CommandLineParameters` | a parameter block per component, with a schema and domains, gathered in a `parameter_set` |
-| `Random::Uniform`, `Random::SetSeed` | an RNG passed to the members that need one |
-| the modelling layer (`AutoState`, expressions) | no counterpart |
-| `Boost.program_options`, TBB | no dependencies: the library parses the command line |
-
-Beyond the names:
-
-- **No virtual dispatch and no required base classes.** Capabilities are
-  checked by concepts at compile time; the bases are optional conveniences.
-- **Only what is used is written.** A component implements the members the
-  composed algorithms and tools call, not a whole interface: an explorer used
-  only by Simulated Annealing has `random_move` and no enumeration.
-- **Services are bound to an immutable Input** instead of being reconfigured,
-  so concurrent runs only share the Input. The SolutionManager, the explorers,
-  the cost components and the deltas receive it in their constructor, the
-  place for data precomputed from the instance; values (Input, Solution, Move)
-  hold no Input, and hooks such as `read_solution` receive it as a parameter
-  (see the [problem model](reference/problem-model.md#design-choices)).
-- **The cost always comes from cost components**, and their composition (the
-  cost layer and the delta cost layer) is described by recipes, not by objects
-  registered into each other.
-- **Hard and soft are not flags on a component.** A cost expression in the
-  recipe states them, with each weight beside its term:
-  `cost::hard_soft(cost::sum(component<A>(), component<B>()), component<C>() * 10)`.
-  The hard cost is a separate level, not a large multiplier, so it can never be
-  traded for soft improvements.
-- **Randomness is explicit**: RNGs are passed in, never hidden in services.
-- **The search loop's machinery belongs to the framework** (`search_run`):
-  counters, budget, cancellation, progress and events are not reimplemented by
-  each runner.
-- **What is missing is a compile error**, where the component is composed, with
-  the signature to write; EasyLocal 3 reported a missing piece as a
-  pure-virtual to implement, or at run time.
-
-### The runners and the solvers
-
-| EasyLocal 3 | EasyLocal 4 |
-| --- | --- |
-| `FirstDescent` | `runners::FirstImprovement` (the scan restarts from the first move) |
-| `SteepestDescent` | `runners::BestImprovement` (ties go to the first best move, not drawn at random) |
-| `HillClimbing` | `runners::HillClimbing` |
-| `LateAcceptanceHillClimbing` | `runners::LateAcceptanceHillClimbing` (the history records the current cost, see [Runners](reference/runners.md)) |
-| `GreatDeluge` | `runners::GreatDeluge` |
-| `SimulatedAnnealing` (`max_neighbors_sampled`, `max_neighbors_accepted`) | `runners::SimulatedAnnealing<temperature::Hybrid>`, the same schedule; `temperature::Classic` is the textbook one, which cools on samples alone and ends at the final temperature |
-| `SimulatedAnnealingOnlyCutoff`, `SimulatedAnnealingFixedTemperature`, `SimulatedAnnealingTimeBased` | `SimulatedAnnealing` with `temperature::Cutoff`, `FixedTemperature`, `TimeBased` |
-| `SimulatedAnnealingWithReheating`, `...TimeBased` | `SimulatedAnnealing<temperature::Reheating<Hybrid>>`, `Reheating<TimeBased>`; every schedule with an initial temperature can be reheated |
-| `TabuSearch`, `FirstImprovementTabuSearch` | `runners::TabuSearch`, `runners::FirstImprovementTabuSearch`, and `AspirationPlusTabuSearch`, `EliteCandidateTabuSearch` |
-| `min_tenure`, `max_tenure` | a tabu list policy: `runners::tabu::FixedLength` (one tenure), `RandomTenure` (drawn in a range), and also `Cyclic`, `Reactive`, `Frequency` |
-| `max_idle_iterations` | `max_idle_iterations`, in the runner's parameter block, as every other limit |
-| the `Inverse` function given to `TabuSearch` | `inverse(solution, move, tabu_move)` in the explorer |
-| `SimpleLocalSearch`, `MultiStartSearch` | `solvers::LocalSearch`, `solvers::MultiStart` |
-| a solve in stages, written by hand with `Resolve` | `solvers::two_stage`, or a `solvers` pipeline of stages |
-| — | `runners::ParetoLateAcceptanceHillClimbing`, for a multi-objective cost |
-
-Every algorithm is a class template with a parameter block of its own, listed
-in [Runners](reference/runners.md); an algorithm of your own is written once on
-`search_run` ([chapter 7](tutorial/07-custom-runner.md)).
-
-### What is not there yet
-
-EasyLocal 3 code that uses these has no counterpart to port to:
-
-| EasyLocal 3 | Planned |
-| --- | --- |
-| `ShiftingPenaltyRunner` | [Shifting penalty](roadmap.md#shifting-penalty) |
-| `SimulatedAnnealingWithLearning` | [Adaptive neighborhood selection](roadmap.md#adaptive-neighborhood-selection) |
-| `SampleTabuSearch` | [Candidate strategies of Tabu Search](roadmap.md#candidate-strategies-of-tabu-search) |
-| kickers, `VariableNeighborhoodDescent` | [Kicks, Iterated Local Search and Variable Neighborhood Descent](roadmap.md#kicks-iterated-local-search-and-variable-neighborhood-descent) |
-| `TokenRingSearch` | [Cooperative runners](roadmap.md#cooperative-runners), for the runners that exchange solutions; a fixed order of runners is a pipeline today |
-| `GRASP` (`GreedyState(alpha, k)`) | not planned: a randomized construction is a `random_solution` of its own, and a `solvers::MultiStart` over it |
-| `ParallelNeighborhoodExplorer`, the modelling layer | not planned |
-
-Nothing on the roadmap is a promise: see [API stability](stability.md).
 
 ## Before you start
 
@@ -140,6 +43,49 @@ Nothing on the roadmap is a promise: see [API stability](stability.md).
   evaluated on a copy of the solution with the move applied. Add the deltas
   afterwards, one at a time, and check each against the full evaluation
   ([checking the port](#checking-the-port)), as EasyLocal 3's `MoveTester` did.
+- Look up the runners and the solvers your program uses in the
+  [tables at the end](#reference-the-two-frameworks-side-by-side) before you
+  start: most have a counterpart under another name, a few have none yet.
+
+### Building without CMake
+
+The library is header-only and has no dependency beyond the standard library,
+so a program that uses EasyLocal Core needs no build system of its own: a
+compiler, the C++23 switch and one include path are enough. A hand-written
+makefile for a program of several translation units is therefore as short as
+it was for EasyLocal 3, and shorter, since there is nothing to link:
+
+```make
+EASYLOCAL ?= /usr/local            # the install prefix, or the source tree
+CXX       ?= g++
+CXXFLAGS  := -std=c++23 -O2 -Wall -I$(EASYLOCAL)/include
+
+OBJECTS := main.o model.o
+tsp: $(OBJECTS)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS)
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+clean:
+	rm -f tsp $(OBJECTS)
+```
+
+- `$(EASYLOCAL)/include` is `include/` of an installed EasyLocal
+  (`cmake --install <build> --prefix <prefix>`) or of a source checkout: the
+  headers are the same, and nothing is generated by the build.
+- There is no library to link, no `-D` to define and no Boost: where EasyLocal
+  3 needed `-lboost_program_options`, the command line is parsed by headers.
+  Core starts no thread of its own; add `-pthread` if your platform asks for it
+  or if your program uses threads.
+- Compile with optimizations. The library is written to be inlined, and a
+  `-O0` build of a search is slower by an order of magnitude; `-ffast-math` is
+  the one flag to avoid, since the library checks for NaN and infinite values.
+- The optional components are the exception: the TextUI, REST and TOML
+  adapters are header-only too, but they need their third-party library
+  (FTXUI, Crow, toml++) on the include path and, for FTXUI and Crow, linked.
+  Those are easier to let CMake fetch and configure
+  ([dependency policy](dependency-policy.md)).
 
 ## Porting the problem
 
@@ -257,7 +203,8 @@ std::ostream& operator<<(std::ostream& os, const TwoOpt& mv);
 mv = TwoOpt(first_edge, second_edge);
 ```
 
-In EasyLocal 4 the Move is a `struct` with public members and no constructor:
+In EasyLocal 4 the Move is a `struct`, or a `class`, whose attributes are
+public, and it needs no constructor:
 
 <!-- snippet: tutorial/tsp.hpp:two-opt-move -->
 ```cpp title="EasyLocal 4"
@@ -269,41 +216,40 @@ struct TwoOpt
 };
 ```
 
-- **A struct, with public members**: the explorer, the deltas and the tester
-  read the attributes of a move directly, and the move has no invariant to
-  protect.
-- **No constructor**: the struct is an aggregate, so it is created with braces,
-  `TwoOpt{i, j}` or `TwoOpt{.i = i, .j = j}`, as the explorer of step 8 does.
-  It is also default-constructible, `TwoOpt{}` with zero members, which an
-  explorer with a cursor (`first_move`, `next_move`) needs; prefer these
-  implicit constructors to writing one.
-- **No operator is required**, but the ones you have can stay, and are used
-  when present:
-  - `operator==` by the neighborhood checks of a Session
-    ([chapter 14](tutorial/14-checking.md));
-  - `operator<<`, or `describe(move)`, for the text the tester shows;
-  - `operator<` and `operator!=` are not used: remove them if nothing else
-    needs them.
+- **Public attributes**, because the code that builds a move and the code that
+  reads it are not the same class: the explorer writes `move.i` and `move.j`
+  while it enumerates, and the delta cost component of step 7 reads them to
+  compute the change in cost. A move carries no invariant of its own — whether
+  a pair of positions is a legal 2-opt is the explorer's `is_valid`, not the
+  move's — so there is nothing for a `private` section to protect, and the
+  library itself never calls a member on a move. A `class` with its attributes
+  `public` is the same thing; the examples write `struct` for a type whose
+  fields may each be set freely.
+- **No constructor**: with no user-declared constructor the type is an
+  aggregate, so it is created with braces, `TwoOpt{i, j}` or
+  `TwoOpt{.i = i, .j = j}`, as the explorer of step 8 does, and it is
+  default-constructible, `TwoOpt{}` with zero attributes, which the cursor of
+  step 8 needs as something to write into. Prefer these implicit constructors
+  to the EasyLocal 3 one with default arguments.
+- **No operator is required.** EasyLocal 3 asked for `==`, `!=`, `<` and
+  `<<`; here `<` and `!=` are never called, and the other two are used only
+  where they exist:
+  - `operator==`, or a defaulted `bool operator==(const TwoOpt&) const =
+    default;` written inside the struct, which keeps it an aggregate, lets the
+    neighborhood checks tell two moves apart
+    ([checking the port](#checking-the-port));
+  - `operator<<`, or better `describe(move)` (step 4), gives the text the
+    interactive tester and the reports show for a move.
 
-  In C++20 a defaulted `operator==` is enough, and the struct stays an
-  aggregate:
-
-  ```cpp title="EasyLocal 4 — optional"
-  struct TwoOpt
-  {
-      std::size_t i;
-      std::size_t j;
-
-      bool operator==(const TwoOpt&) const = default;
-  };
-  ```
+  A move also needs `std::hash` and `==` to be kept in a tabu list, unless its
+  explorer defines `tabu_attribute(move)`.
 
 ### 4. Reading, writing and describing
 
-EasyLocal 3 read the Input in its constructor and the State with `operator>>`,
-and printed it with `operator<<`. **Those operators keep working**: the library
-uses them when nothing more specific is there, so a port can start without
-touching them.
+EasyLocal 3 read the Input in the Input's constructor and the State with
+`operator>>`, and printed it with `operator<<`. **Those operators keep
+working**: the library uses them when nothing more specific is there, so a
+port can leave them untouched and come back to this step later.
 
 ```cpp title="EasyLocal 4 — what an EasyLocal 3 program already has"
 // Read into a default-constructed Tsp, in place of the file constructor.
@@ -317,23 +263,17 @@ std::istream& operator>>(std::istream& in, Tour& tour);
 std::ostream& operator<<(std::ostream& out, const Tour& tour);
 ```
 
-The dedicated hooks are free functions found by argument-dependent lookup,
-which the library prefers when they are there:
-
-- `read_input(std::type_identity<Input>, std::istream&)` returns the Input;
-  the tag selects it by the type it reads, since a function cannot be
-  overloaded on its return type alone;
-- `read_solution(const Input&, std::istream&)` returns the Solution, and
-  `write_solution(const Input&, const Solution&, std::ostream&)` writes it;
-- `describe(value)` gives the text the tools show for an Input, a Solution or
-  a Move.
-
-They are worth writing because they receive the Input — reading a solution may
-need the instance, here the number of cities, and the Solution no longer holds
-it — and because the Solution then needs no constructor from the Input. The
-tutorial's TSP writes all of them
-([chapter 5](tutorial/05-running-a-search.md#reading-the-instance-printing-the-solution));
-its two solution hooks are the counterpart of the two State operators above:
+What the operators cannot do is receive the Input, which reading a solution
+usually needs — here the number of cities, which the Solution no longer holds.
+The dedicated hooks are free functions next to the types, found by
+argument-dependent lookup, and the library prefers them when they are there:
+`read_input(std::type_identity<Input>, in)` returns the Input, the tag
+selecting it by the type it reads;
+`read_solution(const Input&, std::istream&)` returns the Solution and
+`write_solution(const Input&, const Solution&, std::ostream&)` writes it; and
+`describe(value)` gives the text the tools show for an Input, a Solution or a
+Move. The two solution hooks of the tutorial's TSP are the counterpart of the
+two State operators above:
 
 <!-- snippet: tutorial/tsp.hpp:solution-io -->
 ```cpp title="EasyLocal 4"
@@ -354,6 +294,10 @@ inline void write_solution(const Tsp&, const Tour& tour, std::ostream& out)
 }
 ```
 
+For each of the three the library looks for the same three forms, in this
+order, and uses the first it finds — so writing a hook overrides the operator
+without removing it:
+
 | EasyLocal 3 | EasyLocal 4, in the order the library tries them |
 | --- | --- |
 | `Input(const std::string& path)` reading the file | a static `Input::read(in)`, `read_input(std::type_identity<Input>, in)`, or `operator>>` into a default-constructed Input |
@@ -361,9 +305,10 @@ inline void write_solution(const Tsp&, const Tour& tour, std::ostream& out)
 | `operator<<(os, const State&)` | a member `solution.write(input, out)`, `write_solution(input, solution, out)`, or `operator<<` |
 | `PrintViolations`, "pretty print output" | `describe(input)`, `describe(solution)`, `describe(move)`, and the `describe(solution)` of a cost component (step 6) |
 
-Whichever path the Input and the Solution take, it is the one the file helpers
-(`load_input`, `load_solution`), the tester, `cli::run` and the REST service
-use: reading and writing are never written again in `main`.
+Whichever form they take, they are read and written in one place: the file
+helpers (`load_input`, `load_solution`), the interactive tester, `cli::run`
+and the REST service all go through them, and `main` never opens a file
+itself ([chapter 5](tutorial/05-running-a-search.md#reading-the-instance-printing-the-solution)).
 
 ### 5. The SolutionManager
 
@@ -393,6 +338,7 @@ public:
 class TourManager : public easylocal::solution_manager_base<Tsp, Tour>
 {
 public:
+    // The constructor of the base: from the Input, which input() gives back.
     using solution_manager_base::solution_manager_base;
 
     // The cities in index order: 0, 1, ..., n - 1.
@@ -517,12 +463,11 @@ public:
   instead of printing it; an optional `name()` replaces the name given to the
   constructor. Without them, reports show the component's position and value
   ([chapter 11](tutorial/11-apps-and-tools.md#a-report-of-the-cost-components)).
-- An `int` component stays `int`; `DefaultCostStructure<double>` and the
-  `CFtype` parameters disappear, since the cost type follows from what
-  `evaluate` returns. A cost of more than two levels, or several objectives,
-  is a `cost::in_order` or a `cost::objectives` of components
-  ([chapter 2](tutorial/02-cost.md)), where EasyLocal 3 had the fixed pair
-  violations/objective.
+- Nothing declares the type of the cost: it follows from what `evaluate`
+  returns, so an `int` component stays `int`. A cost of more than the two
+  levels of EasyLocal 3, or several objectives to keep apart, is a
+  `cost::in_order` or a `cost::objectives` of components
+  ([chapter 2](tutorial/02-cost.md)).
 
 ### 7. The delta cost components
 
@@ -610,6 +555,15 @@ public:
 };
 ```
 
+The explorer below enumerates with a **cursor**, which is what EasyLocal 4
+calls the pair `first_move`/`next_move` that EasyLocal 3 wrote as
+`FirstMove`/`NextMove`: the moves are not stored anywhere, the explorer keeps
+the current one in the Move the caller passes by reference, and advances it in
+place. The other way of enumerating, new here, is a `moves(solution)`
+generator that `co_yield`s each move ([chapter 3](tutorial/03-neighborhood.md));
+an explorer offers one or the other, and a cursor is the natural port of an
+EasyLocal 3 explorer:
+
 <!-- snippet: tutorial/tsp.hpp:two-opt!two-opt-move~comments -->
 ```cpp title="EasyLocal 4"
 class TwoOptExplorer : public easylocal::neighborhood_explorer_base<TourManager, TwoOpt>
@@ -696,7 +650,7 @@ instead of writing it.
 A `MultimodalNeighborhoodExplorer` (set union with biases) becomes a
 `neighborhood_union` of the explorers' recipes, each with its own deltas:
 
-<!-- snippet: tutorial/main.cpp:union -->
+<!-- snippet: tutorial/main.cpp:union!union-runner -->
 ```cpp title="EasyLocal 4"
 auto both =
     el::neighborhood_union(
@@ -704,18 +658,6 @@ auto both =
             | el::delta<TourLength, TwoOptLengthDelta>(),
         el::neighborhood<SwapExplorer>())
     | el::random_biases(3.0, 1.0);
-
-auto union_sa =
-    el::make_runner<runners::SimulatedAnnealing<Classic>>({
-        .temperature =
-            {
-                .initial_temperature = 10.0,
-                .final_temperature = 0.1,
-                .cooling_rate = 0.95,
-                .samples_per_temperature = 50,
-            },
-    })
-    | sm | both;
 ```
 
 The moves of a union are a variant of the explorers' moves, so the
@@ -725,10 +667,15 @@ component is evaluated by deltas only when every child has one
 
 ## Composing and running
 
-### 10. The wiring becomes a recipe
+### 10. From the objects of `main` to a recipe
 
-In EasyLocal 3 the components were objects, created in `main` from the Input
-and registered into each other; they had to stay alive as long as the search:
+This is the step where an EasyLocal 3 program changes shape, so it is worth
+reading even if the rest of the port was mechanical.
+
+In EasyLocal 3 the components were objects. `main` read the instance, built
+one object per component from it, and registered them into each other; the
+whole graph had to stay alive for as long as the search, and a search on a
+different cost, or on a second instance, meant a second graph:
 
 ```cpp title="EasyLocal 3"
 Input in(instance);
@@ -740,15 +687,36 @@ sm.AddCostComponent(length);
 nhe.AddDeltaCostComponent(delta);
 ```
 
-In EasyLocal 4 that graph is written once, before any Input exists, as two
-*recipes*: which components form the cost, and which deltas the neighborhood
-has. The recipe says what to build; the framework builds it when a runner is
-bound to an Input.
+EasyLocal 4 splits that into two things that happen at different times: a
+**description**, written once and without an Input, and the **objects**, built
+from the description for one Input when a search is about to run.
+
+**The services are the same four kinds**, and they are still plain classes you
+write: the SolutionManager, the cost components, the NeighborhoodExplorer and
+the delta cost components of steps 5 to 8. What changed is that none of them
+registers itself into another: `TourLength` does not know it belongs to a cost
+function, and `TwoOptLengthDelta` does not know which component it is the delta
+of. Each only takes what it needs to work — the Input, or the SolutionManager
+for an explorer — and the relations between them are stated elsewhere.
+
+**They are stated in two recipes.** The first describes the *cost layer*: the
+SolutionManager to build and the cost to evaluate solutions with.
 
 <!-- snippet: tutorial/main.cpp:sm-recipe -->
 ```cpp title="EasyLocal 4"
 auto sm = el::solution_manager<TourManager>() | el::component<TourLength>();
 ```
+
+`solution_manager<TourManager>()` names the class to build, and
+`| component<TourLength>()` adds a cost component to it; with more than one
+component the right-hand side is a cost expression,
+`| cost::hard_soft(...)` or `| cost::sum(...)`, which also carries the weights
+(step 6). This is `AddCostComponent`, moved out of `main` and made explicit
+about how the components combine.
+
+The second recipe describes the *delta cost layer*: the neighborhood and, for
+each cost component that has one, the delta that evaluates a move
+incrementally.
 
 <!-- snippet: tutorial/main.cpp:nhe-recipe -->
 ```cpp title="EasyLocal 4"
@@ -756,13 +724,73 @@ auto nhe =
     el::neighborhood<TwoOptExplorer>() | el::delta<TourLength, TwoOptLengthDelta>();
 ```
 
-The cost expression goes in the first recipe (step 6), the deltas in the
-second (step 7), and a runner is the algorithm plus the two:
-`make_runner<runners::FirstImprovement>() | sm | nhe`. An **app** adds a name
-to each runner, which is what the command-line program, the tester and the
-REST service run (step 11). Nothing is registered into anything, and nothing
-has to outlive the search: a recipe is a value that can be copied, returned
-from a function and shared between programs
+`delta<TourLength, TwoOptLengthDelta>()` is `AddDeltaCostComponent`: the first
+type is the component the delta belongs to, which in EasyLocal 3 the delta
+learned from its constructor, and the second is the delta cost component
+itself. A component with no delta for this neighborhood is simply not named
+here, and the framework evaluates it on a copy of the solution with the move
+applied.
+
+Both are ordinary values. `sm` and `nhe` can be copied, returned from a
+function, stored in a header and shared between several programs — the TSP
+example keeps its recipes in `examples/tsp/apps.hpp` for exactly that reason.
+At this point nothing has been constructed: a recipe holds the types to build
+and the parameters to build them with, no `TourManager` and no `TourLength`
+exist yet, and no Input has been read.
+
+**A runner is an algorithm plus the two recipes:**
+
+<!-- snippet: tutorial/main.cpp:first-improvement -->
+```cpp title="EasyLocal 4"
+auto fi =
+    el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
+    | sm | nhe;
+
+auto search = fi.bind(tsp);
+const auto result = search.run(search.initial_solution());
+```
+
+- `make_runner<runners::FirstImprovement>(parameters)` chooses the algorithm
+  and holds its parameters, as the constructor of an EasyLocal 3 runner did,
+  but without an Input, a SolutionManager or an explorer to pass it.
+- `| sm | nhe` give it the cost layer and the delta cost layer. The result,
+  `fi`, is still a description: it is the EasyLocal 3 line
+  `FirstDescent<...> fd(in, sm, nhe, "FD");` with everything about *this*
+  instance left out.
+- `fi.bind(tsp)` is where the objects of the EasyLocal 3 `main` are finally
+  built: a `TourManager` on `tsp`, a `TourLength` on `tsp`, a
+  `TwoOptExplorer` on that `TourManager`, a `TwoOptLengthDelta` on `tsp`, and
+  First Improvement from the parameters. They are owned by the *bound runner*
+  it returns, so nothing has to be kept alive by hand; `tsp` itself is only
+  referenced, so it must outlive the bound runner, and `bind` refuses a
+  temporary Input for that reason.
+- `search.run(solution)` runs the algorithm from a solution, and returns the
+  final solution, its cost, the iterations and evaluations spent and why it
+  stopped. `search.initial_solution()` and `search.random_solution(rng)` ask
+  the bound SolutionManager for a starting point, as `GreedyState` and
+  `RandomState` did.
+
+The same `fi` can be bound again, to another instance or on another thread:
+two bound runners built from one recipe share nothing but the `const` Input.
+In EasyLocal 3 the objects *were* the configuration, so a second search with a
+different cost needed a second SolutionManager, a second explorer and a second
+set of deltas (step 13 shows that program, and what replaces it).
+
+**An app puts names on runners.** A program that offers more than one
+algorithm registers them in an app, which is the recipes plus a named runner
+for each:
+
+```cpp title="EasyLocal 4"
+auto application = el::app("tsp") | sm | nhe
+    | el::runner<runners::FirstImprovement>("fi")
+    | el::runner<runners::SimulatedAnnealing<Classic>>("sa");
+```
+
+The app is what the command-line program (step 11), the interactive tester
+(step 12) and the REST service take: each of them binds it to an Input in a
+`Session`, which keeps a current solution and runs a registered runner by its
+name — `--runner sa` is `session.run("sa")`. That is the replacement for
+EasyLocal 3's `Solver`, `SetRunner` and the branch over `--main::method`
 ([chapter 11](tutorial/11-apps-and-tools.md)).
 
 ### 11. The main program
@@ -844,7 +872,7 @@ return el::cli::run(application, argc, argv);
 | `--main::init_state` | `--solution <file>`, or `--start initial` / `random` |
 | `LowerBoundReached`, a runner's `max_evaluations` and timeout | `--target`, `--max_evaluations`, `--timeout`, which bound the run whichever runner it uses |
 | `PrintViolations` on the final state | `--report`: the value of each cost component, with its description |
-| a `Trace::Channel` with a sink, set up in `main` | `--trace run.jsonl` ([what EasyLocal 4 adds](#what-easylocal-4-adds)) |
+| the search progress printed by hand from the runner | `--trace run.jsonl`, the events of the run ([what EasyLocal 4 adds](#what-easylocal-4-adds)) |
 | a tuning scenario written by hand | `--tuning.irace <dir>` ([chapter 12](tutorial/12-tuning.md)) |
 | `solver.Solve()`, printing `result.cost` and `result.output` | the run, then `cost`, `time`, the iterations, evaluations and termination, and the solution, or `--output <file>` |
 | `IsSet()` checks | the parameters' own validation, with an exit status of 2 |
@@ -873,9 +901,9 @@ counterpart of `SimpleLocalSearch`, `solvers::MultiStart` of
 
 ### 12. The tester
 
-The EasyLocal 3 tester was written by hand in the library, with no other
-dependency: a `Tester` on the SolutionManager, a `MoveTester` for each
-explorer, and text menus read from the standard input:
+EasyLocal 3's tester was a `Tester` on the SolutionManager plus a `MoveTester`
+for each explorer, built in `main` next to the other objects, with text menus
+on the standard input:
 
 ```cpp title="EasyLocal 3"
 Tester<Input, Tour, CostStructure> tester(in, sm);
@@ -883,19 +911,11 @@ MoveTester<Input, Tour, TwoOpt, CostStructure> two_opt_test(in, sm, nhe, "2-opt"
 tester.RunMainMenu();
 ```
 
-```text title="EasyLocal 3 — the tester's main menu"
-MAIN MENU:
-   (1) Move menu
-   (3) Run menu
-   (4) State menu
-   (0) Exit
- Your choice:
-```
-
-In EasyLocal 4 the tester is the TextUI, an interactive terminal interface
-built on FTXUI in the optional `TUI` component ([chapter 13](tutorial/13-tester.md)).
-It takes the same app as `cli::run`: no tester object, no move tester to
-register, since the app already names the neighborhood and the runners:
+In EasyLocal 4 the tester is the TextUI, an interactive terminal interface in
+the optional `TUI` component (`find_package(EasyLocal CONFIG REQUIRED
+COMPONENTS Core TUI)`, then link `EasyLocal::TUI`). There is nothing to
+register: it takes the app of step 10, which already names the neighborhood
+and the runners, and the options say where it starts from.
 
 <!-- snippet: tutorial/tui_main.cpp:tui -->
 ```cpp title="EasyLocal 4"
@@ -915,50 +935,20 @@ el::tui::run(
     });
 ```
 
-The three menus become three pages, switched with F3, F4 and F5, each with
-its keys:
-
-| EasyLocal 3, Move menu | TextUI, **Move** page |
-| --- | --- |
-| (1) Perform Best Move | `B` Best, then `A` Apply |
-| (2) Perform First Improving Move | `I` First improving, then `A` |
-| (3) Perform Random Move | `R` Random, then `A` |
-| (5) Print All Neighbors | `P` List |
-| (6) Print Neighborhood Statistics | `T` Stats |
-| (7) Print Random Move Cost | the panel of the selected move: its incremental and full evaluation |
-| (9) Check Neighborhood Costs | `C` Costs |
-| (10) Check Move Independence | `D` Indep |
-| (11) Check Random Move Distribution | `U` Distribution |
-| (4), (8) Perform / Print Input Move | no counterpart: a move is selected, not typed |
+Its three pages — Input/Output, Move, Run — cover what the State, Move and Run
+menus did: creating and loading solutions, selecting a move and comparing its
+incremental and full evaluation, running a registered runner with its
+parameters and watching it. They are described, key by key, in
+[chapter 13](tutorial/13-tester.md); here is the Move page showing the best
+2-opt move, the counterpart of *Perform Best Move* followed by a cost check:
 
 ![The Move page of the TextUI, with the best 2-opt move and its delta check](tutorial/images/tui-moves.svg)
 
-| EasyLocal 3, State menu | TextUI, **Input/Output** page |
-| --- | --- |
-| (1) Random state, (2) Greedy state | `R` Random, `I` Initial |
-| (3) Read from file, (5) Write to file | `Shift-L` Load solution, `W` Save |
-| (4) Show input | the Input window (F1), which shows `describe(input)` |
-| (6) Show state, (7) Show costs, (8) Print violations, (9) Pretty print output | the solution window (`S` or F2): the solution, each cost component's value and its `describe` text (step 6) |
-| (10) Check state consistency | `C` Check: the app check of [chapter 14](tutorial/14-checking.md) |
-| — | `L` Load input: the instance is changed without leaving the tester |
-
-The **Run** page takes over the Run menu: it runs a registered runner from the
-current solution, after editing its parameters in a window (the same ones a
-configuration file sets), with live progress, a target cost, a time and
-evaluation budget, and a stop key:
-
-![The Run page of the TextUI after a Simulated Annealing run](tutorial/images/tui-run.svg)
-
-An EasyLocal 3 tester could hold several move testers, one per explorer, on
-the same state. The moves an EasyLocal 4 tester shows are those of its app's
-neighborhood (a runner may bring its own, for searching), so the counterpart
-is a launcher of apps, one per neighborhood, which share the Input and the
-current solution ([chapter 13](tutorial/13-tester.md#several-apps-on-the-same-problem)):
-
-```cpp title="EasyLocal 3"
-MoveTester<Input, Tour, TwoOpt, CostStructure> two_opt_test(in, sm, two_opt_nhe, "2-opt", tester);
-MoveTester<Input, Tour, Swap, CostStructure> swap_test(in, sm, swap_nhe, "Swap", tester);
-```
+One EasyLocal 3 tester could hold several move testers on the same state,
+because the explorers were objects it was given. An EasyLocal 4 tester shows
+the moves of its app's neighborhood, so the counterpart is a launcher over
+several apps — one per neighborhood, built from the same SolutionManager
+recipe — between which the Input and the current solution are carried over:
 
 <!-- snippet: tsp/tui_main.cpp:launcher -->
 ```cpp title="EasyLocal 4"
@@ -977,9 +967,9 @@ easylocal::tui::run_launcher(
     tsp::union_app());
 ```
 
-There `two_opt_app()` and `swap_app()` are two apps of the TSP example
-(`examples/tsp/apps.hpp`) with the same SolutionManager recipe, one with the
-2-opt neighborhood and one with the swaps.
+`two_opt_app()` and `swap_app()` are two apps of the TSP example
+(`examples/tsp/apps.hpp`), one with the 2-opt neighborhood and one with the
+swaps ([chapter 13](tutorial/13-tester.md#several-apps-on-the-same-problem)).
 
 ### 13. A solve in two stages
 
@@ -1130,27 +1120,51 @@ TourLength 26, MaxEdge 8
 
 ## Checking the port
 
-The checks EasyLocal 3 offered inside the tester are available in a program
-too, so a port can be verified in the test suite rather than by hand. In the
-order to use them:
+A port compiles long before it is right. The two things that silently differ
+from the EasyLocal 3 program are the delta cost components, which are easy to
+port with a wrong sign or a stale index, and the neighborhood, whose
+enumeration or sampling may have changed when `FirstMove`/`NextMove` became a
+cursor. EasyLocal 3 checked both from the `MoveTester` menu, by hand, on
+whatever state happened to be current. EasyLocal 4 offers the same checks as
+functions, so they run in the test suite, on every instance, at every build.
 
-- **While you write a delta.** Compiling with `EASYLOCAL_VERIFY_DELTAS`
-  defined makes every search compare the component values its deltas gave with
-  a full evaluation after each move it keeps, and stop at the first
-  disagreement naming the component
-  ([chapter 4](tutorial/04-delta-evaluation.md)). This is the fastest way to
-  catch a delta that was right in EasyLocal 3 and wrong after the port, for
-  example because the move's attributes changed meaning.
-- **For one component.** `testing::check_cost_component`,
-  `check_delta_cost_component` and `check_neighborhood` check a component
-  against a fixture of solutions, in a unit test
-  ([chapter 10](tutorial/10-testing.md)): the counterpart of EasyLocal 3's
-  `ComponentTester`, without the menu.
-- **For the whole app.** `check(app, input)` builds everything, runs the
-  checks above from the initial solution and from random ones, and reports
-  them; it also catches what EasyLocal 3 could not check at all, such as a
-  parameter without a domain or two runners with the same name
-  ([chapter 14](tutorial/14-checking.md)):
+**While you write a delta: `EASYLOCAL_VERIFY_DELTAS`.** Define it when
+compiling (`-DEASYLOCAL_VERIFY_DELTAS`, or `target_compile_definitions`) and
+every search, anywhere in the program, re-evaluates the solution in full after
+each move it applies and compares the result with what the deltas said. The
+first disagreement stops the run and names the component:
+
+```text
+EASYLOCAL_VERIFY_DELTAS: the delta of cost component #1 disagrees with its full evaluation after a move
+```
+
+It makes the search much slower, so it belongs to a debug build or to a test,
+never to a measured run ([chapter 4](tutorial/04-delta-evaluation.md)). It is
+the fastest way to find a delta that was right in EasyLocal 3 and is wrong
+here, usually because the attributes of the move changed meaning: EasyLocal
+3's `TwoOpt` named the two *edges* it removed, while the tutorial's names the
+two *positions* that bound the reversed segment.
+
+**Component by component, in a unit test.** A *fixture* is an Input with the
+solutions to check on — give it one that is not the identity, so that a delta
+mixing up positions and cities cannot pass — and each check builds one
+component from it, as an app would, and returns a report a test asserts on
+([chapter 10](tutorial/10-testing.md)):
+
+| Check | What it verifies |
+| --- | --- |
+| `check_solution_manager(f)` | the fixture's solutions, the initial one and random ones are valid |
+| `check_cost_component<Component>(f)` | evaluating the same solution twice gives equivalent values |
+| `check_neighborhood<NHE>(f)` | enumerated and sampled moves are valid, keep the solution valid and change it; random moves are enumerated ones, drawn from the generator given |
+| `check_delta_cost_component<NHE, Component, Delta>(f)` | after each valid move, `value + delta` equals the full re-evaluation |
+
+They live in `easylocal::testing`, and `run_checks(...)` runs several and
+returns a program's exit status. This is EasyLocal 3's `ComponentTester` and
+the cost checks of the `MoveTester`, with the menu replaced by an assertion.
+
+**The whole app at once.** `check(app, input)` builds every service the app
+describes, runs the checks above from the initial solution and from random
+ones, and reports how many passed:
 
 <!-- snippet: tutorial/main.cpp:check -->
 ```cpp title="EasyLocal 4"
@@ -1160,9 +1174,24 @@ if (!report)
     return 1;
 ```
 
-- **For a neighborhood, as the `MoveTester` did.** A Session runs the three
-  checks of the Move menu on the current solution, and returns counters
-  instead of printing:
+```text
+EasyLocal tsp check: 503 checks passed
+composition: solution_managers=1, cost_components=1, neighborhoods=1, delta_bindings=1, runner_registrations=2
+```
+
+It also covers what EasyLocal 3 had no way to check: that the registered
+runner names are distinct and usable on the command line, that each runner can
+be built from its parameters, and that every parameter declares a domain — the
+last one being what makes a program tunable (see
+[the parameters](#parameters-configuration-and-tuning) below). The full list
+of checks is in [chapter 14](tutorial/14-checking.md).
+
+**The Move menu's three checks, on a current solution.** When the port is
+being compared with the EasyLocal 3 program on one instance, a `Session` holds
+an Input and a current solution, like the tester, and runs the same three
+checks the `MoveTester` offered under *Check Neighborhood Costs*, *Check Move
+Independence* and *Check Random Move Distribution*. They return counters
+instead of printing, so a program decides what to do with them:
 
 <!-- snippet: tutorial/main.cpp:session-checks -->
 ```cpp title="EasyLocal 4"
@@ -1191,9 +1220,93 @@ if (costs.mismatches != 0 || costs.invalid != 0 || sampling.out_of_neighborhood 
     return 1;
 ```
 
-The TextUI runs the same checks on the Move page, and `check(app, input)` on
-the Input/Output page (step 12), so a port can be inspected interactively and
-then nailed down in a test.
+The TextUI runs these three on its Move page and `check(app, input)` on its
+Input/Output page (step 12): the same checks, from the keyboard while you look
+at the problem, or from a test once you know what to assert.
+
+## Parameters, configuration and tuning
+
+In EasyLocal 3 a parameter was an object: a `Parameter<T>` registered in a
+`ParameterBox`, read from the command line as `--box::name` by
+`CommandLineParameters::Parse`, asked whether it was set with `IsSet()` and
+changed later with `SetParameter("name", value)`. Runners declared their own
+that way, and a program's own parameters sat next to them in `main`.
+
+In EasyLocal 4 a parameter belongs to a **parameter block**: a plain struct
+whose fields have defaults, with a `parameter_schema()` that describes them.
+Every algorithm, temperature policy, tabu list, cost expression and
+neighborhood has one, and so may your own classes:
+
+```cpp title="EasyLocal 4"
+struct ExcessParameters
+{
+    double bound{8.0};
+
+    static consteval auto parameter_schema()
+    {
+        return easylocal::config::fields(
+            easylocal::config::field<"bound", &ExcessParameters::bound>(
+                "Longest edge that is not a violation",
+                easylocal::config::range(0.0, easylocal::unlimited)));
+    }
+};
+```
+
+The schema is read at compile time and gives each field three things EasyLocal
+3 had no place for: a **description**, shown by `--help` and by the tester; a
+**domain**, the values the field may take (`config::range(0.0, 1.0).open()`,
+`config::one_of(...)`, or `easylocal::unlimited` for anything); and, when
+fields relate, a **condition** (`.only_if(...)`, for a parameter that matters
+only when another is set) or a **requirement**
+(`config::require(value<"final_temperature"> < value<"initial_temperature">,
+"...")`). What EasyLocal 3 checked by hand after parsing, or did not check at
+all, is stated once and enforced everywhere
+([chapter 9](tutorial/09-configuration.md)).
+
+The blocks are collected into a **parameter set**, where each one has a path.
+`runner.configuration()` gives the parameters of a composed runner under
+`search` for the algorithm, `cost` for the cost expression and
+`neighborhood` for the neighborhood, and a program adds that set under a
+prefix of its own (`configuration.add("descent", descent.configuration())`
+makes them `--descent.search.*`). An app does it for every runner it
+registers, so in a program built on `cli::run` the paths are the switches:
+`--runners.<name>.*` for each runner's algorithm, and `--cost.*` and
+`--neighborhood.*` for what the app's runners share.
+
+| EasyLocal 3 | EasyLocal 4 |
+| --- | --- |
+| `Parameter<double> cooling("cooling_rate", "...", box)` | a field of the block, and a line of its `parameter_schema()` |
+| `--SA::cooling_rate 0.95` | `--runners.sa.temperature.cooling_rate 0.95`, listed by `--help` with its domain and its current value |
+| the weights given to each `CostComponent` constructor | `--cost.weights`, the weights of the `cost::sum`, set without recompiling |
+| `parameter.IsSet()` | nothing to ask: every field has a default, and the diagnostics say what was rejected |
+| `runner.SetParameter("max_evaluations", n)` | `runner.parameters().max_evaluations = n`, before the runner is bound (step 13) |
+| `CommandLineParameters::Parse(argc, argv, ...)` | `cli::run(app, argc, argv)`, or `config::load_and_apply(argc, argv, set)` in a program that is not built on an app |
+| — | the parameter window of the interactive tester, which edits the same set |
+
+Values are applied all or none and validated before anything runs: an invalid
+one leaves every parameter unchanged, prints which path was rejected and why,
+and ends the program with status 2.
+
+Three things follow from the schema, none of which an EasyLocal 3 program
+could get for free:
+
+- **Configuration files.** `--config <file>` reads `path = value` lines, with
+  `#` comments; the command line wins over the file. With the optional
+  `ConfigTOML` component the same paths are a TOML file, where each table is a
+  prefix — `[solver.search.temperature]` holds `cooling_rate` — which is the
+  readable way to keep the settings of an experiment next to its results
+  ([chapter 9](tutorial/09-configuration.md#configuration-files)).
+- **Tuning.** A parameter with a finite domain can be tuned, so
+  `cli::run --tuning.irace <dir>` writes a complete
+  [irace](https://mlopez-ibanez.github.io/irace/) scenario — the parameter
+  file with the domains, the conditions as irace conditions, the requirements
+  as `[forbidden]` expressions, and the stub that runs the program — from the
+  program's own parameters, which cannot drift from the switches it accepts
+  ([chapter 12](tutorial/12-tuning.md)).
+- **The domain check.** `check(app, input)` fails on a parameter that declares
+  no domain, since nothing could tune it and `--help` could not describe it.
+  Giving a temperature `config::range(1.0, 100.0).log()` instead of
+  `unlimited` is usually all it takes.
 
 ## What EasyLocal 4 adds
 
@@ -1205,20 +1318,13 @@ EasyLocal 3 programs wrote by hand:
   `temperature_changed`, `run_finished` and the Tabu Search ones — through a
   tracer: `memory_recorder` in a program, JSON Lines or the binary ELTR format
   with `--trace run.jsonl` ([chapter 16](tutorial/16-observing-and-controlling.md)
-  and [Tracing](tracing.md)). EasyLocal 3's `Trace::Channel`, its sinks and its
-  event mask are the same idea; here the events are typed and the tracer is a
-  template parameter of the run, so an unused tracer costs nothing.
+  and [Tracing](tracing.md)). The tracer is a template parameter of the run, so
+  a program that records nothing pays nothing, and `scripts/eltr.py` decodes a
+  recorded run afterwards.
 - **Control over a run.** `run_control` carries a `std::stop_token` and a
   progress observer, and `with(control)`, `stop_at(cost)` and `timeout(s)` are
-  the run's options: a frontend stops a run from another thread, which
-  EasyLocal 3 did with `Interruptible`.
-- **Configuration files.** Every parameter block has a schema, so the same
-  names serve the command line, a key-value file (`--config`), a TOML file
-  with sections (the optional `ConfigTOML` component) and the tester's
-  parameter window ([chapter 9](tutorial/09-configuration.md)).
-- **Tuning.** Because the schema declares domains and conditions,
-  `--tuning.irace <dir>` writes a complete irace scenario from the program's
-  own parameters ([chapter 12](tutorial/12-tuning.md)).
+  the options of a run: an interactive frontend shows its progress and stops it
+  from another thread, and every runner honours both through `search_run`.
 - **A REST service.** The same app, exposed over HTTP with the optional `REST`
   component: clients submit runs, poll progress, cancel them and fetch the
   solutions ([chapter 15](tutorial/15-rest.md)).
@@ -1247,7 +1353,106 @@ When the port compiles, before trusting its results:
 6. The seeds: a run is reproducible given `--seed`, and the results of the two
    versions are compared over several seeds, never on one run.
 7. Every parameter the program adds declares a domain, or `check` fails: that
-   is also what makes it tunable (chapter 12).
+   is also what makes it tunable
+   ([the parameters](#parameters-configuration-and-tuning)).
+
+## Reference: the two frameworks side by side
+
+### The concepts
+
+Each row is one idea, not a mechanical rename: the EasyLocal 4 column says
+where that idea lives now, and the step of this page that ports it.
+
+| EasyLocal 3 | EasyLocal 4 |
+| --- | --- |
+| Input, Solution and Move (the State of `RandomState`, `PrintState`) | the same three values, plain: no base class, no back pointer to the Input (steps 1 to 3) |
+| `SolutionManager` (`RandomState`, `GreedyState`, `CheckConsistency`) | SolutionManager: `random_solution`, `initial_solution`, `is_valid` — construction and validity only, no cost (step 5) |
+| `CostComponent::ComputeCost` | a cost component's `evaluate`, with no base class; the recipe attaches it, `component<C>()` (step 6) |
+| `PrintViolations` | an optional `describe(solution)` of the cost component, which returns the text instead of printing it |
+| the hard flag and the weight of a component, `HARD_WEIGHT` | a cost expression in the recipe: `cost::hard_soft`, `cost::sum`, `cost::weighted`, `cost::in_order`, `cost::apply`, `cost::objectives`; hard is a level, not a big weight (step 6) |
+| `CostStructure`, `DefaultCostStructure<CFtype>`, the pair violations/objective | nothing to declare: the cost and its type follow from the components and the expression |
+| `DeltaCostComponent::ComputeDeltaCost`, `AddDeltaCostComponent` | a delta cost component's `delta_evaluate`, bound to its component by `delta<C, D>()` in the recipe (steps 7 and 10) |
+| `NeighborhoodExplorer` (`FirstMove`, `NextMove`, `RandomMove`, `MakeMove`, `FeasibleMove`) | a NeighborhoodExplorer with a cursor (`first_move`/`next_move`) or a `moves()` generator, plus `random_move`, `make_move`, `is_valid` (step 8) |
+| `MultimodalNeighborhoodExplorer`, `ActiveMove` | `neighborhood_union`, whose move is a variant of the children's moves, with `random_biases` (step 9) |
+| `ParallelNeighborhoodExplorer` (TBB) | no counterpart ([roadmap](roadmap.md#parallel-search)) |
+| `Kicker`, `KickerTester` | no counterpart ([roadmap](roadmap.md#kicks-iterated-local-search-and-variable-neighborhood-descent)) |
+| `Runner` subclasses, `MoveRunner` | algorithm classes in `easylocal::runners` with one `run` member, composed with the recipes into a runner (step 10) |
+| `Solver` (`SimpleLocalSearch`, `MultiStartSearch`, ...), `SetRunner`, `Solve`, `Resolve` | `easylocal::solvers` and their pipelines, or an app whose runners a Session runs by name (steps 10, 11 and 13) |
+| `Tester`, `MoveTester` | `tui::run(app, options)`, the TextUI adapter (step 12), and the checks of `check` and of a Session |
+| `ComponentTester` | `easylocal::testing`, which checks a component against a fixture in a unit test |
+| `ParameterBox`, `Parameter<T>`, `CommandLineParameters`, `SetParameter` | a parameter block per component, with a schema, domains and conditions, gathered in a `parameter_set` ([the parameters](#parameters-configuration-and-tuning)) |
+| `Random::Uniform`, `Random::SetSeed`, the global generator | an RNG passed to the members that need one, and `--seed` for the run's |
+| `Boost.program_options`, TBB | no dependency beyond the standard library: Core is header-only and parses the command line itself |
+
+Beyond the names:
+
+- **No virtual dispatch and no required base classes.** Capabilities are
+  checked by concepts at compile time; the bases are optional conveniences.
+- **Only what is used is written.** A component implements the members the
+  composed algorithms and tools call, not a whole interface: an explorer used
+  only by Simulated Annealing has `random_move` and no enumeration.
+- **Services are bound to an immutable Input** instead of being reconfigured,
+  so concurrent runs only share the Input. The SolutionManager, the explorers,
+  the cost components and the deltas receive it in their constructor, the
+  place for data precomputed from the instance; values (Input, Solution, Move)
+  hold no Input, and hooks such as `read_solution` receive it as a parameter
+  (see the [problem model](reference/problem-model.md#design-choices)).
+- **The cost always comes from cost components**, and their composition (the
+  cost layer and the delta cost layer) is described by recipes, not by objects
+  registered into each other.
+- **Hard and soft are not flags on a component.** A cost expression in the
+  recipe states them, with each weight beside its term:
+  `cost::hard_soft(cost::sum(component<A>(), component<B>()), component<C>() * 10)`.
+  The hard cost is a separate level, not a large multiplier, so it can never be
+  traded for soft improvements.
+- **Randomness is explicit**: RNGs are passed in, never hidden in services.
+- **The search loop's machinery belongs to the framework** (`search_run`):
+  counters, budget, cancellation, progress and events are not reimplemented by
+  each runner.
+- **What is missing is a compile error**, where the component is composed, with
+  the signature to write; EasyLocal 3 reported a missing piece as a
+  pure-virtual to implement, or at run time.
+
+### The runners and the solvers
+
+| EasyLocal 3 | EasyLocal 4 |
+| --- | --- |
+| `FirstDescent` | `runners::FirstImprovement` (the scan restarts from the first move) |
+| `SteepestDescent` | `runners::BestImprovement` (ties go to the first best move, not drawn at random) |
+| `HillClimbing` | `runners::HillClimbing` |
+| `LateAcceptanceHillClimbing` | `runners::LateAcceptanceHillClimbing` (the history records the current cost, see [Runners](reference/runners.md)) |
+| `GreatDeluge` | `runners::GreatDeluge` |
+| `SimulatedAnnealing` (`max_neighbors_sampled`, `max_neighbors_accepted`) | `runners::SimulatedAnnealing<temperature::Hybrid>`, the same schedule; `temperature::Classic` is the textbook one, which cools on samples alone and ends at the final temperature |
+| `SimulatedAnnealingOnlyCutoff`, `SimulatedAnnealingFixedTemperature`, `SimulatedAnnealingTimeBased` | `SimulatedAnnealing` with `temperature::Cutoff`, `FixedTemperature`, `TimeBased` |
+| `SimulatedAnnealingWithReheating`, `...TimeBased` | `SimulatedAnnealing<temperature::Reheating<Hybrid>>`, `Reheating<TimeBased>`; every schedule with an initial temperature can be reheated |
+| `TabuSearch`, `FirstImprovementTabuSearch` | `runners::TabuSearch`, `runners::FirstImprovementTabuSearch`, and `AspirationPlusTabuSearch`, `EliteCandidateTabuSearch` |
+| `min_tenure`, `max_tenure` | a tabu list policy: `runners::tabu::FixedLength` (one tenure), `RandomTenure` (drawn in a range), and also `Cyclic`, `Reactive`, `Frequency` |
+| `max_idle_iterations` | `max_idle_iterations`, in the runner's parameter block, as every other limit |
+| the `Inverse` function given to `TabuSearch` | `inverse(solution, move, tabu_move)` in the explorer |
+| `SimpleLocalSearch`, `MultiStartSearch` | `solvers::LocalSearch`, `solvers::MultiStart` |
+| a solve in stages, written by hand with `Resolve` | `solvers::two_stage`, or a `solvers` pipeline of stages |
+| — | `runners::ParetoLateAcceptanceHillClimbing`, for a multi-objective cost |
+
+Every algorithm is a class template with a parameter block of its own, listed
+in [Runners](reference/runners.md); an algorithm of your own is written once on
+`search_run` ([chapter 7](tutorial/07-custom-runner.md)).
+
+### What is not there yet
+
+EasyLocal 3 code that uses these has no counterpart to port to:
+
+| EasyLocal 3 | Planned |
+| --- | --- |
+| `ShiftingPenaltyRunner` | [Shifting penalty](roadmap.md#shifting-penalty) |
+| `SimulatedAnnealingWithLearning` | [Adaptive neighborhood selection](roadmap.md#adaptive-neighborhood-selection) |
+| `SampleTabuSearch` | [Candidate strategies of Tabu Search](roadmap.md#candidate-strategies-of-tabu-search) |
+| kickers, `VariableNeighborhoodDescent` | [Kicks, Iterated Local Search and Variable Neighborhood Descent](roadmap.md#kicks-iterated-local-search-and-variable-neighborhood-descent) |
+| `TokenRingSearch` | [Cooperative runners](roadmap.md#cooperative-runners), for the runners that exchange solutions; a fixed order of runners is a pipeline today |
+| `GRASP` (`GreedyState(alpha, k)`) | not planned: a greedy randomized construction is a `random_solution` of its own, searched by `solvers::MultiStart` |
+| `ParallelNeighborhoodExplorer` | [Parallel search](roadmap.md#parallel-search) |
+| the modelling layer (`AutoState`, expressions) | [A modelling layer](roadmap.md#a-modelling-layer), a brainstorming item |
+
+Nothing on the roadmap is a promise: see [API stability](stability.md).
 
 ## Next steps
 
