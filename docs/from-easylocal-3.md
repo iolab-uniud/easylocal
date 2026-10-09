@@ -170,7 +170,7 @@ Now the Input is a plain value, read from a stream by a function of its own
 (step 4), so that an Input can also be built in code (as in the tests) or
 received over HTTP:
 
-<!-- snippet: tutorial/tsp.hpp:model -->
+<!-- snippet: tutorial/tsp.hpp:model!solution-value!move-value -->
 ```cpp title="EasyLocal 4"
 // Input: the instance, immutable during the search.
 struct Tsp
@@ -182,20 +182,6 @@ struct Tsp
     {
         return distance.size();
     }
-};
-
-// Solution: order[k] is the k-th city visited; after the last city the tour
-// returns to order[0].
-struct Tour
-{
-    std::vector<std::size_t> order;
-};
-
-// Move: exchange the cities visited at positions i and j, with i < j.
-struct SwapCities
-{
-    std::size_t i;
-    std::size_t j;
 };
 ```
 
@@ -217,8 +203,18 @@ public:
 };
 ```
 
-`Tour` in the model of step 1 is the EasyLocal 4 Solution: a value that can
-be copied, moved and assigned.
+The EasyLocal 4 Solution is the same data as a value that can be copied, moved
+and assigned:
+
+<!-- snippet: tutorial/tsp.hpp:solution-value -->
+```cpp title="EasyLocal 4"
+// Solution: order[k] is the k-th city visited; after the last city the tour
+// returns to order[0].
+struct Tour
+{
+    std::vector<std::size_t> order;
+};
+```
 
 - The reference to the Input is no longer needed: the SolutionManager, the
   explorers, the cost components and the deltas are all constructed from the

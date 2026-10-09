@@ -46,19 +46,23 @@ struct Tsp
     }
 };
 
+// [solution-value]
 // Solution: order[k] is the k-th city visited; after the last city the tour
 // returns to order[0].
 struct Tour
 {
     std::vector<std::size_t> order;
 };
+// [solution-value]
 
+// [move-value]
 // Move: exchange the cities visited at positions i and j, with i < j.
 struct SwapCities
 {
     std::size_t i;
     std::size_t j;
 };
+// [move-value]
 // [model] ------------------------------------------------------------------
 
 // [solution-manager] -------------------------------------------------------
