@@ -10,6 +10,7 @@ on:
       - 'examples/quickstart/**' # served as downloads (scripts/mkdocs_downloads.py)
       - 'scripts/mkdocs_downloads.py'
       - 'scripts/api-docs.py'
+      - 'scripts/docs-pdf.py'
       - 'CMakeLists.txt'
       - 'cmake/**'
       - 'pyproject.toml'
@@ -23,6 +24,7 @@ on:
       - 'examples/quickstart/**'
       - 'scripts/mkdocs_downloads.py'
       - 'scripts/api-docs.py'
+      - 'scripts/docs-pdf.py'
       - 'CMakeLists.txt'
       - 'cmake/**'
       - 'pyproject.toml'
@@ -45,7 +47,7 @@ jobs:
   build:
     name: Build the site
     runs-on: ubuntu-26.04
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -100,6 +102,16 @@ jobs:
           uv run --frozen mkdocs build --strict
           uv run --frozen scripts/api-docs.py build/api
           cp -R build/site-api build/site/api
+
+      # One PDF per section of the nav, printed from the site by a headless
+      # browser, published under pdf/ and linked from the pages.
+      - name: Section PDFs
+        run: |
+          uv sync --frozen --group pdf
+          uv run --frozen --group pdf playwright install --with-deps chromium
+          uv run --frozen --group pdf scripts/docs-pdf.py
+          mkdir -p build/site/pdf
+          cp build/pdf/*.pdf build/site/pdf/
 
       - name: Upload the site
         if: ${{ github.event_name != 'pull_request' }}

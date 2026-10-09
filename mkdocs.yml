@@ -19,6 +19,20 @@ site_dir: build/site
 hooks:
   - scripts/mkdocs_downloads.py
 
+plugins:
+  # Listing plugins turns off the implicit search plugin, so it is named here.
+  - search
+  # One page with the whole site, which scripts/docs-pdf.py prints to PDF, one
+  # file per section. It is off in an ordinary build and in mkdocs serve: the
+  # script sets MKDOCS_PRINT_SITE and the section to keep.
+  - print-site:
+      enabled: !ENV [MKDOCS_PRINT_SITE, false]
+      add_to_navigation: false
+      add_cover_page: true
+      add_table_of_contents: true
+      toc_depth: 3
+      add_print_site_banner: false
+
 exclude_docs: |
   mrdocs.yml
   mrdocs/
@@ -52,6 +66,9 @@ theme:
       toggle:
         icon: material/weather-sunny
         name: Light mode
+
+extra_css:
+  - assets/css/extra.css
 
 markdown_extensions:
   - admonition

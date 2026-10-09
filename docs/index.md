@@ -26,6 +26,16 @@ terminal tester, a REST service and TOML configuration.
   each component.
 - [API stability](stability.md): what the 4.x series promises.
 
+## Reading offline
+
+Each section of this site is also a PDF, built with it and kept up to date:
+[Quick start](https://iolab-uniud.github.io/easylocal/pdf/easylocal-quick-start.pdf),
+[Tutorial](https://iolab-uniud.github.io/easylocal/pdf/easylocal-tutorial.pdf),
+[Coming from EasyLocal 3](https://iolab-uniud.github.io/easylocal/pdf/easylocal-coming-from-easylocal-3.pdf),
+[Reference](https://iolab-uniud.github.io/easylocal/pdf/easylocal-reference.pdf),
+[Guides](https://iolab-uniud.github.io/easylocal/pdf/easylocal-guides.pdf) and
+[Benchmarks](https://iolab-uniud.github.io/easylocal/pdf/easylocal-benchmarks.pdf).
+
 ## Getting EasyLocal
 
 The source, build instructions and release notes are on

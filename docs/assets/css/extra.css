@@ -1,0 +1,7 @@
+/* The link to the PDF of a section belongs to the site: the PDF is printed
+   from the same pages, where the line would point at the file being read. */
+@media print {
+  .pdf-of-this-section {
+    display: none;
+  }
+}

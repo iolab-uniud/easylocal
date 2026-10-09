@@ -120,6 +120,17 @@ reviewed by hand before tagging.
 
 ### Documentation and examples
 
+- Every section of the site — Quick start, Tutorial, Coming from EasyLocal 3,
+  Reference, Guides, Benchmarks — is also published as a PDF, with a cover
+  page and a table of contents, under `pdf/` next to the site, and each
+  section's landing page links its own. `uv run --group pdf
+  scripts/docs-pdf.py` builds them from the site with a headless browser, so
+  that the diagrams, the screenshots and the syntax highlighting are the ones
+  the pages show; the documentation workflow runs it at every build.
+- A bullet followed by an indented block no longer swallows the bullet after
+  it in `docs/reference/cost.md`, `docs/reference/problem-model.md` and the
+  EasyLocal 3 page: Markdown needs a blank line between the two, and without
+  it the pages showed a literal dash in the middle of a paragraph.
 - The tutorial's `RandomDescent` commits with `commit_improvement()`: a
   descent only ever improves, so every accepted move is also a new incumbent,
   and the trace recorded none. Chapter 7 lists `commit_improvement()` beside

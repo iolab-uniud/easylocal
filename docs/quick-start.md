@@ -6,6 +6,8 @@ Improvement with swap moves for the symmetric Travelling Salesperson Problem
 [tutorial](tutorial/README.md) then extends it one chapter at a time and adds
 the rest of the framework.
 
+*This section is also [a PDF](https://iolab-uniud.github.io/easylocal/pdf/easylocal-quick-start.pdf), built with the site.*{ .pdf-of-this-section }
+
 ## Requirements
 
 - a C++23 compiler, one of those the

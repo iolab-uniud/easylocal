@@ -17,6 +17,8 @@ that compare the two versions, abridged, on the last EasyLocal 3 release,
 the EasyLocal 4 code is the tutorial's, which is compiled and tested at every
 build.
 
+*This section is also [a PDF](https://iolab-uniud.github.io/easylocal/pdf/easylocal-coming-from-easylocal-3.pdf), built with the site.*{ .pdf-of-this-section }
+
 ## Before you start
 
 - EasyLocal needs a C++23 compiler (see the [quick start](quick-start.md))
@@ -29,14 +31,15 @@ build.
 - In place of `using namespace EasyLocal::Core;`, give the namespace a short
   alias, as the code of this page does:
 
-  ```cpp title="EasyLocal 4"
-  namespace el = easylocal;               // el::app, el::component, ...
-  namespace runners = easylocal::runners; // runners::FirstImprovement, ...
-  ```
+    ```cpp title="EasyLocal 4"
+    namespace el = easylocal;               // el::app, el::component, ...
+    namespace runners = easylocal::runners; // runners::FirstImprovement, ...
+    ```
 
-  `el::app` is then `easylocal::app`. The aliases go in a function or a source
-  file, not in a header, where they would reach every file that includes it
-  (see the [conventions of the tutorial](tutorial/README.md#conventions-of-the-code)).
+    `el::app` is then `easylocal::app`. The aliases go in a function or a source
+    file, not in a header, where they would reach every file that includes it
+    (see the [conventions of the tutorial](tutorial/README.md#conventions-of-the-code)).
+
 - Migrate in the order of this page, and run the program after each group
   of steps. A first version needs only the SolutionManager, the cost
   components and one explorer: without delta cost components, moves are
@@ -439,25 +442,26 @@ public:
   expression of the recipe. A program with hard components `H1`, `H2` and soft
   components `S1` (weight 1) and `S2` (weight 5) becomes:
 
-  ```cpp title="EasyLocal 4"
-  el::solution_manager<Manager>()
-      | el::cost::hard_soft(
-          el::cost::sum(el::component<H1>(), el::component<H2>()),
-          el::cost::sum(el::component<S1>(), el::component<S2>() * 5))
-  ```
+    ```cpp title="EasyLocal 4"
+    el::solution_manager<Manager>()
+        | el::cost::hard_soft(
+            el::cost::sum(el::component<H1>(), el::component<H2>()),
+            el::cost::sum(el::component<S1>(), el::component<S2>() * 5))
+    ```
 
-  `HARD_WEIGHT` is gone: the hard cost is compared first, so no soft gain can
-  make up for a violation. When the weights of the hard components mattered
-  only to guide the search, keep them inside the hard sum.
+    `HARD_WEIGHT` is gone: the hard cost is compared first, so no soft gain can
+    make up for a violation. When the weights of the hard components mattered
+    only to guide the search, keep them inside the hard sum.
 
-  This changes what the stochastic runners accept. In EasyLocal 3 the hard
-  cost was weighted into one number, so Simulated Annealing accepted, now and
-  then, a move that worsened the hard cost for a soft gain, and crossed
-  infeasible regions; with `hard_soft` the delta of a hard degradation is
-  infinite, and the Metropolis criterion never accepts it.
-  To keep EasyLocal 3's behaviour, write the cost as one weighted sum,
-  `el::cost::sum(el::component<H1>() * 1000, ..., el::component<S1>())`,
-  and check that the result is feasible.
+    This changes what the stochastic runners accept. In EasyLocal 3 the hard
+    cost was weighted into one number, so Simulated Annealing accepted, now and
+    then, a move that worsened the hard cost for a soft gain, and crossed
+    infeasible regions; with `hard_soft` the delta of a hard degradation is
+    infinite, and the Metropolis criterion never accepts it.
+    To keep EasyLocal 3's behaviour, write the cost as one weighted sum,
+    `el::cost::sum(el::component<H1>() * 1000, ..., el::component<S1>())`,
+    and check that the result is feasible.
+
 - `PrintViolations` becomes an optional member,
   `std::string describe(const Solution&) const`, which returns the text
   instead of printing it; an optional `name()` replaces the name given to the

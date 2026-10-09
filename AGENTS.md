@@ -71,8 +71,9 @@ Linux job in Docker with `scripts/act-ci.sh <toolchain>`.
 
 Python tools (`scripts/`, the documentation, the TUI end-to-end tests) run in
 the uv environment: `uv sync`, then `uv run ...`; `uv run mkdocs serve`
-previews the site, `scripts/coverage.sh` measures the coverage of
-`include/easylocal` (the CI badge).
+previews the site, `uv run --group pdf scripts/docs-pdf.py` prints its sections
+as PDFs, `scripts/coverage.sh` measures the coverage of `include/easylocal`
+(the CI badge).
 
 ## Code style
 
@@ -208,6 +209,11 @@ are staged, so it is formatted whole, in the same commit.
   `uv run scripts/tui-snapshots.py build/<preset>/examples/tutorial/easylocal_tutorial_tui`.
 - Every user-visible change goes in `CHANGELOG.md`, and in the reference page
   of its component.
+- Each section of the nav is also published as a PDF, printed from the site by
+  `uv run --group pdf scripts/docs-pdf.py` (the documentation workflow does it;
+  locally it needs a headless browser, Playwright's Chromium or an installed
+  Chrome). A list of sections that changes is a change of the PDFs too, and a
+  section's landing page links its own.
 - Plans go in `docs/roadmap.md` (why, what, when), not in the code.
 
 ## Commits
