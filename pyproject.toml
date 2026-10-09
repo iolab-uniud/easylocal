@@ -4,7 +4,7 @@
 #     uv run scripts/tui-snapshots.py <tui>    # run a script in that environment
 #     uv run pytest tests/tui                  # TUI end-to-end tests
 #     uv run mkdocs serve                      # documentation site preview
-#     uv run --group pdf scripts/docs-pdf.py   # one PDF per section of the site
+#     uv run scripts/docs-pdf.py               # one PDF per section of the site
 #     scripts/format.sh, scripts/tidy.sh       # clang-format / clang-tidy
 #
 # The library itself is C++ and does not depend on any of this.
@@ -29,10 +29,3 @@ dependencies = [
 
 [tool.uv]
 package = false
-
-# Optional: the headless browser scripts/docs-pdf.py prints the section PDFs
-# with, when it is installed (an installed Chrome or Chromium is the fallback):
-#
-#     uv sync --group pdf && uv run playwright install chromium
-[dependency-groups]
-pdf = ["playwright>=1.63"]

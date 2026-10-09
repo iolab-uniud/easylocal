@@ -15,13 +15,10 @@ on and every other page excluded, and prints the single page it generates with
 a headless browser, so that the diagrams and the syntax highlighting are the
 ones the site shows. The home page is not a section: it is a page of links.
 
-The browser is Playwright's Chromium when it is installed, which prints A4
-pages with the margins of PAGE:
-
-    uv sync --group pdf && uv run playwright install chromium
-
-otherwise an installed Chrome or Chromium, found in the usual places or named
-by $CHROME, which prints with its own defaults.
+It prints with an installed Chrome or Chromium — $CHROME, the PATH, or the
+usual places — and needs nothing else: the page size and the margins are in
+the print stylesheet of the site (docs/assets/css/extra.css), and the browser
+is given the time to draw the Mermaid diagrams before it prints.
 
 The PDFs are not part of `mkdocs build`: the documentation workflow runs this
 script and publishes them under pdf/ next to the site.
@@ -30,10 +27,8 @@ script and publishes them under pdf/ next to the site.
 import argparse
 import contextlib
 import functools
-import html
 import http.server
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -49,7 +44,9 @@ OUTPUT = ROOT / "build" / "pdf"
 # The page of the site that is a landing page, not a section to print.
 HOME = "index.md"
 
-PAGE = {"format": "A4", "margin": "18mm"}
+# Milliseconds of page time the browser is given before it prints: the
+# Mermaid diagrams are drawn in the browser, and a long section has a few.
+DRAWING_TIME = 20_000
 
 
 class Section:
@@ -177,74 +174,29 @@ def find_browser():
     return None
 
 
-# Fills the diagram hosts the theme left empty, from the sources of the page.
-DRAW_MERMAID = """
-async (sources) => {
-    const hosts = Array.from(document.querySelectorAll(".mermaid"));
-    let drawn = 0;
-    for (const [index, host] of hosts.entries()) {
-        if (host.querySelector("svg") || !sources[index]) continue;
-        const { svg } = await window.mermaid.render(`pdf-mermaid-${index}`, sources[index]);
-        host.innerHTML = svg;
-        drawn += 1;
-    }
-    return drawn;
-}
-"""
-
-
-def mermaid_sources(page_html):
-    """The code of each Mermaid block, in the order the page holds them."""
-    blocks = re.findall(
-        r'<pre class="mermaid"><code>(.*?)</code></pre>', page_html, re.DOTALL
-    )
-    return [html.unescape(block) for block in blocks]
-
-
-def print_with_playwright(url, pdf, sources):
-    try:
-        from playwright.sync_api import sync_playwright
-    except ImportError:
-        return False
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch()
-        page = browser.new_page()
-        page.goto(url, wait_until="networkidle")
-        # The theme draws the diagrams in the browser; when it has not, which
-        # depends on the browser, they are drawn here from the same sources.
-        if sources:
-            page.wait_for_function(
-                "() => typeof window.mermaid === 'object'", timeout=30_000
-            )
-            page.evaluate(DRAW_MERMAID, sources)
-        page.pdf(
-            path=str(pdf),
-            format=PAGE["format"],
-            margin={side: PAGE["margin"] for side in ("top", "right", "bottom", "left")},
-            print_background=True,
-            # The style of the print page numbers its pages itself.
-            display_header_footer=False,
-        )
-        browser.close()
-    return True
-
-
-def print_with_chrome(browser, url, pdf):
-    subprocess.run(
+def print_page(browser, url, pdf):
+    """Prints the page at the URL, once its scripts have had their time."""
+    finished = subprocess.run(
         [
             browser,
             "--headless=new",
             "--disable-gpu",
             "--no-pdf-header-footer",
-            # Let the page's scripts, Mermaid among them, run before printing.
-            "--virtual-time-budget=20000",
+            # The page draws its Mermaid diagrams when it is loaded: this gives
+            # the scripts their time, and the browser prints as soon as they
+            # are done, not after the whole budget.
+            f"--virtual-time-budget={DRAWING_TIME}",
             "--run-all-compositor-stages-before-draw",
             f"--print-to-pdf={pdf}",
             url,
         ],
-        check=True,
         capture_output=True,
+        text=True,
     )
+    if finished.returncode != 0 or not pdf.exists():
+        raise SystemExit(
+            f"error: the browser could not print {url}\n{finished.stderr.strip()}"
+        )
 
 
 def site_prefix(config):
@@ -280,23 +232,19 @@ def render(section, every_page, directory, prefix):
     site_dir = root / prefix.strip("/") if prefix != "/" else root
     config_path = overlay_config(section, every_page, site_dir, directory)
     build(config_path)
-    page = site_dir / "print_page" / "index.html"
-    if not page.exists():
+    printable = site_dir / "print_page" / "index.html"
+    if not printable.exists():
         raise SystemExit(f"error: {section.slug}: the print page was not generated")
     OUTPUT.mkdir(parents=True, exist_ok=True)
     pdf = OUTPUT / f"easylocal-{section.slug}.pdf"
-    sources = mermaid_sources(page.read_text(encoding="utf-8"))
+    browser = find_browser()
+    if browser is None:
+        raise SystemExit(
+            "error: no browser to print with: install Chrome or Chromium, or\n"
+            "       set $CHROME to one."
+        )
     with served(root) as origin:
-        url = f"{origin}{prefix}print_page/"
-        if not print_with_playwright(url, pdf, sources):
-            browser = find_browser()
-            if browser is None:
-                raise SystemExit(
-                    "error: no browser to print with. Install Playwright's Chromium\n"
-                    "       (uv sync --group pdf && uv run playwright install chromium)\n"
-                    "       or set $CHROME to an installed Chrome or Chromium."
-                )
-            print_with_chrome(browser, url, pdf)
+        print_page(browser, f"{origin}{prefix}print_page/", pdf)
     return pdf
 
 
