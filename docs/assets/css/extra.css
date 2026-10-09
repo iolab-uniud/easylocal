@@ -1,22 +1,7 @@
-/* The pages of the PDFs that scripts/docs-pdf.py prints from the site: the
-   browser is told the paper and the margins here, where its own defaults
-   (Letter, its own margins) would otherwise apply. */
-@page {
-  size: A4;
-  margin: 18mm;
-}
-
+/* The line that offers the PDF of a section is part of the site: a reader who
+   prints the page does not need it, and the PDF itself is that file. */
 @media print {
-  /* The link to the PDF of a section belongs to the site: inside the PDF the
-     line would point at the file being read. */
   .pdf-of-this-section {
     display: none;
-  }
-
-  /* Keep the background of the code blocks and of the admonitions, which a
-     browser drops when it prints. */
-  body {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
   }
 }

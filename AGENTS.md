@@ -71,9 +71,9 @@ Linux job in Docker with `scripts/act-ci.sh <toolchain>`.
 
 Python tools (`scripts/`, the documentation, the TUI end-to-end tests) run in
 the uv environment: `uv sync`, then `uv run ...`; `uv run mkdocs serve`
-previews the site, `uv run scripts/docs-pdf.py` prints its sections as PDFs
-(with an installed Chrome or Chromium), `scripts/coverage.sh` measures the
-coverage of `include/easylocal` (the CI badge).
+previews the site, `uv run --group pdf scripts/docs-pdf.py` renders its
+sections as PDFs, `scripts/coverage.sh` measures the coverage of
+`include/easylocal` (the CI badge).
 
 ## Code style
 
@@ -209,10 +209,15 @@ are staged, so it is formatted whole, in the same commit.
   `uv run scripts/tui-snapshots.py build/<preset>/examples/tutorial/easylocal_tutorial_tui`.
 - Every user-visible change goes in `CHANGELOG.md`, and in the reference page
   of its component.
-- Each section of the nav is also published as a PDF, printed from the site by
-  `uv run scripts/docs-pdf.py`, which needs an installed Chrome or Chromium
-  (the documentation workflow uses the runner's). A section that is added or
-  renamed changes the PDFs too, and its landing page links its own.
+- Each section of the nav is also published as a PDF, rendered from the
+  Markdown by `uv run --group pdf scripts/docs-pdf.py` (pandoc writes Typst,
+  Typst sets it; the group carries both, and an installed pandoc and typst are
+  used in their place). A section that is added or renamed changes the PDFs
+  too, and its landing page links its own.
+- A ```mermaid block is drawn in the browser by the site and read as an SVG by
+  the PDFs: after adding or changing one, run `uv run scripts/mermaid-svg.py`
+  (it needs a browser and the network) and commit the file it writes under
+  `docs/assets/diagrams/`, as the TextUI screenshots are committed.
 - Plans go in `docs/roadmap.md` (why, what, when), not in the code.
 
 ## Commits

@@ -103,11 +103,11 @@ jobs:
           uv run --frozen scripts/api-docs.py build/api
           cp -R build/site-api build/site/api
 
-      # One PDF per section of the nav, printed from the site with the Chrome
-      # of the runner image, published under pdf/ and linked from the pages.
+      # One PDF per section of the nav, rendered from the Markdown by pandoc
+      # and Typst, published under pdf/ and linked from the pages.
       - name: Section PDFs
         run: |
-          uv run --frozen scripts/docs-pdf.py
+          uv run --frozen --group pdf scripts/docs-pdf.py
           mkdir -p build/site/pdf
           cp build/pdf/*.pdf build/site/pdf/
 

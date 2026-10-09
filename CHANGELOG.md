@@ -121,12 +121,15 @@ reviewed by hand before tagging.
 ### Documentation and examples
 
 - Every section of the site — Quick start, Tutorial, Coming from EasyLocal 3,
-  Reference, Guides, Benchmarks — is also published as a PDF, with a cover
+  Reference, Guides, Benchmarks — is also published as a PDF, with a title
   page and a table of contents, under `pdf/` next to the site, and each
-  section's landing page links its own. `uv run scripts/docs-pdf.py` builds
-  them from the site with an installed Chrome or Chromium, so that the
-  diagrams, the screenshots and the syntax highlighting are the ones the pages
-  show; the documentation workflow runs it at every build.
+  section's landing page links its own. `uv run --group pdf
+  scripts/docs-pdf.py` renders them from the Markdown: pandoc writes a Typst
+  document and Typst sets it, both carried by the optional `pdf` dependency
+  group. The Mermaid diagrams, which only a browser can draw, are drawn once
+  by `uv run scripts/mermaid-svg.py` and kept as SVG files under
+  `docs/assets/diagrams/`, which the site could serve as well. The
+  documentation workflow renders the PDFs at every build.
 - A bullet followed by an indented block no longer swallows the bullet after
   it in `docs/reference/cost.md`, `docs/reference/problem-model.md` and the
   EasyLocal 3 page: Markdown needs a blank line between the two, and without
