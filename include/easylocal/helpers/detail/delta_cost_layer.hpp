@@ -9,6 +9,7 @@
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
 #include <easylocal/utils/detail/meta.hpp>
+#include <easylocal/utils/input_base.hpp>
 
 #include <concepts>
 #include <cstddef>
@@ -76,8 +77,21 @@ public:
                 }
                 else
                 {
+                    // The hint about the inherited constructor, only where it
+                    // applies: a delta derived from input_base, built from the
+                    // Input alone.
+                    constexpr bool derived_without_constructors =
+                        sizeof...(StoredArgs) == 0
+                        && std::derived_from<Delta, easylocal::input_base<input_type>>;
                     static_assert(
-                        std::constructible_from<Delta, const StoredArgs&...>,
+                        std::constructible_from<Delta, const StoredArgs&...>
+                            || !derived_without_constructors,
+                        "a delta cost component derived from input_base must "
+                        "inherit the base constructor; did you forget "
+                        "`using input_base::input_base;`?");
+                    static_assert(
+                        std::constructible_from<Delta, const StoredArgs&...>
+                            || derived_without_constructors,
                         "a delta cost component must be constructible either from the "
                         "bound Input followed by its recipe arguments or from "
                         "its recipe arguments alone");

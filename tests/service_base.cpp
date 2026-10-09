@@ -1,6 +1,9 @@
-#include <easylocal/runners/runner.hpp>
-#include <easylocal/helpers/solution_manager.hpp>
+#include <easylocal/config/parameters.hpp>
+#include <easylocal/config/parameters_base.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
+#include <easylocal/helpers/solution_manager.hpp>
+#include <easylocal/runners/runner.hpp>
+#include <easylocal/utils/input_base.hpp>
 
 #include <cassert>
 #include <ranges>
@@ -35,11 +38,49 @@ public:
     {
         return true;
     }
+};
+
+// A cost component on the same base: the Input reaches every service the same
+// way.
+class Component : public easylocal::input_base<Instance>
+{
+public:
+    using input_base::input_base;
 
     [[nodiscard]]
-    auto protected_input_address() const noexcept -> const Instance*
+    auto evaluate(const Solution& solution) const noexcept -> int
     {
-        return &input_;
+        return solution.value + input().marker;
+    }
+};
+
+struct Parameters
+{
+    int weight{1};
+
+    static consteval auto parameter_schema()
+    {
+        return easylocal::config::fields(
+            easylocal::config::field<"weight", &Parameters::weight>("The weight"));
+    }
+
+    [[nodiscard]]
+    auto validate() const -> easylocal::config::validation_result
+    {
+        return easylocal::config::check_schema(*this);
+    }
+};
+
+// A configurable class on the parameter base: parameters_type comes from it.
+class Function : public easylocal::parameters_base<Parameters>
+{
+public:
+    using parameters_base::parameters_base;
+
+    [[nodiscard]]
+    auto operator()(int cost) const noexcept -> int
+    {
+        return cost * parameters().weight;
     }
 };
 
@@ -80,6 +121,13 @@ static_assert(std::same_as<NeighborhoodExplorer::solution_type, Solution>);
 static_assert(std::same_as<NeighborhoodExplorer::move_type, Move>);
 static_assert(!std::is_polymorphic_v<SolutionManager>);
 static_assert(!std::is_polymorphic_v<NeighborhoodExplorer>);
+static_assert(std::same_as<Component::input_type, Instance>);
+static_assert(std::same_as<Function::parameters_type, Parameters>);
+// The Input is kept by pointer, so a service built on it stays assignable.
+static_assert(std::is_copy_assignable_v<Component>);
+// Not from a temporary Input, which would dangle.
+static_assert(!std::constructible_from<Component, Instance&&>);
+static_assert(!std::constructible_from<SolutionManager, Instance&&>);
 static_assert(easylocal::base_solution_manager<SolutionManager>);
 static_assert(easylocal::neighborhood_explorer_for<
               NeighborhoodExplorer,
@@ -95,11 +143,18 @@ int main()
 
     assert(&solution_manager.input() == &instance);
     assert(&solution_manager.input() == &instance);
-    assert(solution_manager.protected_input_address() == &instance);
 
     assert(neighborhood.protected_solution_manager_address() == &solution_manager);
     assert(&neighborhood.input() == &instance);
     assert(&neighborhood.input() == &instance);
+
+    const Component component{instance};
+    assert(&component.input() == &instance);
+    assert(component.evaluate(Solution{.value = 1}) == 43);
+
+    const Function function{Parameters{.weight = 3}};
+    assert(function.parameters().weight == 3);
+    assert(function(2) == 6);
 
     return 0;
 }

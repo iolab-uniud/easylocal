@@ -468,10 +468,10 @@ public:
 
 <!-- snippet: tutorial/tsp.hpp:cost-component!component-text -->
 ```cpp title="EasyLocal 4"
-class TourLength
+class TourLength : public easylocal::input_base<Tsp>
 {
 public:
-    explicit TourLength(const Tsp& input) : input_{input} {}
+    using input_base::input_base; // the Input, which input() gives back
 
     double evaluate(const Tour& tour) const
     {
@@ -482,18 +482,17 @@ public:
             const auto from = tour.order[k];
             const auto to =
                 tour.order[(k + 1) % n]; // the last city goes back to the first
-            length += input_.distance[from][to];
+            length += input().distance[from][to];
         }
         return length;
     }
-
-private:
-    const Tsp& input_;
 };
 ```
 
-- `ComputeCost` becomes `evaluate`; the component has no base class and keeps
-  the Input it is constructed from.
+- `ComputeCost` becomes `evaluate`. The base is no longer required and carries
+  no virtual function: `input_base<Tsp>` only gives the constructor from the
+  Input and `input()`, and a component that needs neither derives from
+  nothing.
 - The weight and the hard flag leave the constructor and go into the cost
   expression of the recipe. A program with hard components `H1`, `H2` and soft
   components `S1` (weight 1) and `S2` (weight 5) becomes:
@@ -553,10 +552,10 @@ public:
 
 <!-- snippet: tutorial/tsp.hpp:delta -->
 ```cpp title="EasyLocal 4"
-class TwoOptLengthDelta
+class TwoOptLengthDelta : public easylocal::input_base<Tsp>
 {
 public:
-    explicit TwoOptLengthDelta(const Tsp& input) : input_{input} {}
+    using input_base::input_base;
 
     // The tour goes a -> b ... c -> d; after the move it goes a -> c ... b -> d,
     // the segment b ... c reversed, at the same cost with symmetric distances.
@@ -567,12 +566,9 @@ public:
         const auto b = tour.order[move.i + 1];
         const auto c = tour.order[move.j];
         const auto d = tour.order[(move.j + 1) % n];
-        const auto& distance = input_.distance;
+        const auto& distance = input().distance;
         return distance[a][c] + distance[b][d] - distance[a][b] - distance[c][d];
     }
-
-private:
-    const Tsp& input_;
 };
 ```
 

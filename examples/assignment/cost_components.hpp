@@ -6,6 +6,8 @@
 #include "instance.hpp"
 #include "solution.hpp"
 
+#include <easylocal/utils/input_base.hpp>
+
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
@@ -44,7 +46,7 @@ inline quantity_type overload(quantity_type load, quantity_type capacity)
 // what a full evaluation does. EasyLocal then evaluates each move on a
 // candidate solution, which costs the same and needs no code.
 
-class CapacityCostComponent
+class CapacityCostComponent : public easylocal::input_base<AssignmentInstance>
 {
 public:
     // The name of the component in reports (--report).
@@ -53,21 +55,18 @@ public:
         return "Capacity";
     }
 
-    explicit CapacityCostComponent(const AssignmentInstance& instance)
-        : instance_{instance}
-    {
-    }
+    using input_base::input_base;
 
     CapacityValue evaluate(const AssignmentSolution& solution) const
     {
-        assert(solution.assignment.size() == instance_.demand.size());
+        assert(solution.assignment.size() == input().demand.size());
 
-        std::vector<quantity_type> load(instance_.capacity.size(), quantity_type{0});
+        std::vector<quantity_type> load(input().capacity.size(), quantity_type{0});
 
         for (std::size_t job = 0; job < solution.assignment.size(); ++job)
         {
-            assert(solution.assignment[job] < instance_.capacity.size());
-            load[solution.assignment[job]] += instance_.demand[job];
+            assert(solution.assignment[job] < input().capacity.size());
+            load[solution.assignment[job]] += input().demand[job];
         }
 
         CapacityValue value{};
@@ -75,7 +74,7 @@ public:
         for (std::size_t machine = 0; machine < load.size(); ++machine)
         {
             const auto machine_overload =
-                overload(load[machine], instance_.capacity[machine]);
+                overload(load[machine], input().capacity[machine]);
 
             value.overloaded_machines += machine_overload > 0 ? 1 : 0;
             value.total_overload += machine_overload;
@@ -83,12 +82,9 @@ public:
 
         return value;
     }
-
-private:
-    const AssignmentInstance& instance_;
 };
 
-class LoadImbalanceCostComponent
+class LoadImbalanceCostComponent : public easylocal::input_base<AssignmentInstance>
 {
 public:
     // The name of the component in reports (--report).
@@ -97,33 +93,27 @@ public:
         return "LoadImbalance";
     }
 
-    explicit LoadImbalanceCostComponent(const AssignmentInstance& instance)
-        : instance_{instance}
-    {
-    }
+    using input_base::input_base;
 
     // The largest machine load minus the smallest one: a plain number.
     std::int64_t evaluate(const AssignmentSolution& solution) const
     {
-        assert(solution.assignment.size() == instance_.demand.size());
+        assert(solution.assignment.size() == input().demand.size());
 
-        if (instance_.capacity.empty())
+        if (input().capacity.empty())
             return 0;
 
-        std::vector<quantity_type> load(instance_.capacity.size(), quantity_type{0});
+        std::vector<quantity_type> load(input().capacity.size(), quantity_type{0});
 
         for (std::size_t job = 0; job < solution.assignment.size(); ++job)
         {
-            assert(solution.assignment[job] < instance_.capacity.size());
-            load[solution.assignment[job]] += instance_.demand[job];
+            assert(solution.assignment[job] < input().capacity.size());
+            load[solution.assignment[job]] += input().demand[job];
         }
 
         const auto [minimum, maximum] = std::ranges::minmax_element(load);
         return *maximum - *minimum;
     }
-
-private:
-    const AssignmentInstance& instance_;
 };
 
 } // namespace assignment

@@ -8,6 +8,7 @@
 #include <easylocal/utils/detail/meta.hpp>
 #include <easylocal/utils/generator.hpp> // IWYU pragma: export
 #include <easylocal/utils/hash.hpp>
+#include <easylocal/utils/input_base.hpp>
 
 #include <cassert>
 #include <concepts>
@@ -412,15 +413,14 @@ using tabu_attribute_t = decltype(easylocal::tabu_attribute(
 ///
 /// It is optional and non-virtual: it provides the types and input() that
 /// neighborhood_explorer_for requires, which an explorer may also declare
-/// itself.
+/// itself. The Input, the SolutionManager's, comes from input_base, as it does
+/// for a cost component and for a SolutionManager.
 template<class SolutionManager, class Move>
-class neighborhood_explorer_base
+class neighborhood_explorer_base : public input_base<typename SolutionManager::input_type>
 {
 public:
     /// The SolutionManager type.
     using solution_manager_type = SolutionManager;
-    /// The Input type of the SolutionManager.
-    using input_type = typename solution_manager_type::input_type;
     /// The Solution type of the SolutionManager.
     using solution_type = typename solution_manager_type::solution_type;
     /// The Move type.
@@ -429,20 +429,14 @@ public:
     /// From the SolutionManager, which it keeps by reference.
     explicit neighborhood_explorer_base(
         const solution_manager_type& solution_manager) noexcept
-        : solution_manager_{solution_manager}
+        : input_base<typename SolutionManager::input_type>{solution_manager.input()},
+          solution_manager_{solution_manager}
     {
     }
 
     /// Not from a temporary SolutionManager, which would dangle: the
     /// SolutionManager must outlive the explorer.
     explicit neighborhood_explorer_base(const solution_manager_type&&) = delete;
-
-    /// The Input of the SolutionManager.
-    [[nodiscard]]
-    const input_type& input() const noexcept
-    {
-        return solution_manager_.input();
-    }
 
 protected:
     /// The SolutionManager the explorer was constructed from.

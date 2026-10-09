@@ -10,6 +10,7 @@
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
+#include <easylocal/utils/input_base.hpp>
 
 #include <array>
 #include <compare>
@@ -87,8 +88,20 @@ public:
                 }
                 else
                 {
+                    // The hint about the inherited constructor, only where it
+                    // applies: a component derived from input_base, built
+                    // from the Input alone.
+                    constexpr bool derived_without_constructors = sizeof...(args) == 0
+                        && std::derived_from<Component, easylocal::input_base<Input>>;
                     static_assert(
-                        std::constructible_from<Component, decltype(args)...>,
+                        std::constructible_from<Component, decltype(args)...>
+                            || !derived_without_constructors,
+                        "a cost component derived from input_base must inherit "
+                        "the base constructor; did you forget "
+                        "`using input_base::input_base;`?");
+                    static_assert(
+                        std::constructible_from<Component, decltype(args)...>
+                            || derived_without_constructors,
                         "a cost component must be constructible either from the "
                         "bound Input followed by its recipe arguments or from "
                         "its recipe arguments alone (its parameters first, when "

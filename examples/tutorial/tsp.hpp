@@ -6,8 +6,10 @@
 // tests.
 
 #include <easylocal/config/parameters.hpp>
+#include <easylocal/config/parameters_base.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
+#include <easylocal/utils/input_base.hpp>
 #include <easylocal/utils/limit.hpp>
 #include <easylocal/utils/termination.hpp>
 
@@ -96,10 +98,10 @@ public:
 // [solution-manager] -------------------------------------------------------
 
 // [cost-component] ---------------------------------------------------------
-class TourLength
+class TourLength : public easylocal::input_base<Tsp>
 {
 public:
-    explicit TourLength(const Tsp& input) : input_{input} {}
+    using input_base::input_base; // the Input, which input() gives back
 
     double evaluate(const Tour& tour) const
     {
@@ -110,11 +112,10 @@ public:
             const auto from = tour.order[k];
             const auto to =
                 tour.order[(k + 1) % n]; // the last city goes back to the first
-            length += input_.distance[from][to];
+            length += input().distance[from][to];
         }
         return length;
     }
-
     // [component-text]
     // Optional, for people: the name of the component and a text that
     // explains its value on a tour, here the edges it adds up (chapter 11).
@@ -129,23 +130,20 @@ public:
         std::string text;
         for (std::size_t k = 0; k < n; ++k)
         {
-            const auto edge = input_.distance[tour.order[k]][tour.order[(k + 1) % n]];
+            const auto edge = input().distance[tour.order[k]][tour.order[(k + 1) % n]];
             text += (k == 0 ? "" : " + ") + std::format("{}", edge);
         }
         return text;
     }
     // [component-text]
-
-private:
-    const Tsp& input_;
 };
 // [cost-component] ---------------------------------------------------------
 
 // [second-component] -------------------------------------------------------
-class MaxEdge
+class MaxEdge : public easylocal::input_base<Tsp>
 {
 public:
-    explicit MaxEdge(const Tsp& input) : input_{input} {}
+    using input_base::input_base;
 
     double evaluate(const Tour& tour) const
     {
@@ -155,13 +153,10 @@ public:
         {
             const auto from = tour.order[k];
             const auto to = tour.order[(k + 1) % n];
-            longest = std::max(longest, input_.distance[from][to]);
+            longest = std::max(longest, input().distance[from][to]);
         }
         return longest;
     }
-
-private:
-    const Tsp& input_;
 };
 // [second-component] -------------------------------------------------------
 
@@ -177,10 +172,10 @@ struct LongEdges
     auto operator<=>(const LongEdges&) const = default;
 };
 
-class LongEdgesComponent
+class LongEdgesComponent : public easylocal::input_base<Tsp>
 {
 public:
-    explicit LongEdgesComponent(const Tsp& input) : input_{input} {}
+    using input_base::input_base;
 
     LongEdges evaluate(const Tour& tour) const
     {
@@ -188,7 +183,7 @@ public:
         LongEdges value;
         for (std::size_t k = 0; k < n; ++k)
         {
-            const auto edge = input_.distance[tour.order[k]][tour.order[(k + 1) % n]];
+            const auto edge = input().distance[tour.order[k]][tour.order[(k + 1) % n]];
             if (edge > 6.0)
             {
                 value.excess += edge - 6.0;
@@ -197,9 +192,6 @@ public:
         }
         return value;
     }
-
-private:
-    const Tsp& input_;
 };
 // [domain-value] -----------------------------------------------------------
 
@@ -223,12 +215,12 @@ struct ExcessParameters
     }
 };
 
-class Excess
+class Excess : public easylocal::parameters_base<ExcessParameters>
 {
 public:
-    using parameters_type = ExcessParameters; // configurable, built from it
-
-    explicit Excess(ExcessParameters parameters) : bound_{parameters.bound} {}
+    // The base declares parameters_type, which makes the class configurable,
+    // and keeps the block, which parameters() gives back.
+    using parameters_base::parameters_base;
 
     // Its parameters are configured under its name: cost.excess.*
     static std::string_view name()
@@ -238,11 +230,8 @@ public:
 
     double operator()(double longest) const
     {
-        return std::max(0.0, longest - bound_);
+        return std::max(0.0, longest - parameters().bound);
     }
-
-private:
-    double bound_;
 };
 // [cost-parameters] --------------------------------------------------------
 
@@ -432,10 +421,10 @@ inline std::string describe(const TwoOpt& move)
 // [io] ---------------------------------------------------------------------
 
 // [delta] ------------------------------------------------------------------
-class TwoOptLengthDelta
+class TwoOptLengthDelta : public easylocal::input_base<Tsp>
 {
 public:
-    explicit TwoOptLengthDelta(const Tsp& input) : input_{input} {}
+    using input_base::input_base;
 
     // The tour goes a -> b ... c -> d; after the move it goes a -> c ... b -> d,
     // the segment b ... c reversed, at the same cost with symmetric distances.
@@ -446,12 +435,9 @@ public:
         const auto b = tour.order[move.i + 1];
         const auto c = tour.order[move.j];
         const auto d = tour.order[(move.j + 1) % n];
-        const auto& distance = input_.distance;
+        const auto& distance = input().distance;
         return distance[a][c] + distance[b][d] - distance[a][b] - distance[c][d];
     }
-
-private:
-    const Tsp& input_;
 };
 // [delta] ------------------------------------------------------------------
 
@@ -459,17 +445,17 @@ private:
 // The tour length with its 2-opt delta in the same class: a co-located delta.
 // The component is attached as usual, with component<TourLengthWithDelta>(),
 // and its delta with delta<TourLengthWithDelta>().
-class TourLengthWithDelta
+class TourLengthWithDelta : public easylocal::input_base<Tsp>
 {
 public:
-    explicit TourLengthWithDelta(const Tsp& input) : input_{input} {}
+    using input_base::input_base;
 
     double evaluate(const Tour& tour) const
     {
         const auto n = tour.order.size();
         double length = 0.0;
         for (std::size_t k = 0; k < n; ++k)
-            length += input_.distance[tour.order[k]][tour.order[(k + 1) % n]];
+            length += input().distance[tour.order[k]][tour.order[(k + 1) % n]];
         return length;
     }
 
@@ -480,12 +466,9 @@ public:
         const auto b = tour.order[move.i + 1];
         const auto c = tour.order[move.j];
         const auto d = tour.order[(move.j + 1) % n];
-        const auto& distance = input_.distance;
+        const auto& distance = input().distance;
         return distance[a][c] + distance[b][d] - distance[a][b] - distance[c][d];
     }
-
-private:
-    const Tsp& input_;
 };
 // [co-located] -------------------------------------------------------------
 
@@ -530,20 +513,16 @@ struct RandomDescentParameters
     }
 };
 
-class RandomDescent
+class RandomDescent : public easylocal::parameters_base<RandomDescentParameters>
 {
 public:
-    using parameters_type = RandomDescentParameters; // configurable, built from it
-
-    explicit RandomDescent(RandomDescentParameters parameters) : parameters_{parameters}
-    {
-    }
+    using parameters_base::parameters_base; // configurable, built from the block
 
     // The result type is the one run.finish() returns: auto deduces it.
     template<class Run, std::uniform_random_bit_generator RNG>
     auto run(Run& run, Run::solution_type solution, RNG& rng) const
     {
-        run.limit_evaluations(parameters_.max_evaluations);
+        run.limit_evaluations(parameters().max_evaluations);
         auto current = run.start(solution); // evaluates, emits run_started
 
         // should_stop: cancelled, the budget spent, the target reached or the
@@ -566,9 +545,6 @@ public:
         }
         return run.finish(std::move(solution), current.cost()); // run_finished
     }
-
-private:
-    RandomDescentParameters parameters_;
 };
 // [custom-runner] ----------------------------------------------------------
 

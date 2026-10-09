@@ -259,7 +259,7 @@ std::string describe(const Tour& tour) const
     std::string text;
     for (std::size_t k = 0; k < n; ++k)
     {
-        const auto edge = input_.distance[tour.order[k]][tour.order[(k + 1) % n]];
+        const auto edge = input().distance[tour.order[k]][tour.order[(k + 1) % n]];
         text += (k == 0 ? "" : " + ") + std::format("{}", edge);
     }
     return text;

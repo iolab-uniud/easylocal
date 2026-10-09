@@ -34,6 +34,29 @@ reviewed by hand before tagging.
   and an estimated temperature that is not a number keeps the configured
   `initial_temperature` instead of leaving the schedule invalid.
 
+### Problem model
+
+- `easylocal::input_base<Input>` (`<easylocal/utils/input_base.hpp>`) is the
+  base of a class built from the Input: it declares `input_type`, takes the
+  Input in its constructor (the one from a temporary is deleted) and gives it
+  back through `input()`. A cost component, a delta cost component, a
+  SolutionManager and a neighborhood explorer now reach the Input the same
+  way; `solution_manager_base` and `neighborhood_explorer_base` derive from
+  it, and a component writes `using input_base::input_base;` instead of its
+  own constructor and reference member. It is optional: a class that declares
+  `input()` itself, or that needs no Input, is unaffected.
+- **Breaking:** `solution_manager_base` no longer has the protected member
+  `input_`; the Input is read through `input()`, which `input_base` gives.
+  A SolutionManager built on the Input stays assignable, as the base keeps it
+  by pointer.
+- `easylocal::parameters_base<Parameters>`
+  (`<easylocal/config/parameters_base.hpp>`) is its counterpart for a
+  configurable class: it declares `parameters_type`, which is what makes a
+  class configurable, takes the block in its constructor and gives it back
+  through `parameters()`. It does not validate the block: the recipe that
+  holds it does, before every construction. A class that takes both derives
+  from the two and is built from the Input first, then the parameters.
+
 ### Parameters
 
 - **Breaking:** a parameter set is applied and validated by its members

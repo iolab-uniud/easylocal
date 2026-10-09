@@ -16,6 +16,7 @@
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/config/parameters.hpp>
+#include <easylocal/config/parameters_base.hpp>
 #include <easylocal/config/setup.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/helpers.hpp>
@@ -23,5 +24,6 @@
 #include <easylocal/solvers.hpp>
 #include <easylocal/trace.hpp>
 #include <easylocal/utils/hash.hpp>
+#include <easylocal/utils/input_base.hpp>
 #include <easylocal/utils/logging.hpp>
 // IWYU pragma: end_exports

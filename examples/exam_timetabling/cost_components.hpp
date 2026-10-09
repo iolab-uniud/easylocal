@@ -7,6 +7,8 @@
 #include "move.hpp"
 #include "solution.hpp"
 
+#include <easylocal/utils/input_base.hpp>
+
 #include <cassert>
 #include <string_view>
 #include <vector>
@@ -14,7 +16,7 @@
 namespace exam_timetabling
 {
 
-class StudentConflictComponent
+class StudentConflictComponent : public easylocal::input_base<ExamTimetablingInstance>
 {
 public:
     // The name of the component in reports (--report).
@@ -23,17 +25,18 @@ public:
         return "StudentConflicts";
     }
 
+    // The base keeps the Input; the component derives its own data from it.
     explicit StudentConflictComponent(const ExamTimetablingInstance& instance)
-        : instance_{instance}, conflicts_by_exam_{conflicts_by_exam(instance)}
+        : input_base{instance}, conflicts_by_exam_{conflicts_by_exam(instance)}
     {
     }
 
     penalty_type evaluate(const ExamTimetable& solution) const
     {
-        assert(solution.timeslot_by_exam.size() == instance_.exam_count);
+        assert(solution.timeslot_by_exam.size() == input().exam_count);
         penalty_type penalty = 0;
 
-        for (const auto& conflict : instance_.conflicts)
+        for (const auto& conflict : input().conflicts)
         {
             if (solution.timeslot_by_exam[conflict.first]
                 == solution.timeslot_by_exam[conflict.second])
@@ -66,11 +69,10 @@ public:
     }
 
 private:
-    const ExamTimetablingInstance& instance_;
     std::vector<std::vector<ConflictingExam>> conflicts_by_exam_;
 };
 
-class ConsecutiveExamComponent
+class ConsecutiveExamComponent : public easylocal::input_base<ExamTimetablingInstance>
 {
 public:
     // The name of the component in reports (--report).
@@ -79,17 +81,14 @@ public:
         return "ConsecutiveExams";
     }
 
-    explicit ConsecutiveExamComponent(const ExamTimetablingInstance& instance)
-        : instance_{instance}
-    {
-    }
+    using input_base::input_base;
 
     penalty_type evaluate(const ExamTimetable& solution) const
     {
-        assert(solution.timeslot_by_exam.size() == instance_.exam_count);
+        assert(solution.timeslot_by_exam.size() == input().exam_count);
         penalty_type penalty = 0;
 
-        for (const auto& conflict : instance_.conflicts)
+        for (const auto& conflict : input().conflicts)
         {
             const auto first = solution.timeslot_by_exam[conflict.first];
             const auto second = solution.timeslot_by_exam[conflict.second];
@@ -101,12 +100,9 @@ public:
 
         return penalty;
     }
-
-private:
-    const ExamTimetablingInstance& instance_;
 };
 
-class TimeslotLoadComponent
+class TimeslotLoadComponent : public easylocal::input_base<ExamTimetablingInstance>
 {
 public:
     // The name of the component in reports (--report).
@@ -115,19 +111,16 @@ public:
         return "TimeslotLoad";
     }
 
-    explicit TimeslotLoadComponent(const ExamTimetablingInstance& instance)
-        : instance_{instance}
-    {
-    }
+    using input_base::input_base;
 
     penalty_type evaluate(const ExamTimetable& solution) const
     {
-        assert(solution.timeslot_by_exam.size() == instance_.exam_count);
-        std::vector<penalty_type> load(instance_.timeslot_count, 0);
+        assert(solution.timeslot_by_exam.size() == input().exam_count);
+        std::vector<penalty_type> load(input().timeslot_count, 0);
 
         for (const auto timeslot : solution.timeslot_by_exam)
         {
-            assert(timeslot < instance_.timeslot_count);
+            assert(timeslot < input().timeslot_count);
             ++load[timeslot];
         }
 
@@ -137,9 +130,6 @@ public:
 
         return penalty;
     }
-
-private:
-    const ExamTimetablingInstance& instance_;
 };
 
 } // namespace exam_timetabling

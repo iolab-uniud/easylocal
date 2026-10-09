@@ -50,6 +50,54 @@ what a hook throws); the file functions report errors as
 flush and close too. `write_solution` and `describe` are function objects, so
 the argument-dependent lookup of a problem's own hook never finds them.
 
+## Convenience bases
+
+Two optional, non-virtual bases give a class what it needs to receive the
+Input and its parameters, so that every service does it the same way:
+
+| Base | Header | Gives |
+| --- | --- | --- |
+| `easylocal::input_base<Input>` | `<easylocal/utils/input_base.hpp>` | `input_type`, a constructor from `const Input&` (the one from a temporary is deleted) and `input()` |
+| `easylocal::parameters_base<Parameters>` | `<easylocal/config/parameters_base.hpp>` | `parameters_type`, which makes the class [configurable](configuration.md#configurable-objects), a constructor from the block and `parameters()` |
+
+```cpp
+class TourLength : public easylocal::input_base<Tsp>
+{
+public:
+    using input_base::input_base;   // the constructor, which input() reads back
+
+    double evaluate(const Tour& tour) const { /* ... input().distance ... */ }
+};
+```
+
+- Both are optional: a class that declares the same members itself does just
+  as well, and a cost component that needs neither the Input nor parameters
+  derives from nothing.
+- Inherit the constructor with `using input_base::input_base;` (or
+  `using parameters_base::parameters_base;`). A class that derives data from
+  the Input writes its own constructor instead and passes the Input on:
+  `explicit C(const Input& input) : input_base{input}, table_{build(input)} {}`.
+- Derive from each at most once: a cost component with a co-located delta is
+  one class, with one Input.
+- `solution_manager_base` and `neighborhood_explorer_base` derive from
+  `input_base`, so the Input reaches a SolutionManager, an explorer and a cost
+  component the same way.
+- `parameters_base` does not validate the block: the recipe that holds it
+  validates it before every construction.
+- A class that takes both is built from the Input first, then the parameters,
+  the order the recipes pass them in:
+
+  ```cpp
+  class WeightedLength
+      : public easylocal::input_base<Tsp>,
+        public easylocal::parameters_base<WeightParameters>
+  {
+  public:
+      WeightedLength(const Tsp& input, WeightParameters parameters)
+          : input_base{input}, parameters_base{std::move(parameters)} {}
+  };
+  ```
+
 ## Design choices
 
 - **Plain values.** Entities carry no references to each other, so a Solution

@@ -94,7 +94,9 @@ class neighborhood_explorer_base;  // aliases, input(), protected solution_manag
 ```
 
 It keeps the SolutionManager by reference, so the constructor from a temporary
-SolutionManager is deleted: the SolutionManager outlives the explorer.
+SolutionManager is deleted: the SolutionManager outlives the explorer. Its
+`input()`, the SolutionManager's Input, comes from
+[`input_base`](problem-model.md#convenience-bases).
 
 ## Recipes
 

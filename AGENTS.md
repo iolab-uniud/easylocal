@@ -101,6 +101,12 @@ is converted when a change touches it.
   rejects it.
 - Variants on a hot path (an inverse, a move evaluation) are chosen at compile
   time, with templates, rather than by runtime parameters.
+- A class built from the Input (a cost component, a delta, a SolutionManager,
+  an explorer) derives from `input_base<Input>` and reads it through
+  `input()`, and a configurable class derives from
+  `parameters_base<Parameters>` instead of declaring `parameters_type` and
+  keeping the block itself; both bases are optional, so a class that needs
+  neither derives from nothing.
 - A member with a const and a mutable version of the same body is written once,
   with an explicit object parameter (`template<class Self> auto& f(this Self&&
   self)`, which also takes a temporary, as the two overloads did), not as two

@@ -907,7 +907,7 @@ easylocal_add_compile_failure_test(
     solution-manager-temporary-input
     solution_manager_temporary_input.cpp
     "deleted"
-    "solution_manager_base"
+    "input_base"
 )
 easylocal_add_compile_failure_test(
     neighborhood-temporary-solution-manager

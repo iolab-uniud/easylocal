@@ -5,6 +5,7 @@
 /// optional construction capabilities).
 
 #include <easylocal/utils/hash.hpp>
+#include <easylocal/utils/input_base.hpp>
 
 #include <concepts>
 #include <cstdint>
@@ -132,36 +133,19 @@ constexpr bool solutions_equal(
 /// A base for a SolutionManager, which gives it the associated types, the Input
 /// it is built from and input().
 ///
-/// It is optional and non-virtual: the concepts above do not require it.
+/// It is optional and non-virtual: the concepts above do not require it. The
+/// Input comes from input_base, as it does for a cost component and for a
+/// neighborhood explorer.
 template<class Input, class Solution>
-class solution_manager_base
+class solution_manager_base : public input_base<Input>
 {
 public:
-    /// The Input type.
-    using input_type = Input;
     /// The Solution type.
     using solution_type = Solution;
 
-    /// From the Input, which it keeps by reference.
-    explicit solution_manager_base(const input_type& input) noexcept
-        : input_{input}
-    {
-    }
-
-    /// Not from a temporary Input, which would dangle: the Input must outlive
-    /// the SolutionManager.
-    explicit solution_manager_base(const input_type&&) = delete;
-
-    /// The Input.
-    [[nodiscard]]
-    const input_type& input() const noexcept
-    {
-        return input_;
-    }
-
-protected:
-    /// The Input the SolutionManager was constructed from.
-    const input_type& input_;
+    /// From the Input, which it keeps by reference: the Input must outlive the
+    /// SolutionManager.
+    using input_base<Input>::input_base;
 };
 
 } // namespace easylocal

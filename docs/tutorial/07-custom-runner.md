@@ -26,20 +26,16 @@ struct RandomDescentParameters
     }
 };
 
-class RandomDescent
+class RandomDescent : public easylocal::parameters_base<RandomDescentParameters>
 {
 public:
-    using parameters_type = RandomDescentParameters; // configurable, built from it
-
-    explicit RandomDescent(RandomDescentParameters parameters) : parameters_{parameters}
-    {
-    }
+    using parameters_base::parameters_base; // configurable, built from the block
 
     // The result type is the one run.finish() returns: auto deduces it.
     template<class Run, std::uniform_random_bit_generator RNG>
     auto run(Run& run, Run::solution_type solution, RNG& rng) const
     {
-        run.limit_evaluations(parameters_.max_evaluations);
+        run.limit_evaluations(parameters().max_evaluations);
         auto current = run.start(solution); // evaluates, emits run_started
 
         // should_stop: cancelled, the budget spent, the target reached or the
@@ -62,9 +58,6 @@ public:
         }
         return run.finish(std::move(solution), current.cost()); // run_finished
     }
-
-private:
-    RandomDescentParameters parameters_;
 };
 ```
 
@@ -104,7 +97,9 @@ auto descent =
     | sm | nhe;
 ```
 
-`parameters_type` names the parameters the algorithm is constructed from. Its
+`parameters_type`, which `easylocal::parameters_base<RandomDescentParameters>`
+declares, names the parameters the algorithm is constructed from; the base
+also keeps the block and gives it back through `parameters()`. Its
 `parameter_schema()` and `validate()` (chapter 9) make it a parameter block,
 and that is the whole rule of configuration, for a runner as for the other
 configurable classes: the runner holds the parameters, builds the algorithm

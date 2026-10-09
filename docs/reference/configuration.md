@@ -181,6 +181,12 @@ the class's role:
 | a cost component | `C(input, parameters, args...)` or `C(parameters, args...)` | `component<C>(parameters, args...)` | `cost.<name>.*` | `cost.<name>.*` |
 | a `cost::apply` function | `F(parameters)` | `cost::apply<F>(parameters, children...)` | `cost.<name>.*` | `cost.<name>.*` |
 
+Deriving from
+[`easylocal::parameters_base<P>`](problem-model.md#convenience-bases) declares
+`parameters_type`, takes the block in the constructor and gives it back
+through `parameters()`; it is optional, and a class that declares them itself
+is configured just the same.
+
 Without a first argument of the `parameters_type`, the parameters are the
 defaults. A component or a function is configured under its `name()`, which
 must be static, wherever it is in the cost expression. Only `parameters_type`

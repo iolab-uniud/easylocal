@@ -189,10 +189,10 @@ the tour:
 <!-- snippet: quickstart/main.cpp:cost -->
 ```cpp
 // Cost component: one term of the objective, here the length of the tour.
-class TourLength
+class TourLength : public easylocal::input_base<Tsp>
 {
 public:
-    explicit TourLength(const Tsp& input) : input_{input} {}
+    using input_base::input_base; // the Input, which input() gives back
 
     double evaluate(const Tour& tour) const
     {
@@ -203,18 +203,16 @@ public:
             const auto from = tour.order[k];
             const auto to =
                 tour.order[(k + 1) % n]; // the last city goes back to the first
-            length += input_.distance[from][to];
+            length += input().distance[from][to];
         }
         return length;
     }
-
-private:
-    const Tsp& input_;
 };
 ```
 
-The component receives the Input in its constructor and keeps a reference to
-it, `input_`. The modulo `(k + 1) % n` makes the last city connect back to the
+The component reads the Input through `input()`, which it gets from
+`easylocal::input_base<Tsp>`, the base the SolutionManager derives from too;
+the framework hands it the Input when the runner is bound. The modulo `(k + 1) % n` makes the last city connect back to the
 first one. With a single component, its value is the cost of the solution.
 
 EasyLocal minimizes costs: a lower cost is a better solution. To maximize a
@@ -405,10 +403,10 @@ public:
 };
 
 // Cost component: one term of the objective, here the length of the tour.
-class TourLength
+class TourLength : public easylocal::input_base<Tsp>
 {
 public:
-    explicit TourLength(const Tsp& input) : input_{input} {}
+    using input_base::input_base; // the Input, which input() gives back
 
     double evaluate(const Tour& tour) const
     {
@@ -419,13 +417,10 @@ public:
             const auto from = tour.order[k];
             const auto to =
                 tour.order[(k + 1) % n]; // the last city goes back to the first
-            length += input_.distance[from][to];
+            length += input().distance[from][to];
         }
         return length;
     }
-
-private:
-    const Tsp& input_;
 };
 
 // NeighborhoodExplorer: which moves exist and how they change a solution.

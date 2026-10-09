@@ -7,6 +7,8 @@
 #include "solution.hpp"
 #include "swap_move.hpp"
 
+#include <easylocal/utils/input_base.hpp>
+
 #include <array>
 #include <cassert>
 #include <cstddef>
@@ -14,14 +16,14 @@
 namespace tsp
 {
 
-class SwapTourLengthDelta
+class SwapTourLengthDelta : public easylocal::input_base<TspInstance>
 {
 public:
-    explicit SwapTourLengthDelta(const TspInstance& instance) : instance_{instance} {}
+    using input_base::input_base;
 
     double delta_evaluate(const Tour& solution, const SwapCitiesMove& move) const
     {
-        assert(solution.tour.size() == instance_.city_count);
+        assert(solution.tour.size() == input().city_count);
         assert(move.first_position < move.second_position);
         assert(move.second_position < solution.tour.size());
 
@@ -48,8 +50,8 @@ public:
                 continue;
 
             const auto next = (edge + 1) % size;
-            removed += instance_.distance(solution.tour[edge], solution.tour[next]);
-            added += instance_.distance(
+            removed += input().distance(solution.tour[edge], solution.tour[next]);
+            added += input().distance(
                 city_after_swap(solution, move, edge),
                 city_after_swap(solution, move, next));
         }
@@ -69,8 +71,6 @@ private:
             return solution.tour[move.first_position];
         return solution.tour[position];
     }
-
-    const TspInstance& instance_;
 };
 
 } // namespace tsp

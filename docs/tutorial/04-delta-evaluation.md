@@ -19,10 +19,10 @@ The change of the tour length under a 2-opt move needs only the four cities
 
 <!-- snippet: tutorial/tsp.hpp:delta -->
 ```cpp
-class TwoOptLengthDelta
+class TwoOptLengthDelta : public easylocal::input_base<Tsp>
 {
 public:
-    explicit TwoOptLengthDelta(const Tsp& input) : input_{input} {}
+    using input_base::input_base;
 
     // The tour goes a -> b ... c -> d; after the move it goes a -> c ... b -> d,
     // the segment b ... c reversed, at the same cost with symmetric distances.
@@ -33,12 +33,9 @@ public:
         const auto b = tour.order[move.i + 1];
         const auto c = tour.order[move.j];
         const auto d = tour.order[(move.j + 1) % n];
-        const auto& distance = input_.distance;
+        const auto& distance = input().distance;
         return distance[a][c] + distance[b][d] - distance[a][b] - distance[c][d];
     }
-
-private:
-    const Tsp& input_;
 };
 ```
 
@@ -83,17 +80,17 @@ co-located version of the tour length puts the two computations in one class:
 // The tour length with its 2-opt delta in the same class: a co-located delta.
 // The component is attached as usual, with component<TourLengthWithDelta>(),
 // and its delta with delta<TourLengthWithDelta>().
-class TourLengthWithDelta
+class TourLengthWithDelta : public easylocal::input_base<Tsp>
 {
 public:
-    explicit TourLengthWithDelta(const Tsp& input) : input_{input} {}
+    using input_base::input_base;
 
     double evaluate(const Tour& tour) const
     {
         const auto n = tour.order.size();
         double length = 0.0;
         for (std::size_t k = 0; k < n; ++k)
-            length += input_.distance[tour.order[k]][tour.order[(k + 1) % n]];
+            length += input().distance[tour.order[k]][tour.order[(k + 1) % n]];
         return length;
     }
 
@@ -104,12 +101,9 @@ public:
         const auto b = tour.order[move.i + 1];
         const auto c = tour.order[move.j];
         const auto d = tour.order[(move.j + 1) % n];
-        const auto& distance = input_.distance;
+        const auto& distance = input().distance;
         return distance[a][c] + distance[b][d] - distance[a][b] - distance[c][d];
     }
-
-private:
-    const Tsp& input_;
 };
 ```
 

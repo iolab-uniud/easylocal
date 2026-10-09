@@ -10,10 +10,10 @@ A **cost component** computes one term of the objective:
 
 <!-- snippet: tutorial/tsp.hpp:cost-component!component-text -->
 ```cpp
-class TourLength
+class TourLength : public easylocal::input_base<Tsp>
 {
 public:
-    explicit TourLength(const Tsp& input) : input_{input} {}
+    using input_base::input_base; // the Input, which input() gives back
 
     double evaluate(const Tour& tour) const
     {
@@ -24,13 +24,10 @@ public:
             const auto from = tour.order[k];
             const auto to =
                 tour.order[(k + 1) % n]; // the last city goes back to the first
-            length += input_.distance[from][to];
+            length += input().distance[from][to];
         }
         return length;
     }
-
-private:
-    const Tsp& input_;
 };
 ```
 
@@ -38,14 +35,20 @@ private:
 - `Value` is usually a number, as here. It may also be a struct of your own, a
   *domain value*: an advanced use, described in [Domain values](#domain-values)
   below.
-- The component keeps a reference to the Input, `input_`, received in its
-  constructor: the framework constructs the component when the runner is
-  bound, as `Component{const Input&, args...}` (preferred) or
-  `Component{args...}` (accepted for stateless components). The constructor
-  runs once per Input, so it is also the place to precompute data derived
-  from the instance; `evaluate` then takes only the solution. Every service
-  receives the Input in the same way (see the
-  [problem model](../reference/problem-model.md#design-choices)).
+- The component reads the Input through `input()`, which it gets from
+  `easylocal::input_base<Tsp>`, the same base the SolutionManager of
+  [chapter 1](01-problem-model.md) derives from; `using input_base::input_base;`
+  inherits its constructor. The base is a convenience: a component that
+  declares `input()` itself, or that needs no Input at all, works just as
+  well (see the
+  [convenience bases](../reference/problem-model.md#convenience-bases)).
+- The framework constructs the component when the runner is bound, as
+  `Component{const Input&, args...}` (preferred) or `Component{args...}`
+  (accepted for stateless components). The constructor runs once per Input,
+  so it is also the place to precompute data derived from the instance — write
+  your own constructor and pass the Input on,
+  `C(const Tsp& input) : input_base{input}, table_{build(input)} {}`;
+  `evaluate` then takes only the solution.
 - `(k + 1) % n` makes the last city connect back to the first one.
 
 Components are attached to the SolutionManager with a **recipe**
@@ -77,10 +80,10 @@ auto weighted_sm = el::solution_manager<TourManager>()
 
 <!-- snippet: tutorial/tsp.hpp:second-component -->
 ```cpp
-class MaxEdge
+class MaxEdge : public easylocal::input_base<Tsp>
 {
 public:
-    explicit MaxEdge(const Tsp& input) : input_{input} {}
+    using input_base::input_base;
 
     double evaluate(const Tour& tour) const
     {
@@ -90,13 +93,10 @@ public:
         {
             const auto from = tour.order[k];
             const auto to = tour.order[(k + 1) % n];
-            longest = std::max(longest, input_.distance[from][to]);
+            longest = std::max(longest, input().distance[from][to]);
         }
         return longest;
     }
-
-private:
-    const Tsp& input_;
 };
 ```
 
@@ -230,10 +230,10 @@ struct LongEdges
     auto operator<=>(const LongEdges&) const = default;
 };
 
-class LongEdgesComponent
+class LongEdgesComponent : public easylocal::input_base<Tsp>
 {
 public:
-    explicit LongEdgesComponent(const Tsp& input) : input_{input} {}
+    using input_base::input_base;
 
     LongEdges evaluate(const Tour& tour) const
     {
@@ -241,7 +241,7 @@ public:
         LongEdges value;
         for (std::size_t k = 0; k < n; ++k)
         {
-            const auto edge = input_.distance[tour.order[k]][tour.order[(k + 1) % n]];
+            const auto edge = input().distance[tour.order[k]][tour.order[(k + 1) % n]];
             if (edge > 6.0)
             {
                 value.excess += edge - 6.0;
@@ -250,9 +250,6 @@ public:
         }
         return value;
     }
-
-private:
-    const Tsp& input_;
 };
 ```
 

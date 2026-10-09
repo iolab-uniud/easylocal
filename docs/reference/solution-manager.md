@@ -62,13 +62,15 @@ runner and an app expose them at their root, as `solution_manager.*`, beside
 
 ```cpp
 template<class Input, class Solution>
-class solution_manager_base;   // input_type, solution_type, input(), protected input_
+class solution_manager_base;   // input_type, solution_type, input()
 ```
 
 Inherit its constructor with `using solution_manager_base::solution_manager_base;`.
-It is non-virtual and optional. It keeps the Input by reference, so the
-constructor from a temporary Input is deleted: the Input outlives the
-SolutionManager.
+It is non-virtual and optional. The Input comes from
+[`input_base`](problem-model.md#convenience-bases), which it derives from, as
+a cost component and a NeighborhoodExplorer do: it keeps the Input by
+reference, so the constructor from a temporary Input is deleted and the Input
+outlives the SolutionManager.
 
 ## Recipes
 

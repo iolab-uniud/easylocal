@@ -129,7 +129,7 @@ public:
 
     [[nodiscard]] auto is_valid(const AssignmentSolution& solution) const noexcept -> bool
     {
-        return solution.assignment.size() == input_.demand.size();
+        return solution.assignment.size() == input().demand.size();
     }
 };
 

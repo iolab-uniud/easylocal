@@ -29,6 +29,12 @@ form the *delta cost layer*.
   `Component(args...)` is accepted; `args` come from `component<C>(args...)`
   and convert as the constructor takes them. The same holds for a delta cost
   component and `delta<C, D>(args...)`.
+- Deriving from
+  [`easylocal::input_base<Input>`](problem-model.md#convenience-bases) gives
+  the component that constructor and `input()`, and deriving from
+  `easylocal::parameters_base<P>` gives it `parameters_type`, the constructor
+  from the block and `parameters()`; both are optional, and a component that
+  needs neither derives from nothing.
 - With parameters: `Component(const Input&, const parameters_type&, args...)`
   (or without the Input), from `component<C>(parameters, args...)`; without
   a first argument of that type, the parameters are the defaults. The recipe

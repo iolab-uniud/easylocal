@@ -87,12 +87,12 @@ struct ExcessParameters
     }
 };
 
-class Excess
+class Excess : public easylocal::parameters_base<ExcessParameters>
 {
 public:
-    using parameters_type = ExcessParameters; // configurable, built from it
-
-    explicit Excess(ExcessParameters parameters) : bound_{parameters.bound} {}
+    // The base declares parameters_type, which makes the class configurable,
+    // and keeps the block, which parameters() gives back.
+    using parameters_base::parameters_base;
 
     // Its parameters are configured under its name: cost.excess.*
     static std::string_view name()
@@ -102,16 +102,16 @@ public:
 
     double operator()(double longest) const
     {
-        return std::max(0.0, longest - bound_);
+        return std::max(0.0, longest - parameters().bound);
     }
-
-private:
-    double bound_;
 };
 ```
 
 The rule is the same for every class the framework builds: its
-`parameters_type` is a parameter block, and it is constructed from it. The
+`parameters_type` is a parameter block, and it is constructed from it.
+`easylocal::parameters_base<ExcessParameters>` declares it, takes the block in
+the constructor and gives it back through `parameters()`; a class that writes
+those three things itself is configured just the same. The
 recipe holds the parameters and builds the class from them when a runner or
 an app is bound; `cost::apply<Excess>(parameters, children...)` gives them to a
 function, `component<C>(parameters, args...)` to a component:
