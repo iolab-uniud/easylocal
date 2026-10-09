@@ -292,6 +292,7 @@ tolerance is configurable, `cost.tolerance.relative` and
 
 Without it the search compares exactly, and only the checks forgive rounding
 errors (see [Testing](testing.md)).
+
 - The algorithms that read `cost::delta` (Simulated Annealing, Great Deluge,
   the aspiration levels of Tabu Search) assume that a negative delta is an
   improvement: the sign of `cost::delta(a, b)` must agree with `better(a, b)`.

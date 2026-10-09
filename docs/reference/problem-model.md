@@ -87,16 +87,16 @@ public:
 - A class that takes both is built from the Input first, then the parameters,
   the order the recipes pass them in:
 
-  ```cpp
-  class WeightedLength
-      : public easylocal::input_base<Tsp>,
-        public easylocal::parameters_base<WeightParameters>
-  {
-  public:
-      WeightedLength(const Tsp& input, WeightParameters parameters)
-          : input_base{input}, parameters_base{std::move(parameters)} {}
-  };
-  ```
+    ```cpp
+    class WeightedLength
+        : public easylocal::input_base<Tsp>,
+          public easylocal::parameters_base<WeightParameters>
+    {
+    public:
+        WeightedLength(const Tsp& input, WeightParameters parameters)
+            : input_base{input}, parameters_base{std::move(parameters)} {}
+    };
+    ```
 
 ## Design choices
 
@@ -122,5 +122,6 @@ public:
   out of the Input, which stays the instance as read. Passing the Input to
   every call instead would leave such data nowhere but in the Input itself or
   in a mutable cache.
+
 - **Structural vs. feasible.** Validity (see [SolutionManager](solution-manager.md))
   is about the representation; constraint violations are part of the cost.
