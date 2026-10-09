@@ -195,6 +195,36 @@ part of the design.
 
 **When.** Not scheduled.
 
+## Parallel search
+
+**Why.** A run uses one thread. EasyLocal 3 explored a neighborhood in
+parallel (`ParallelNeighborhoodExplorer`, over TBB) and kicked in parallel,
+and the machines a search runs on have many cores, idle for the whole run. The
+only parallelism today is outside a run: the REST service runs independent
+requests on a pool of workers.
+
+**What.** Three levels, each useful on its own:
+
+- **Inside a neighborhood.** A scan that evaluates every move (Best
+  Improvement, Tabu Search) splits the moves over threads and reduces the
+  results deterministically, so the move chosen is the one the sequential scan
+  would choose. The delta cost components are `const` members over an
+  immutable Input, so they can already be called concurrently unless a
+  component caches something; the contract would have to say so.
+- **Across runs.** Runners that search the same Input at once, sharing their
+  best solutions or nothing at all (a portfolio): the solver level of
+  [Cooperative runners](#cooperative-runners).
+- **Across solves.** Instances and seeds run in parallel, which belongs to the
+  [experiment configurations](#experiment-configurations) rather than to the
+  library.
+
+The design questions are shared: who owns the threads, how a budget, a
+progress observer and a cancellation cross them, what a trace of a parallel
+run records, and what a seed guarantees when the work is split.
+
+**When.** Not scheduled. The first level is the one an EasyLocal 3 program
+that used the parallel explorer needs.
+
 ## Kicks, Iterated Local Search and Variable Neighborhood Descent
 
 **Why.** EasyLocal 3 had kickers (a perturbation of several moves applied at
@@ -214,6 +244,27 @@ after an improvement). The rounds share the solve's budget and progress, as
 the stages do.
 
 **When.** Not scheduled.
+
+## A modelling layer
+
+**Why.** Writing a delta cost component by hand is where the bugs of a search
+are: the checks of the library exist to catch them, and an incremental
+evaluation has to be rewritten whenever the neighborhood changes. EasyLocal 3
+carried a tentative modelling layer (`AutoState` and expressions over decision
+variables) that derived the cost and its changes from a declarative model;
+it never became part of the framework people used, but the need it addressed
+did not go away.
+
+**What.** To be explored, and nothing is designed yet: a declarative
+description of a cost over the variables of a solution, from which the library
+derives both the full evaluation and the change under a move, next to the
+hand-written components rather than in their place. The cost expressions
+already compose component values, so the question is what a single component
+could declare about itself, and at what price in compile time and in
+flexibility. A first step that costs nothing is to collect, from real models,
+the delta evaluations that are mechanical and the ones that are not.
+
+**When.** Not scheduled: a brainstorming item.
 
 ## Parameter tuning
 
