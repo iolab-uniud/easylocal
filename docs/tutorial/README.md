@@ -144,6 +144,8 @@ snippets write `Tour` for `tutorial::Tour`.
 15. [A REST service](15-rest.md): searches over HTTP.
 16. [Observing and controlling a run](16-observing-and-controlling.md):
     progress, cancellation, tracing.
+17. [Building without CMake](17-building.md): a makefile, and the headers and
+    libraries of every component.
 
 Porting an EasyLocal 3 program? [Coming from EasyLocal 3](../from-easylocal-3.md)
 walks through the migration step by step.

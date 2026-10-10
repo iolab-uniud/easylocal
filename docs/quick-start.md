@@ -25,6 +25,10 @@ the rest of the framework.
 EasyLocal Core is header-only and has no dependencies beyond the standard
 library.
 
+CMake is the supported way to consume the library, but not the only one: a
+compiler and one include path are enough, as
+[Building without CMake](tutorial/17-building.md) shows.
+
 ## The problem
 
 A salesperson must visit a set of cities, each exactly once, and come back to

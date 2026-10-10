@@ -804,6 +804,104 @@ set_tests_properties(
         LABELS integration
 )
 
+# The build without CMake of docs/tutorial/17-building.md: the quick start
+# compiled with one command and the tutorial's makefile, against an
+# installation of this build. The makefile is a GCC/Clang recipe, so the test
+# needs a make program and a compiler that takes -std=c++23.
+find_program(EASYLOCAL_MAKE_EXECUTABLE NAMES gmake make)
+if(EASYLOCAL_INSTALL
+        AND EASYLOCAL_MAKE_EXECUTABLE
+        AND NOT CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    # "-DNAME=<the property of each target>", as a list the script reads: the
+    # genex keeps a semicolon from splitting the argument in two.
+    function(easylocal_makefile_property_argument out name property)
+        set(_parts "")
+        foreach(_target IN LISTS ARGN)
+            if(TARGET ${_target})
+                list(APPEND _parts
+                    "$<JOIN:$<TARGET_PROPERTY:${_target},${property}>,$<SEMICOLON>>")
+            endif()
+        endforeach()
+        list(JOIN _parts "$<SEMICOLON>" _joined)
+        set(${out} "-D${name}=${_joined}" PARENT_SCOPE)
+    endfunction()
+
+    set(_makefile_cxx_flags "${CMAKE_CXX_FLAGS}")
+    if(CMAKE_OSX_DEPLOYMENT_TARGET)
+        string(APPEND _makefile_cxx_flags
+            " -mmacosx-version-min=${CMAKE_OSX_DEPLOYMENT_TARGET}")
+    endif()
+
+    set(_makefile_component_arguments "")
+
+    if(TARGET EasyLocal::TUI)
+        easylocal_makefile_property_argument(
+            _tui_includes EASYLOCAL_TUI_INCLUDE_DIRS INTERFACE_INCLUDE_DIRECTORIES
+            ftxui::component ftxui::dom ftxui::screen)
+        easylocal_makefile_property_argument(
+            _tui_definitions EASYLOCAL_TUI_DEFINITIONS INTERFACE_COMPILE_DEFINITIONS
+            ftxui::component ftxui::dom ftxui::screen)
+        list(APPEND _makefile_component_arguments
+            "-DEASYLOCAL_TUI_ENABLED=ON"
+            "${_tui_includes}"
+            "${_tui_definitions}"
+            "-DEASYLOCAL_TUI_LINK_LIBRARIES=$<TARGET_LINKER_FILE:ftxui::component>$<SEMICOLON>$<TARGET_LINKER_FILE:ftxui::dom>$<SEMICOLON>$<TARGET_LINKER_FILE:ftxui::screen>")
+    endif()
+
+    if(TARGET EasyLocal::REST)
+        # Crow carries the headers of Asio, through its own target or, when
+        # EasyLocal fetched them, through ASIO_INCLUDE_DIR.
+        easylocal_makefile_property_argument(
+            _rest_includes EASYLOCAL_REST_INCLUDE_DIRS INTERFACE_INCLUDE_DIRECTORIES
+            Crow::Crow asio::asio)
+        if(EASYLOCAL_ASIO_INCLUDE_DIR)
+            string(APPEND _rest_includes "$<SEMICOLON>${EASYLOCAL_ASIO_INCLUDE_DIR}")
+        endif()
+        easylocal_makefile_property_argument(
+            _rest_definitions EASYLOCAL_REST_DEFINITIONS INTERFACE_COMPILE_DEFINITIONS
+            Crow::Crow asio::asio)
+        list(APPEND _makefile_component_arguments
+            "-DEASYLOCAL_REST_ENABLED=ON"
+            "${_rest_includes}"
+            "${_rest_definitions}")
+    endif()
+
+    if(TARGET EasyLocal::ConfigTOML)
+        easylocal_makefile_property_argument(
+            _toml_includes EASYLOCAL_CONFIG_TOML_INCLUDE_DIRS
+            INTERFACE_INCLUDE_DIRECTORIES tomlplusplus::tomlplusplus)
+        easylocal_makefile_property_argument(
+            _toml_definitions EASYLOCAL_CONFIG_TOML_DEFINITIONS
+            INTERFACE_COMPILE_DEFINITIONS tomlplusplus::tomlplusplus)
+        list(APPEND _makefile_component_arguments
+            "-DEASYLOCAL_CONFIG_TOML_ENABLED=ON"
+            "${_toml_includes}"
+            "${_toml_definitions}")
+    endif()
+
+    add_test(
+        NAME easylocal.makefile-build
+        COMMAND
+            "${CMAKE_COMMAND}"
+            "-DEASYLOCAL_BUILD_DIR=${PROJECT_BINARY_DIR}"
+            "-DEASYLOCAL_CONFIG=$<CONFIG>"
+            "-DEASYLOCAL_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+            "-DEASYLOCAL_CXX_FLAGS=${_makefile_cxx_flags}"
+            "-DEASYLOCAL_EXAMPLE_DIR=${PROJECT_SOURCE_DIR}/examples/tutorial"
+            "-DEASYLOCAL_MAKE=${EASYLOCAL_MAKE_EXECUTABLE}"
+            "-DEASYLOCAL_QUICKSTART_DIR=${PROJECT_SOURCE_DIR}/examples/quickstart"
+            "-DEASYLOCAL_THREAD_FLAG=-pthread"
+            "-DEASYLOCAL_WORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/makefile-build"
+            ${_makefile_component_arguments}
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_makefile_build.cmake"
+    )
+    set_tests_properties(
+        easylocal.makefile-build
+        PROPERTIES
+            LABELS integration
+    )
+endif()
+
 function(easylocal_add_compile_failure_test name source expected_diagnostic)
     set(expected_context "")
     if(ARGC GREATER 3)

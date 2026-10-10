@@ -127,6 +127,15 @@ reviewed by hand before tagging.
 
 ### Documentation and examples
 
+- *Building without CMake*, chapter 17 of the tutorial, gives the whole
+  workflow of a build driven by a makefile: how to obtain the headers (an
+  installation or a checkout), the one command that compiles a single-file
+  program, `examples/tutorial/Makefile` for the tutorial's programs, and the
+  headers, libraries and flags of each optional component (FTXUI for the
+  TextUI, Crow and Asio for REST, toml++ for ConfigTOML). *Coming from
+  EasyLocal 3* now points at it. The test `easylocal.makefile-build` installs
+  the library, compiles the quick start with one command and builds every
+  program of that makefile its components allow.
 - The tutorial has clearer introductions and transitions across all sixteen
   chapters, with shorter explanations of composition, configuration, testing
   and frontends. It shows how each capability builds on existing components

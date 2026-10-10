@@ -69,39 +69,12 @@ not need it.
 
 ### Building without CMake
 
-EasyLocal Core is header-only and depends only on the standard library. You
-can build a program with a compiler, the C++23 flag and one include path.
-For a program with several source files, a small makefile is enough:
-
-```make
-EASYLOCAL ?= /usr/local            # the install prefix, or the source tree
-CXX       ?= g++
-CXXFLAGS  := -std=c++23 -O2 -Wall -I$(EASYLOCAL)/include
-
-OBJECTS := main.o model.o
-tsp: $(OBJECTS)
-	$(CXX) $(CXXFLAGS) -o $@ $(OBJECTS)
-
-%.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-
-clean:
-	rm -f tsp $(OBJECTS)
-```
-
-- `$(EASYLOCAL)/include` can point to an installation made with
-  `cmake --install <build> --prefix <prefix>` or to a source checkout. Both
-  provide the same headers; the build generates none.
-- Core needs no library to link and no `-D` definitions. You can remove
-  `-lboost_program_options`. Core starts no threads itself; add `-pthread`
-  if your platform requires it or your program uses threads.
-- Enable optimizations: the library relies on inlining, and searches can be
-  an order of magnitude slower with `-O0`. Avoid `-ffast-math`, which
-  interferes with checks for NaN and infinite values.
-- The optional TextUI, REST and TOML adapters also need third-party libraries
-  (FTXUI, Crow and toml++). These must be on the include path, with FTXUI and
-  Crow also linked. CMake can fetch and configure them for you
-  ([dependency policy](dependency-policy.md)).
+If your EasyLocal 3 program is built by a makefile, it can stay one:
+[Building without CMake](tutorial/17-building.md) gives the whole workflow,
+from the include path to the libraries of the optional components. Two lines
+of the old makefile change: the C++ standard becomes `-std=c++23`, and
+`-lboost_program_options` goes, since EasyLocal 4 parses the command line
+itself. Core still needs no library to link and no `-D` definition.
 
 ## Porting the problem
 

@@ -9,6 +9,10 @@
 #include <random>
 #include <stop_token>
 
+#ifndef EASYLOCAL_TUTORIAL_INSTANCE
+#define EASYLOCAL_TUTORIAL_INSTANCE "five.tsp"
+#endif
+
 int main(int argc, char* argv[])
 {
     // [aliases] ------------------------------------------------------------
