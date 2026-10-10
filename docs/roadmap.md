@@ -190,6 +190,38 @@ uniformly among all the moves when the children do.
 
 **When.** Not scheduled.
 
+## The fixed cost of a neighborhood union
+
+**Why.** A union dispatches on the variant that is its move type several times
+for each move it evaluates: the iterator of the enumeration holds a variant of
+the children's iterators and visits it to advance and to build the tagged move,
+and `is_valid()`, `make_move()` and each delta visit the move again. The
+bindings of the union are built on every call of `delta_bindings()`, which the
+evaluation makes once per component of every move, where a neighborhood with a
+delta layer returns the tuple it holds. None of this showed while a union
+without a delta everywhere evaluated its components in full; now that the
+deltas are used per child, it is what is left. The benchmark measures it on the
+TSP (results `main-d2ceb00`): with every delta attached, a steepest descent
+costs 5.1 nanoseconds per evaluation on the 2-opt neighborhood alone and 20.5
+on the union of 2-opt and swap, a first improvement 4.3 against 17.5. The
+deltas there are O(1), so what the union adds is the whole difference; with a
+delta that scans the solution it would disappear in the noise.
+
+**What.**
+
+- `delta_bindings()` built once, when the union is constructed, and returned
+  by reference: the bindings only hold a pointer to the children;
+- a variant of the infrastructure benchmarks for unions, which EasyLocal 4 has
+  only against EasyLocal 3 today, to separate the enumeration from the
+  evaluation and to tell which of the two the cost is in;
+- enumerating a union child by child, so that the moves of a child are
+  evaluated with that child's own move type, the variant being needed only to
+  carry the move the runner keeps. This is the one that removes the dispatch
+  rather than making it cheaper, and the one that changes how a runner walks a
+  neighborhood, so it comes after the measurements.
+
+**When.** Not scheduled. The first two are small and independent of the third.
+
 ## Candidate strategies of Tabu Search
 
 **Why.** The four tabu searches (`TabuSearch`, `FirstImprovementTabuSearch`,
