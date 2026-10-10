@@ -112,6 +112,12 @@ is converted when a change touches it.
   with an explicit object parameter (`template<class Self> auto& f(this Self&&
   self)`, which also takes a temporary, as the two overloads did), not as two
   overloads.
+- One documented spelling for each part of the API, with one exception: a
+  *shortcut*, a shorter spelling of exactly what a named one does. The pipe
+  (`|`, `&`) is the shortcut of the `with_*` members of the composition; both
+  are public, and a page that teaches shows the named spelling beside the
+  shortcut rather than one of the two alone. A second spelling that is not a
+  shortcut of a named one does not belong in the API.
 - Names: PascalCase for the types users name in their code, the classes they
   choose and hold: the algorithms and policies (`SimulatedAnnealing`,
   `LocalSearch`, `Cyclic`), their parameter blocks

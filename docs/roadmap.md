@@ -5,19 +5,25 @@ prepared for, not yet scheduled. Nothing here is a promise of the
 [API stability](stability.md) policy; an item becomes part of the API only
 when it is released and listed in the changelog.
 
-## One spelling for each name
+## What is left of alpha.3
 
-**Why.** Two documented ways to compose the same thing, the pipe (`|`, `&`)
-and the `with_*` members, contradict the rule of one documented way per part.
+**Why.** Three pieces of the release in preparation are not done. The fourth,
+removing one of the two spellings of the composition, is not going to be: the
+rule is one documented spelling for each part of the API *and* the shortcuts
+of a named one, and the pipe is the shortcut of the `with_*` members. Both
+stay, documented as what they are, and the Experimental level no longer says
+that `with_*` is leaving.
 
-**What.** The `with_*` members leave the public API (`detail`), so the
-documentation and the examples show only `|` and `&`. Alongside: messages
-naming what each algorithm needs when a runner is registered on a neighborhood
-it cannot use, Pareto Late Acceptance committing a move in place if a benchmark
-shows it pays, and a restructured chapter 2 of the tutorial.
+**What.**
 
-**When.** 4.0.0-alpha.3. Until then the `with_*` spellings are Experimental
-(see [API stability](stability.md)).
+- messages naming what each algorithm needs when a runner is registered on a
+  neighborhood it cannot use, where today the reader gets the concepts that
+  failed;
+- Pareto Late Acceptance committing a move in place, if a benchmark shows it
+  pays;
+- a restructured chapter 2 of the tutorial.
+
+**When.** 4.0.0-alpha.3.
 
 ## Asynchronous runs on a Session
 

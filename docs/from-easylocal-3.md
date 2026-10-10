@@ -925,8 +925,9 @@ name — `--runner sa` is `session.run("sa")`. That is the replacement for
 EasyLocal 3's `Solver`, `SetRunner` and the branch over `--main::method`
 ([chapter 11](tutorial/11-apps-and-tools.md)).
 
-**If the pipes read as a foreign language**, every composition can be written
-as a chain of named calls instead, which is the same thing said in words:
+**The pipes are a shortcut**, and every composition has a spelling that says
+the same thing in words, which is the one to reach for while the vocabulary is
+new:
 
 <!-- snippet: tutorial/main.cpp:with-spelling -->
 ```cpp title="EasyLocal 4"
@@ -940,10 +941,11 @@ auto same_runner =
                 .with_delta<TourLength, TwoOptLengthDelta>());
 ```
 
-`|` and the `with_*` members build exactly the same runner, and a program may
-use either; the pipe is shorter where the recipes are written once and used
-several times, the named calls say out loud what each part is, which helps
-while the vocabulary is new.
+`.with_solution_manager(...)`, `.with_cost(...)`, `.with_neighborhood(...)`
+and `.with_delta<C, D>()` are what `|` is short for: the two build the same
+runner, both are part of the API, and a program may use either or mix them.
+The pipe is shorter where recipes are written once and composed often; the
+named calls say out loud which part is being given.
 
 ### 11. The main program
 

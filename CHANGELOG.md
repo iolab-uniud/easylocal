@@ -118,6 +118,13 @@ reviewed by hand before tagging.
   that of `delta<Component, Delta>()`, is `Delta`: it checks a delta cost
   component, as the documentation calls it.
 
+### API stability
+
+- The `with_*` spellings of the composition are Stable, not Experimental: they
+  are not leaving the public API. The rule they seemed to break, one
+  documented spelling for each part, holds with its exception — a shortcut of
+  a named spelling — and the pipe (`|`, `&`) is the shortcut of those members.
+
 ### Documentation and examples
 
 - *Coming from EasyLocal 3* explains the NeighborhoodExplorer before the delta
