@@ -118,3 +118,7 @@ but frontends cannot edit its settings. `check(app, ...)` reports this gap
 ## Next steps
 
 [Chapter 8](08-solvers.md) lets the framework build the initial solution.
+
+For a worked extension of an existing algorithm, the advanced
+[Simulated Annealing chapter](18-customizing-annealing.md) reads the library's
+search loop and implements a custom reheating policy.

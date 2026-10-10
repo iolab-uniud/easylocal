@@ -117,6 +117,11 @@ never increases. To let it cross infeasible regions, as EasyLocal 3's
 `HARD_WEIGHT` did, write the cost as one weighted sum,
 `cost::sum(component<Hard>() * 1000, component<Soft>())`.
 
+To change the schedule, follow
+[Advanced: customizing Simulated Annealing](18-customizing-annealing.md).
+It shows the actual search loop, the built-in reheating wrapper and a policy
+that reheats after consecutive rejected moves.
+
 ## Results
 
 Built-in algorithms return an `easylocal::search_result` (Pareto Late

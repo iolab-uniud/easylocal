@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Keep the code snippets of the documentation and the README in sync with the
-examples.
+examples and library headers.
 
 A fenced block preceded by
 
@@ -14,6 +14,8 @@ so that a chapter can show a class without a member a later chapter adds.
 A "~comments" suffix, "tutorial/tsp.hpp:two-opt~comments", leaves out the
 // comments, for a page that shows the code without the tutorial's
 explanations.
+References starting with include/ read library headers from the repository
+root, using the same markers, so a tutorial can quote the implementation.
 The fence may carry attributes after the language, such as a caption:
 ```cpp title="EasyLocal 4"; they are kept.
 Running the script rewrites those blocks from the sources; with --check it only
@@ -43,7 +45,8 @@ SNIPPET = re.compile(
 
 def extract(ref: str) -> str:
     path, _, section = ref.partition(":")
-    lines = (EXAMPLES / path).read_text(encoding="utf-8").split("\n")
+    base = ROOT if path.startswith("include/") else EXAMPLES
+    lines = (base / path).read_text(encoding="utf-8").split("\n")
     if not section:
         return "\n".join(line for line in lines if not MARKER.match(line)).rstrip("\n")
     section, bare, _ = section.partition("~comments")

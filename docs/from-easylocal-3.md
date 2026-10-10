@@ -15,6 +15,22 @@ Recipes replace manual object registration, one app supplies the command line
 and interactive tester, and checks that once lived in tester menus can run
 automatically in your test suite.
 
+The implementations also reduce the work spent around each move. Algorithms,
+cost components and policies are composed at compile time, allowing direct,
+inlined calls in place of virtual dispatch. When every component has a delta,
+evaluating a proposal needs no candidate solution copy; unused tracing is
+removed at compile time. These savings matter especially when moves are cheap.
+
+The [published benchmarks](https://iolab-uniud.github.io/easylocal/benchmarks/)
+give a concrete comparison: on 7 October 2026, EL4 v4.0.0-alpha.2 versus
+EL3 v3.4.1 achieved a **1.82× geometric mean speed-up in time per evaluation**
+across the tested problems, algorithms and delta modes. On the 300-city TSP
+with full deltas, the factors were 5.73× for steepest descent and 2.76× for
+Simulated Annealing. These are measurements on the same Ubuntu/GCC 16 runner,
+not a guarantee for every problem: two Assignment descent cases were slightly
+slower. Compare time per evaluation as well as final cost; different search
+trajectories can require different numbers of evaluations.
+
 The EasyLocal 3 examples are abridged from the TSP used in the
 [benchmarks](benchmarks.md), based on
 [easylocal-legacy v3.4.1](https://github.com/iolab-uniud/easylocal-legacy/tree/v3.4.1).
@@ -1388,6 +1404,13 @@ The design changes behind these names have practical consequences:
 Each algorithm is a class template with its own parameter block, listed in
 [Runners](reference/runners.md). To write your own, build on `search_run`
 ([chapter 7](tutorial/07-custom-runner.md)).
+
+For a concrete extension of SA, follow
+[Advanced: customizing Simulated Annealing](tutorial/18-customizing-annealing.md).
+It shows EL4's actual search loop, enables the existing `Reheating` policy,
+then writes a new policy that reheats after consecutive rejected moves. The
+example keeps the framework's delta evaluation, best-solution tracking,
+configuration, cancellation and tracing.
 
 ### What is not there yet
 

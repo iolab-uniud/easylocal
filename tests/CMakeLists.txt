@@ -488,6 +488,14 @@ easylocal_add_test(
 )
 
 easylocal_add_test(
+    tutorial-annealing
+    SOURCES
+        tutorial_annealing.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
+
+easylocal_add_test(
     late-acceptance-hill-climbing
     SOURCES
         late_acceptance_hill_climbing.cpp
@@ -1289,6 +1297,10 @@ if(TARGET easylocal_tutorial)
         COMMAND easylocal_tutorial
         OUTPUT "first improvement 26\\n")
     add_test(NAME easylocal.example.tutorial-checks COMMAND easylocal_tutorial_checks)
+    easylocal_add_output_test(
+        easylocal.example.tutorial-annealing
+        COMMAND easylocal_tutorial_annealing
+        OUTPUT "scheduled reheating [0-9]+\\nrejection reheating [0-9]+\\n")
     easylocal_add_output_test(
         easylocal.example.tutorial-cli
         COMMAND easylocal_tutorial_cli

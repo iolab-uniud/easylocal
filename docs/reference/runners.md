@@ -267,6 +267,11 @@ descent. The schedule's parameters are the group `descent`:
 schedule does, keeping the reheat temperature above the final one.
 `Reheating<Hybrid>` is EasyLocal 3's annealing with reheating.
 
+For a complete extension example, see
+[Customizing Simulated Annealing](../tutorial/18-customizing-annealing.md).
+It walks through the library's `run` implementation, configures this wrapper
+and writes a temperature policy that reheats after consecutive rejections.
+
 Every built-in policy can estimate its initial temperature (the constant one
 for `FixedTemperature`) with `calibration_samples` > 0: before the run, Simulated
 Annealing evaluates that many random moves at the initial solution, without

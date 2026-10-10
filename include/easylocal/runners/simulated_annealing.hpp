@@ -1681,6 +1681,7 @@ public:
     ///
     /// The bound runner calls it, with the run of its context (neighborhood,
     /// evaluation, cost relations).
+    // [annealing-run]
     template<class Run, std::uniform_random_bit_generator RNG>
         requires detail::simulated_annealing_context<
             typename Run::context_type, Acceptance, RNG>
@@ -1751,6 +1752,7 @@ public:
 
         return run.finish(std::move(best.solution), std::move(best.cost));
     }
+    // [annealing-run]
 
 private:
     // Sends the change of temperature to the trace; the new temperature.

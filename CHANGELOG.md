@@ -146,6 +146,12 @@ reviewed by hand before tagging.
 
 ### Documentation and examples
 
+- A new advanced tutorial reads the actual Simulated Annealing search loop,
+  uses built-in reheating and implements a configurable rejection-triggered
+  reheating policy, with a runnable example and deterministic checks. Library
+  excerpts are synchronized alongside the existing example snippets.
+- *Coming from EasyLocal 3* links to the SA customization tutorial and explains
+  efficiency gains with versioned benchmark results and their measurement scope.
 - *Building without CMake*, chapter 17 of the tutorial, gives the whole
   workflow of a build driven by a makefile: how to obtain the headers (an
   installation or a checkout), the one command that compiles a single-file

@@ -97,6 +97,7 @@ nav:
       - tutorial/15-rest.md
       - tutorial/16-observing-and-controlling.md
       - tutorial/17-building.md
+      - tutorial/18-customizing-annealing.md
   - Coming from EasyLocal 3: from-easylocal-3.md
   - Reference:
       - reference/README.md

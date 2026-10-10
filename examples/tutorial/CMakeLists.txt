@@ -22,6 +22,9 @@ if(EASYLOCAL_BUILD_EXAMPLES)
 
     add_executable(easylocal_tutorial_checks checks.cpp)
     target_link_libraries(easylocal_tutorial_checks PRIVATE EasyLocal::Core)
+
+    add_executable(easylocal_tutorial_annealing annealing_main.cpp)
+    target_link_libraries(easylocal_tutorial_annealing PRIVATE EasyLocal::Core)
 endif()
 
 if(EASYLOCAL_BUILD_EXAMPLES AND TARGET EasyLocal::TUI)

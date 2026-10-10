@@ -146,6 +146,8 @@ snippets write `Tour` for `tutorial::Tour`.
     progress, cancellation, tracing.
 17. [Building without CMake](17-building.md): a makefile, and the headers and
     libraries of every component.
+18. [Advanced: customizing Simulated Annealing](18-customizing-annealing.md):
+    the library's search loop, built-in reheating and a custom temperature policy.
 
 Porting an EasyLocal 3 program? [Coming from EasyLocal 3](../from-easylocal-3.md)
 walks through the migration step by step.
