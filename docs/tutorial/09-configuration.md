@@ -1,13 +1,13 @@
 # 9. Configuration
 
-Runners, temperature policies, cost expressions, neighborhoods and your own
-classes expose their parameters as a **parameter set**: each parameter has a
-path, such as `search.temperature.cooling_rate`, a description and a value. A
-runner's `configuration()` gives the parameters of its algorithm (`search`), of
-its cost (`cost`), of its SolutionManager (`solution_manager`, when it has
-any) and of its neighborhood (`neighborhood`), with paths relative to the
-runner. The program puts them in its own set, under a prefix of its choice, and
-applies the command line and configuration files to it:
+Expose the search parameters to try new settings without recompiling. A
+**parameter set** collects them under paths such as
+`search.temperature.cooling_rate`, with a description and current value.
+
+A runner's `configuration()` collects settings from its algorithm (`search`),
+cost (`cost`), SolutionManager (`solution_manager`, when configurable) and
+neighborhood (`neighborhood`). Add this configuration to your program's set
+under a prefix, then load values from the command line or a file:
 
 <!-- snippet: tutorial/main.cpp:configuration -->
 ```cpp
@@ -41,11 +41,13 @@ $ ./easylocal_tutorial --solver.search.temperature.final_temperature=20
 error: solver.search.temperature: final_temperature must be smaller than initial_temperature
 ```
 
-Values are applied in place and validated, so the runner sees them when it is
-bound: the program binds and runs `sa` again after `load_and_apply`, and
-prints its result as `configured annealing`. They are applied all or none: when one value is invalid, nothing changes.
-The set refers to the runner, so the runner must stay where it is while the set
-is used.
+`load_and_apply` validates the values and updates the runner in place. The
+example then binds `sa` again and prints the new result as `configured
+annealing`. Updates are all-or-nothing: one invalid value leaves every
+parameter unchanged.
+
+The set refers to the runner's parameters. Keep the runner alive and in the
+same location while using the set.
 
 The weights of the cost expression are parameters too, under `cost`. For the
 weighted sum of [chapter 2](02-cost.md#cost-expressions) in a runner configured
@@ -61,10 +63,9 @@ A `cost::hard_soft` names its branches, so its sums are
 
 ### Parameters of your own classes
 
-The bound of the hierarchical cost of
-[chapter 2](02-cost.md#structured-costs), edges longer than 8, is a literal in
-its function. To let the program change it, the function becomes a class with
-a parameter block:
+In [chapter 2](02-cost.md#structured-costs), we treated edges longer than 8 as
+violations. To make that bound configurable, replace the lambda with a class
+that takes a parameter block:
 
 <!-- snippet: tutorial/tsp.hpp:cost-parameters -->
 ```cpp
@@ -107,14 +108,14 @@ public:
 };
 ```
 
-The rule is the same for every class the framework builds: its
-`parameters_type` is a parameter block, and it is constructed from it.
-`easylocal::parameters_base<ExcessParameters>` declares it, takes the block in
-the constructor and gives it back through `parameters()`; a class that writes
-those three things itself is configured just the same. The
-recipe holds the parameters and builds the class from them when a runner or
-an app is bound; `cost::apply<Excess>(parameters, children...)` gives them to a
-function, `component<C>(parameters, args...)` to a component:
+Every configurable class follows the same rule: declare a parameter block as
+`parameters_type` and accept it in the constructor.
+`parameters_base<ExcessParameters>` supplies both, stores the block and exposes
+it through `parameters()`. You can also write these members yourself.
+
+Pass the block to the recipe, which keeps it until binding constructs the
+class. Use `cost::apply<Excess>(parameters, children...)` for a function or
+`component<C>(parameters, args...)` for a component:
 
 <!-- snippet: tutorial/main.cpp:cost-parameters-use -->
 ```cpp
@@ -138,31 +139,27 @@ $ ./easylocal_tutorial --limited.cost.excess.bound=5
 limited 3, 26
 ```
 
-The same rule makes a runner configurable, as in chapter 7 (`search`), a
-neighborhood explorer (`neighborhood<NHE>(parameters, args...)`, under
-`neighborhood`) and a SolutionManager (`solution_manager<SM>(parameters,
-args...)`, constructed as `SM(input, parameters, args...)`, under
-`solution_manager`). A class that declares its parameters another way, with a
-`parameters()` or a `configuration()` and no such `parameters_type`, does not
-compile, with a message saying what to write.
+The same convention applies to runners (chapter 7), explorers and
+SolutionManagers. Pass blocks through `neighborhood<NHE>(parameters, args...)`
+or `solution_manager<SM>(parameters, args...)`; the latter constructs
+`SM(input, parameters, args...)`. Their paths begin with `neighborhood` and
+`solution_manager`. A class exposing `parameters()` or `configuration()`
+without the required `parameters_type` produces a diagnostic explaining the
+missing declaration.
 
-The prefix is the program's choice: `"solver"` here gives `--solver.search.*`.
-A program that configures a single runner could add its parameters without a
-prefix, `configuration.add(sa.configuration())`, for `--search.*`; one that
-combines several things gives each its own prefix, so that their parameters do
-not collide.
+Choose prefixes to keep independent configurations distinct. With one runner,
+`configuration.add(sa.configuration())` gives paths such as `--search.*`.
+Adding it under `"solver"` gives `--solver.search.*`.
 
-A program's own limits of a run fit a block of the library,
-`easylocal::RunParameters`: `target` (a cost as text), `timeout` (seconds) and
-`max_evaluations`, added as `configuration.add("run", run_parameters)` for
-`--run.target=0`; `run_parameters.options<Cost>(input)` turns them into the
-options of a run, as `easylocal::timeout(seconds)`, `max_evaluations(n)` and
-`stop_at(cost)` do one by one.
+For run limits, the library provides `RunParameters`: `target` as cost text,
+`timeout` in seconds and `max_evaluations`. Add it with
+`configuration.add("run", run_parameters)` to accept `--run.target=0`.
+Then `run_parameters.options<Cost>(input)` produces the run options, just as
+`timeout(seconds)`, `max_evaluations(n)` and `stop_at(cost)` do individually.
 
-An app (chapter 11) gathers the parameters of all its runners, under
-`runners.<name>`, with those of its cost, SolutionManager and neighborhood; the same paths serve
-the command line, the TextUI and the REST service, together with a target cost
-that stops a run.
+Apps (chapter 11) collect these settings automatically, using
+`runners.<name>` for algorithms. The command line, TextUI and REST service
+all use the same paths and validation rules.
 
 Your own parameters take part by describing themselves with a schema:
 
@@ -196,9 +193,9 @@ enclosing one.
 
 ### Domains, conditions and requirements
 
-A schema says more than the names of the fields: the values each one may take,
-when it matters, and how fields relate. Simulated Annealing's classic schedule
-declares all three:
+A schema also describes allowed values and relationships between fields.
+Declare these once to use them for both validation and automatic tuning.
+Simulated Annealing's classic schedule shows the three kinds of rule:
 
 ```cpp
 static consteval auto parameter_schema()
@@ -224,27 +221,29 @@ static consteval auto parameter_schema()
 }
 ```
 
-- A **domain**, the second argument of `field`, is the set of valid values:
-  `config::range(low, high)`, closed unless `.open()`, `.open_low()` or
-  `.open_high()` says otherwise, with `.log()` when its values span orders of
-  magnitude, `config::range(0.0, easylocal::unlimited)` for no upper bound
-  (infinity included, unless `.open_high()`), `config::one_of("fixed",
-  "random")`, or `easylocal::unlimited` for any value
-  (a seed, a file name). Every field declares one, a boolean excepted:
-  `check(app, ...)` (chapter 14) fails for a parameter without a domain.
-- A **condition**, `.only_if(...)`, says when a field matters: the initial
-  acceptance is used only to estimate the initial temperature, from
-  `calibration_samples` moves. When the condition is false, the field's
-  domain is not checked.
-- A **requirement**, `config::require(expression, message)`, relates fields;
-  its message is the error when it does not hold.
+- A **domain**, the second argument to `field`, gives the allowed values.
+  Use `config::range(low, high)`, `config::one_of("fixed", "random")` or
+  `easylocal::unlimited` for an unrestricted value, such as a filename.
+  Except for booleans, every field needs an explicit domain to pass
+  `check(app, ...)` (chapter 14).
+- A **condition**, `.only_if(...)`, says when a field applies. Initial
+  acceptance matters only during temperature calibration; when calibration
+  is disabled, that field's domain is not checked.
+- A **requirement**, `config::require(expression, message)`, relates fields.
+  Validation reports the message if the relationship does not hold.
 
-Conditions and requirements are expressions over the fields of the block:
-`config::value<"name">` is a field, `value<"temperature.cooling_rate">` a
-field of a nested group, combined with comparisons, `&&`, `||`, `!` and
-arithmetic. The validation of a set checks all of it, as the errors above
-show, and the block's `validate()` checks it with `config::check_schema`,
-before what the schema cannot say:
+Ranges include both endpoints by default. Use `.open()`, `.open_low()` or
+`.open_high()` to exclude endpoints, and `.log()` for values spanning orders
+of magnitude. `config::range(0.0, easylocal::unlimited)` has no upper bound;
+it includes infinity unless you add `.open_high()`.
+
+Build conditions and requirements from field references such as
+`config::value<"name">` or `value<"temperature.cooling_rate">` for a nested
+group. Combine them with comparisons, arithmetic, `&&`, `||` and `!`.
+
+Set validation checks these rules automatically. In the block's own
+`validate()`, call `config::check_schema` before any checks that the schema
+cannot express:
 
 ```cpp
 config::validation_result validate() const

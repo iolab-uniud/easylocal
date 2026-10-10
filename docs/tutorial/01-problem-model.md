@@ -1,6 +1,7 @@
 # 1. Modelling the problem
 
-A problem is described by three plain value types and a SolutionManager.
+Start by describing the data the search will use: an Input, a Solution and a
+Move. A SolutionManager will create solutions and check their validity.
 
 ## Representing tours
 
@@ -20,8 +21,8 @@ Not every sequence is a tour. A tour of n cities is a *permutation* of 0, 1,
 ..., n − 1: n positions, every city exactly once. `[0, 1, 1, 3, 4]` visits
 city 1 twice and city 2 never; `[0, 1, 2]` forgets two cities.
 
-**A move** turns a tour into a nearby one. The first move of the tutorial
-(chapter 3 adds a second one) is `SwapCities{i, j}`, which exchanges the cities at positions `i` and `j`. On
+**A move** changes a tour. We start with `SwapCities{i, j}`, which exchanges
+the cities at positions `i` and `j`; chapter 3 adds a second kind of move. On
 `[0, 1, 2, 3, 4]`, `SwapCities{1, 3}` gives `[0, 3, 2, 1, 4]`: the edges 0–1
 and 3–4 (dashed) leave the tour, the edges 0–3 and 1–4 (red) enter it, and the
 length goes from 29 to 34.
@@ -91,8 +92,7 @@ structs are enough.
 
 ## The SolutionManager
 
-The SolutionManager owns *solution semantics*: which solutions are valid and how
-to build one.
+The SolutionManager defines which solutions are valid and how to build them:
 
 <!-- snippet: tutorial/tsp.hpp:solution-manager!random-solution -->
 ```cpp
@@ -121,33 +121,27 @@ public:
 };
 ```
 
-- `easylocal::solution_manager_base<Input, Solution>` provides the `input_type`
-  and `solution_type` aliases, the constructor and `input()`, the bound
-  Input. It is optional and non-virtual; a hand-written class with
-  the same members works as well.
-- `is_valid` is required and checks *structural* validity: the representation is
-  well formed. Here it checks the permutation property:
-  `std::ranges::is_permutation` compares `tour.order` with the sequence 0, 1,
-  ..., n − 1, produced by `std::views::iota` without storing it, and is true
-  only when the two have the same length and the same elements. It takes
-  quadratic time at worst; for long tours, a `std::vector<bool>` that marks
-  the cities already seen does the same check in linear time.
-- A solution that violates problem constraints is still valid: such
-  violations are expressed as cost (chapter 2).
-- `initial_solution()` is optional. Write it when something needs to build
-  solutions: here you, through the bound runner's `initial_solution()`
-  (chapter 5); later a solver or the interactive tester. Chapter 8 adds a second way to
-  build one, at random.
+- `solution_manager_base<Input, Solution>` supplies the type aliases,
+  constructor and `input()` accessor. This optional base has no virtual
+  functions; a class providing the same members works too.
+- `is_valid` checks the representation. Here, `std::ranges::is_permutation`
+  verifies that `tour.order` contains exactly the cities 0 through n − 1.
+  `std::views::iota` supplies that sequence without storing it. The check can
+  take quadratic time; for large tours, marking visited cities in a
+  `std::vector<bool>` gives a linear check.
+- `initial_solution()` creates a starting tour. It is optional when you
+  supply your own solution, but lets runners, solvers and the tester create
+  one for you. Chapter 8 adds random construction.
 
-> **Essential and advanced.** These types and this SolutionManager are the
-> essential version: what a local search needs to run. Some *advanced
-> components*, the tools of the later chapters, need a few more features, each
-> added in the chapter that introduces it: solvers that start from random
-> solutions need `random_solution` (chapter 8), reading tours from files and
-> printing them need I/O hooks (chapter 5), and the neighborhood checks
-> compare them with `==` (chapter 14). Until you use one of them, you need not write
-> anything for it. When you do, a missing feature is a compile error that names
-> it, or, in the interactive tester, a command that is not offered.
+Validity here means that the representation is well formed. A tour may still
+violate problem constraints; those violations become part of the cost in
+chapter 2.
+
+> **Add capabilities as you need them.** This is enough to start a search.
+> Later we add I/O hooks for files (chapter 5), `random_solution` for random
+> starts (chapter 8), and equality for neighborhood checks (chapter 14).
+> Missing capabilities produce a compile error when required; the interactive
+> tester simply omits commands that the problem does not support.
 
 The SolutionManager never computes the cost: the cost always comes from cost
 components, the subject of the next chapter.

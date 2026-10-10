@@ -127,6 +127,15 @@ reviewed by hand before tagging.
 
 ### Documentation and examples
 
+- The tutorial has clearer introductions and transitions across all sixteen
+  chapters, with shorter explanations of composition, configuration, testing
+  and frontends. It shows how each capability builds on existing components
+  and corrects the explanation of the excluded full-reversal 2-opt move.
+- *Coming from EasyLocal 3* uses shorter explanations and clearer transitions
+  throughout the migration guide. The examples highlight the benefits of
+  reusable recipes, shared frontends, automated checks and schema-based
+  configuration, while retaining the behavioural differences to consider
+  during a port.
 - *Coming from EasyLocal 3* explains the NeighborhoodExplorer before the delta
   cost components, which depend on it, and says more where a reader of
   EasyLocal 3 has no counterpart to lean on: what a cursor and a `moves()`

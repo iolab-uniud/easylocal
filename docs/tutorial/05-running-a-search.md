@@ -2,10 +2,10 @@
 
 ## A runner
 
-A **runner** couples a search algorithm with the recipes of the services it
-uses. Here First Improvement is combined with the recipes `sm` (the
-SolutionManager with `TourLength`, chapter 2) and `nhe` (the 2-opt neighborhood
-with its delta cost component, chapter 4), then run on the five cities:
+A **runner** combines an algorithm with the problem recipes. We now have both:
+`sm` describes the SolutionManager and cost (chapter 2), and `nhe` describes
+2-opt moves and their delta (chapter 4). Attach them to First Improvement and
+run it on the five-city instance:
 
 <!-- snippet: tutorial/main.cpp:first-improvement -->
 ```cpp
@@ -17,36 +17,27 @@ auto search = fi.bind(tsp);
 const auto result = search.run(search.initial_solution());
 ```
 
-Step by step:
+There are three steps:
 
-1. `make_runner<runners::FirstImprovement>(parameters)` chooses the algorithm
-   and holds its parameters. `FirstImprovementParameters{}` keeps the
-   defaults: no budget on the evaluations (`max_evaluations` is
-   `easylocal::unlimited`, `unlimited` in text), so the search runs until a
-   local optimum. Written inline,
-   `make_runner<runners::FirstImprovement>({.max_evaluations = 1000})` sets a
-   budget; `fi.parameters()` reads and changes them later.
-2. `| sm` gives the runner its SolutionManager, and with it the cost: the
-   runner will build tours with `TourManager` and evaluate them with
-   `TourLength`.
-3. `| nhe` gives it the neighborhood: the moves come from `TwoOptExplorer`,
-   and their cost from `TwoOptLengthDelta`.
-4. The result, `fi`, is still a description: it holds the algorithm and the
-   recipes, but no `TourManager` or `TourLength` exists yet, because they need
-   an Input. Nothing has been evaluated.
-5. `fi.bind(tsp)` builds the services for this Input: a `TourManager`, a
-   `TourLength` and a `TwoOptLengthDelta` that refer to `tsp`, and a
-   `TwoOptExplorer` that refers to the `TourManager`. It also builds First
-   Improvement from the parameters the runner holds. It returns them as the
-   *bound runner* `search`. `tsp` must outlive `search`,
-   which only refers to it; `bind` does not accept a temporary Input for this
-   reason. The same `fi` can be bound to other Inputs.
-6. `search.initial_solution()` asks the bound `TourManager` for the initial
-   tour, and `search.run(tour)` runs First Improvement from it: evaluate the
-   tour, scan the 2-opt moves, apply the first that lowers the length, repeat
-   until no move improves it.
-7. `run` returns the result, described under [Results](#results) below: the
-   final tour, its cost and the counters of the search.
+1. **Compose.** `make_runner` selects the algorithm and stores its parameters;
+   `| sm | nhe` attaches the services in that order. The resulting `fi` still
+   needs no Input and has constructed no services.
+2. **Bind.** `fi.bind(tsp)` constructs the algorithm, `TourManager`,
+   `TourLength`, `TwoOptExplorer` and `TwoOptLengthDelta`. The returned
+   *bound runner*, `search`, owns these objects and borrows `tsp`, which must
+   outlive it. For this reason, `bind` rejects a temporary Input.
+3. **Run.** `search.initial_solution()` creates a starting tour.
+   `search.run(tour)` repeatedly scans the moves and takes the first
+   improvement, stopping when none remains. It returns the final tour, cost
+   and search counters (see [Results](#results)).
+
+`FirstImprovementParameters{}` leaves `max_evaluations` at
+`easylocal::unlimited` (`unlimited` in text), so this run reaches a local
+optimum. To cap its work, pass `{.max_evaluations = 1000}` to `make_runner`.
+You can also change the parameters through `fi.parameters()` before binding.
+
+The same `fi` can be bound to other Inputs. Reusing the recipes also makes it
+easy to try another algorithm on exactly the same problem.
 
 Composition can also be written with explicit `with_*` calls, which spell out
 each step:
@@ -65,10 +56,10 @@ auto same_runner =
 
 ## Built-in algorithms
 
-The algorithms live in `easylocal::runners`, one header each under
-`runners/`; what each needs of the neighborhood and of the cost, and its
-parameters, are in the [Runners](../reference/runners.md#built-in-algorithms)
-reference:
+Algorithms live in `easylocal::runners`, with headers under `runners/`.
+Choose one that supports your neighborhood and cost. The
+[Runners reference](../reference/runners.md#built-in-algorithms) lists their
+parameters and requirements:
 
 | Algorithm | Header | Needs |
 | --- | --- | --- |
@@ -82,16 +73,19 @@ reference:
 Every one bounds its run with `max_evaluations` (unlimited by default: a
 descent stops at a local optimum).
 
-Simulated Annealing takes a temperature policy (`Classic`, `FixedLength`,
-`Cutoff`, `Hybrid`, `FixedTemperature`, `TimeBased` in `runners::temperature`,
-and `Reheating<…>` over any of them but `FixedTemperature`); acceptance defaults to
-`runners::MetropolisAcceptance`. Its parameters,
-`SimulatedAnnealingParameters<ClassicParameters>` for `Classic`, hold the
-policy's under `temperature` and the run's `max_evaluations`:
-`{.temperature = {...}, .max_evaluations = 10000}`, and
-`search.temperature.*` in a configuration (chapter 9). With `calibration_samples` > 0 a policy
-estimates its initial temperature from moves sampled at the initial solution.
-Stochastic algorithms receive the RNG as a `run` argument:
+Simulated Annealing lets you choose a temperature policy from
+`runners::temperature`: `Classic`, `FixedLength`, `Cutoff`, `Hybrid`,
+`FixedTemperature` or `TimeBased`. `Reheating<…>` wraps any of these except
+`FixedTemperature`. Acceptance defaults to `runners::MetropolisAcceptance`.
+
+For `Classic`, the parameter block is
+`SimulatedAnnealingParameters<ClassicParameters>`. It groups schedule settings
+under `temperature` and also holds the run's evaluation budget:
+`{.temperature = {...}, .max_evaluations = 10000}`. Configuration paths use
+`search.temperature.*` (chapter 9). Setting `calibration_samples` above zero
+estimates the initial temperature from sampled moves.
+
+Pass an RNG to `run` for a stochastic algorithm:
 
 <!-- snippet: tutorial/main.cpp:annealing -->
 ```cpp
@@ -224,11 +218,12 @@ std::cout << "from file " << el::describe(file_result.solution) << '\n';
 | `write_solution(input, solution, out)`, `save_solution(input, solution, path)` | writes a Solution |
 | `describe(value)` | the text of a value |
 
-They throw `std::runtime_error` when a stream fails, and the file functions
-name the file. Each hook is needed only where it is used: a program that
-builds its Input in code, as the rest of this tutorial does, needs no
-`read_input`. The Session (chapter 11) and the interactive tester (chapter 13)
-use the same hooks.
+These helpers throw `std::runtime_error` on stream failures; file errors name
+the affected path. Implement only the hooks you use: a program that constructs
+its Input in code needs no `read_input`.
+
+The Session (chapter 11) and interactive tester (chapter 13) reuse these hooks,
+so adding a frontend does not require another file parser or solution writer.
 
 ## See also
 

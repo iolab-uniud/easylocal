@@ -1,8 +1,9 @@
 # 8. Solvers
 
-A runner starts from a solution you give it. A **solver** goes from an Input to
-a final solution: it builds the initial solution, owns the RNG, so a seed
-reproduces the run, and orchestrates one or more runners.
+A runner starts from a solution you supply. A **solver** handles the whole
+search from an Input: it creates a starting solution, owns the RNG and
+coordinates one or more runs. This makes random restarts and staged searches
+available without writing the orchestration yourself.
 
 <!-- snippet: tutorial/main.cpp:solvers -->
 ```cpp
@@ -11,10 +12,10 @@ solver.initialization(el::initialization::random).seed(1);
 const auto best = solver.solve(tsp);
 ```
 
-A solver is built from its runner (MultiStart also from its parameters, here
-five starts), then `.initialization(...)` and `.seed(...)` configure it.
-`initialization::random` starts every run from a random tour, so
-`TourManager` needs a member it did not have yet, `random_solution`:
+Construct the solver from a runner, then choose its initialization and seed.
+MultiStart also takes parameters: here it makes five starts.
+`initialization::random` needs a random tour for each start, so add
+`random_solution` to `TourManager`:
 
 <!-- snippet: tutorial/tsp.hpp:random-solution -->
 ```cpp
@@ -28,9 +29,9 @@ Tour random_solution(RNG& rng) const
 }
 ```
 
-The RNG is passed in, never created inside: the solver owns it, so its `seed`
-reproduces every start. It is seeded once: a second `solve()` continues the
-stream and finds other starts.
+Use the RNG passed by the solver to keep random starts reproducible. The
+solver seeds it once; a second `solve()` continues the stream rather than
+repeating the first solve's starts.
 
 The built-in solvers live in `easylocal::solvers`:
 
@@ -53,10 +54,10 @@ The built-in solvers live in `easylocal::solvers`:
 
 ## Hard and soft costs
 
-`solvers::two_stage()` is for problems whose cost is written with
-`cost::hard_soft` ([chapter 2](02-cost.md#cost-expressions)): it first removes
-the violations, then optimizes the full cost from the feasible solution it
-found.
+For a `cost::hard_soft` objective, `solvers::two_stage()` separates the search
+for feasibility from optimization of the full cost. It derives the hard-only
+stage from the existing cost expression, so you can reuse the same components
+([chapter 2](02-cost.md#cost-expressions)):
 
 ```cpp
 auto sm = el::solution_manager<TimetableManager>()
@@ -97,27 +98,25 @@ auto solver = (stage("feasible", descent) & until_feasible() & attempts(5))
 const auto result = solver.seed(7).solve(tsp);
 ```
 
-- `|` chains the stages, `&` gives a stage its options, in parentheses (GCC
-  warns about `&` and `|` mixed without them); the methods
-  `.until_feasible()`, `.with_attempts(10)`, `.with_target(0)` and the
-  pipeline's `.then(stage)` spell the same pipeline out.
+- `|` chains stages and `&` adds stage options. Parenthesize combinations of
+  the two to avoid GCC warnings. The equivalent named members are
+  `.until_feasible()`, `.with_attempts(10)`, `.with_target(0)` and
+  `.then(stage)`.
 - `until_feasible()` runs the stage on the hard cost until it is zero;
   `target(cost)` stops a stage at another target, in its own cost.
-- `attempts(5)` repeats the stage, here from a new random tour, while it has
-  not reached its target, and keeps the best run. The attempts of a later
-  stage start from the solution it received, unless
-  `restart(initialization::random)` starts them from new random tours. First
-  and Best Improvement are deterministic: their attempts from the same
-  solution would repeat one run, so such a stage is rejected unless it
-  restarts them.
+- `attempts(5)` tries the stage up to five times, stopping at its target and
+  keeping the best result. Here each attempt starts from a new random tour.
+  Later stages reuse the solution they received unless you add
+  `restart(initialization::random)`. First and Best Improvement would repeat
+  the same deterministic search from that solution, so repeated attempts
+  require random restarts.
 - `result.stages` reports each stage (attempts, effort, termination, cost),
   and the parameters of a stage are under its name (`climb.search.*`,
   `feasible.attempts`). `examples/tutorial/pipeline_main.cpp` is the complete
   program.
 
-An app registers a pipeline beside its runners, under a name of the same list.
-Its stages may be algorithms, `stage<Algorithm>(name, parameters)`, which run
-on the app's recipes rather than on recipes of their own:
+An app can register a pipeline alongside its runners. Define a stage with
+`stage<Algorithm>(name, parameters)` to reuse the app's problem recipes:
 
 <!-- snippet: tutorial/pipeline_main.cpp:app-pipeline -->
 ```cpp
@@ -143,14 +142,14 @@ if (const auto cascade = application.run("cascade", tsp, initial, rng))
 }
 ```
 
-- A stage of an algorithm runs on the app's SolutionManager and cost, so the
-  app's `cost.*` parameters apply to every stage, and on the app's
-  neighborhood, or on its own, the third argument (`both` for the climb).
+- An algorithm stage shares the app's SolutionManager, cost and `cost.*`
+  parameters. It also uses the app's neighborhood unless you supply one as
+  the third argument, such as `both` for the climb.
 - `until_feasible()` derives the hard-cost stage from the app's cost, and the
   stage options are those of a stage of a runner.
-- An app runs the pipeline from the current solution, so every attempt of the
-  first stage would start from it: `restart(el::initialization::random)`
-  starts the attempts after the first from new random tours.
+- In an app, the pipeline starts from the current solution.
+  `restart(el::initialization::random)` gives later attempts of the first
+  stage new random tours.
 - `stage("climb", climbing)`, a stage of a runner, may still be registered: it
   keeps its own recipes and its own `cost.*` parameters.
 

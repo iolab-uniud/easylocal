@@ -1,9 +1,10 @@
 # Tutorial
 
-This tutorial builds a local search solver for the symmetric Travelling
-Salesperson Problem (TSP), one capability per chapter. Each chapter builds on
-the previous one and ends with links to the [reference](../reference/README.md)
-pages that describe the components in full.
+Build a local search solver for the symmetric Travelling Salesperson Problem
+(TSP), then give it configuration, tests and user interfaces. Each chapter
+adds one capability to the same program, reusing the components you have
+already written. Links to the [reference](../reference/README.md) provide the
+full API details when you need them.
 
 If you have not done so yet, start with the [quick start](../quick-start.md):
 it is the complete program of the first chapters, in one file.
@@ -12,10 +13,9 @@ it is the complete program of the first chapters, in one file.
 
 ## The running example
 
-A salesperson must visit a set of cities, each exactly once, and come back to
-the city they started from; the distance between two cities is the same in
-both directions. The symmetric TSP asks for the shortest such round trip. The
-example instance has five cities, with these distances:
+The TSP asks for the shortest round trip that visits every city exactly once.
+In the symmetric version, distances are the same in both directions. We use
+five cities with these distances:
 
 ```mermaid
 graph LR
@@ -57,9 +57,8 @@ also in the opposite direction): 0 → 1 → 3 → 2 → 4 → 0 (2 + 4 + 8 + 5 
 The chapters build the solver in this order:
 
 - chapters 1 and 2 model a tour as a sequence of cities and give it a cost;
-- chapter 3 defines two kinds of moves, swapping two cities, as in the quick
-  start, and 2-opt, which reverses a part of the tour; they show the two ways
-  of listing moves, a generator and a cursor;
+- chapter 3 defines swaps and 2-opt moves, which reverse a segment of the
+  tour, and shows how to enumerate them with a generator or a cursor;
 - chapter 4 computes the effect of a 2-opt move on the length from four
   distances only;
 - chapter 5 runs both First Improvement and Simulated Annealing, and chapter 6
@@ -67,12 +66,11 @@ The chapters build the solver in this order:
 - the remaining chapters build on these pieces: new algorithms, solvers,
   configuration, testing and the interactive and HTTP tools.
 
-All the code of the tutorial lives in `examples/tutorial/`: `tsp.hpp` holds the
-problem components, `main.cpp` the searches and `checks.cpp` the component
-tests. They are built and run with the test suite, and every snippet marked
-`<!-- snippet: ... -->` in these pages is checked against them
-(`scripts/sync-doc-snippets.py`), so the code you read here is the code that
-runs.
+The complete code lives in `examples/tutorial/`: `tsp.hpp` defines the problem,
+`main.cpp` runs the searches and `checks.cpp` tests the components. The examples
+are built and tested with the library, and the snippets on these pages are
+checked against their sources. You can follow along in the files or use them
+as a starting point for your own problem.
 
 ## The workflow
 
@@ -92,23 +90,20 @@ compose   a runner    an algorithm plus the recipes of the services
 run       bind the runner to an Input, run it from a solution, read the result
 ```
 
-The SolutionManager with its cost components and cost expression forms the
-*cost layer*; the NeighborhoodExplorer with its delta cost components forms the *delta
-cost layer*. You describe these compositions with recipes, and the framework
-materializes them when the runner is bound to an Input.
+The SolutionManager, cost components and cost expression form the *cost
+layer*. The NeighborhoodExplorer and its deltas form the *delta cost layer*.
+Recipes describe how to assemble these services; binding a runner to an Input
+constructs them. The services borrow the Input by `const&` and leave it unchanged.
 
-Components are specified incrementally: you write only what the algorithms and
-tools you use need, and the compiler tells you when a capability is missing.
-The early chapters write the essential version of each component; the
-*advanced components*, such as solvers, the Session checks and the
-interactive tester, need a few more features, added in the chapters that introduce them.
-Services borrow the Input by `const&` and never mutate it.
+Start with the members your search needs. Later chapters add features for
+solvers, checks and interactive tools as they become useful. Missing
+capabilities are checked at compile time, so you can develop the problem
+incrementally without implementing an entire interface up front.
 
 ## Conventions of the code
 
-The library lives in the namespace `easylocal`. The snippets of the tutorial
-write it `el::`, and its runners `runners::`, through two namespace aliases
-declared at the start of each program, before the code the snippets show:
+The library uses namespace `easylocal`. The examples declare two aliases at
+the start of each program to keep the snippets short:
 
 <!-- snippet: tutorial/main.cpp:aliases -->
 ```cpp
@@ -117,12 +112,9 @@ namespace el = easylocal;               // el::app, el::component, ...
 namespace runners = easylocal::runners; // runners::FirstImprovement, ...
 ```
 
-A namespace alias is a shorter name for the same namespace, local to the
-scope that declares it: `el::app` is `easylocal::app`. Declare the aliases
-in each function, or once in a source file, but not in a header, where they
-would reach every file that includes it. The tutorial prefers aliases to
-`using namespace easylocal;`, which would bring all the library's names into
-scope and hide which ones are the library's.
+Thus `el::app` means `easylocal::app`. Put aliases in a function or source
+file to avoid introducing them into files that include your headers. Unlike
+`using namespace easylocal;`, an alias keeps the library's names identifiable.
 
 The first line brings in the tutorial's own types, from `tsp.hpp`, so the
 snippets write `Tour` for `tutorial::Tour`.
@@ -154,4 +146,4 @@ snippets write `Tour` for `tutorial::Tour`.
     progress, cancellation, tracing.
 
 Porting an EasyLocal 3 program? [Coming from EasyLocal 3](../from-easylocal-3.md)
-takes one through, step by step.
+walks through the migration step by step.

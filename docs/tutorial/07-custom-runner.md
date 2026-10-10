@@ -1,7 +1,9 @@
 # 7. Writing your own runner
 
-A search algorithm is a class with a single `run` member. This one samples
-random moves and keeps the improving ones:
+To try a search strategy of your own, write a class with a `run` member.
+The framework supplies evaluation, counters and run control, leaving you to
+decide which moves to accept. This example samples random moves and keeps
+improvements:
 
 <!-- snippet: tutorial/tsp.hpp:custom-runner -->
 ```cpp
@@ -61,10 +63,8 @@ public:
 };
 ```
 
-The framework calls `run` with an `easylocal::search_run`. It gives access to
-the search context (`better`, `neighborhood_explorer`, ...) and owns what every
-search shares: counters, the evaluation budget, cancellation, progress reporting
-and the trace events. The algorithm only describes its logic:
+The bound runner passes an `easylocal::search_run` to `run`. It provides
+comparison and neighborhood access, and handles the work shared by algorithms:
 
 | `search_run` member | Effect |
 | --- | --- |
@@ -79,14 +79,14 @@ and the trace events. The algorithm only describes its logic:
 | `incumbent_updated(previous, cost)` | for algorithms that keep a best-so-far solution |
 | `finish(solution, cost[, reason])` | emits `run_finished`, returns a `search_result` |
 
-Every runner is cancellable by contract: checking `should_stop()` in the loop is
-all it takes. Per-run state lives in local variables, so `run` is `const` and a
-runner can be reused.
+Check `should_stop()` in the loop to honour cancellation and run limits.
+Keep per-run state in local variables so `run` can be `const` and the algorithm
+can be reused.
 
-A descent only ever moves to a better solution, so its current solution is also
-its best: it commits with `commit_improvement()`, which emits `incumbent_updated`
-as well. An algorithm that also accepts worsenings (Simulated Annealing) commits
-with `commit()` and keeps its best apart, with `best_so_far`.
+In a descent, the current solution is also the best found. Use
+`commit_improvement()` to apply a move and report the new incumbent. Algorithms
+that accept worsening moves, such as Simulated Annealing, use `commit()` and
+track the best solution separately with `best_so_far`.
 
 The runner is used like a built-in one:
 
@@ -97,17 +97,18 @@ auto descent =
     | sm | nhe;
 ```
 
-`parameters_type`, which `easylocal::parameters_base<RandomDescentParameters>`
-declares, names the parameters the algorithm is constructed from; the base
-also keeps the block and gives it back through `parameters()`. Its
-`parameter_schema()` and `validate()` (chapter 9) make it a parameter block,
-and that is the whole rule of configuration, for a runner as for the other
-configurable classes: the runner holds the parameters, builds the algorithm
-from them when it is bound, and gives them as `search.*` to the command line,
-configuration files and the interactive tester; an app (chapter 11) gives them
-as `runners.<name>.*`. An algorithm whose `parameters_type` is not a block
-still runs in an app, but no frontend can change its parameters, and
-`check(app, ...)` (chapter 14) reports it.
+`parameters_base<RandomDescentParameters>` declares `parameters_type`, stores
+the parameters and exposes them through `parameters()`. The runner keeps this
+block and constructs the algorithm from it when bound.
+
+Adding `parameter_schema()` and `validate()` to the block (chapter 9) also
+exposes it to configuration files and frontends. Standalone runners use paths
+under `search.*`; apps use `runners.<name>.*` (chapter 11). Your custom
+algorithm then gets the same configuration support as the built-in ones.
+
+An algorithm whose `parameters_type` is not a parameter block can still run,
+but frontends cannot edit its settings. `check(app, ...)` reports this gap
+(chapter 14).
 
 ## See also
 

@@ -360,7 +360,8 @@ public:
         }
     }
 
-    // The moves that moves() lists: (0, n - 1) removes the same edge twice.
+    // The moves the cursor lists: (0, n - 1) would only reverse the tour,
+    // preserving the same edges in the symmetric TSP.
     bool is_valid(const Tour& tour, const TwoOpt& move) const
     {
         const auto n = tour.order.size();

@@ -1,27 +1,25 @@
 # 12. Tuning with irace
 
-The best values of a runner's parameters depend on the problem and on its
-instances. [irace](https://mlopez-ibanez.github.io/irace/) finds them
-automatically: it runs the program on a set of instances with candidate
-values, compares the costs it prints and races the candidates until the best
-ones are left. A program made with `cli::run` (chapter 11) writes everything
-irace needs from its own parameters, so the files never drift from the
-switches the program accepts.
+Good parameter values depend on the problem and its instances.
+[irace](https://mlopez-ibanez.github.io/irace/) searches for them by running
+candidate configurations on training instances and comparing their results.
+An app using `cli::run` can generate the scenario from its parameter schema,
+saving you from describing the same parameters again for the tuner.
 
 irace is an R package: install [R](https://www.r-project.org/), then
 `Rscript -e 'install.packages("irace")'`.
 
 ## What is tuned
 
-A parameter is tuned when it has a finite domain: the values it may take,
-declared in the schema of its block (chapter 9). The built-in runners declare
-the domains of their rates and probabilities, such as Simulated Annealing's
-`cooling_rate` in (0, 1). A temperature's domain is every positive number,
-since its good values depend on the scale of the costs: a program gives it a
-finite range for tuning, as it may narrow any domain. The conditions and
-requirements of the schema (chapter 9) come along: a parameter is tuned only
-when it matters, and irace never proposes values that break a requirement. `examples/tsp/sa_main.cpp`
-gives a range to the initial temperature:
+Tuning needs a finite domain for each parameter. Built-in schemas already
+provide these for rates and probabilities, such as `cooling_rate` in (0, 1).
+Temperatures need a range suited to the scale of your cost; their general
+domain allows any positive value.
+
+You can narrow domains for an experiment. Schema conditions and requirements
+carry over too: inactive parameters are not tuned, and invalid combinations
+are excluded. In `examples/tsp/sa_main.cpp`, the program sets a tuning range
+for the initial temperature:
 
 <!-- snippet: tsp/sa_main.cpp:tuning -->
 ```cpp
@@ -45,9 +43,8 @@ return easylocal::cli::run(
 
 ## The scenario
 
-`--tuning.irace=DIR` creates the directory and writes the
-scenario, without running anything; the other switches on the same command
-line are the values every run starts from:
+`--tuning.irace=DIR` writes the scenario without starting a search. Other
+switches on the command line supply the baseline settings for its runs:
 
 ```text
 $ easylocal_tsp_sa --tuning.irace=tuning --runners.sa.temperature.allowed_iterations=20000
@@ -78,11 +75,10 @@ runners.sa.temperature.cooling_rate "--runners.sa.temperature.cooling_rate=" r (
 # runners.sa.temperature.allowed_iterations "--runners.sa.temperature.allowed_iterations=" i,log (2000, 200000)
 ```
 
-Here the initial acceptance is not tuned: it matters only when
-`calibration_samples` is above 0, and that parameter is not tuned and is 0.
-Its line is commented out, with the condition irace needs when both are
-uncommented. The requirement between the temperatures becomes a forbidden
-combination, with the final temperature at its value:
+Initial acceptance is commented out here because calibration is disabled:
+`calibration_samples` is fixed at 0. The generated condition is ready if you
+later enable tuning for both fields. The temperature requirement becomes a
+forbidden combination, using the fixed final temperature:
 
 ```text title="parameters.txt"
 [forbidden]
@@ -93,14 +89,17 @@ combination, with the final temperature at its value:
 
 ## Running irace
 
-The files are a stub to edit: the program never overwrites them. List the
-instances in `instances.txt`, set the budget in `scenario.txt`, uncomment a
-parameter or change a range in `parameters.txt`, and add to the `[forbidden]`
-section the combinations that are not valid and that the program does not
-declare. Then run `--tuning.irace=DIR` again: it checks that
-every parameter of `parameters.txt` is one of the program's and rewrites
-`configurations.txt` to agree with it, moving a current value into its range
-when it is outside. Finally, run irace in the directory:
+Prepare the generated scenario for your experiment:
+
+1. List the training instances in `instances.txt`.
+2. Set the run budget in `scenario.txt`.
+3. Select parameters and adjust ranges in `parameters.txt`. Add any extra
+   invalid combinations to `[forbidden]`.
+4. Run `--tuning.irace=DIR` again. It preserves your scenario edits, checks
+   that the selected parameters exist, and refreshes `configurations.txt`.
+   Starting values outside the selected ranges are moved into range.
+
+Then run irace in the directory:
 
 ```text
 $ cd tuning && irace
@@ -115,18 +114,20 @@ line, or as `path = value` lines in a configuration file (chapter 9).
 
 ## The cost as one number
 
-irace compares runs by one number, which
-`--tuning.print=cost` prints (`cost_time` adds the running time in seconds).
-A number is itself; a hierarchical cost is `hard * W + soft`, and a
-lexicographic one weighs each value by a power of `W`, with `W` from
-`--tuning.hard_weight` (10^9 by default), which must exceed every soft cost.
-The number is a `double`, exact up to 2^53 (about 9 * 10^15): with the default
-weight, a lexicographic cost of three or more levels, or a hard cost above
-about 9 * 10^6, loses its lower levels to rounding. A problem can give its own
-number with a `scalar_cost(const Input&, const Cost&)` function next to its
-Input, found as `read_cost` is, which is the remedy then. The parameters of
-the cost, such as the weights of a `cost::sum`, are never tuned: they define
-the cost that irace compares.
+irace compares a single number per run. `--tuning.print=cost` prints it;
+`cost_time` also prints elapsed seconds. Numeric costs are used directly.
+Hierarchical costs become `hard * W + soft`, while lexicographic costs weight
+each level by a power of `W`. Set `W` with `--tuning.hard_weight` (default
+10^9), large enough to exceed every soft cost.
+
+This conversion uses a `double`, which represents integers exactly up to 2^53
+(about 9 × 10^15). With the default weight, three or more lexicographic levels,
+or a hard cost above about 9 × 10^6, can lose lower-priority information to
+rounding. In that case, define `scalar_cost(const Input&, const Cost&)`
+alongside the Input to provide a suitable scalar measure.
+
+Cost parameters, such as sum weights, are excluded from tuning: changing
+them would change the objective used to compare configurations.
 
 ## See also
 

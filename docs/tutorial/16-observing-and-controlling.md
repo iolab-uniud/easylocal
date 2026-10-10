@@ -1,6 +1,8 @@
 # 16. Observing and controlling a run
 
-A run accepts a control and a tracer as its trailing argument:
+You can monitor a search, stop it from another thread or record its decisions
+without changing the algorithm. Pass a control and a tracer as the final
+argument to the run:
 
 <!-- snippet: tutorial/main.cpp:control -->
 ```cpp
@@ -18,42 +20,45 @@ const auto observed = descent_search.run(
     el::with(control, trace));
 ```
 
-- `stop.request_stop()`, from any thread, ends the run cooperatively; the result
-  reports `termination_reason::cancelled`. Every runner honours it through
-  `search_run::should_stop()`.
-- The observer receives `run_progress` (evaluations, iterations and, when a
-  budget is set, the evaluation limit).
-- The tracer receives typed search events: `run_started`, `move_evaluated`,
-  `move_accepted`, `incumbent_updated`, `local_optimum`,
-  `neighborhood_selection`, `solution_visited` (the hash of each solution
-  reached), Tabu Search's `aspiration_applied`, `tabu_escape` and
-  `tabu_tenure_changed`, and `run_finished`, which says why the run ended
-  (its `termination`); the solvers add `run_context` before each run. Without
-  a tracer, their construction is removed at compile time.
-- A recorder has the cost type of the run, `memory_recorder<double>` for the
-  tour length: it observes the events of that cost, and those without one.
-- `easylocal::with(control)`, `easylocal::with(tracer)` and
-  `easylocal::with(control, tracer)` are all accepted.
-- A target cost ends the run as soon as the best cost is at least as good:
-  `el::stop_at(cost)` alone, or `el::with(control, tracer).stop_at(cost)`. The
-  result reports `termination_reason::target_reached`.
-- A time limit ends the run once it has passed: `el::timeout(5s)` (any
-  `std::chrono` duration) or `el::timeout(2.5)` (seconds), alone or as
-  `el::with(control).timeout(5s).stop_at(cost)`. The result reports
-  `termination_reason::time_limit_reached`; no thread is started, the run
-  reads the clock among its other checks.
-- An evaluation budget, `el::max_evaluations(n)`, ends the run after `n`
-  evaluations, with `termination_reason::evaluation_budget_exhausted`; it
-  can only tighten a runner's own `max_evaluations`.
-- Solvers take the same options, `solver.solve(input, el::with(control))`, and
-  pass them to every run they make; a solve's time limit and evaluation budget
-  bound all its runs together, and a pipeline stage may have its own
-  (`& el::timeout(10s)`, `& el::max_evaluations(5000)`).
+**Control and progress.** Call `stop.request_stop()` from any thread to request
+cancellation. Each runner checks the request through `search_run::should_stop()`
+and reports `termination_reason::cancelled`. The observer receives
+`run_progress`, with evaluations, iterations and any evaluation budget.
 
-Recorders include `trace::memory_recorder`, `trace::jsonl_recorder` and the
-binary `binary_recorder` and `async_binary_recorder`, whose ELTR traces
-describe themselves and are decoded by `scripts/eltr.py` (see
-[Tracing](../tracing.md)).
+**Tracing.** A tracer receives typed events such as `run_started`,
+`move_evaluated`, `move_accepted`, `incumbent_updated` and `run_finished`.
+Other events describe local optima, neighborhood selection, visited solution
+hashes, and Tabu Search's aspiration, escapes and tenure changes. Solvers add
+`run_context` before each run. Without a tracer, event construction is removed
+at compile time.
+
+Match the recorder to the cost type: `memory_recorder<double>` records this
+TSP's events, including events with no cost value. Pass a control, a tracer
+or both with `el::with(control)`, `el::with(tracer)` or
+`el::with(control, tracer)`.
+
+**Run limits.** The same options work across algorithms:
+
+| Option | Stops when | Termination reason |
+| --- | --- | --- |
+| `el::stop_at(cost)` | the best cost reaches the target or improves on it | `target_reached` |
+| `el::timeout(5s)` or `el::timeout(2.5)` | the time limit expires; numeric values are seconds | `time_limit_reached` |
+| `el::max_evaluations(n)` | the evaluation budget is exhausted | `evaluation_budget_exhausted` |
+
+Timeouts accept any `std::chrono` duration. The run checks the clock alongside
+its other stopping conditions; no timer thread is needed. An evaluation limit
+can tighten, but cannot raise, the runner's own budget.
+
+Combine options as needed, for example
+`el::with(control, tracer).timeout(5s).stop_at(cost)`.
+Solvers accept them too: `solver.solve(input, el::with(control))`. A solver's
+time and evaluation limits cover all its runs together. Pipeline stages can
+also have their own limits, such as `& el::timeout(10s)` or
+`& el::max_evaluations(5000)`.
+
+Use `trace::memory_recorder` to inspect events in code, `trace::jsonl_recorder`
+for JSON Lines, or `binary_recorder` and `async_binary_recorder` for ELTR
+files. `scripts/eltr.py` decodes ELTR traces; see [Tracing](../tracing.md).
 
 Diagnostic logging (`<easylocal/utils/logging.hpp>`) is separate from tracing.
 

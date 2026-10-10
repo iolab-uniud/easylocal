@@ -1,9 +1,11 @@
 # 15. A REST service
 
-The **REST** adapter exposes an app as an HTTP API: clients submit runs, poll
-their status and progress, cancel them and fetch the solutions. Runs execute on
-a bounded pool of background workers, separate from the HTTP threads. It is the
-optional `REST` component (Crow):
+The **REST** adapter makes the same app available over HTTP. Clients can submit
+runs, monitor progress, cancel searches and retrieve solutions without changes
+to the problem components. A bounded worker pool runs searches separately from
+the HTTP threads.
+
+Enable the optional `REST` component, based on Crow:
 
 ```cmake
 find_package(EasyLocal CONFIG REQUIRED COMPONENTS Core REST)
@@ -12,10 +14,9 @@ target_link_libraries(tsp_rest PRIVATE EasyLocal::REST)
 
 ## Without a codec
 
-The app works with problem values. When the problem has the I/O hooks of
-chapter 5, the service needs nothing else: the Input and the tours travel as
-JSON strings, in the text that `read_input`, `read_solution` and
-`write_solution` read and write, and the costs as JSON numbers.
+The quickest setup reuses the I/O hooks from chapter 5. Inputs and tours travel
+as JSON strings containing your existing text format; this TSP's numeric costs
+travel as JSON numbers. No extra serialization code is needed:
 
 <!-- snippet: tutorial/rest_main.cpp:text -->
 ```cpp
@@ -35,8 +36,9 @@ $ curl localhost:18080/tsp-text/runs/1/solution
 
 ## The codec
 
-A **codec** gives the values a JSON form of their own; the hooks still serve
-each value it leaves out:
+A **codec** lets clients use structured JSON instead of text strings. Define
+only the conversions you need; values without a codec conversion still use
+their I/O hooks:
 
 <!-- snippet: tutorial/rest_main.cpp:codec -->
 ```cpp
@@ -168,12 +170,13 @@ $ curl localhost:18080/tsp/runs/1/solution
 | `POST /tsp/runs/<id>/cancel` | cooperative cancellation |
 | `DELETE /tsp/runs/<id>` | forget a finished run |
 
-A run's `seed` makes stochastic runs reproducible, its random start included;
-without one, a run uses `blueprint_options::seed` plus its id. A run starts
-from a random tour unless it gives an `initial_solution` or
-`"start": "initial"`. A `target`, such as a known lower bound,
-stops the run as soon as its cost is at least as good: for the tutorial's
-`double` tour length, `"target": 26`, the optimal length of the five cities.
+Set `seed` to reproduce a stochastic run, including its random start. Without
+an explicit seed, the service uses `blueprint_options::seed` plus the run id.
+Runs start from a random tour unless the request supplies `initial_solution`
+or `"start": "initial"`.
+
+A `target` stops the search when it reaches that cost or better. For this
+TSP, `"target": 26` stops at the known optimum of the five-city instance.
 
 ## See also
 

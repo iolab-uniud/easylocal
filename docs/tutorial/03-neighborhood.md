@@ -1,15 +1,15 @@
 # 3. Moves
 
-The **NeighborhoodExplorer** owns *move semantics*: which moves exist, whether a
-move is valid and how it changes a solution.
+The **NeighborhoodExplorer** defines the moves available from a solution,
+checks their validity and applies them. Keeping this logic in one component
+lets different algorithms search the same neighborhood.
 
 ## Only what your algorithms use
 
-An explorer has two required members of its own, `is_valid(solution, move)` and
-`make_move(solution, move)`, besides its types and the Input it was built for
-(`input_type`, `solution_type`, `move_type` and `input()`), which
-`neighborhood_explorer_base` provides from the SolutionManager. Everything else
-is optional, and you write it only if an algorithm or a tool you use needs it:
+Every explorer needs `is_valid(solution, move)` and
+`make_move(solution, move)`. The optional `neighborhood_explorer_base` supplies
+its type aliases and Input access from the SolutionManager. Add other members
+as your algorithms and tools need them:
 
 | Member | Needed by |
 | --- | --- |
@@ -20,17 +20,12 @@ is optional, and you write it only if an algorithm or a tool you use needs it:
 | `inverse(solution, move, tabu_move)` | Tabu Search: whether a move is forbidden by one applied earlier |
 | `name()` | the interactive tester (chapter 13) |
 
-So an explorer used only by Simulated Annealing needs `random_move` and no
-enumeration at all, and the quick start, which runs only First Improvement,
-has no `random_move`. Use an explorer with an algorithm that needs a member it
-lacks, and the program does not compile: the error names the missing
-requirement.
+For example, Simulated Annealing needs random sampling but no enumeration.
+The quick start uses only First Improvement, so its explorer has no
+`random_move`. If an algorithm needs a missing member, the compiler names it.
 
-This is a change from EasyLocal 3, where a NeighborhoodExplorer derived from a
-base class with pure virtual functions and had to implement all of them,
-`FirstMove`, `NextMove` and `RandomMove` included, even when no algorithm in
-the program called some of them. Here the requirements come from the
-algorithms you actually compose, and are checked at compile time.
+Unlike EasyLocal 3's virtual interface, this lets you implement just the
+operations your program uses.
 
 The explorers of this tutorial implement both enumeration and sampling,
 because chapter 5 runs them with First Improvement and with Simulated
@@ -87,28 +82,21 @@ public:
 };
 ```
 
-- `is_valid(solution, move)` and `make_move(solution, move)` are required.
-  `is_valid` checks the move against an already valid solution: two distinct
-  positions, in order, inside the tour. `make_move` changes the solution in
-  place, here with one `std::swap`.
-- `moves(solution)` enumerates the moves for *deterministic* algorithms such
-  as First Improvement. Here it is a generator: each `co_yield` hands one move
-  to the runner and pauses until the runner asks for the next one. Any input
-  range whose elements convert to the move type works as well. Avoid filling a
-  container: the whole neighborhood would be built even when the runner stops
-  at its first move.
-- `random_move(solution, rng)` samples one move for *stochastic* algorithms
-  such as Simulated Annealing. It need not be uniform, but should be cheap: it
-  runs once per proposal. Here two positions are drawn, the second again until
-  it differs from the first, and put in order; every pair has the same
-  probability. Listing all the moves to pick one would cost a whole
-  neighborhood per proposal.
-- A tour with fewer than two cities has no swap moves, so `random_move` may
-  have no move to return. Its result is a `std::optional<SwapCities>`, a value
-  that either holds a `SwapCities` or is empty: `return SwapCities{...};`
-  returns one that holds a move, `return std::nullopt;` (the standard name
-  for "no value") an empty one. The caller tests it like a pointer,
-  `if (move)`, and reads the move with `*move`.
+- `is_valid` checks that the positions are distinct, ordered and within an
+  already valid tour. `make_move` applies the move in place with `std::swap`.
+- `moves(solution)` enumerates moves for algorithms such as First Improvement.
+  Each `co_yield` returns one move and pauses until the runner requests another.
+  This avoids building a whole container when the search may stop after the
+  first improvement. Other input ranges also work if their elements convert
+  to the move type.
+- `random_move(solution, rng)` samples a move for algorithms such as Simulated
+  Annealing. Here it draws two distinct positions and orders them, giving
+  every pair equal probability. Uniform sampling is optional, but sampling
+  should be cheap: avoid enumerating the neighborhood for each proposal.
+- A tour with fewer than two cities has no swap moves. The return type,
+  `std::optional<SwapCities>`, can hold either a move or no value. Return
+  `SwapCities{...}` on success and `std::nullopt` for an empty neighborhood.
+  The caller checks `if (move)` and reads the value with `*move`.
 
 `easylocal::neighborhood_explorer_base<SolutionManager, Move>` provides the
 aliases and the SolutionManager reference; like the SolutionManager base, it is
@@ -210,7 +198,8 @@ public:
         }
     }
 
-    // The moves that moves() lists: (0, n - 1) removes the same edge twice.
+    // The moves the cursor lists: (0, n - 1) would only reverse the tour,
+    // preserving the same edges in the symmetric TSP.
     bool is_valid(const Tour& tour, const TwoOpt& move) const
     {
         const auto n = tour.order.size();
@@ -228,14 +217,12 @@ public:
 
 - The moves are the pairs with `i + 2 <= j`: with `j = i + 1` the reversed
   segment would be a single city. The pair `i = 0`, `j = n − 1` is skipped
-  too: its two edges are the same edge, the one that closes the tour.
-- This explorer enumerates its moves with a **cursor** instead of a generator:
-  `first_move(tour, move)` writes the first move into `move`, and
-  `next_move(tour, move)` turns `move` into the one that follows it; both
-  return `false` when there is no such move. The runner calls `first_move`
-  once and then `next_move` until it stops or gets `false`. `first_move`
-  starts from `TwoOpt{0, 1}`, just before the first move, and lets
-  `next_move` find it.
+  too: the two edges meet at the first city, and reversing the remaining
+  cities would only traverse the same symmetric tour in the opposite direction.
+- This explorer uses a **cursor**. `first_move(tour, move)` fills in the first
+  move; `next_move(tour, move)` advances to the next. Both return `false` when
+  no move is available. Here `first_move` starts from `TwoOpt{0, 1}`, just
+  before the first valid move, and delegates the advance to `next_move`.
 - `make_move` reverses the segment in place. `std::span{tour.order}` is a view
   of the vector, and `subspan(offset, count)` narrows it to the `j − i`
   cities from position `i + 1`; `std::ranges::reverse` then reverses them in
@@ -254,12 +241,13 @@ The two explorers enumerate their moves in the two ways EasyLocal accepts:
 | where the position is kept | in the paused generator | in the move itself |
 | how it reads | nested loops, as if listing every move | a step from one move to the next |
 
-Both are lazy: a move is produced only when the runner asks for it, so First
-Improvement, which stops at the first improving move, never produces the rest.
-A generator is usually easier to write; a cursor needs no coroutine, and is the
-style of EasyLocal 3 explorers. When an explorer has both, the cursor is used.
-Algorithms do not see the difference: First Improvement and the other runners
-accept either explorer, and chapter 6 combines the two in one neighborhood.
+Both produce moves only as needed, so First Improvement stops enumeration
+when it finds an improvement. A generator is usually easier to write; a cursor
+needs no coroutine and matches the structure of EasyLocal 3 explorers. If an
+explorer provides both, the library uses the cursor.
+
+The choice does not affect how you compose the search. Runners accept either
+form, and chapter 6 combines these explorers in one neighborhood.
 
 ## See also
 

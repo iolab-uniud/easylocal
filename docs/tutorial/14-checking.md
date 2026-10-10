@@ -1,7 +1,8 @@
 # 14. Checking a composed problem
 
-Chapter 10 checked each component on its own. Once the components are composed
-into an app, two further levels of checking are available.
+Chapter 10 tested components individually. Now check that they work together:
+`check` validates the app, while Session checks inspect the neighborhood of
+a particular solution. Both are also available in the interactive tester.
 
 ## `check`: the app's contracts
 
@@ -18,13 +19,13 @@ EasyLocal tsp check: 503 checks passed
 composition: solution_managers=1, cost_components=1, neighborhoods=1, delta_bindings=1, runner_registrations=2
 ```
 
-`easylocal::check(app, input)` builds the app for the Input, takes the initial
-solution (or the one passed as third argument) and verifies the following,
-from that solution and from random ones, as the checks of chapter 10 do; a
-last argument, `testing::check_options`, sets the samples, the random
-solutions, the seed of its random draws and the tolerance of its cost
-comparisons (chapter 10), which forgives the rounding errors of a
-floating-point cost updated by deltas:
+`easylocal::check(app, input)` builds the services and tests them from the
+initial solution, or one supplied as the third argument. It also tries random
+solutions, as in chapter 10.
+
+An optional final `testing::check_options` argument controls sample counts,
+random walks, seed and comparison tolerance. The default tolerance allows for
+floating-point rounding in incremental costs. The report covers:
 
 | Check | What fails it |
 | --- | --- |
@@ -43,16 +44,20 @@ floating-point cost updated by deltas:
 | app configuration | invalid parameters of the app, or pipeline stages without distinct names |
 | parameter domain | a parameter of the app that declares no domain (chapter 9): give it a range, `one_of`, or `easylocal::unlimited` for any value |
 
-The report converts to `bool`, lists the failures (`failures()`), which name
-the move and the solution it starts from, and its `composition()` says how many
-components, neighborhoods, delta bindings and registrations the app composes.
-`print_report` prints both, and `testing::run_checks` takes the report with
-those of chapter 10. A hook that throws fails its check.
+Test the report as a `bool` to check success. `failures()` gives diagnostics,
+including the starting solution and move for move-related failures.
+`composition()` counts components, neighborhoods, delta bindings and
+registrations.
+
+Use `print_report` for readable output or pass the report to
+`testing::run_checks` alongside the component checks from chapter 10.
+Exceptions from hooks are reported as check failures.
 
 ## Session checks: the neighborhood of a solution
 
-`check` looks at one solution and a sample of moves. A Session (chapter 11)
-checks the whole neighborhood of its current solution:
+While `check` uses sampling limits, a Session can inspect the entire
+neighborhood of its current solution. This is useful when investigating a
+specific tour:
 
 <!-- snippet: tutorial/main.cpp:session-checks -->
 ```cpp
@@ -93,16 +98,13 @@ a `cost::tolerance` (1e-9 relative and absolute by default; `{0, 0}` compares
 exactly). The interactive tester of chapter 13 runs the same checks from
 its Move page: `C`, `D` and `U`.
 
-The last two compare values: `check_move_independence` compares the solution
-after each move with the others, as the search does (the SolutionManager's
-`equal`, or the solution's `==`), and `check_random_move_distribution` compares
-sampled moves with enumerated ones. The first compares only with those of the
-same hash, or of the same cost when the costs are ordered, as the tour lengths
-are; the second only with those of the same cost.
-So far the tutorial's types had no
-equality: to use these two checks, add it. Without it, everything else works:
-calling one of the two does not compile, and the interactive tester does not
-offer them (`D` and `U`), while its other neighborhood diagnostics stay.
+The last two checks need equality. `check_move_independence` compares resulting
+solutions using the SolutionManager's `equal` or the Solution's `==`.
+`check_random_move_distribution` compares sampled and enumerated moves.
+
+To reduce comparisons, independence checks group solutions by hash, or by cost
+when costs are ordered. Distribution checks compare moves with the same cost.
+Add equality to the tutorial's types to enable them:
 
 <!-- snippet: tutorial/tsp.hpp:equality -->
 ```cpp
@@ -124,9 +126,12 @@ inline bool operator==(const TwoOpt& a, const TwoOpt& b)
 }
 ```
 
-A member `bool operator==(const Tour&) const = default;` inside each struct is
-equivalent and shorter, when you can change the type; free functions, as here,
+When you can edit a type, a defaulted member such as
+`bool operator==(const Tour&) const = default;` is shorter. Free functions
 also work for types you cannot change. C++20 derives `!=` from `==`.
+
+Without equality, these two checks do not compile and the tester hides their
+`D` and `U` commands. Other neighborhood diagnostics remain available.
 
 ## See also
 

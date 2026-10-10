@@ -1,16 +1,13 @@
 # 4. Delta evaluation
 
-To evaluate a move without a delta cost component, EasyLocal applies it to a copy
-of the tour and evaluates `TourLength` on the copy: a pass over the whole tour
-for every move. A move changes only a few edges, though, and its effect on the
-length could be computed from those edges alone. A **delta cost component** does
-that.
+So far, evaluating a move means copying the tour, applying the move and
+recomputing its length. A **delta cost component** computes the change
+directly from the affected edges. For 2-opt, this reduces evaluation from a
+pass over the tour to four distance lookups.
 
-For swap moves, such a delta is possible but fiddly: the edges around the two
-positions overlap when the positions are adjacent or one apart, also across the
-end of the tour, and each case needs its own formula. A 2-opt move always
-changes exactly two edges (chapter 3), so its delta is one formula; the swap
-moves stay without one.
+We add a delta for 2-opt because it always replaces two edges. Swap deltas
+need more care: adjacent or nearby positions can share affected edges,
+including across the end of the tour. We leave swaps on full evaluation.
 
 ## The delta cost component
 
@@ -62,12 +59,11 @@ auto nhe =
   re-evaluated on a candidate solution. When every component has one, no
   candidate solution is built.
 
-> **When not to write a delta.** A delta pays off when it looks at the part of
-> the solution the move touches. If computing it means looking at the whole
-> solution, for example recounting the load of every machine to know the load
-> of two, it costs as much as a full evaluation: leave the component without a
-> delta and let EasyLocal evaluate it on the candidate solution, with no code
-> to write and check. The Assignment and Exam Timetabling examples do so.
+> **Write a delta when it saves work.** If computing the change requires
+> scanning the whole solution, full evaluation is often just as cheap.
+> Leave that component without a delta and let EasyLocal evaluate the
+> candidate. The Assignment and Exam Timetabling examples use this fallback
+> to avoid code that adds no speed benefit.
 
 ## Choice: separate or co-located
 
@@ -127,32 +123,30 @@ organised:
 | recipe | `delta<TourLength, TwoOptLengthDelta>()` | `delta<TourLengthWithDelta>()` |
 | fits | a component reused by several neighborhoods, each with its own delta, or one without a delta | a component that serves a single neighborhood |
 
-A separate delta cost component keeps the component unaware of the moves: `TourLength`
-does not mention `TwoOpt`, so it serves unchanged any neighborhood, with or
-without a delta, and a new neighborhood only adds a new delta cost component.
-`TourLengthWithDelta` instead depends on the move type of its delta. In
-exchange it is one class instead of two, and since `evaluate` and
-`delta_evaluate` run on the same object, they can share data the component
-prepares once. The rest of the tutorial uses the separate version.
+A separate delta keeps `TourLength` independent of `TwoOpt`. You can reuse the
+component with any neighborhood and add deltas as needed.
+
+The co-located version uses one class, but ties it to the move type. Its
+`evaluate` and `delta_evaluate` members share an object, so they can also share
+precomputed data. The rest of this tutorial uses the separate version.
 
 Chapter 10 shows how to check that a delta agrees with the full evaluation.
 
 ## Checking the deltas during a run
 
-A delta that is wrong only on some solutions may pass the checks of chapters
-10 and 14 and still mislead a long search. Defining `EASYLOCAL_VERIFY_DELTAS`
-(`-DEASYLOCAL_VERIFY_DELTAS`, or `target_compile_definitions`) makes every
-search re-evaluate the solution after each move it keeps and compare the value
-of each component with the one its delta gave; at the first disagreement the
-program stops with the component's position:
+A delta bug may appear only after many moves. To check the solutions a search
+actually visits, compile with `-DEASYLOCAL_VERIFY_DELTAS` or set the definition
+through `target_compile_definitions`. After every committed move, the search
+compares each component's incremental value with its full evaluation. The
+first disagreement stops the program and identifies the component:
 
 ```text
 EASYLOCAL_VERIFY_DELTAS: the delta of cost component #1 disagrees with its full evaluation after a move
 ```
 
-A floating-point value is compared within 1e-9, relative. The check costs a
-full evaluation per accepted move: it is for debugging, not for the runs that
-count.
+Floating-point values are compared with a relative tolerance of 1e-9.
+This adds a full evaluation per accepted move, so enable it for debugging
+and disable it for performance measurements.
 
 ## See also
 

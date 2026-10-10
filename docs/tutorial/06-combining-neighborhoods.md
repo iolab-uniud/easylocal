@@ -1,11 +1,11 @@
 # 6. Combining neighborhoods
 
-The tour has two neighborhoods, both from chapter 3: the swap moves, listed by
-a generator and without a delta cost component, and the 2-opt moves, listed by a
-cursor and with the delta cost component of chapter 4. A search can use both.
+We now have two ways to change a tour: swaps and 2-opt. Combining them lets a
+search try improvements that either neighborhood alone might miss.
 
-`neighborhood_union` combines the two explorers into one; each child keeps its
-own move type:
+`neighborhood_union` combines the explorers without changing either one.
+Swaps keep their generator, 2-opt keeps its cursor, and each keeps its own
+move type:
 
 <!-- snippet: tutorial/main.cpp:union -->
 ```cpp
@@ -31,14 +31,15 @@ auto union_sa =
 
 - Deterministic algorithms enumerate the children in order, each in its own
   way: the swap moves from the generator, the 2-opt moves from the cursor.
-- The union evaluates a component by deltas only when every child has a delta
-  for it: here the swap has none for `TourLength`, so the moves of both
-  children are evaluated in full on a candidate tour, the 2-opt moves too. To
-  keep `TwoOptLengthDelta`, give the swap a delta for `TourLength` as well.
-- Random sampling picks a child according to the biases (here three 2-opt
-  proposals for every swap), then asks it for a move. A zero bias disables a
-  child; a child that cannot produce a move is excluded and another one is
-  drawn. The biases are configurable through `NeighborhoodUnionParameters`.
+- Delta evaluation requires a delta for the component in every child. Swaps
+  have none for `TourLength`, so this union evaluates both kinds of move on a
+  candidate tour. Add a swap delta to let the union use `TwoOptLengthDelta`
+  as well.
+- Random sampling selects a child according to its bias, then asks for a move.
+  Here 2-opt is chosen with probability 3/4. A zero bias excludes a child from
+  random selection; enumeration still includes it. If a child has no move,
+  the union excludes it and tries another. Configure the biases through
+  `NeighborhoodUnionParameters`.
 - Unions nest, and traces report the route of every move through the nesting
   (chapter 16).
 

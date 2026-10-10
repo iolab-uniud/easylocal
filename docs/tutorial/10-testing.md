@@ -1,8 +1,9 @@
 # 10. Testing your components
 
-`<easylocal/testing.hpp>` checks that your components honour their contracts.
-All checks share one fixture: a small Input, a valid Solution and the
-SolutionManager built on them.
+Before trusting search results, check that moves preserve valid solutions and
+deltas agree with full evaluation. `<easylocal/testing.hpp>` supplies these
+checks so you can run them in your test suite. They share a fixture containing
+a small Input, a valid Solution and its SolutionManager:
 
 <!-- snippet: tutorial/checks.cpp:fixture -->
 ```cpp
@@ -40,43 +41,42 @@ return elt::run_checks(
 | `check_neighborhood<NHE>(f)` | enumerated and sampled moves are valid, keep the solution valid and change it; random moves are enumerated ones, drawn from the generator given |
 | `check_delta_cost_component<NHE, Component, Delta>(f)` | `value + delta` equals the full re-evaluation after each valid move |
 
-The move checks start from the fixture's Solution and from a few random
-solutions (`random_solution`, then some random moves): a delta can be right on
-one solution and wrong on the others. The fixture above is not the identity
-tour for the same reason: on `0, 1, 2, 3, 4` position `k` holds city `k`, so a
-delta that reads `distance[i][j]` where it should read
-`distance[order[i]][order[j]]` would pass. A failure names the move, the
-solution it starts from and the two values that disagree; the failures of one
-check are printed together, three of them, and a hook that throws fails the
-check instead of stopping the program.
+Move checks use both the fixture's solution and random solutions followed by
+random walks. This helps catch deltas that work on one tour but fail on another.
+
+The fixture deliberately uses a shuffled tour. On `0, 1, 2, 3, 4`, city
+identifiers equal their positions, so a delta could incorrectly use
+`distance[i][j]` instead of `distance[order[i]][order[j]]` and still pass.
+
+Failures identify the move, starting solution and disagreeing values. The
+report prints up to three failures per check. A hook that throws fails its
+check without stopping the remaining checks.
 
 For a co-located delta (chapter 4) omit the third type, as for
 `TourLengthWithDelta` above: the check then uses the component's own
 `delta_evaluate`.
 
-Without a Solution, `fixture<SM>{input}` uses the SolutionManager's initial
-solution. A third argument sets the sampling limits, the random solutions and
-the seed of the random draws (`{.random_samples = 16, .max_enumerated_moves =
-256, .random_solutions = 4, .walk_length = 8, .seed = 7}`) and the tolerance of
-the comparisons. Values are compared with
-`testing::approximately`: floating-point values within a relative and an
-absolute tolerance (1e-9 by default), since a length updated by deltas differs
-from the full one in the last bits, and the others exactly;
-`{.tolerance = {.relative = 0, .absolute = 0}}` compares exactly, and a second
-template argument replaces the comparison. A
-component that cannot be built from the Input alone is passed as an object:
-`check_cost_component(f, TourLength{...})`; the same holds for
-neighborhoods and delta cost components. The component checks are not in the
-Core umbrella, which brings only what `check(app)` uses (the options and the
-reports): include `testing.hpp` from your test executables.
+`fixture<SM>{input}` uses the initial solution when none is supplied. A third
+argument controls sampling, random walks and seed, for example
+`{.random_samples = 16, .max_enumerated_moves = 256, .random_solutions = 4,
+.walk_length = 8, .seed = 7}`.
 
-These checks sample the solutions they try. To check every move a real
-search keeps, build the program with `EASYLOCAL_VERIFY_DELTAS` defined
-([chapter 4](04-delta-evaluation.md#checking-the-deltas-during-a-run)): after
-each committed move the search evaluates the solution in full and, at the
-first component whose value from the deltas disagrees, prints its position
-and aborts. It costs a full evaluation per accepted move, so it belongs to
-debugging builds.
+Comparisons use `testing::approximately`, with relative and absolute
+floating-point tolerances of 1e-9 by default. This allows for rounding drift
+from incremental updates. Other values are compared exactly. Set
+`{.tolerance = {.relative = 0, .absolute = 0}}` for exact comparison, or provide
+a second fixture template argument to replace the comparison policy.
+
+If a component needs more than the Input to construct it, pass an object:
+`check_cost_component(f, TourLength{...})`. Explorers and deltas support the
+same form. Include `testing.hpp` in your test executable; the Core umbrella
+provides the options and reports for `check(app)`, but not these individual
+checks.
+
+For bugs that appear only during a longer search, enable
+[`EASYLOCAL_VERIFY_DELTAS`](04-delta-evaluation.md#checking-the-deltas-during-a-run)
+in a debug build. It compares incremental and full evaluation after every
+committed move.
 
 For a whole composed problem, `easylocal::check(app, input)` runs the same
 checks against an app ([chapter 14](14-checking.md)).

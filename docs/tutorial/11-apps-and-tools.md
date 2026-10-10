@@ -1,10 +1,9 @@
 # 11. Applications
 
-A runner (chapter 5) is one algorithm on one problem. An **app** packages the
-whole problem: a name, the SolutionManager, the neighborhood, and the runners
-available on it, each under a name of its own. A **Session** puts an app to
-work on one Input. The interactive tester, the checks and the REST service of
-the next chapters all start from an app.
+An **app** packages the problem recipes and gives each available algorithm a
+name. A **Session** uses that app on one Input and keeps a current solution.
+Together they let the command line, interactive tester and REST service reuse
+the same problem definition and parameter settings.
 
 ## The app
 
@@ -26,20 +25,19 @@ auto piped_application = el::app("tsp") | sm | nhe
         {.temperature = {.samples_per_temperature = 50}});
 ```
 
-- An app is a description, like the recipes it holds: it builds nothing and
-  runs nothing by itself.
-- A runner is registered by its algorithm class and a name, optionally with its
-  parameters (`parameters_type`). They are stored in the app and can be changed
-  later with `runner_parameters<Algorithm>("name")`.
+- The app is a description. Binding it will construct the services.
+- Register a runner with its algorithm class, a name and optional parameters.
+  The app stores the parameters; change them later through
+  `runner_parameters<Algorithm>("name")`.
 - Simulated Annealing is registered with its parameters, those of its
   temperature policy as a group: `runners::SimulatedAnnealing<Classic>` takes
   `SimulatedAnnealingParameters<ClassicParameters>`, whose `temperature` is the
   policy's and whose `max_evaluations` bounds the run.
 - The two spellings are equivalent: `with_*` calls, or pipes with
   `el::runner<Algorithm>(name, parameters)` for each registration.
-- A registration is checked when it is added: an algorithm that cannot run
-  on the app's neighborhood (First Improvement on an explorer without
-  `moves()`) does not compile there.
+- Registration checks compatibility at compile time. For example, First
+  Improvement needs an explorer that can enumerate moves, through `moves()`
+  or a cursor.
 - An app also registers pipelines of stages, `el::pipeline("name", stages...)`,
   run by name like a runner; a stage may be an algorithm on the app's recipes,
   `stage<A>(name, parameters)` (chapter 8).
@@ -49,9 +47,9 @@ auto piped_application = el::app("tsp") | sm | nhe
 
 ## The Session
 
-A Session is the app at work on one Input. It owns the Input, builds the
-services for it, and keeps a *current solution*, which you change by hand, one
-move at a time, or by running a registered runner:
+A Session owns its Input, constructs the services and keeps a *current
+solution*. You can inspect and change that solution one move at a time,
+or run an algorithm to improve it:
 
 <!-- snippet: tutorial/main.cpp:session -->
 ```cpp
@@ -71,19 +69,18 @@ const double session_cost = session.evaluate();
 const Tour session_tour = session.solution(); // a copy: the session goes on
 ```
 
-- `el::Session{application, tsp, seed}` copies the app and the Input: the
-  session owns both, so it can outlive the variables it was built from. The
-  seed (0 when it is left out) starts the RNG that draws the session's random
-  solutions and moves and seeds its runs, so the same seed repeats the same
-  session. For another Input, build another Session.
+- `el::Session{application, tsp, seed}` copies the app and Input, so the
+  session can outlive both source variables. Its seed defaults to 0 and
+  controls random solutions, moves and run seeds. Repeating the same commands
+  with the same seed reproduces the session. Create a new Session for another
+  Input.
 - `use_initial_solution()` makes the initial tour the current solution
   (`use_random_solution()` makes a random one, with the session's RNG).
-- A step by hand takes two calls: `use_first_improving_move()` *selects* the
-  first move that improves the current solution, and `apply_move()` applies
-  it. The selection returns `false` when there is no such move, on a local
-  optimum for example. `use_first_move`, `use_next_move`, `use_best_move` and
-  `use_random_move` select in other ways; `evaluate_move()` gives the cost the
-  selected move would lead to.
+- Select a move with `use_first_improving_move()`, then apply it with
+  `apply_move()`. Selection returns `false` if no improvement exists. Other
+  selectors include `use_first_move`, `use_next_move`, `use_best_move` and
+  `use_random_move`. Before applying a move, `evaluate_move()` shows its
+  resulting cost.
 - `run("sa")` runs the runner registered as `"sa"` from the current solution,
   and makes its result the current solution. It returns `false` when no runner
   has that name.
@@ -91,9 +88,9 @@ const Tour session_tour = session.solution(); // a copy: the session goes on
   `solution()` returns a reference to the session's solution, which the next
   command may replace: copy it to keep it, as here.
 
-The selections and `run` are `[[nodiscard]]`: the compiler warns when their
-result is ignored, since a misspelt runner name would otherwise run nothing,
-silently.
+Selection functions and `run` are `[[nodiscard]]`. Check their results so a
+missing move or misspelt runner name does not silently leave the session
+unchanged.
 
 Each `run` builds fresh services from the app, with the runner's current
 parameters, so runs share nothing but the immutable Input.
@@ -137,12 +134,14 @@ flowchart TB
 
 ### Parameters and targets
 
-The parameters of an app are those of its parts, by path:
-`runners.<name>.*` for each runner's algorithm, `cost.*` for the weights of
-its cost expression and the parameters of its components and functions,
-`solution_manager.*` for its SolutionManager's, and `neighborhood.*` for its
-explorer's or the biases of a neighborhood union. The session changes them,
-and stops a run at a target cost:
+The app gathers its parts' parameters under these paths:
+
+- `runners.<name>.*`: the named algorithm;
+- `cost.*`: expression weights and configurable components or functions;
+- `solution_manager.*`: the SolutionManager;
+- `neighborhood.*`: the explorer or union biases.
+
+Use the Session to update these values and run toward a target cost:
 
 <!-- snippet: tutorial/main.cpp:session-parameters -->
 ```cpp
@@ -158,24 +157,20 @@ if (!session.run("sa", el::stop_at(session.read_cost("26"))))
     return 1;
 ```
 
-- `configure(changes)` applies `path = value` changes as chapter 9 does: all
-  of them, checked, or none. They change the session's own copy of the app,
-  and the session rebuilds its services, so `evaluate()` and the moves follow;
-  the current solution stays. Its result lists the errors, and must be read:
-  a misspelt path is one. `configuration()` lists the parameters with their
-  current values.
-- `read_cost("26")` reads a cost written as text: a number, `[hard, soft]` for
-  a hierarchical cost, or the problem's own notation when it provides
-  `read_cost(const Tsp&, std::string_view)`. `el::stop_at(cost)` makes the run
-  stop at the first solution that reaches it, a known optimum or a lower
-  bound for example.
+- `configure(changes)` validates all `path = value` overrides before applying
+  any. Successful changes update the session's app and rebuild its services,
+  while keeping the current solution. Check the returned diagnostics for
+  errors such as unknown paths. `configuration()` lists the current settings.
+- `read_cost("26")` parses a target. Use a number for a scalar cost or
+  `[hard, soft]` for a hierarchical one. A problem can supply its own parser,
+  `read_cost(const Tsp&, std::string_view)`. Pass the result to `el::stop_at`
+  to stop when the search reaches that cost or better.
 
 ## A command-line program
 
-`el::cli::run`, from `<easylocal/app/cli.hpp>`, turns an app into a complete
-program: it reads the instance, the seed, the runner and the app's parameters
-from the command line, runs the runner on a Session and prints the result.
-The whole `main` of `examples/tutorial/cli_main.cpp` is:
+`el::cli::run`, from `<easylocal/app/cli.hpp>`, handles command-line parsing,
+instance loading, execution and output. Define the app and let it provide
+the standard program flow, as in `examples/tutorial/cli_main.cpp`:
 
 <!-- snippet: tutorial/cli_main.cpp:cli -->
 ```cpp
@@ -217,18 +212,15 @@ termination completed
 | `--trace <file>` | record the [trace](../tracing.md) of the run, with timestamps: JSON Lines for a `.jsonl` name, ELTR otherwise |
 | `--config <file>` | the same settings from a file (chapter 9); `--help` lists them all |
 
-- It prints `cost`, `time` (the seconds of the run), the effort of the run
-  when the algorithm reports it (the built-in ones do: `iterations`,
-  `evaluations` and `termination`, why it stopped) and the solution. The exit
-  status is 0 after a run, 2 for an invalid command line (an unknown runner,
-  a missing instance) and 1 when the run fails, for example on an unreadable
-  file.
-- Parameters of the program's own take part as a parameter set, parsed with
-  the others: `el::cli::run(application, argc, argv, {.program_parameters = own})`,
-  where `own` holds blocks that outlive the call (chapter 9).
-- The values of the switches when the command line does not give them come
-  from `defaults`, a `cli::CommandLineParameters`: the examples of `examples/` start
-  from their own instance with
+- Output includes the cost, elapsed seconds and solution. Built-in algorithms
+  also report iterations, evaluations and the termination reason. Exit status
+  is 0 after a run, 2 for invalid arguments and 1 for an execution failure,
+  such as an unreadable file.
+- Add program-specific parameters with
+  `el::cli::run(application, argc, argv, {.program_parameters = own})`.
+  The blocks referenced by `own` must outlive the call (chapter 9).
+- Set default switches through `defaults`, a `cli::CommandLineParameters`.
+  For example:
   `{.defaults = {.instance = "...", .seed = 2026, .start = "initial"}}`.
 - A program that needs more, such as several runs or a solver, builds the same
   steps from `el::config::load_and_apply` and a Session; see the
@@ -239,10 +231,9 @@ parameter paths and targets.
 
 ### A report of the cost components
 
-With `--report true`, `cli::run` also prints the value of each cost component
-of the final solution. A component can take part in the report with two
-optional members, a name and a text that explains its value; `TourLength`
-lists the edges it adds up:
+Use `--report true` to see how each component contributes to the final cost.
+Two optional members give a component a name and explanatory text. Here
+`TourLength` lists the edges it adds up:
 
 <!-- snippet: tutorial/tsp.hpp:component-text -->
 ```cpp
