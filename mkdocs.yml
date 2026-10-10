@@ -59,6 +59,10 @@ extra_css:
 markdown_extensions:
   - admonition
   - attr_list
+  # Icon shortcodes, :material-file-pdf-box: and the like, as inline SVG.
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - tables
   - toc:
       permalink: true

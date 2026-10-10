@@ -121,8 +121,9 @@ def prepare(page, text, figures):
     pages by their files; a PDF has neither, so the blocks that only a browser
     can draw become pictures and the links become links to the site.
     """
-    # The line that offers the PDF of the section, which is the PDF itself.
-    text = re.sub(r"^\*This section is also \[a PDF\].*\n\n", "", text, flags=re.M)
+    # The line that offers the PDF of the section, which is the PDF itself: it
+    # carries the class the site hides it with when a page is printed.
+    text = re.sub(r"^[^\n]*\{ \.pdf-of-this-section \}\n\n", "", text, flags=re.M)
     # The markers the snippets of the examples are checked against.
     text = re.sub(r"^<!-- snippet:[^\n]*-->\n", "", text, flags=re.M)
     # A diagram: the SVG that scripts/mermaid-svg.py drew from this block.

@@ -8,7 +8,7 @@ pages that describe the components in full.
 If you have not done so yet, start with the [quick start](../quick-start.md):
 it is the complete program of the first chapters, in one file.
 
-*This section is also [a PDF](https://iolab-uniud.github.io/easylocal/pdf/easylocal-tutorial.pdf), built with the site.*{ .pdf-of-this-section }
+*:material-file-pdf-box: This section is also [a PDF](https://iolab-uniud.github.io/easylocal/pdf/easylocal-tutorial.pdf), built with the site.*{ .pdf-of-this-section }
 
 ## The running example
 

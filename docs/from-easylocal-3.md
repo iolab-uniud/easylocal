@@ -17,7 +17,7 @@ that compare the two versions, abridged, on the last EasyLocal 3 release,
 the EasyLocal 4 code is the tutorial's, which is compiled and tested at every
 build.
 
-*This section is also [a PDF](https://iolab-uniud.github.io/easylocal/pdf/easylocal-coming-from-easylocal-3.pdf), built with the site.*{ .pdf-of-this-section }
+*:material-file-pdf-box: This section is also [a PDF](https://iolab-uniud.github.io/easylocal/pdf/easylocal-coming-from-easylocal-3.pdf), built with the site.*{ .pdf-of-this-section }
 
 ## Before you start
 

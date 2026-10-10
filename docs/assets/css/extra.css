@@ -5,3 +5,10 @@
     display: none;
   }
 }
+
+/* Its icon takes the colour of the links around it, rather than the black of
+   the text, so that the line reads as the offer it is. */
+.pdf-of-this-section .twemoji {
+  color: var(--md-primary-fg-color);
+  vertical-align: -0.15em;
+}
