@@ -1,6 +1,6 @@
-// The deltas of a neighborhood union: a component is evaluated by the deltas of
-// the children when every child has one for it, each child with its own, and
-// in full for the moves of every child when one child has none.
+// The deltas of a neighborhood union: a component is evaluated by the delta of
+// the child the move comes from, and in full, on a copy of the solution with
+// the move made, only for the moves of the children that have no delta for it.
 #include "../examples/tutorial/tsp.hpp"
 
 #include <easylocal/helpers/neighborhood_union.hpp>
@@ -100,15 +100,19 @@ int main()
     // Every evaluation but the initial solution's is a delta.
     assert(CountedTwoOptDelta::calls + CountedSwapDelta::calls == evaluations - 1);
 
-    // The swaps have no delta: the 2-opt delta is not called either, and every
-    // move is evaluated in full.
+    // The swaps have no delta: their moves are evaluated in full, the 2-opt
+    // moves keep their delta. The trajectory is the one above, so the 2-opt
+    // delta is called as many times as when both children had one.
+    const auto two_opt_calls = CountedTwoOptDelta::calls;
     CountedTwoOptDelta::calls = 0;
-    const auto full_evaluations = run_best_improvement(
+    CountedSwapDelta::calls = 0;
+    const auto partial_evaluations = run_best_improvement(
         el::neighborhood_union(
             el::neighborhood<TwoOptExplorer>()
                 | el::delta<TourLength, CountedTwoOptDelta>(),
             el::neighborhood<SwapExplorer>()));
-    assert(full_evaluations > 0);
-    assert(CountedTwoOptDelta::calls == 0);
+    assert(partial_evaluations == evaluations);
+    assert(CountedTwoOptDelta::calls == two_opt_calls);
+    assert(CountedSwapDelta::calls == 0);
     return 0;
 }

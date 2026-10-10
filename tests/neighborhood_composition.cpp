@@ -302,6 +302,48 @@ private:
     const AssignmentSolutionManager& solution_manager_;
 };
 
+// The capacity delta of the tests, counting the moves it is called on: a
+// union whose children do not all have a delta must still use it for the moves
+// of the child that does.
+class CountingReassignCapacityDelta : public ReassignCapacityDelta
+{
+public:
+    using ReassignCapacityDelta::ReassignCapacityDelta;
+
+    static inline std::size_t calls = 0;
+
+    [[nodiscard]]
+    CapacityDelta delta_evaluate(
+        const AssignmentSolution& solution,
+        const ReassignJobMove& move) const
+    {
+        ++calls;
+        return ReassignCapacityDelta::delta_evaluate(solution, move);
+    }
+};
+
+// The cost of every move of the neighborhood, from the evaluation the runner
+// gives the algorithm.
+class EvaluateEveryMove
+{
+public:
+    template<class Context>
+    [[nodiscard]]
+    auto run(const Context& context, typename Context::solution_type solution) const
+        -> std::vector<typename Context::cost_type>
+    {
+        const auto& neighborhood = context.neighborhood_explorer();
+        const auto evaluation = context.evaluation();
+        const auto current = evaluation.evaluate(solution);
+
+        std::vector<typename Context::cost_type> costs;
+        for (const auto& move : neighborhood.moves(solution))
+            costs.push_back(evaluation.evaluate_move(solution, current, move).cost());
+
+        return costs;
+    }
+};
+
 class CollectNeighborhoodEffects
 {
 public:
@@ -476,8 +518,8 @@ int main()
         neighborhood<SwapNeighborhoodExplorer>()))::service_type;
 
     static_assert(
-        std::tuple_size_v<typename PartialDeltaUnionExplorer::delta_bindings_type> == 0,
-        "a missing child delta removes that component from the union delta intersection");
+        std::tuple_size_v<typename PartialDeltaUnionExplorer::delta_bindings_type> == 1,
+        "a union binds a component any child has a delta for, partially");
 
     using ConfiguredSolutionManager =
         typename decltype(default_solution_manager_recipe())::service_type;
@@ -488,8 +530,9 @@ int main()
         ConfiguredSolutionManager,
         PartialDeltaUnionExplorer>;
 
-    // Every candidate keeps its move; without a delta for every component, the
-    // move is evaluated on a scratch solution.
+    // Every candidate keeps its move; with a delta that covers some moves
+    // only, a move may be evaluated on a scratch solution, and the moves the
+    // delta covers are not.
     static_assert(StoresMove<typename AllDeltaEvaluation::candidate_type>);
     static_assert(StoresMove<typename PartialDeltaEvaluation::candidate_type>);
     static_assert(!AllDeltaEvaluation::materializes_candidates);
@@ -529,6 +572,40 @@ int main()
     ok &= expect(
         effects == expected_effects,
         "n-ary union lazily concatenates child neighborhoods in declaration order and dispatches moves to the originating child");
+
+    // A union whose children do not all have a delta for a component uses the
+    // delta of the child the move comes from, and evaluates in full only the
+    // moves of the children that have none.
+    {
+        auto evaluate_with_partial_delta = Runner{EvaluateEveryMove{}}
+            | default_solution_manager_recipe()
+            | neighborhood_union(
+                neighborhood<ReassignJobNeighborhoodExplorer>()
+                    | delta<CapacityCostComponent, CountingReassignCapacityDelta>(),
+                neighborhood<SwapNeighborhoodExplorer>());
+        auto evaluate_without_delta = Runner{EvaluateEveryMove{}}
+            | default_solution_manager_recipe()
+            | neighborhood_union(
+                neighborhood<ReassignJobNeighborhoodExplorer>(),
+                neighborhood<SwapNeighborhoodExplorer>());
+        auto count_reassign_moves = Runner{CollectNeighborhoodEffects{}}
+            | default_solution_manager_recipe()
+            | neighborhood<ReassignJobNeighborhoodExplorer>();
+
+        CountingReassignCapacityDelta::calls = 0;
+        const auto with_delta = evaluate_with_partial_delta.bind(instance).run(initial);
+        const auto delta_calls = CountingReassignCapacityDelta::calls;
+        const auto without_delta = evaluate_without_delta.bind(instance).run(initial);
+        const auto reassign_moves =
+            count_reassign_moves.bind(instance).run(initial).size();
+
+        ok &= expect(
+            with_delta == without_delta,
+            "a partial union delta gives the costs of the full evaluation");
+        ok &= expect(
+            delta_calls == reassign_moves && reassign_moves > 0,
+            "a partial union delta is used for every move of the child that has it");
+    }
 
     auto first_runner = easylocal::make_runner<FirstImprovement>({.max_evaluations = 32})
         | default_solution_manager_recipe()

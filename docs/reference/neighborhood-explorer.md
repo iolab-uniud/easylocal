@@ -125,10 +125,12 @@ neighborhood_union(child_recipe_1, child_recipe_2, ...)
 ```
 
 - The move type is a variant of the children's moves. A component is
-  evaluated by deltas only when every child has a delta for it, each child
-  then using its own; when one child has none, the moves of every child are
-  evaluated in full for that component (a delta for every child is the
-  remedy).
+  evaluated by the delta of the child the move comes from, each child using
+  its own; the moves of a child that has no delta for it are evaluated in
+  full, on a copy of the solution with the move made, and the moves of the
+  other children keep their deltas. A copy is made only for a move that needs
+  one, so a union where every child has a delta for every component never
+  makes one.
 - Enumeration visits the children in order.
 - Sampling draws a child with probability proportional to its bias, excluding
   zero-bias children and children that produced no move, until a move is found

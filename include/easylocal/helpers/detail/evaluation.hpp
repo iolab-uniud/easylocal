@@ -16,6 +16,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
+#include <optional>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -210,6 +211,23 @@ concept delta_binding_for =
         } -> std::same_as<Value>;
     };
 
+// A delta that covers some moves only, which a neighborhood union forwards
+// from the children that have one: it gives the new value of the component, or
+// nothing for a move whose child has no delta, which is then evaluated on the
+// candidate solution.
+template<class Binding, class Component, class Move, class Solution, class Value>
+concept partial_delta_binding_for =
+    std::same_as<typename Binding::component_type, Component>
+    && requires(
+        const Binding& binding,
+        const Solution& solution,
+        const Move& move,
+        const Value& value) {
+           {
+               binding.try_apply(value, solution, move)
+           } -> std::same_as<std::optional<Value>>;
+       };
+
 template<class SM, class Binding>
 inline constexpr bool delta_component_active_v =
     component_evaluation_solution_manager<SM> &&
@@ -253,11 +271,17 @@ consteval bool delta_binding_compatible()
             typename SM::component_values_type>;
 
         return delta_binding_for<
-            Binding,
-            component_type,
-            typename NHE::move_type,
-            typename SM::solution_type,
-            value_type>;
+                   Binding,
+                   component_type,
+                   typename NHE::move_type,
+                   typename SM::solution_type,
+                   value_type>
+            || partial_delta_binding_for<
+                Binding,
+                component_type,
+                typename NHE::move_type,
+                typename SM::solution_type,
+                value_type>;
     }
 }
 
@@ -370,16 +394,53 @@ private:
         return has_unique_delta_binding<component_type, count>();
     }
 
-    template<std::size_t... ComponentIndices>
+    // Whether the delta of the component covers every move: a partial one,
+    // which a neighborhood union forwards from some of its children, leaves
+    // the moves of the others to the full evaluation.
+    template<std::size_t ComponentIndex, std::size_t DeltaIndex = 0>
     [[nodiscard]]
-    static consteval bool needs_materialized_candidate_impl(
-        std::index_sequence<ComponentIndices...>)
+    static consteval bool has_total_delta()
     {
-        return ((!has_delta<ComponentIndices>()) || ...);
+        using component_type = std::tuple_element_t<ComponentIndex, component_types>;
+
+        if constexpr (DeltaIndex >= std::tuple_size_v<delta_bindings_type>)
+        {
+            return false;
+        }
+        else
+        {
+            using binding_type = std::tuple_element_t<DeltaIndex, delta_bindings_type>;
+
+            if constexpr (std::same_as<
+                              typename binding_type::component_type,
+                              component_type>)
+            {
+                return delta_binding_for<
+                    binding_type,
+                    component_type,
+                    typename NHE::move_type,
+                    typename SM::solution_type,
+                    std::tuple_element_t<ComponentIndex, component_values_type>>;
+            }
+            else
+            {
+                return has_total_delta<ComponentIndex, DeltaIndex + 1>();
+            }
+        }
     }
 
+    template<std::size_t... ComponentIndices>
     [[nodiscard]]
-    static consteval bool needs_materialized_candidate()
+    static consteval bool may_materialize_candidate_impl(
+        std::index_sequence<ComponentIndices...>)
+    {
+        return ((!has_total_delta<ComponentIndices>()) || ...);
+    }
+
+    // Whether a move may be evaluated on a copy of the solution with the move
+    // made: when a component has no delta, or one that covers some moves only.
+    [[nodiscard]]
+    static consteval bool may_materialize_candidate()
     {
         if constexpr (!component_aware)
         {
@@ -387,20 +448,22 @@ private:
         }
         else
         {
-            return needs_materialized_candidate_impl(
-                std::make_index_sequence<
-                    std::tuple_size_v<component_types>>{});
+            return may_materialize_candidate_impl(
+                std::make_index_sequence<std::tuple_size_v<component_types>>{});
         }
     }
 
-    template<std::size_t ComponentIndex, std::size_t DeltaIndex = 0>
+    // The value of one component after the move: from its delta, total or
+    // partial, or from the candidate solution, which provide_candidate() makes
+    // on the first component that needs it.
+    template<std::size_t ComponentIndex, std::size_t DeltaIndex = 0, class Candidate>
     [[nodiscard]]
     std::tuple_element_t<ComponentIndex, component_values_type>
     evaluate_component_for_move(
         const typename SM::solution_type& current_solution,
         const component_values_type& current_values,
         const typename NHE::move_type& move,
-        const typename SM::solution_type* materialized_candidate) const
+        Candidate& provide_candidate) const
     {
         using component_type =
             std::tuple_element_t<ComponentIndex, component_types>;
@@ -422,42 +485,64 @@ private:
                         component_type,
                         typename NHE::move_type,
                         typename SM::solution_type,
-                        value_type>,
+                        value_type>
+                        || partial_delta_binding_for<
+                            binding_type,
+                            component_type,
+                            typename NHE::move_type,
+                            typename SM::solution_type,
+                            value_type>,
                     "attached delta cost component is incompatible with its component, "
                     "Solution, or Move");
 
-                return std::get<DeltaIndex>(neighborhood_.delta_bindings())
-                    .apply(
+                // A neighborhood union returns its bindings by value: the
+                // reference is kept alive here, not on the temporary.
+                auto&& bindings = neighborhood_.delta_bindings();
+                const auto& binding = std::get<DeltaIndex>(bindings);
+
+                if constexpr (has_total_delta<ComponentIndex>())
+                {
+                    return binding.apply(
                         std::get<ComponentIndex>(current_values),
                         current_solution,
                         move);
+                }
+                else
+                {
+                    auto value = binding.try_apply(
+                        std::get<ComponentIndex>(current_values),
+                        current_solution,
+                        move);
+                    if (value)
+                        return *std::move(value);
+
+                    return solution_manager_.template evaluate_component<ComponentIndex>(
+                        provide_candidate());
+                }
             }
             else
             {
-                return evaluate_component_for_move<
-                    ComponentIndex,
-                    DeltaIndex + 1>(
+                return evaluate_component_for_move<ComponentIndex, DeltaIndex + 1>(
                     current_solution,
                     current_values,
                     move,
-                    materialized_candidate);
+                    provide_candidate);
             }
         }
         else
         {
-            assert(materialized_candidate != nullptr);
             return solution_manager_.template evaluate_component<ComponentIndex>(
-                *materialized_candidate);
+                provide_candidate());
         }
     }
 
-    template<std::size_t... ComponentIndices>
+    template<class Candidate, std::size_t... ComponentIndices>
     [[nodiscard]]
     component_values_type evaluate_components_for_move(
         const typename SM::solution_type& current_solution,
         const component_values_type& current_values,
         const typename NHE::move_type& move,
-        const typename SM::solution_type* materialized_candidate,
+        Candidate& provide_candidate,
         std::index_sequence<ComponentIndices...>) const
     {
         return component_values_type{
@@ -465,8 +550,23 @@ private:
                 current_solution,
                 current_values,
                 move,
-                materialized_candidate)...,
+                provide_candidate)...,
         };
+    }
+
+    // The scratch solution with the move made, reused from one move to the
+    // next: a copy assignment keeps its storage.
+    [[nodiscard]]
+    const typename SM::solution_type* materialize(
+        const typename SM::solution_type& current_solution,
+        const typename NHE::move_type& move) const
+    {
+        auto& candidate_solution = scratch_.assign(current_solution);
+        scratch_number_ = ++scratches_;
+        neighborhood_.make_move(candidate_solution, move);
+        // A whole-solution check per evaluated move: opt-in.
+        EASYLOCAL_EXPENSIVE_ASSERT(solution_manager_.is_valid(candidate_solution));
+        return std::addressof(candidate_solution);
     }
 
 public:
@@ -477,9 +577,9 @@ public:
 
     using move_type = typename NHE::move_type;
     using candidate_type = candidate_evaluation<move_type, evaluation_type>;
-    // Whether a move is evaluated on a copy of the solution with the move
-    // made: when a component has no delta.
-    static constexpr bool materializes_candidates = needs_materialized_candidate();
+    // Whether a move may be evaluated on a copy of the solution with the move
+    // made: when a component has no delta, or one that covers some moves only.
+    static constexpr bool materializes_candidates = may_materialize_candidate();
 
     evaluation_facility(
         const SM& solution_manager,
@@ -523,62 +623,37 @@ public:
     {
         assert(neighborhood_.is_valid(current_solution, move));
 
-        if constexpr (needs_materialized_candidate())
+        if constexpr (!component_aware)
         {
-            // The solution with the move made, in a scratch solution reused
-            // from one move to the next: a copy assignment keeps its storage.
-            auto& candidate_solution = scratch_.assign(current_solution);
-            scratch_number_ = ++scratches_;
-            neighborhood_.make_move(candidate_solution, move);
-            // A whole-solution check per evaluated move: opt-in.
-            EASYLOCAL_EXPENSIVE_ASSERT(solution_manager_.is_valid(candidate_solution));
+            const auto* candidate_solution = materialize(current_solution, move);
 
-            if constexpr (component_aware)
-            {
-                auto component_values = evaluate_components_for_move(
-                    current_solution,
-                    current.component_values(),
-                    move,
-                    &candidate_solution,
-                    std::make_index_sequence<
-                        std::tuple_size_v<component_types>>{});
-                auto cost = solution_manager_.cost_from_components(component_values);
-
-                return candidate_type{
-                    evaluation_type{
-                        std::move(component_values),
-                        std::move(cost),
-                    },
-                    move,
-                    scratch_number_,
-                };
-            }
-            else
-            {
-                return candidate_type{
-                    evaluation_type{
-                        {},
-                        solution_manager_.evaluate(candidate_solution),
-                    },
-                    move,
-                    scratch_number_,
-                };
-            }
+            return candidate_type{
+                evaluation_type{
+                    {},
+                    solution_manager_.evaluate(*candidate_solution),
+                },
+                move,
+                scratch_number_,
+            };
         }
         else
         {
-            static_assert(
-                component_aware,
-                "an all-delta candidate requires a component-aware "
-                "SolutionManager");
+            // The candidate solution is made by the first component that needs
+            // one and kept for the others of the same move; a move all the
+            // deltas cover never makes one.
+            const solution_type* candidate_solution = nullptr;
+            auto provide_candidate = [&]() -> const solution_type& {
+                if (candidate_solution == nullptr)
+                    candidate_solution = materialize(current_solution, move);
+                return *candidate_solution;
+            };
 
             auto component_values = evaluate_components_for_move(
                 current_solution,
                 current.component_values(),
                 move,
-                nullptr,
-                std::make_index_sequence<
-                    std::tuple_size_v<component_types>>{});
+                provide_candidate,
+                std::make_index_sequence<std::tuple_size_v<component_types>>{});
             auto cost = solution_manager_.cost_from_components(component_values);
 
             return candidate_type{
@@ -587,6 +662,7 @@ public:
                     std::move(cost),
                 },
                 move,
+                candidate_solution != nullptr ? scratch_number_ : std::size_t{0},
             };
         }
     }
@@ -599,7 +675,7 @@ public:
         // The candidate of the last move evaluated on the scratch solution is
         // swapped in; another one (kept while others were evaluated) has its
         // move made again, which keeps no solution per candidate.
-        if constexpr (needs_materialized_candidate())
+        if constexpr (may_materialize_candidate())
         {
             if (scratch_.get() != nullptr && candidate.scratch() != 0
                 && candidate.scratch() == scratch_number_)

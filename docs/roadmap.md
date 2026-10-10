@@ -190,38 +190,6 @@ uniformly among all the moves when the children do.
 
 **When.** Not scheduled.
 
-## Per-child deltas in a neighborhood union
-
-**Why.** A `neighborhood_union` forwards the delta of a cost component only
-when every child has one for it (`common_delta_components`): a component that
-one child evaluates in full is evaluated in full for the moves of every child,
-and the deltas of the other children are left unused. A union of a
-neighborhood with a cheap delta and one without any therefore costs what a
-union with no delta costs. The EL3-versus-EL4 benchmark measures it
-(`tsp-union`, delta mode `mixed`, the union of 2-opt and swap with the 2-opt
-delta only): the moves of that union are half 2-opt and half swaps, and
-EasyLocal 4 evaluates the tour length in full for all of them, while
-EasyLocal 3, whose `SetUnion` delegates to the child the move comes from,
-keeps the O(1) delta for the 2-opt half. EasyLocal 3 pays for this with its
-own handicap, two full evaluations per move where EasyLocal 4 reuses the
-cached cost of the current solution, so the two end up doing the same work
-per move: a steepest descent on a 300-city instance takes 243 ns per
-evaluation in EasyLocal 4 against 222 in EasyLocal 3, the only measured
-configuration where EasyLocal 3 is ahead, while with no delta at all
-EasyLocal 4 is 1.85 times faster. What the union gives up is therefore the
-whole speed-up of the deltas that are written.
-
-**What.** The union would evaluate a component for the child the move belongs
-to: its delta where that child has one, the full evaluation of the candidate
-only for the moves of the children that do not. The move is already a variant
-tagged with its child, so the binding can dispatch on it; what has to be
-decided is what a union reports about such a component to the machinery that
-decides, once per component, how a move is evaluated.
-
-**When.** Not scheduled. It is worth doing when a real problem mixes
-neighborhoods whose deltas are not all written, which is the usual state of a
-model that is growing.
-
 ## Candidate strategies of Tabu Search
 
 **Why.** The four tabu searches (`TabuSearch`, `FirstImprovementTabuSearch`,

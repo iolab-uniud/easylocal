@@ -5,10 +5,10 @@
 /// combined into one, whose move is a std::variant of theirs.
 ///
 /// Enumeration visits every child in turn; random moves pick a child by its
-/// configurable bias. The inverses and attributes of the children are
-/// forwarded per child, and so are their deltas for each component that every
-/// child has a delta for; a component that some child has no delta for is
-/// evaluated in full for the moves of every child.
+/// configurable bias. The inverses, attributes and deltas of the children are
+/// forwarded per child: a component is evaluated by the delta of the child the
+/// move comes from, and in full, on a copy of the solution with the move made,
+/// only for the moves of the children that have no delta for it.
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/helpers/detail/evaluation.hpp>
@@ -297,26 +297,61 @@ inline constexpr bool neighborhood_has_delta_component_v =
         Component,
         neighborhood_delta_component_types_t<Explorer>>;
 
-template<class Component, class... Explorers>
-inline constexpr bool all_neighborhoods_have_delta_component_v =
-    (neighborhood_has_delta_component_v<Explorers, Component> && ...);
+// The components any child has a delta for, in the order of the children and
+// without repetitions: the union binds each of them, and the binding covers
+// every move only where every child has a delta for it.
+template<class Accumulated, class Candidates>
+struct appended_delta_components;
 
-template<class CandidateComponents, class... Explorers>
-struct common_neighborhood_delta_components;
-
-template<class... Components, class... Explorers>
-struct common_neighborhood_delta_components<
-    std::tuple<Components...>,
-    Explorers...>
+template<class... Accumulated>
+struct appended_delta_components<std::tuple<Accumulated...>, std::tuple<>>
 {
-    using type = decltype(std::tuple_cat(
-        std::declval<std::conditional_t<
-            all_neighborhoods_have_delta_component_v<
-                Components,
-                Explorers...>,
-            std::tuple<Components>,
-            std::tuple<>>>()...));
+    using type = std::tuple<Accumulated...>;
 };
+
+template<class... Accumulated, class Component, class... Rest>
+struct appended_delta_components<
+    std::tuple<Accumulated...>,
+    std::tuple<Component, Rest...>>
+{
+    using type = typename appended_delta_components<
+        std::conditional_t<
+            tuple_contains_type_v<Component, std::tuple<Accumulated...>>,
+            std::tuple<Accumulated...>,
+            std::tuple<Accumulated..., Component>>,
+        std::tuple<Rest...>>::type;
+};
+
+template<class Accumulated, class... Explorers>
+struct any_neighborhood_delta_components
+{
+    using type = Accumulated;
+};
+
+template<class Accumulated, class Explorer, class... Rest>
+struct any_neighborhood_delta_components<Accumulated, Explorer, Rest...>
+{
+    using type = typename any_neighborhood_delta_components<
+        typename appended_delta_components<
+            Accumulated,
+            neighborhood_delta_component_types_t<Explorer>>::type,
+        Rest...>::type;
+};
+
+// Whether the child's delta for the component covers every move of that
+// child: a child that is itself a union may have a partial one, and then the
+// delta of this union is partial too.
+template<class Explorer, class Component, class Value, class Solution>
+concept child_delta_is_total = neighborhood_has_delta_component_v<Explorer, Component>
+    && requires(
+        const std::tuple_element_t<
+            tuple_type_index_v<Component, neighborhood_delta_component_types_t<Explorer>>,
+            neighborhood_delta_bindings_t<Explorer>>& binding,
+        const Value& value,
+        const Solution& solution,
+        const typename Explorer::move_type& move) {
+           { binding.apply(value, solution, move) } -> std::same_as<Value>;
+       };
 
 template<class Component, class... Explorers>
 class neighborhood_union_delta_binding
@@ -336,7 +371,11 @@ public:
     {
     }
 
+    // The delta of the child the move comes from, where every child has one:
+    // the union then covers every move, as a delta attached to a single
+    // neighborhood does.
     template<class Value, class Solution, class UnionMove>
+        requires(child_delta_is_total<Explorers, Component, Value, Solution> && ...)
     [[nodiscard]]
     Value apply(const Value& value, const Solution& solution, const UnionMove& move) const
     {
@@ -344,23 +383,66 @@ public:
             [this, &value, &solution]<class TaggedMove>(
                 const TaggedMove& tagged) -> Value {
                 constexpr auto child_index = TaggedMove::index;
-                using child_explorer_type = explorer_type<child_index>;
-                using child_component_types =
-                    neighborhood_delta_component_types_t<child_explorer_type>;
-                constexpr auto binding_index = tuple_type_index_v<
-                    Component,
-                    child_component_types>;
+                auto&& bindings = std::get<child_index>(*explorers_).delta_bindings();
 
-                const auto& child = std::get<child_index>(*explorers_);
-                auto&& child_bindings = child.delta_bindings();
-
-                return std::get<binding_index>(child_bindings)
+                return std::get<child_binding_index<child_index>>(bindings)
                     .apply(value, solution, tagged.value);
             },
             move);
     }
 
+    // The delta of the child the move comes from, or nothing when that child
+    // has none and the move needs the full evaluation of the candidate.
+    template<class Value, class Solution, class UnionMove>
+    [[nodiscard]]
+    std::optional<Value> try_apply(
+        const Value& value,
+        const Solution& solution,
+        const UnionMove& move) const
+    {
+        return std::visit(
+            [this, &value, &solution]<class TaggedMove>(
+                const TaggedMove& tagged) -> std::optional<Value> {
+                constexpr auto child_index = TaggedMove::index;
+
+                if constexpr (neighborhood_has_delta_component_v<
+                                  explorer_type<child_index>,
+                                  Component>)
+                {
+                    auto&& bindings = std::get<child_index>(*explorers_).delta_bindings();
+                    const auto& binding =
+                        std::get<child_binding_index<child_index>>(bindings);
+
+                    // A child that is itself a union may have a partial delta.
+                    if constexpr (requires {
+                                      {
+                                          binding.apply(value, solution, tagged.value)
+                                      } -> std::same_as<Value>;
+                                  })
+                    {
+                        return binding.apply(value, solution, tagged.value);
+                    }
+                    else
+                    {
+                        return binding.try_apply(value, solution, tagged.value);
+                    }
+                }
+                else
+                {
+                    return std::nullopt;
+                }
+            },
+            move);
+    }
+
 private:
+    // The index of this component's binding in the child's bindings, which the
+    // caller holds: a child union returns its bindings by value.
+    template<std::size_t ChildIndex>
+    static constexpr std::size_t child_binding_index = tuple_type_index_v<
+        Component,
+        neighborhood_delta_component_types_t<explorer_type<ChildIndex>>>;
+
     const explorers_type* explorers_;
 };
 
@@ -428,9 +510,8 @@ private:
     using union_move_type = typename neighborhood_union_move_type<
         std::index_sequence_for<Explorers...>,
         Explorers...>::type;
-    using common_delta_components = typename common_neighborhood_delta_components<
-        neighborhood_delta_component_types_t<first_explorer>,
-        Explorers...>::type;
+    using union_delta_components =
+        typename any_neighborhood_delta_components<std::tuple<>, Explorers...>::type;
 
     template<std::size_t... Indices>
     [[nodiscard]]
@@ -548,7 +629,7 @@ public:
     using solution_type = typename first_explorer::solution_type;
     using move_type = union_move_type;
     using delta_bindings_type = typename neighborhood_union_delta_bindings<
-        common_delta_components,
+        union_delta_components,
         Explorers...>::type;
 
     static_assert(
@@ -697,8 +778,7 @@ public:
     [[nodiscard]]
     delta_bindings_type delta_bindings() const noexcept
     {
-        return make_delta_bindings(
-            std::type_identity<common_delta_components>{});
+        return make_delta_bindings(std::type_identity<union_delta_components>{});
     }
 
     template<std::uniform_random_bit_generator RNG>

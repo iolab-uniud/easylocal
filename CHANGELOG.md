@@ -57,6 +57,18 @@ reviewed by hand before tagging.
   holds it does, before every construction. A class that takes both derives
   from the two and is built from the Input first, then the parameters.
 
+- A neighborhood union evaluates a cost component with the delta of the child
+  the move comes from, where before it needed a delta in every child and
+  otherwise evaluated the component in full for the moves of all of them,
+  deltas included. The moves of a child without a delta are still evaluated on
+  a copy of the solution with the move made, and that copy is now made only
+  for the moves that need one. On the benchmark's union of the TSP 2-opt and
+  swap neighborhoods, with a delta for 2-opt alone, a steepest descent goes
+  from 251 to 118 nanoseconds per evaluation and a first improvement, which
+  accepts a move as soon as it improves and so evaluates mostly 2-opt moves,
+  from 350 to 13. A union whose children all have a delta, or none, is
+  unchanged.
+
 ### Parameters
 
 - **Breaking:** a parameter set is applied and validated by its members

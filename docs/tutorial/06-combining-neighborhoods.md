@@ -31,10 +31,10 @@ auto union_sa =
 
 - Deterministic algorithms enumerate the children in order, each in its own
   way: the swap moves from the generator, the 2-opt moves from the cursor.
-- Delta evaluation requires a delta for the component in every child. Swaps
-  have none for `TourLength`, so this union evaluates both kinds of move on a
-  candidate tour. Add a swap delta to let the union use `TwoOptLengthDelta`
-  as well.
+- Each child is evaluated by its own delta. Swaps have none for `TourLength`,
+  so this union evaluates a swap on a candidate tour and keeps
+  `TwoOptLengthDelta` for the 2-opt moves; adding a swap delta removes the
+  candidate tour from the union altogether.
 - Random sampling selects a child according to its bias, then asks for a move.
   Here 2-opt is chosen with probability 3/4. A zero bias excludes a child from
   random selection; enumeration still includes it. If a child has no move,
