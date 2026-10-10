@@ -49,6 +49,28 @@ build.
 - Look up the runners and the solvers your program uses in the
   [tables at the end](#reference-the-two-frameworks-side-by-side) before you
   start: most have a counterpart under another name, a few have none yet.
+- Two keywords appear in the code of this page and are worth a line each,
+  since EasyLocal 3 programs rarely used them. Both are recommendations, not
+  requirements.
+
+    **`inline`**, on the free functions a problem defines in a header
+    (`read_solution`, `describe`, the hooks of step 4). A function defined in a
+    header is compiled into every file that includes it, and the linker
+    refuses the copies; `inline` tells it that the copies are one function and
+    to keep one. Define those functions in a `.cpp` instead and `inline` is not
+    needed. It is not about speed: the compiler inlines what it wants either
+    way.
+
+    **`[[nodiscard]]`**, which the library writes on the functions whose result
+    is the point of calling them — `check(app, input)`, the `apply` of a
+    parameter set, the `random_move(explorer, solution, rng)` that returns an
+    optional move. The compiler then warns when a call ignores
+    the result, which is how a forgotten check is caught: a program that calls
+    `check(application, tsp)` and never looks at the report is warned, and the
+    examples of this page read `if (!report) return 1;` for that reason. Your
+    own classes need none of it; write it where silently dropping the result
+    would be a bug, and leave it out of the hooks the library calls, as the
+    examples do.
 
 ### Building without CMake
 
@@ -221,7 +243,7 @@ struct TwoOpt
 
 - **Public attributes**, because the code that builds a move and the code that
   reads it are not the same class: the explorer writes `move.i` and `move.j`
-  while it enumerates, and the delta cost component of step 7 reads them to
+  while it enumerates, and the delta cost component of step 8 reads them to
   compute the change in cost. A move carries no invariant of its own — whether
   a pair of positions is a legal 2-opt is the explorer's `is_valid`, not the
   move's — so there is nothing for a `private` section to protect, and the
@@ -230,9 +252,9 @@ struct TwoOpt
   fields may each be set freely.
 - **No constructor**: with no user-declared constructor the type is an
   aggregate, so it is created with braces, `TwoOpt{i, j}` or
-  `TwoOpt{.i = i, .j = j}`, as the explorer of step 8 does, and it is
+  `TwoOpt{.i = i, .j = j}`, as the explorer of step 7 does, and it is
   default-constructible, `TwoOpt{}` with zero attributes, which the cursor of
-  step 8 needs as something to write into. Prefer these implicit constructors
+  step 7 needs as something to write into. Prefer these implicit constructors
   to the EasyLocal 3 one with default arguments.
 - **No operator is required.** EasyLocal 3 asked for `==`, `!=`, `<` and
   `<<`; here `<` and `!=` are never called, and the other two are used only
@@ -416,7 +438,7 @@ public:
 class TourLength : public easylocal::input_base<Tsp>
 {
 public:
-    using input_base::input_base; // the Input, which input() gives back
+    using input_base::input_base; // constructed from the Input, read by input()
 
     double evaluate(const Tour& tour) const
     {
@@ -439,8 +461,9 @@ public:
   Input and `input()`, and a component that needs neither derives from
   nothing.
 - The weight and the hard flag leave the constructor and go into the cost
-  expression of the recipe. A program with hard components `H1`, `H2` and soft
-  components `S1` (weight 1) and `S2` (weight 5) becomes:
+  expression of the recipe. Take a program whose cost components are `H1` and
+  `H2`, hard, and `S1` (weight 1) and `S2` (weight 5), soft — four classes
+  like `TourLength` above, each with its own `evaluate`. Its cost becomes:
 
     ```cpp title="EasyLocal 4"
     el::solution_manager<Manager>()
@@ -449,23 +472,38 @@ public:
             el::cost::sum(el::component<S1>(), el::component<S2>() * 5))
     ```
 
-    `HARD_WEIGHT` is gone: the hard cost is compared first, so no soft gain can
-    make up for a violation. When the weights of the hard components mattered
-    only to guide the search, keep them inside the hard sum.
+    `HARD_WEIGHT` is gone. `cost::hard_soft` makes the cost a pair compared
+    **lexicographically**: the hard cost decides, and the soft cost is looked
+    at only between solutions whose hard costs are equivalent. No soft gain,
+    however large, can pay for a violation, which a large weight only made
+    unlikely. When the weights of the hard components mattered to guide the
+    search, keep them inside the hard sum.
 
-    This changes what the stochastic runners accept. In EasyLocal 3 the hard
-    cost was weighted into one number, so Simulated Annealing accepted, now and
-    then, a move that worsened the hard cost for a soft gain, and crossed
-    infeasible regions; with `hard_soft` the delta of a hard degradation is
-    infinite, and the Metropolis criterion never accepts it.
-    To keep EasyLocal 3's behaviour, write the cost as one weighted sum,
+    A lexicographic pair is not a number, and Simulated Annealing needs one:
+    it accepts a worsening move with probability `exp(-delta / temperature)`.
+    The rule that turns the pair into a number comes with `cost::hard_soft`,
+    and it is the strict one — the change of the soft cost while the hard cost
+    is unchanged, minus infinity when the hard cost improves, plus infinity
+    when it worsens — so the Metropolis criterion never accepts a hard
+    degradation. From an infeasible solution the search still walks towards
+    feasibility, since a move that lowers the hard cost is always accepted;
+    once there it stays, where EasyLocal 3, with the hard cost weighted into
+    the one number, accepted a violation now and then and crossed the
+    infeasible region to the other side. That is a real change of behaviour,
+    worth knowing before comparing the two programs.
+
+    To keep EasyLocal 3's behaviour, do what it did: one weighted sum,
     `el::cost::sum(el::component<H1>() * 1000, ..., el::component<S1>())`,
-    and check that the result is feasible.
+    which is a number already, and check that the result is feasible. A rule
+    of your own goes in a `cost::apply` at the root of the expression
+    ([Cost](reference/cost.md)).
 
-- `PrintViolations` becomes an optional member,
-  `std::string describe(const Solution&) const`, which returns the text
-  instead of printing it; an optional `name()` replaces the name given to the
-  constructor. Without them, reports show the component's position and value
+- The member that corresponds to `PrintViolations` is
+  `std::string describe(const Solution&) const`, optional, which returns the
+  text instead of printing it, so that the tester, a report and an HTTP
+  response can each put it where they need it. The name the component was
+  given in its constructor is an optional `name()` beside it. Without them,
+  reports show the component's position and its value
   ([chapter 11](tutorial/11-apps-and-tools.md#a-report-of-the-cost-components)).
 - Nothing declares the type of the cost: it follows from what `evaluate`
   returns, so an `int` component stays `int`. A cost of more than the two
@@ -473,62 +511,7 @@ public:
   `cost::in_order` or a `cost::objectives` of components
   ([chapter 2](tutorial/02-cost.md)).
 
-### 7. The delta cost components
-
-```cpp title="EasyLocal 3"
-class TwoOptTourLengthDelta : public DeltaCostComponent<Input, Tour, TwoOpt, double>
-{
-public:
-    TwoOptTourLengthDelta(const Input& in, TourLength& cc)
-        : DeltaCostComponent<Input, Tour, TwoOpt, double>(in, cc, "TwoOptTourLengthDelta") {}
-
-    double ComputeDeltaCost(const Tour& st, const TwoOpt& mv) const override
-    {
-        const auto n = st.tour.size();
-        const auto first = st.tour[mv.first_edge];
-        const auto first_next = st.tour[(mv.first_edge + 1) % n];
-        const auto second = st.tour[mv.second_edge];
-        const auto second_next = st.tour[(mv.second_edge + 1) % n];
-        return in.Distance(first, second) + in.Distance(first_next, second_next)
-            - in.Distance(first, first_next) - in.Distance(second, second_next);
-    }
-};
-```
-
-<!-- snippet: tutorial/tsp.hpp:delta -->
-```cpp title="EasyLocal 4"
-class TwoOptLengthDelta : public easylocal::input_base<Tsp>
-{
-public:
-    using input_base::input_base;
-
-    // The tour goes a -> b ... c -> d; after the move it goes a -> c ... b -> d,
-    // the segment b ... c reversed, at the same cost with symmetric distances.
-    double delta_evaluate(const Tour& tour, const TwoOpt& move) const
-    {
-        const auto n = tour.order.size();
-        const auto a = tour.order[move.i];
-        const auto b = tour.order[move.i + 1];
-        const auto c = tour.order[move.j];
-        const auto d = tour.order[(move.j + 1) % n];
-        const auto& distance = input().distance;
-        return distance[a][c] + distance[b][d] - distance[a][b] - distance[c][d];
-    }
-};
-```
-
-- `ComputeDeltaCost` becomes `delta_evaluate`, with the same meaning: the
-  change of the component's own value, without its weight.
-- The link to the component leaves the constructor: the recipe states it,
-  `delta<TourLength, TwoOptLengthDelta>()`. A delta can also be a member of the
-  component itself (a *co-located* delta, [chapter 4](tutorial/04-delta-evaluation.md)).
-- A component without a delta for some neighborhood needs nothing, as in
-  EasyLocal 3 when it was added with `AddCostComponent` to the explorer: its
-  change is computed on a copy of the solution with the move applied.
-- A wrong delta is the classic porting bug: [checking the
-  port](#checking-the-port) says how to catch it.
-
-### 8. The NeighborhoodExplorer
+### 7. The NeighborhoodExplorer
 
 ```cpp title="EasyLocal 3"
 class TwoOptNeighborhoodExplorer
@@ -559,14 +542,16 @@ public:
 };
 ```
 
-The explorer below enumerates with a **cursor**, which is what EasyLocal 4
-calls the pair `first_move`/`next_move` that EasyLocal 3 wrote as
-`FirstMove`/`NextMove`: the moves are not stored anywhere, the explorer keeps
-the current one in the Move the caller passes by reference, and advances it in
-place. The other way of enumerating, new here, is a `moves(solution)`
-generator that `co_yield`s each move ([chapter 3](tutorial/03-neighborhood.md));
-an explorer offers one or the other, and a cursor is the natural port of an
-EasyLocal 3 explorer:
+An explorer lists the moves of a solution in one of two ways, and the port of
+an EasyLocal 3 explorer uses the first.
+
+A **cursor** is what EasyLocal 4 calls the pair `first_move`/`next_move`,
+which EasyLocal 3 wrote as `FirstMove`/`NextMove`: no move is stored anywhere,
+the caller holds the current one in a Move of its own and passes it by
+reference, `first_move` writes the first into it and `next_move` turns it into
+the following one; both return `false` when there is none left. An explorer
+with a cursor is why a Move must be default-constructible (step 3): the caller
+needs a Move to write into before the first one exists.
 
 <!-- snippet: tutorial/tsp.hpp:two-opt!two-opt-move~comments -->
 ```cpp title="EasyLocal 4"
@@ -637,7 +622,7 @@ public:
 | EasyLocal 3 | EasyLocal 4 |
 | --- | --- |
 | base `NeighborhoodExplorer<Input, Solution, Move, CostStructure>`, constructor `(in, sm, name)` | `neighborhood_explorer_base<SolutionManager, Move>`, inherited constructor |
-| the name in the constructor | a static `name()`, used by the tester |
+| the name in the constructor | a static `name()`, which the tester puts on its Move page |
 | `FirstMove` (throws `EmptyNeighborhood`), `NextMove` | `first_move`, `next_move`, both returning `false` when there is no move; or a generator `moves(solution)` ([chapter 3](tutorial/03-neighborhood.md)) |
 | `RandomMove(st, mv)` (throws `EmptyNeighborhood`) | `random_move(solution, rng)`, returning `std::nullopt` when there is no move |
 | `FeasibleMove` | `is_valid` |
@@ -648,6 +633,100 @@ public:
 The bodies of the members barely change: `FirstMove` writes the first move into
 `move` and returns `true` instead of throwing, and `RandomMove` returns the move
 instead of writing it.
+
+A word on two things in that class that EasyLocal 3 had no equivalent of.
+
+**`std::string_view`** (`name()`) is a read-only view of a string that someone
+else owns: two words, a pointer and a length, copied as cheaply as an `int`
+and with no allocation. Returning `"2-opt"` from a `static` member is
+therefore free. A `std::string` works just as well — the library only asks for
+something convertible to a view — at the price of allocating and copying the
+text at each call; with a name that is a literal, the view is the natural
+choice. The rule is the usual one: a view must not outlive the text it looks
+at, which a literal always outlives.
+
+**The other way of enumerating** is a `moves(solution)` generator, which an
+explorer offers *instead of* the cursor. It is a coroutine: it computes one
+move, hands it to the caller with `co_yield`, and goes on from there when the
+caller asks for the next, so the moves are produced one at a time and none is
+stored. The nested loops read as they would on paper:
+
+<!-- snippet: tutorial/tsp.hpp:swap-moves -->
+```cpp title="EasyLocal 4"
+// Every pair of positions i < j, one move at a time.
+easylocal::generator<SwapCities> moves(const Tour& tour) const
+{
+    const auto n = tour.order.size();
+    for (std::size_t i = 0; i < n; ++i)
+        for (std::size_t j = i + 1; j < n; ++j)
+            co_yield SwapCities{i, j};
+}
+```
+
+This is the whole enumeration of a neighborhood of swaps: no state to carry
+between calls, no `first`/`next` to keep in step, and the bound of each loop
+written once. Both ways are lazy — a move is produced when the runner asks for
+it, so First Improvement never produces the moves after the one it takes — and
+no algorithm sees the difference; a generator is usually easier to write, a
+cursor needs no coroutine and is the shape an EasyLocal 3 explorer already has
+([chapter 3](tutorial/03-neighborhood.md) puts the two side by side). A port
+can keep its cursor and rewrite it as a generator later, or never. An explorer
+that has both is read with the cursor.
+
+### 8. The delta cost components
+
+```cpp title="EasyLocal 3"
+class TwoOptTourLengthDelta : public DeltaCostComponent<Input, Tour, TwoOpt, double>
+{
+public:
+    TwoOptTourLengthDelta(const Input& in, TourLength& cc)
+        : DeltaCostComponent<Input, Tour, TwoOpt, double>(in, cc, "TwoOptTourLengthDelta") {}
+
+    double ComputeDeltaCost(const Tour& st, const TwoOpt& mv) const override
+    {
+        const auto n = st.tour.size();
+        const auto first = st.tour[mv.first_edge];
+        const auto first_next = st.tour[(mv.first_edge + 1) % n];
+        const auto second = st.tour[mv.second_edge];
+        const auto second_next = st.tour[(mv.second_edge + 1) % n];
+        return in.Distance(first, second) + in.Distance(first_next, second_next)
+            - in.Distance(first, first_next) - in.Distance(second, second_next);
+    }
+};
+```
+
+<!-- snippet: tutorial/tsp.hpp:delta -->
+```cpp title="EasyLocal 4"
+class TwoOptLengthDelta : public easylocal::input_base<Tsp>
+{
+public:
+    using input_base::input_base;
+
+    // The tour goes a -> b ... c -> d; after the move it goes a -> c ... b -> d,
+    // the segment b ... c reversed, at the same cost with symmetric distances.
+    double delta_evaluate(const Tour& tour, const TwoOpt& move) const
+    {
+        const auto n = tour.order.size();
+        const auto a = tour.order[move.i];
+        const auto b = tour.order[move.i + 1];
+        const auto c = tour.order[move.j];
+        const auto d = tour.order[(move.j + 1) % n];
+        const auto& distance = input().distance;
+        return distance[a][c] + distance[b][d] - distance[a][b] - distance[c][d];
+    }
+};
+```
+
+- `ComputeDeltaCost` becomes `delta_evaluate`, with the same meaning: the
+  change of the component's own value, without its weight.
+- The link to the component leaves the constructor: the recipe states it,
+  `delta<TourLength, TwoOptLengthDelta>()`. A delta can also be a member of the
+  component itself (a *co-located* delta, [chapter 4](tutorial/04-delta-evaluation.md)).
+- A component without a delta for some neighborhood needs nothing, as in
+  EasyLocal 3 when it was added with `AddCostComponent` to the explorer: its
+  change is computed on a copy of the solution with the move applied.
+- A wrong delta is the classic porting bug: [checking the
+  port](#checking-the-port) says how to catch it.
 
 ### 9. Several neighborhoods
 
@@ -663,6 +742,18 @@ auto both =
         el::neighborhood<SwapExplorer>())
     | el::random_biases(3.0, 1.0);
 ```
+
+`random_biases(3.0, 1.0)` is what the biases of a multimodal explorer were:
+when a runner draws a random move, the child is drawn with a probability
+proportional to its bias, here three times out of four from the 2-opt moves.
+**It is optional**: leave it out and every child has a bias of 1, so the
+children are drawn with equal probability — note that this is equal per
+*child*, not per move, so a neighborhood of ten moves is proposed as often as
+one of a thousand. Set the biases when the children differ in size or in how
+often they pay off; a bias of 0 leaves a child out of the random draws, while
+the enumerations keep listing all of them. The biases are parameters like any
+other (`--neighborhood.random_biases` in an app), so they can be changed
+without recompiling and tuned with the rest.
 
 The moves of a union are a variant of the explorers' moves, so the
 `ActiveMove` bookkeeping of EasyLocal 3 is no longer written by hand. A
@@ -718,6 +809,16 @@ component the right-hand side is a cost expression,
 (step 6). This is `AddCostComponent`, moved out of `main` and made explicit
 about how the components combine.
 
+The names follow one rule, which saves looking them up: a **class** of yours
+is passed as a template argument to a function that names what it is —
+`solution_manager<M>()`, `component<C>()`, `neighborhood<E>()`,
+`delta<C, D>()`, `runner<A>("name")` — and those functions return recipes, not
+objects. The ones that *do* produce something to hold and use are spelled
+`make_`: `make_runner<Algorithm>(parameters)` below, and `make_solver(runner)`
+of [chapter 8](tutorial/08-solvers.md). Arguments a class needs besides the
+Input go to the factory, which keeps them until it builds the class:
+`component<Excess>(ExcessParameters{.bound = 8.0})`.
+
 The second recipe describes the *delta cost layer*: the neighborhood and, for
 each cost component that has one, the delta that evaluates a move
 incrementally.
@@ -757,10 +858,18 @@ const auto result = search.run(search.initial_solution());
 - `make_runner<runners::FirstImprovement>(parameters)` chooses the algorithm
   and holds its parameters, as the constructor of an EasyLocal 3 runner did,
   but without an Input, a SolutionManager or an explorer to pass it.
-- `| sm | nhe` give it the cost layer and the delta cost layer. The result,
-  `fi`, is still a description: it is the EasyLocal 3 line
-  `FirstDescent<...> fd(in, sm, nhe, "FD");` with everything about *this*
-  instance left out.
+- `| sm` gives it the first recipe and with it two things: the Solution, which
+  `TourManager` builds and the runner will copy and return, and the cost that
+  evaluates it. `| nhe` gives it the second, again two: the Move, which
+  `TwoOptExplorer` enumerates and applies, and the deltas that evaluate a move
+  without evaluating the solution. Together they are the four template
+  arguments of an EasyLocal 3 runner, `<Input, Solution, Move, CostStructure>`,
+  deduced here from the classes themselves. The result, `fi`, is still a
+  description: it is the line `FirstDescent<...> fd(in, sm, nhe, "FD");` with
+  everything about *this* instance left out.
+- The order is part of the composition: the SolutionManager recipe first, the
+  neighborhood after it. `| nhe | sm` does not compile — the compiler says
+  that the left operand of the first `|` is not a SolutionManager recipe.
 - `fi.bind(tsp)` is where the objects of the EasyLocal 3 `main` are finally
   built: a `TourManager` on `tsp`, a `TourLength` on `tsp`, a
   `TwoOptExplorer` on that `TourManager`, a `TwoOptLengthDelta` on `tsp`, and
@@ -774,15 +883,34 @@ const auto result = search.run(search.initial_solution());
   the bound SolutionManager for a starting point, as `GreedyState` and
   `RandomState` did.
 
-The same `fi` can be bound again, to another instance or on another thread:
-two bound runners built from one recipe share nothing but the `const` Input.
-In EasyLocal 3 the objects *were* the configuration, so a second search with a
-different cost needed a second SolutionManager, a second explorer and a second
-set of deltas (step 13 shows that program, and what replaces it).
+The same `fi` can be bound again, to another instance or on another thread.
+What the two bound runners have in common is the description — the same
+classes, composed the same way, with the same parameters — and the `const`
+Input they both refer to; every object the description names is built again,
+one set per bind, owned by that bound runner alone. Nothing one of them writes
+is seen by the other, which is what makes two searches on one instance safe to
+run side by side. In EasyLocal 3 the objects *were* the composition, so a
+second search with a different cost needed a second SolutionManager, a second
+explorer and a second set of deltas (step 13 shows that program, and what
+replaces it).
 
-**An app puts names on runners.** A program that offers more than one
-algorithm registers them in an app, which is the recipes plus a named runner
-for each:
+A recipe that leaves out a piece the algorithm needs does not compile, and the
+message says what to add rather than pointing inside the library. A
+SolutionManager recipe with no cost, `solution_manager<TourManager>()` alone,
+stops at
+
+```text
+a SolutionManager recipe needs a cost: the cost is always computed by cost
+components, add `| component<C>()` or a cost expression such as
+`| cost::sum(component<A>(), component<B>())`
+```
+
+which is the counterpart of an EasyLocal 3 program that compiled, ran, and
+reported a cost of zero because nothing had been added to the SolutionManager.
+
+**An app puts names on runners.** An app is the two recipes plus a named
+runner for each algorithm the program offers — two here, but one is just as
+valid, and that is the usual shape of a program with a single method:
 
 ```cpp title="EasyLocal 4"
 auto application = el::app("tsp") | sm | nhe
@@ -797,61 +925,40 @@ name — `--runner sa` is `session.run("sa")`. That is the replacement for
 EasyLocal 3's `Solver`, `SetRunner` and the branch over `--main::method`
 ([chapter 11](tutorial/11-apps-and-tools.md)).
 
-### 11. The main program
+**If the pipes read as a foreign language**, every composition can be written
+as a chain of named calls instead, which is the same thing said in words:
 
-A typical EasyLocal 3 `main` declared the parameters, built every object and
-linked them, then either opened the tester or solved with the method named on
-the command line:
-
-```cpp title="EasyLocal 3"
-int main(int argc, const char* argv[])
-{
-    ParameterBox main_parameters("main", "Main Program options");
-    Parameter<std::string> instance("instance", "Input instance", main_parameters);
-    Parameter<int> seed("seed", "Random seed", main_parameters);
-    Parameter<std::string> method("method", "Solution method (empty for tester)", main_parameters);
-    Parameter<std::string> output_file("output_file", "Write the output to a file", main_parameters);
-    CommandLineParameters::Parse(argc, argv, false, true);
-
-    if (!instance.IsSet())
-        return 1;
-    if (seed.IsSet())
-        Random::SetSeed(seed);
-
-    Input in(instance);
-    // ... the objects and their links, as in step 10
-
-    FirstDescent<Input, Tour, TwoOpt, CostStructure> fd(in, sm, nhe, "FD");
-    SimulatedAnnealing<Input, Tour, TwoOpt, CostStructure> sa(in, sm, nhe, "SA");
-
-    Tester<Input, Tour, CostStructure> tester(in, sm);
-    MoveTester<Input, Tour, TwoOpt, CostStructure> two_opt_test(in, sm, nhe, "2-opt", tester);
-
-    SimpleLocalSearch<Input, Tour, CostStructure> solver(in, sm, "TSP solver");
-    if (!CommandLineParameters::Parse(argc, argv, true, false))
-        return 1;
-
-    if (!method.IsSet())
-    {
-        tester.RunMainMenu();
-        return 0;
-    }
-    if (method == std::string("FD"))
-        solver.SetRunner(fd);
-    else
-        solver.SetRunner(sa);
-    auto result = solver.Solve();
-    std::cout << "cost " << result.cost.total << '\n';
-    if (output_file.IsSet())
-        std::ofstream(output_file) << result.output;
-    else
-        std::cout << result.output;
-}
+<!-- snippet: tutorial/main.cpp:with-spelling -->
+```cpp title="EasyLocal 4"
+auto same_runner =
+    el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
+        .with_solution_manager(
+            el::solution_manager<TourManager>().with_cost(
+                el::component<TourLength>()))
+        .with_neighborhood(
+            el::neighborhood<TwoOptExplorer>()
+                .with_delta<TourLength, TwoOptLengthDelta>());
 ```
 
-The same program in EasyLocal 4 is `examples/tutorial/cli_main.cpp`: an app
-that names the services and registers each runner under the name the command
-line uses, and `cli::run`, which does the rest of `main`:
+`|` and the `with_*` members build exactly the same runner, and a program may
+use either; the pipe is shorter where the recipes are written once and used
+several times, the named calls say out loud what each part is, which helps
+while the vocabulary is new.
+
+### 11. The main program
+
+The `main` of an EasyLocal 3 program is long, and all of it goes away. It
+declared a `ParameterBox` and a `Parameter<T>` for the instance, the seed, the
+method and the output file; parsed the command line twice, before and after
+building the objects, so that the runners could add their own parameters;
+built the Input, the SolutionManager, the components, the explorer, the deltas
+and one runner per method; built a `Tester` and a `MoveTester` in case no
+method was given; branched on `--main::method` to `SetRunner`, called
+`Solve()`, and printed the cost and the solution, to a file when
+`output_file.IsSet()`.
+
+The counterpart is the app of step 10 and one call,
+`examples/tutorial/cli_main.cpp` in full:
 
 <!-- snippet: tutorial/cli_main.cpp:cli -->
 ```cpp title="EasyLocal 4"
@@ -977,58 +1084,21 @@ swaps ([chapter 13](tutorial/13-tester.md#several-apps-on-the-same-problem)).
 
 ### 13. A solve in two stages
 
-The `main` of a real EasyLocal 3 solver is usually longer than the one of
-step 11.
-A common shape is a solve in two stages: first a search on the hard
-constraints only, until the solution is feasible, then a search on the whole
-cost from there. EasyLocal 3 could not evaluate only part of a cost, so the
-program built a second SolutionManager with the hard components alone, a
-second copy of each explorer and of their deltas, a second runner and a second
-solver. Parameters were often changed after the instance was read, and the
-final report printed the value of each component. On the TSP, with the edges
-longer than 8 as violations (a component `MaxEdgeExcess`), the result looked
-like this:
+The `main` of a real EasyLocal 3 solver is longer than the one of step 11. A
+common shape is a solve in two stages: first a search on the hard constraints
+only, until the solution is feasible, then a search on the whole cost from
+there. EasyLocal 3 could not evaluate part of a cost, so everything below the
+cost was built twice — a second SolutionManager with the hard component alone,
+a second explorer on it, a second set of deltas, a second runner, a second
+solver — and the two were joined by hand, `solverH.Solve()` and then
+`solver.Resolve(stage_one.output)`. Parameters that depend on the instance
+were set with `SetParameter` after the parsing, and the report printed each
+component with `cc.Cost(output)`.
 
-```cpp title="EasyLocal 3"
-Input in(instance);
-MaxEdgeExcess cc1(in, 1, true);   // hard
-TourLength cc2(in, 1, false);     // soft
-TwoOptDeltaMaxEdgeExcess dcc1(in, cc1);
-TwoOptTourLengthDelta dcc2(in, cc2);
-
-TspSolutionManager sm(in), smH(in);   // the whole cost, the hard cost only
-TwoOptNeighborhoodExplorer nhe(in, sm), nheH(in, smH);
-sm.AddCostComponent(cc1);
-sm.AddCostComponent(cc2);
-smH.AddCostComponent(cc1);
-nhe.AddDeltaCostComponent(dcc1);
-nhe.AddDeltaCostComponent(dcc2);
-nheH.AddDeltaCostComponent(dcc1);
-
-FirstDescent<Input, Tour, TwoOpt, CostStructure> fd(in, sm, nhe, "FD");
-FirstDescent<Input, Tour, TwoOpt, CostStructure> fdH(in, smH, nheH, "FDH");
-SimpleLocalSearch<Input, Tour, CostStructure> solver(in, sm, "solver"), solverH(in, smH, "solverH");
-solver.SetRunner(fd);
-solverH.SetRunner(fdH);
-if (!CommandLineParameters::Parse(argc, argv, true, false))
-    return 1;
-
-if (evaluations_per_city.IsSet())   // depends on the instance
-{
-    fd.SetParameter("max_evaluations", evaluations_per_city * in.city_count);
-    fdH.SetParameter("max_evaluations", evaluations_per_city * in.city_count);
-}
-
-auto stage_one = solverH.Solve();               // from a random state
-auto result = solver.Resolve(stage_one.output); // from the stage-one solution
-std::cout << "violations " << result.cost.violations << ", length " << result.cost.objective << '\n';
-std::cout << "TourLength " << cc2.Cost(result.output) << ", MaxEdgeExcess " << cc1.Cost(result.output) << '\n';
-```
-
-The same program in EasyLocal 4 is `examples/tutorial/staged_main.cpp`. The
-duplicated objects disappear: there is one recipe for the cost, one for the
-neighborhood, and one runner, and the solver derives the hard-only stage from
-it:
+The same program in EasyLocal 4 is `examples/tutorial/staged_main.cpp`, with
+the TSP's edges longer than 8 as the violations. Nothing is written twice:
+one recipe for the cost, one for the neighborhood, one runner, and the solver
+derives the hard-only stage from them:
 
 <!-- snippet: tutorial/staged_main.cpp:staged-recipes -->
 ```cpp title="EasyLocal 4"
@@ -1124,13 +1194,21 @@ TourLength 26, MaxEdge 8
 
 ## Checking the port
 
-A port compiles long before it is right. The two things that silently differ
-from the EasyLocal 3 program are the delta cost components, which are easy to
-port with a wrong sign or a stale index, and the neighborhood, whose
-enumeration or sampling may have changed when `FirstMove`/`NextMove` became a
-cursor. EasyLocal 3 checked both from the `MoveTester` menu, by hand, on
-whatever state happened to be current. EasyLocal 4 offers the same checks as
-functions, so they run in the test suite, on every instance, at every build.
+Much of what EasyLocal 3 found at run time, or not at all, is a compile error
+here, and that is the first check a port goes through: a hook with the wrong
+signature, a delta whose value cannot be added to its component's, a
+SolutionManager recipe with no cost, a runner composed on a neighborhood it
+cannot use — each is reported where the pieces are composed, with the member
+or the line to write (step 10). A port that compiles is a port whose pieces
+fit together.
+
+What compiles can still differ from the EasyLocal 3 program, and two things
+differ silently: the delta cost components, easy to port with a wrong sign or
+a stale index, and the neighborhood, whose enumeration or sampling may have
+changed when `FirstMove`/`NextMove` became a cursor. EasyLocal 3 checked both
+from the `MoveTester` menu, by hand, on whatever state happened to be current.
+EasyLocal 4 offers the same checks as functions, so they run in the test
+suite, on every instance, at every build.
 
 **While you write a delta: `EASYLOCAL_VERIFY_DELTAS`.** Define it when
 compiling (`-DEASYLOCAL_VERIFY_DELTAS`, or `target_compile_definitions`) and
@@ -1375,8 +1453,8 @@ where that idea lives now, and the step of this page that ports it.
 | `PrintViolations` | an optional `describe(solution)` of the cost component, which returns the text instead of printing it |
 | the hard flag and the weight of a component, `HARD_WEIGHT` | a cost expression in the recipe: `cost::hard_soft`, `cost::sum`, `cost::weighted`, `cost::in_order`, `cost::apply`, `cost::objectives`; hard is a level, not a big weight (step 6) |
 | `CostStructure`, `DefaultCostStructure<CFtype>`, the pair violations/objective | nothing to declare: the cost and its type follow from the components and the expression |
-| `DeltaCostComponent::ComputeDeltaCost`, `AddDeltaCostComponent` | a delta cost component's `delta_evaluate`, bound to its component by `delta<C, D>()` in the recipe (steps 7 and 10) |
-| `NeighborhoodExplorer` (`FirstMove`, `NextMove`, `RandomMove`, `MakeMove`, `FeasibleMove`) | a NeighborhoodExplorer with a cursor (`first_move`/`next_move`) or a `moves()` generator, plus `random_move`, `make_move`, `is_valid` (step 8) |
+| `DeltaCostComponent::ComputeDeltaCost`, `AddDeltaCostComponent` | a delta cost component's `delta_evaluate`, bound to its component by `delta<C, D>()` in the recipe (steps 8 and 10) |
+| `NeighborhoodExplorer` (`FirstMove`, `NextMove`, `RandomMove`, `MakeMove`, `FeasibleMove`) | a NeighborhoodExplorer with a cursor (`first_move`/`next_move`) or a `moves()` generator, plus `random_move`, `make_move`, `is_valid` (step 7) |
 | `MultimodalNeighborhoodExplorer`, `ActiveMove` | `neighborhood_union`, whose move is a variant of the children's moves, with `random_biases` (step 9) |
 | `ParallelNeighborhoodExplorer` (TBB) | no counterpart ([roadmap](roadmap.md#parallel-search)) |
 | `Kicker`, `KickerTester` | no counterpart ([roadmap](roadmap.md#kicks-iterated-local-search-and-variable-neighborhood-descent)) |

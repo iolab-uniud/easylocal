@@ -106,7 +106,7 @@ public:
 class TourLength : public easylocal::input_base<Tsp>
 {
 public:
-    using input_base::input_base; // the Input, which input() gives back
+    using input_base::input_base; // constructed from the Input, read by input()
 
     double evaluate(const Tour& tour) const
     {
@@ -248,6 +248,7 @@ public:
     // explorer reaches with input().
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
+    // [swap-moves]
     // Every pair of positions i < j, one move at a time.
     easylocal::generator<SwapCities> moves(const Tour& tour) const
     {
@@ -256,6 +257,7 @@ public:
             for (std::size_t j = i + 1; j < n; ++j)
                 co_yield SwapCities{i, j};
     }
+    // [swap-moves]
 
     // Uniform: two distinct positions, each pair equally likely, put in order.
     template<std::uniform_random_bit_generator RNG>

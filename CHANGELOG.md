@@ -120,6 +120,18 @@ reviewed by hand before tagging.
 
 ### Documentation and examples
 
+- *Coming from EasyLocal 3* explains the NeighborhoodExplorer before the delta
+  cost components, which depend on it, and says more where a reader of
+  EasyLocal 3 has no counterpart to lean on: what a cursor and a `moves()`
+  generator are and what each costs, what a `std::string_view` is, that
+  `cost::hard_soft` is a lexicographic pair and which rule turns it into the
+  number Simulated Annealing needs, what the biases of a neighborhood union
+  default to, what the `make_*` factories make, that `| sm` and `| nhe` each
+  give the runner two things and in which order, and what `inline` and
+  `[[nodiscard]]` are for. The `with_*` spellings are shown beside the pipes.
+  The long EasyLocal 3 `main` of the command-line and two-stage steps is
+  summarized in prose instead of quoted in full.
+
 - Every section of the site — Quick start, Tutorial, Coming from EasyLocal 3,
   Reference, Guides, Benchmarks — is also published as a PDF, with a title
   page and a table of contents, under `pdf/` next to the site, and each

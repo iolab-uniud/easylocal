@@ -13,7 +13,7 @@ A **cost component** computes one term of the objective:
 class TourLength : public easylocal::input_base<Tsp>
 {
 public:
-    using input_base::input_base; // the Input, which input() gives back
+    using input_base::input_base; // constructed from the Input, read by input()
 
     double evaluate(const Tour& tour) const
     {

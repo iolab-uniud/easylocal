@@ -123,6 +123,28 @@ with the deltas staying consistent with the current weights.
 
 **When.** Not scheduled. It depends on how the cost expressions settle.
 
+## A name for every service
+
+**Why.** A cost component may have a `name()`, which the reports and the
+interactive tester show in place of its position, and a neighborhood explorer
+a static `name()`, which the tester puts on its Move page. A SolutionManager,
+a delta cost component and a runner have none, so a frontend that lists them
+names them by their position or by their registration. The two `name()` that
+exist are also read for two different purposes: the label of a component, and
+the path a configurable class is configured under (`cost.<name>.*`), where it
+is required rather than optional.
+
+**What.** One rule for the whole model: which services may be named, whether a
+name is a label, a path, or both, and what names a service that has none. A
+mixin, `named<"2-opt">` or a `name_base` beside `input_base` and
+`parameters_base`, would spare the boilerplate and make the capability visible
+in the class's declaration; it has to stay optional, since a class that nobody
+lists needs no name, and it must not collide with the static `name()` the
+configurable components already require.
+
+**When.** Not scheduled. It is worth settling before the frontends grow: the
+launcher, a GUI and the REST resources all list services.
+
 ## A launcher across SolutionManagers
 
 **Why.** The TextUI's launcher opens several apps on the same problem and
