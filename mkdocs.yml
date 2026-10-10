@@ -19,6 +19,40 @@ site_dir: build/site
 hooks:
   - scripts/mkdocs_downloads.py
 
+exclude_docs: |
+  mrdocs.yml
+  mrdocs/
+  assets/branding/README.md
+  assets/branding/generate.py
+
+theme:
+  name: material
+  logo: assets/branding/easylocal-symbol-dark.svg
+  favicon: assets/branding/favicon.svg
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.footer
+    - navigation.top
+    - content.code.copy
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: deep purple
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: deep purple
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+
 extra_css:
   - assets/css/extra.css
 
