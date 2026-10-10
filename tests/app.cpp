@@ -530,6 +530,34 @@ void app_builder_pipes_and_registration_parameters()
     assert(piped.runner_names().front() == "fi");
 }
 
+// An app without runners is bound and used like any other: it has no runner
+// to run, which is how an app is built up one component at a time.
+void an_app_without_runners_binds_and_runs_nothing()
+{
+    const AssignmentInstance instance{
+        .demand = {4, 4, 2},
+        .capacity = {5, 5},
+    };
+    const auto application = easylocal::app("no-runners")
+        | (easylocal::solution_manager<AssignmentSolutionManager>()
+            | assignment::assignment_cost())
+        | easylocal::neighborhood<ReassignJobNeighborhoodExplorer>();
+    assert(application.runner_names().empty());
+
+    auto bound = application.bind(instance);
+    const auto initial = bound.solution_manager().initial_solution();
+    std::mt19937_64 rng{1};
+    assert(!bound.run("missing", initial, rng));
+    assert(!application.run("missing", instance, initial, rng));
+
+    // A session on it loads and evaluates solutions, and runs nothing.
+    easylocal::Session session{application, instance};
+    assert(session.runner_names().empty());
+    session.use_initial_solution();
+    assert(session.evaluate() == bound.solution_manager().evaluate(initial));
+    assert(!session.run("missing"));
+}
+
 // The message of the std::invalid_argument that f throws, empty when it
 // throws none.
 template<class F>
@@ -628,4 +656,5 @@ int main()
     app_can_make_and_equip_solvers();
     named_runner_registrations_can_be_selected_for_solver_creation();
     registration_names_are_validated();
+    an_app_without_runners_binds_and_runs_nothing();
 }

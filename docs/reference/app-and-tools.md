@@ -19,6 +19,14 @@ auto application = app("name")
 auto application = app("name") | sm | nhe | runner<Algorithm>("runner-name", parameters);
 ```
 
+The components are added in this order: a neighborhood needs the
+SolutionManager, a runner needs both. The app may be used before the last
+step, so that a model is tried a component at a time: one with a
+SolutionManager and a neighborhood binds and opens in the tools, with no
+runner to pick (the tester's Run page lists none, and `cli::run` reports that
+none is registered). A neighborhood is still needed to bind; a tester on an
+app without one is on the [roadmap](../roadmap.md).
+
 A registered algorithm must expose a default-constructible `parameters_type`
 and be constructible from it. Its parameters are configurable under
 `runners.<name>.*` when `parameters_type` is a parameter block; otherwise the
@@ -211,10 +219,11 @@ program and its parameters as metadata, by a `jsonl_recorder` for a `.jsonl`
 name and a `binary_recorder` otherwise ([Tracing](../tracing.md#from-the-command-line));
 a file that cannot be written is an error (1), a cost the format cannot encode
 an invalid command line (2). It
-returns 0, 2 for an invalid command line, an unknown runner or a `--solution`
-that is not valid for the Input (`error: solution: ...`), 1 when the run
-throws (`error: unknown exception` for what is not a `std::exception`). It requires the `read_input` hook, and the solution hooks only when the
-corresponding switches are used.
+returns 0, 2 for an invalid command line, an unknown runner, an app with no
+runner registered or a `--solution` that is not valid for the Input
+(`error: solution: ...`), 1 when the run throws (`error: unknown exception`
+for what is not a `std::exception`). It requires the `read_input` hook, and
+the solution hooks only when the corresponding switches are used.
 
 ### Tuning with irace
 

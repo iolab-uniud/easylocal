@@ -41,10 +41,19 @@ int main()
     static_assert(session_type::supports_read_solution);
     static_assert(session_type::supports_write_solution);
 
+    // An app without runners: the tester opens on it, with its Run page empty.
+    auto without_runners =
+        easylocal::app("tui-compile-no-runners")
+            .with_solution_manager(sm)
+            .with_neighborhood(nhe);
+    using bare_session_type = easylocal::Session<decltype(without_runners)>;
+    static_assert(bare_session_type::supports_read_input);
+
     // Instantiates the complete FTXUI frontend without entering a terminal loop.
     if (false)
     {
         easylocal::tui::run(std::move(application));
+        easylocal::tui::run(std::move(without_runners));
     }
 
     return 0;

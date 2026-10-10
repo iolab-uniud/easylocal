@@ -105,6 +105,18 @@ auto annealing_app()
             easylocal::runners::temperature::Classic>>("sa");
 }
 
+// The tutorial's TSP without runners: an app may be built one component at a
+// time, and the CLI has nothing to run on it.
+auto app_without_runners()
+{
+    using namespace tutorial;
+    return easylocal::app("tsp")
+        | (easylocal::solution_manager<TourManager>()
+            | easylocal::component<TourLength>())
+        | (easylocal::neighborhood<TwoOptExplorer>()
+            | easylocal::delta<TourLength, TwoOptLengthDelta>());
+}
+
 // A symmetric instance of 30 cities, written where the test runs: five.tsp is
 // too small for runs from different seeds to differ.
 std::string thirty_cities()
@@ -336,6 +348,15 @@ int main()
     const auto unknown = run({"--instance", instance, "--runner", "sa"});
     assert(unknown.status == 2);
     assert(unknown.err == "error: unknown runner sa; the runners are: fi cascade\n");
+
+    // An app without runners: the help still prints, and a run reports that
+    // there is nothing to run.
+    const auto helped = run_app(app_without_runners(), {"--help"});
+    assert(helped.status == 0);
+    assert(!helped.out.empty());
+    const auto nothing = run_app(app_without_runners(), {"--instance", instance});
+    assert(nothing.status == 2);
+    assert(nothing.err == "error: this app has no runner registered\n");
 
     // A time limit: none left, the run stops at its first check.
     const auto timed_out =

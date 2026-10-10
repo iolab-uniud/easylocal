@@ -151,6 +151,27 @@ configurable components already require.
 **When.** Not scheduled. It is worth settling before the frontends grow: the
 launcher, a GUI and the REST resources all list services.
 
+## A tester on an app without a neighborhood
+
+**Why.** An app is built one component at a time, and the tools open on one
+without runners: the tester shows the Input, the solutions and the moves, and
+has no runner to run on its Run page. A neighborhood is still required, so the
+first step of a model, a SolutionManager with its cost components, cannot be
+opened in the tester, which is where it would help most: the cost of a
+solution read from a file, the value and the description of each component,
+the initial and the random solutions.
+
+**What.** A stub service for an app whose neighborhood recipe is still
+unconfigured: `BoundApp` builds a neighborhood explorer that neither
+enumerates nor draws moves, so every capability of the Session about moves is
+already false and its move commands drop out of the overload set. The Session
+says so with a flag of its own, and the tester leaves out its Move page rather
+than showing an empty one; `App::configuration()` has no `neighborhood.*`
+block, and `check()` reports the neighborhood as missing instead of failing on
+it.
+
+**When.** Not scheduled.
+
 ## A launcher across SolutionManagers
 
 **Why.** The TextUI's launcher opens several apps on the same problem and

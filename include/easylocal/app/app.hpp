@@ -666,11 +666,14 @@ class App : public detail::app_input_type<SMSpec>
 
 public:
     /// Whether the app, with Spec as its SolutionManager recipe, can be bound
-    /// and run: a SolutionManager, a neighborhood and a runner at least.
+    /// to an Input: a SolutionManager and a neighborhood at least.
+    ///
+    /// The runners are not needed: an app without them binds, and a tool on it
+    /// has no runner to run, which is how an app is built up a component at a
+    /// time.
     template<class Spec>
-    static constexpr bool complete = !std::same_as<Spec, detail::unconfigured_t>
-        && !std::same_as<NHESpec, detail::unconfigured_t>
-        && (sizeof...(Registrations) > 0);
+    static constexpr bool bindable = !std::same_as<Spec, detail::unconfigured_t>
+        && !std::same_as<NHESpec, detail::unconfigured_t>;
 
     /// Whether the app has its SolutionManager recipe.
     static constexpr bool has_solution_manager =
@@ -1022,7 +1025,7 @@ public:
     /// Throws std::invalid_argument when the registration names or the
     /// parameters are not valid (check_configuration).
     template<class Spec = SMSpec>
-        requires complete<Spec>
+        requires bindable<Spec>
         && (Spec::template constructible_from<
             const typename detail::service_t<Spec>::input_type>)
         && (NHESpec::template constructible_from<detail::service_t<Spec>>)
@@ -1040,12 +1043,12 @@ public:
 
     /// Deleted: a bound app refers to its Input, which a temporary is not.
     template<class Spec = SMSpec>
-        requires complete<Spec>
+        requires bindable<Spec>
     auto bind(typename detail::service_t<Spec>::input_type&&) const = delete;
 
     /// Deleted: a bound app refers to its Input, which a temporary is not.
     template<class Spec = SMSpec>
-        requires complete<Spec>
+        requires bindable<Spec>
     auto bind(const typename detail::service_t<Spec>::input_type&&) const = delete;
 
     /// Runs the runner or the pipeline registered under name from solution, on
@@ -1059,7 +1062,7 @@ public:
     /// is how tools run the runner a user picks. The solution must be valid
     /// for the Input.
     template<std::uniform_random_bit_generator RNG, class Spec = SMSpec, class... Options>
-        requires complete<Spec>
+        requires bindable<Spec>
     [[nodiscard]]
     auto run(
         const std::string_view name,

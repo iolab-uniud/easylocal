@@ -1,8 +1,9 @@
-#include "easylocal/app/app.hpp"
-#include "easylocal/runners/first_improvement.hpp"
 #include "../examples/assignment/cost_components.hpp"
+#include "../examples/assignment/instance.hpp"
 #include "../examples/assignment/neighborhood_explorer.hpp"
 #include "../examples/assignment/solution_manager.hpp"
+#include "easylocal/app/app.hpp"
+#include "easylocal/runners/first_improvement.hpp"
 
 #include <utility>
 
@@ -79,6 +80,19 @@ static_assert(can_add_first_improvement<AppWithNeighborhood>);
 static_assert(can_pipe_first_improvement<AppWithNeighborhood>);
 static_assert(!can_add_reassign_neighborhood<AppWithNeighborhood>);
 static_assert(!can_pipe_reassign_neighborhood<AppWithNeighborhood>);
+
+// A runner is not needed to bind: the app is built up one component at a
+// time, and a tool on one without runners has none to run.
+template<class Application>
+concept can_bind =
+    requires(const Application& application, const AssignmentInstance& input) {
+        application.bind(input);
+    };
+
+static_assert(!can_bind<EmptyApp>);
+static_assert(!can_bind<AppWithSolutionManager>);
+static_assert(can_bind<AppWithNeighborhood>);
+static_assert(can_bind<CompleteGraphApp>);
 
 static_assert(CompleteGraphApp::has_solution_manager);
 static_assert(CompleteGraphApp::has_neighborhood);

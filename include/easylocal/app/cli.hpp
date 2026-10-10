@@ -530,6 +530,11 @@ int run(App application, const int argc, char* argv[], options settings = {})
 
     session_type session{std::move(application), command_line.seed};
     const auto names = session.runner_names();
+    if (names.empty())
+    {
+        err << "error: this app has no runner registered\n";
+        return 2;
+    }
     const std::string runner =
         command_line.runner.empty() ? std::string{names.front()} : command_line.runner;
     if (std::find(names.begin(), names.end(), runner) == names.end())

@@ -120,6 +120,13 @@ reviewed by hand before tagging.
   `check_move_independence_result` and `check_random_move_distribution_result`
   replace `neighborhood_cost_check_result`, `move_independence_result` and
   `random_distribution_result`.
+- **Breaking:** an app without runners binds and is used like any other, so
+  that an app may be built up one component at a time: `App::bindable`
+  (formerly `App::complete`) asks for a SolutionManager and a neighborhood,
+  not for a runner. The interactive tester opens on such an app, with no
+  runner to pick on its Run page, and `cli::run` reports that none is
+  registered. A neighborhood is still needed: the tester without one is in
+  `docs/roadmap.md`.
 
 ### Checking tools
 
