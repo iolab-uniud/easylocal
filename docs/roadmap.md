@@ -209,13 +209,15 @@ deltas there are O(1), so what the union adds is the whole difference; with a
 delta that scans the solution it would disappear in the noise.
 
 `delta_bindings()` is built once, when the union is constructed, and returned
-by reference, since 4.0.0-alpha.3. The infrastructure benchmarks now measure
-the enumeration apart, `tsp-union-medium`: the union against the same moves
-enumerated by one child and then the other. On 256 cities the union's iterator
-costs about 0.7 nanoseconds per move, and about 0.4 when the move is also
-read. The enumeration is therefore not where a union's cost is: the rest is in
-the evaluation, where `is_valid()`, `make_move()` and each delta visit the move
-again.
+by reference, since 4.0.0-alpha.3, and the infrastructure benchmarks now
+measure the union against the same moves with its machinery written by hand:
+`tsp-union-medium` enumerates them child after child, `tsp-union` also
+evaluates them, with one delta that visits the move in place of the union's
+binding per child. The union's iterator costs about 0.7 nanoseconds per move
+to enumerate, and the two are within 5% of each other under a runner. Neither
+the iterator nor the bindings, then, are what a union costs: what is left
+against a single neighborhood is the variant move type itself, which every
+`is_valid()`, `make_move()` and delta visits, and the second child's delta.
 
 **What.** Evaluating the moves of a child with that child's own move type: the
 union's enumeration would hand a runner the child it is in, and the variant
@@ -224,7 +226,9 @@ evaluation disappear. It changes how a runner walks a neighborhood, which is
 the same question as [where a first improvement starts its
 scan](#where-a-first-improvement-starts-its-scan).
 
-**When.** Not scheduled.
+**When.** Not scheduled, and the measurements bound what it can give: the
+union's own machinery is already free, so what it would remove is the cost of
+the variant alone.
 
 ## Where a first improvement starts its scan
 
