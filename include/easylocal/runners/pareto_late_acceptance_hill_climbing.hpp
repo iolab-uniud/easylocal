@@ -152,26 +152,26 @@ public:
     {
         run.limit_evaluations(parameters_.max_evaluations);
 
-        // Entries are immutable and shared: moving along the history copies
-        // no solution.
+        // Entries are shared: moving along the history copies no solution.
+        // One is changed only where nothing else holds it.
         struct entry
         {
             typename Run::solution_type solution;
             typename Run::evaluation_type evaluation;
         };
-        using entry_pointer = std::shared_ptr<const entry>;
+        using entry_pointer = std::shared_ptr<entry>;
 
         std::vector<entry_pointer> history;
         history.reserve(parameters_.history_length);
         auto initial = run.start(solution);
         history.push_back(
-            std::make_shared<const entry>(std::move(solution), std::move(initial)));
+            std::make_shared<entry>(std::move(solution), std::move(initial)));
         while (history.size() < parameters_.history_length && !run.should_stop())
         {
             auto random = run.solution_manager().random_solution(rng);
             auto evaluation = run.evaluate_solution(random);
             history.push_back(
-                std::make_shared<const entry>(std::move(random), std::move(evaluation)));
+                std::make_shared<entry>(std::move(random), std::move(evaluation)));
         }
 
         // The current solution with the move applied, as a new entry.
@@ -179,7 +179,7 @@ public:
             [&run](const entry& current, auto&& candidate, const auto& move) {
                 auto next = current;
                 run.commit(next.solution, next.evaluation, std::move(candidate), move);
-                return std::make_shared<const entry>(std::move(next));
+                return std::make_shared<entry>(std::move(next));
             };
 
         const auto size = history.size();
@@ -205,7 +205,22 @@ public:
             const auto next = (index + 1) % size;
             if (run.better(candidate.cost(), current->evaluation.cost()))
             {
-                history[index] = applied(*current, std::move(candidate), *move);
+                // The entry of the history this iteration replaces is the
+                // current one: when nothing else holds it, the move is made on
+                // it, and no solution is copied.
+                if (current == history[index] && current.use_count() == 2)
+                {
+                    run.commit(
+                        current->solution,
+                        current->evaluation,
+                        std::move(candidate),
+                        *move);
+                }
+                else
+                {
+                    history[index] = applied(*current, std::move(candidate), *move);
+                }
+
                 current = history[next];
                 index = next;
                 idle_iterations = 0;

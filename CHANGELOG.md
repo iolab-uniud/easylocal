@@ -73,6 +73,12 @@ reviewed by hand before tagging.
   `delta_bindings()`, which the evaluation makes once per component of every
   move. The bindings point to the children the union holds, so a union that is
   copied or moved rebuilds its own.
+- Pareto Late Acceptance applies an accepted move to the entry of its history
+  in place, where that entry is the current solution and nothing else holds
+  it, instead of committing the move on a copy of it. The trajectory and the
+  front are the same; what it spares is a copy of the solution per accepted
+  move, which grows with the solution. On a 300-objective-pair TSP with two
+  O(1) deltas it is within the noise at 50 cities, 5% at 200 and 19% at 800.
 - A runner registered on a neighborhood its algorithm cannot use names the
   capability that is missing ("this algorithm draws random moves: its explorer
   needs random_move(solution, rng)") instead of the concepts that failed. An

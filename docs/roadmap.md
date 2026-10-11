@@ -5,22 +5,6 @@ prepared for, not yet scheduled. Nothing here is a promise of the
 [API stability](stability.md) policy; an item becomes part of the API only
 when it is released and listed in the changelog.
 
-## What is left of alpha.3
-
-**Why.** One piece of the release in preparation is not done. Another,
-removing one of the two spellings of the composition, is not going to be: the
-rule is one documented spelling for each part of the API *and* the shortcuts
-of a named one, and the pipe is the shortcut of the `with_*` members. Both
-stay, documented as what they are, and the Experimental level no longer says
-that `with_*` is leaving.
-
-**What.**
-
-- Pareto Late Acceptance committing a move in place, if a benchmark shows it
-  pays.
-
-**When.** 4.0.0-alpha.3.
-
 ## Asynchronous runs on a Session
 
 **Why.** A `Session` runs a registered runner on the calling thread:
