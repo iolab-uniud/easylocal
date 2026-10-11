@@ -131,6 +131,8 @@ neighborhood_union(child_recipe_1, child_recipe_2, ...)
   other children keep their deltas. A copy is made only for a move that needs
   one, so a union where every child has a delta for every component never
   makes one.
+- The bindings of those deltas are built once, when the union is constructed,
+  and the union returns them by reference.
 - Enumeration visits the children in order.
 - Sampling draws a child with probability proportional to its bias, excluding
   zero-bias children and children that produced no move, until a move is found

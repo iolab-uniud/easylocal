@@ -15,6 +15,7 @@
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/recipes.hpp>
 #include <easylocal/trace/events.hpp>
+#include <easylocal/utils/detail/attributes.hpp>
 
 #include <algorithm>
 #include <array>
@@ -436,8 +437,7 @@ public:
     }
 
 private:
-    // The index of this component's binding in the child's bindings, which the
-    // caller holds: a child union returns its bindings by value.
+    // The index of this component's binding in the child's bindings.
     template<std::size_t ChildIndex>
     static constexpr std::size_t child_binding_index = tuple_type_index_v<
         Component,
@@ -647,7 +647,9 @@ public:
         std::array<double, child_count> random_biases,
         Explorers... explorers)
         : explorers_{std::move(explorers)...},
-          random_biases_{std::move(random_biases)}
+          random_biases_{std::move(random_biases)},
+          delta_bindings_{
+              make_delta_bindings(std::type_identity<union_delta_components>{})}
     {
         assert(
             valid_random_biases(random_biases_) &&
@@ -668,6 +670,54 @@ public:
         }
 #endif
     }
+
+    // Copied and moved child by child: the bindings of the new object point
+    // to its own explorers, not to those of the source.
+    neighborhood_union_explorer(const neighborhood_union_explorer& other)
+        : explorers_{other.explorers_},
+          random_biases_{other.random_biases_},
+          delta_bindings_{
+              make_delta_bindings(std::type_identity<union_delta_components>{})}
+    {
+    }
+
+    neighborhood_union_explorer(neighborhood_union_explorer&& other) noexcept(
+        std::is_nothrow_move_constructible_v<explorer_tuple>)
+        : explorers_{std::move(other.explorers_)},
+          random_biases_{other.random_biases_},
+          delta_bindings_{
+              make_delta_bindings(std::type_identity<union_delta_components>{})}
+    {
+    }
+
+    neighborhood_union_explorer& operator=(const neighborhood_union_explorer& other)
+    {
+        if (this != std::addressof(other))
+        {
+            explorers_ = other.explorers_;
+            random_biases_ = other.random_biases_;
+            delta_bindings_ =
+                make_delta_bindings(std::type_identity<union_delta_components>{});
+        }
+
+        return *this;
+    }
+
+    neighborhood_union_explorer& operator=(neighborhood_union_explorer&& other) noexcept(
+        std::is_nothrow_move_assignable_v<explorer_tuple>)
+    {
+        if (this != std::addressof(other))
+        {
+            explorers_ = std::move(other.explorers_);
+            random_biases_ = other.random_biases_;
+            delta_bindings_ =
+                make_delta_bindings(std::type_identity<union_delta_components>{});
+        }
+
+        return *this;
+    }
+
+    ~neighborhood_union_explorer() = default;
 
     // The Input of the children, when each of them gives it.
     [[nodiscard]]
@@ -776,9 +826,9 @@ public:
     }
 
     [[nodiscard]]
-    delta_bindings_type delta_bindings() const noexcept
+    const delta_bindings_type& delta_bindings() const noexcept
     {
-        return make_delta_bindings(std::type_identity<union_delta_components>{});
+        return delta_bindings_;
     }
 
     template<std::uniform_random_bit_generator RNG>
@@ -895,6 +945,9 @@ private:
 
     explorer_tuple explorers_;
     std::array<double, child_count> random_biases_;
+    // Built once: each binding only points to explorers_, which is this
+    // object's, so a copy or a move rebuilds them on the new one.
+    EASYLOCAL_NO_UNIQUE_ADDRESS delta_bindings_type delta_bindings_;
 };
 
 template<std::size_t Count>

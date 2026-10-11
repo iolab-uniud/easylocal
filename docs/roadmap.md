@@ -230,8 +230,6 @@ delta that scans the solution it would disappear in the noise.
 
 **What.**
 
-- `delta_bindings()` built once, when the union is constructed, and returned
-  by reference: the bindings only hold a pointer to the children;
 - a variant of the infrastructure benchmarks for unions, which EasyLocal 4 has
   only against EasyLocal 3 today, to separate the enumeration from the
   evaluation and to tell which of the two the cost is in;
@@ -241,7 +239,11 @@ delta that scans the solution it would disappear in the noise.
   rather than making it cheaper, and the one that changes how a runner walks a
   neighborhood, so it comes after the measurements.
 
-**When.** Not scheduled. The first two are small and independent of the third.
+`delta_bindings()` is built once, when the union is constructed, and returned
+by reference, since 4.0.0-alpha.3: what is left is the dispatch itself.
+
+**When.** Not scheduled. The benchmark is small and independent of the other
+item, which comes after its measurements.
 
 ## Candidate strategies of Tabu Search
 

@@ -1611,6 +1611,14 @@ easylocal_add_test(
 )
 
 easylocal_add_test(
+    union-copied-deltas
+    SOURCES
+        union_copied_deltas.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
+
+easylocal_add_test(
     session-io
     SOURCES
         session_io.cpp

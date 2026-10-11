@@ -68,6 +68,11 @@ reviewed by hand before tagging.
   accepts a move as soon as it improves and so evaluates mostly 2-opt moves,
   from 350 to 13. A union whose children all have a delta, or none, is
   unchanged.
+- A neighborhood union builds its delta bindings once, when it is constructed,
+  and returns them by reference: they were rebuilt at every call of
+  `delta_bindings()`, which the evaluation makes once per component of every
+  move. The bindings point to the children the union holds, so a union that is
+  copied or moved rebuilds its own.
 
 ### Parameters
 
