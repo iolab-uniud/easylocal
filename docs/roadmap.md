@@ -241,6 +241,34 @@ by reference, since 4.0.0-alpha.3: what is left is the dispatch itself.
 **When.** Not scheduled. The benchmark is small and independent of the other
 item, which comes after its measurements.
 
+## Where a first improvement starts its scan
+
+**Why.** `FirstImprovement` applies the first improving move of the
+enumeration and starts the next scan at the first move again, so the moves the
+previous iterations rejected are scanned once more before a new one is
+reached. EasyLocal 3's `FirstDescent` instead starts each scan at a move drawn
+at random and wraps around, which is why the two walk different trajectories.
+On a large neighborhood that is many more evaluations for the same number of
+iterations: on a 300-city TSP, with the 2-opt neighborhood of about 44500
+moves, EasyLocal 3 evaluates some 1100 moves per iteration and EasyLocal 4
+some 13500. It also decides *which* moves are evaluated: a union enumerates
+its children one after the other, so a scan that always restarts evaluates
+almost only moves of the first child, and a delta attached to that child alone
+looks nearly free. The benchmark measures the two walks apart, `fd` and `rfd`,
+rather than comparing them.
+
+**What.** A scanning strategy for the algorithms that apply the first
+improving move: from the first move (what it does today), from a move drawn
+at random, or resuming where the previous scan stopped. A scan that does not
+begin at the first move needs a neighborhood it can enter at a given move,
+which the cursor protocol (`first_move`, `next_move`) gives and a `moves()`
+generator does not: the strategy is available where the explorer has a cursor,
+and a union needs a cursor of its own, which it has not. The same question is
+behind the candidate strategies of Tabu Search below.
+
+**When.** Not scheduled. It is worth settling before the benchmarks are read
+as a comparison of the two frameworks' first descent.
+
 ## Candidate strategies of Tabu Search
 
 **Why.** The four tabu searches (`TabuSearch`, `FirstImprovementTabuSearch`,
