@@ -86,7 +86,7 @@ not need it.
 ### Building without CMake
 
 If your EasyLocal 3 program is built by a makefile, it can stay one:
-[Building without CMake](tutorial/17-building.md) gives the whole workflow,
+[Building without CMake](tutorial/18-building.md) gives the whole workflow,
 from the include path to the libraries of the optional components. Two lines
 of the old makefile change: the C++ standard becomes `-std=c++23`, and
 `-lboost_program_options` goes, since EasyLocal 4 parses the command line
@@ -301,7 +301,7 @@ The file helpers (`load_input`, `load_solution`), interactive tester,
 `cli::run` and REST service all use these same hooks. Your `main` can leave
 file handling to them, and a change to your file format reaches every frontend
 through the same implementation
-([chapter 5](tutorial/05-running-a-search.md#reading-the-instance-printing-the-solution)).
+([chapter 6](tutorial/06-running-a-search.md#reading-the-instance-printing-the-solution)).
 
 ### 5. The SolutionManager
 
@@ -463,12 +463,12 @@ For violation reports, replace `PrintViolations` with the optional
 reports or HTTP responses to display. An optional `name()` supplies the
 component name previously passed to the constructor. Without these members,
 reports show the component's position and value
-([chapter 11](tutorial/11-apps-and-tools.md#a-report-of-the-cost-components)).
+([chapter 12](tutorial/12-apps-and-tools.md#a-report-of-the-cost-components)).
 
 The cost type follows from the return type of `evaluate`: an `int` component
 stays `int`. Use `cost::in_order` for more than two priority levels, or
 `cost::objectives` for several separate objectives
-([chapter 2](tutorial/02-cost.md)).
+([chapter 3](tutorial/03-structured-costs.md)).
 
 ### 7. The NeighborhoodExplorer
 
@@ -579,7 +579,7 @@ public:
 | --- | --- |
 | base `NeighborhoodExplorer<Input, Solution, Move, CostStructure>`, constructor `(in, sm, name)` | `neighborhood_explorer_base<SolutionManager, Move>`, inherited constructor |
 | the name in the constructor | a static `name()`, which the tester puts on its Move page |
-| `FirstMove` (throws `EmptyNeighborhood`), `NextMove` | `first_move`, `next_move`, both returning `false` when there is no move; or a generator `moves(solution)` ([chapter 3](tutorial/03-neighborhood.md)) |
+| `FirstMove` (throws `EmptyNeighborhood`), `NextMove` | `first_move`, `next_move`, both returning `false` when there is no move; or a generator `moves(solution)` ([chapter 4](tutorial/04-neighborhood.md)) |
 | `RandomMove(st, mv)` (throws `EmptyNeighborhood`) | `random_move(solution, rng)`, returning `std::nullopt` when there is no move |
 | `FeasibleMove` | `is_valid` |
 | `MakeMove` | `make_move` |
@@ -619,7 +619,7 @@ Algorithms use either form in the same way.
 Generators are usually easier to write; cursors let you keep the structure of
 an EasyLocal 3 explorer and need no coroutine. You can keep a cursor throughout
 the port and switch later if useful. If an explorer provides both, the library
-uses the cursor. [Chapter 3](tutorial/03-neighborhood.md) compares the two.
+uses the cursor. [Chapter 4](tutorial/04-neighborhood.md) compares the two.
 
 ### 8. The delta cost components
 
@@ -670,7 +670,7 @@ public:
 - Link the delta to its component in the recipe with
   `delta<TourLength, TwoOptLengthDelta>()`. A delta can also be a member of
   the component itself (a *co-located* delta,
-  [chapter 4](tutorial/04-delta-evaluation.md)).
+  [chapter 5](tutorial/05-delta-evaluation.md)).
 - Leave out deltas you have not ported yet. The framework evaluates those
   components on a copy of the solution with the move applied, as EasyLocal 3
   did for components added to the explorer with `AddCostComponent`.
@@ -705,7 +705,7 @@ them through `--neighborhood.random_biases` without recompiling.
 The union represents moves as a variant of its children's move types,
 replacing EasyLocal 3's manual `ActiveMove` bookkeeping. A component uses
 delta evaluation only when every child provides a delta for it
-([chapter 6](tutorial/06-combining-neighborhoods.md)).
+([chapter 7](tutorial/07-combining-neighborhoods.md)).
 
 ## Composing and running
 
@@ -754,7 +754,7 @@ argument to `solution_manager<M>()`, `component<C>()`, `neighborhood<E>()`,
 `delta<C, D>()` or `runner<A>("name")`. These create recipes or registrations.
 Factories named `make_` create the runner or solver you will use:
 `make_runner<Algorithm>(parameters)` below and `make_solver(runner)` in
-[chapter 8](tutorial/08-solvers.md).
+[chapter 9](tutorial/09-solvers.md).
 
 Pass any extra constructor arguments to the factory, for example
 `component<Excess>(ExcessParameters{.bound = 8.0})`. The recipe keeps them
@@ -838,7 +838,7 @@ service all take this app. Each uses a `Session` to bind it to an Input, keep
 a current solution and run algorithms by name: `--runner sa` calls
 `session.run("sa")`. This replaces the wiring around EasyLocal 3's `Solver`,
 `SetRunner` and `--main::method`
-([chapter 11](tutorial/11-apps-and-tools.md)).
+([chapter 12](tutorial/12-apps-and-tools.md)).
 
 **The pipes are a shortcut for named members.** These can make composition
 easier to read while you learn the vocabulary:
@@ -893,7 +893,7 @@ return el::cli::run(application, argc, argv);
 | `LowerBoundReached`, a runner's `max_evaluations` and timeout | `--target`, `--max_evaluations`, `--timeout`, which bound the run whichever runner it uses |
 | `PrintViolations` on the final state | `--report`: the value of each cost component, with its description |
 | the search progress printed by hand from the runner | `--trace run.jsonl`, the events of the run ([what EasyLocal 4 adds](#what-easylocal-4-adds)) |
-| a tuning scenario written by hand | `--tuning.irace <dir>` ([chapter 12](tutorial/12-tuning.md)) |
+| a tuning scenario written by hand | `--tuning.irace <dir>` ([chapter 13](tutorial/13-tuning.md)) |
 | `solver.Solve()`, printing `result.cost` and `result.output` | the run, then `cost`, `time`, the iterations, evaluations and termination, and the solution, or `--output <file>` |
 | `IsSet()` checks | the parameters' own validation, with an exit status of 2 |
 
@@ -912,10 +912,10 @@ termination local optimum
 Pass your program's own parameters as a parameter set:
 `el::cli::run(application, argc, argv, {.program_parameters = own})`.
 They are parsed alongside the framework's parameters
-([chapter 11](tutorial/11-apps-and-tools.md)).
+([chapter 12](tutorial/12-apps-and-tools.md)).
 
 For a solver, wrap a runner with `make_solver`
-([chapter 8](tutorial/08-solvers.md)). `solvers::LocalSearch` replaces
+([chapter 9](tutorial/09-solvers.md)). `solvers::LocalSearch` replaces
 `SimpleLocalSearch`, and `solvers::MultiStart` replaces `MultiStartSearch`.
 Step 13 shows a solve in stages.
 
@@ -957,7 +957,7 @@ el::tui::run(
 
 The Input/Output, Move and Run pages replace the old State, Move and Run
 menus. Use them to load or create solutions, inspect moves and their deltas,
-edit parameters and watch a search. [Chapter 13](tutorial/13-tester.md)
+edit parameters and watch a search. [Chapter 14](tutorial/14-tester.md)
 describes the controls.
 
 Here the Move page shows the best 2-opt move and its delta check, the
@@ -988,7 +988,7 @@ easylocal::tui::run_launcher(
 
 `two_opt_app()` and `swap_app()` are two apps of the TSP example
 (`examples/tsp/apps.hpp`), one with the 2-opt neighborhood and one with the
-swaps ([chapter 13](tutorial/13-tester.md#several-apps-on-the-same-problem)).
+swaps ([chapter 14](tutorial/14-tester.md#several-apps-on-the-same-problem)).
 
 ### 13. A solve in two stages
 
@@ -1026,7 +1026,7 @@ auto descent =
 
 This program reads its own parameters because `cli::run` dispatches named
 runners, while this search uses a solver. `load_and_apply` provides parameter
-loading ([chapter 9](tutorial/09-configuration.md)). Set parameters that depend
+loading ([chapter 10](tutorial/10-configuration.md)). Set parameters that depend
 on the instance after loading the Input and before the solver copies the
 runner, as you would with `SetParameter` after parsing in EasyLocal 3:
 
@@ -1119,7 +1119,7 @@ EASYLOCAL_VERIFY_DELTAS: the delta of cost component #1 disagrees with its full 
 
 Full evaluation slows the search considerably, so enable this in debug builds
 or tests and disable it for performance measurements
-([chapter 4](tutorial/04-delta-evaluation.md)). It is especially useful when
+([chapter 5](tutorial/05-delta-evaluation.md)). It is especially useful when
 move fields change meaning during the port. Here, EasyLocal 3's `TwoOpt`
 identifies the two *edges* to remove, while the tutorial uses *positions* to
 locate the segment to reverse.
@@ -1128,7 +1128,7 @@ locate the segment to reverse.
 solutions to check. Include a tour with cities out of their original order
 to expose deltas that confuse positions with city identifiers. Each check
 constructs the relevant component and returns a report for your test to assert
-on ([chapter 10](tutorial/10-testing.md)):
+on ([chapter 11](tutorial/11-testing.md)):
 
 | Check | What it verifies |
 | --- | --- |
@@ -1163,7 +1163,7 @@ It also validates the app's setup: runner names must be distinct and usable
 on the command line, runners must be constructible from their parameters,
 and every parameter must declare a domain. The domain check supports
 [tuning](#parameters-configuration-and-tuning); the full list of checks is in
-[chapter 14](tutorial/14-checking.md).
+[chapter 15](tutorial/15-checking.md).
 
 **Check a particular solution.** A `Session` holds an Input and current
 solution, like the tester. It offers the three familiar `MoveTester` checks:
@@ -1237,7 +1237,7 @@ parameter that applies only under a condition, or a requirement such as
 `config::require(value<"final_temperature"> < value<"initial_temperature">,
 "...")`. You declare these rules once; the framework enforces them wherever
 parameters are applied. This replaces validation written by hand after parsing
-([chapter 9](tutorial/09-configuration.md)).
+([chapter 10](tutorial/10-configuration.md)).
 
 A **parameter set** collects the blocks under paths.
 `runner.configuration()` uses `search` for the algorithm, `cost` for the cost
@@ -1271,14 +1271,14 @@ from maintaining separate descriptions of the parameters:
   `ConfigTOML` component supports TOML, where tables supply path prefixes:
   `[solver.search.temperature]` can contain `cooling_rate`. Keep a configuration
   file alongside your results to record an experiment's settings
-  ([chapter 9](tutorial/09-configuration.md#configuration-files)).
+  ([chapter 10](tutorial/10-configuration.md#configuration-files)).
 - **Tuning.** In a program using `cli::run`, `--tuning.irace <dir>` exports an
   [irace](https://mlopez-ibanez.github.io/irace/) scenario from the parameters
   with finite domains. It includes domains, conditions, requirements as
   `[forbidden]` expressions and a stub to run the program. Since the scenario
   comes from the program's schema, you do not have to keep a separate parameter
   file in sync with its command-line switches
-  ([chapter 12](tutorial/12-tuning.md)).
+  ([chapter 13](tutorial/13-tuning.md)).
 - **Domain checks.** `check(app, input)` catches parameters with no declared
   domain. Choose a useful domain for tuning: for a temperature,
   `config::range(1.0, 100.0).log()` is more useful than `unlimited`.
@@ -1294,7 +1294,7 @@ application-specific code:
   `--trace run.jsonl`; JSON Lines and binary ELTR are supported. Tracing is
   selected at compile time, so disabled tracing adds no recording overhead.
   Use `scripts/eltr.py` to decode saved runs
-  ([chapter 16](tutorial/16-observing-and-controlling.md) and
+  ([chapter 17](tutorial/17-observing-and-controlling.md) and
   [Tracing](tracing.md)).
 - **Observe and stop a run.** `run_control` combines a `std::stop_token` with
   a progress observer. Pass it with `with(control)`, or set a target and time
@@ -1303,15 +1303,15 @@ application-specific code:
   from another thread without changes to each algorithm.
 - **Expose the app over HTTP.** The optional `REST` component lets clients
   submit runs, poll progress, cancel searches and fetch solutions using the
-  same app definition ([chapter 15](tutorial/15-rest.md)).
+  same app definition ([chapter 16](tutorial/16-rest.md)).
 - **Search several objectives.** `cost::objectives` defines a Pareto cost
   vector, and the run returns the non-dominated solutions it found.
   `runners::ParetoLateAcceptanceHillClimbing` searches for a front
-  ([chapter 2](tutorial/02-cost.md)).
+  ([chapter 3](tutorial/03-structured-costs.md)).
 - **Compose solvers from stages.** Give each stage its own runner, cost and
   neighborhood, then add repetition or conditions as needed. You can express
   the search strategy without writing a `Solver` subclass
-  ([chapter 8](tutorial/08-solvers.md)).
+  ([chapter 9](tutorial/09-solvers.md)).
 
 ## A porting checklist
 
@@ -1403,10 +1403,10 @@ The design changes behind these names have practical consequences:
 
 Each algorithm is a class template with its own parameter block, listed in
 [Runners](reference/runners.md). To write your own, build on `search_run`
-([chapter 7](tutorial/07-custom-runner.md)).
+([chapter 8](tutorial/08-custom-runner.md)).
 
 For a concrete extension of SA, follow
-[Advanced: customizing Simulated Annealing](tutorial/18-customizing-annealing.md).
+[Advanced: customizing Simulated Annealing](tutorial/19-customizing-annealing.md).
 It shows EL4's actual search loop, enables the existing `Reheating` policy,
 then writes a new policy that reheats after consecutive rejected moves. The
 example keeps the framework's delta evaluation, best-solution tracking,

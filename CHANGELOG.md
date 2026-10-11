@@ -161,6 +161,12 @@ reviewed by hand before tagging.
 
 ### Documentation and examples
 
+- The cost chapter of the tutorial is two chapters: chapter 2 keeps the cost
+  components and the cost expression that sums them, and a new chapter 3,
+  *Structured costs*, builds the costs compared by priority or by objective
+  (`cost::in_order`, `cost::hard_soft`, `cost::objectives`), the domain values
+  and the cost semantics. The chapters that followed are renumbered, Moves
+  from 3 to 4 up to the advanced Simulated Annealing chapter from 18 to 19.
 - A new advanced tutorial reads the actual Simulated Annealing search loop,
   uses built-in reheating and implements a configurable rejection-triggered
   reheating policy, with a runnable example and deterministic checks. Library

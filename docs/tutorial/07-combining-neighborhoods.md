@@ -1,4 +1,4 @@
-# 6. Combining neighborhoods
+# 7. Combining neighborhoods
 
 We now have two ways to change a tour: swaps and 2-opt. Combining them lets a
 search try improvements that either neighborhood alone might miss.
@@ -41,7 +41,7 @@ auto union_sa =
   the union excludes it and tries another. Configure the biases through
   `NeighborhoodUnionParameters`.
 - Unions nest, and traces report the route of every move through the nesting
-  (chapter 16).
+  (chapter 17).
 
 Algorithms need no change to use a union: it is just another neighborhood.
 
@@ -51,4 +51,4 @@ Algorithms need no change to use a union: it is just another neighborhood.
 
 ## Next steps
 
-[Chapter 7](07-custom-runner.md) writes a new search algorithm.
+[Chapter 8](08-custom-runner.md) writes a new search algorithm.

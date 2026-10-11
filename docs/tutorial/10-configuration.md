@@ -1,4 +1,4 @@
-# 9. Configuration
+# 10. Configuration
 
 Expose the search parameters to try new settings without recompiling. A
 **parameter set** collects them under paths such as
@@ -63,13 +63,13 @@ A `cost::hard_soft` names its branches, so its sums are
 
 ### Parameters of your own classes
 
-In [chapter 2](02-cost.md#structured-costs), we treated edges longer than 8 as
-violations. To make that bound configurable, replace the lambda with a class
-that takes a parameter block:
+In [chapter 3](03-structured-costs.md#costs-compared-by-priority), we treated
+edges longer than 8 as violations. To make that bound configurable, replace
+the lambda with a class that takes a parameter block:
 
 <!-- snippet: tutorial/tsp.hpp:cost-parameters -->
 ```cpp
-// The bound of chapter 2 as a parameter: how much the longest edge exceeds it.
+// The bound of chapter 3 as a parameter: how much the longest edge exceeds it.
 struct ExcessParameters
 {
     double bound{8.0}; // the longest edge allowed
@@ -139,7 +139,7 @@ $ ./easylocal_tutorial --limited.cost.excess.bound=5
 limited 3, 26
 ```
 
-The same convention applies to runners (chapter 7), explorers and
+The same convention applies to runners (chapter 8), explorers and
 SolutionManagers. Pass blocks through `neighborhood<NHE>(parameters, args...)`
 or `solution_manager<SM>(parameters, args...)`; the latter constructs
 `SM(input, parameters, args...)`. Their paths begin with `neighborhood` and
@@ -157,7 +157,7 @@ For run limits, the library provides `RunParameters`: `target` as cost text,
 Then `run_parameters.options<Cost>(input)` produces the run options, just as
 `timeout(seconds)`, `max_evaluations(n)` and `stop_at(cost)` do individually.
 
-Apps (chapter 11) collect these settings automatically, using
+Apps (chapter 12) collect these settings automatically, using
 `runners.<name>` for algorithms. The command line, TextUI and REST service
 all use the same paths and validation rules.
 
@@ -225,7 +225,7 @@ static consteval auto parameter_schema()
   Use `config::range(low, high)`, `config::one_of("fixed", "random")` or
   `easylocal::unlimited` for an unrestricted value, such as a filename.
   Except for booleans, every field needs an explicit domain to pass
-  `check(app, ...)` (chapter 14).
+  `check(app, ...)` (chapter 15).
 - A **condition**, `.only_if(...)`, says when a field applies. Initial
   acceptance matters only during temperature calibration; when calibration
   is disabled, that field's domain is not checked.
@@ -255,7 +255,7 @@ config::validation_result validate() const
 }
 ```
 
-Automatic configurators read the same declarations: irace (chapter 12) tunes
+Automatic configurators read the same declarations: irace (chapter 13) tunes
 the fields with a domain, only when their condition holds, and never proposes
 values that break a requirement.
 
@@ -281,7 +281,7 @@ file mirrors the paths:
 
 <!-- snippet: tutorial/annealing.toml -->
 ```toml
-# Simulated Annealing for the tutorial's TSP (chapter 9).
+# Simulated Annealing for the tutorial's TSP (chapter 10).
 # Each table is a prefix of the paths, each key a parameter:
 # [solver.search.temperature] cooling_rate is solver.search.temperature.cooling_rate.
 
@@ -342,7 +342,7 @@ if (!applied)
   `load_and_apply`, which reads it for `--config`:
   `el::config::load_and_apply(argc, argv, configuration,
   el::config::load_toml_file)`; an app does the same with
-  `cli::options::read_config` (chapter 11).
+  `cli::options::read_config` (chapter 12).
 
 The program is `examples/tutorial/toml_main.cpp`, built when the component is
 enabled (`-DEASYLOCAL_ENABLE_CONFIG_TOML=ON`), and linked with
@@ -359,4 +359,4 @@ target_link_libraries(tsp PRIVATE EasyLocal::Core EasyLocal::ConfigTOML)
 
 ## Next steps
 
-[Chapter 10](10-testing.md) checks the components.
+[Chapter 11](11-testing.md) checks the components.

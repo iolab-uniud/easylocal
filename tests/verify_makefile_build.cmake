@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-# The build without CMake of docs/tutorial/17-building.md: the quick start
+# The build without CMake of docs/tutorial/18-building.md: the quick start
 # compiled with one command, and the tutorial's makefile building the programs
 # of Core and of every optional component this build enables. The headers come
 # from the installation the producing build was installed to, as a student's

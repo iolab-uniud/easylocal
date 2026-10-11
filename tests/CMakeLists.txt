@@ -812,7 +812,7 @@ set_tests_properties(
         LABELS integration
 )
 
-# The build without CMake of docs/tutorial/17-building.md: the quick start
+# The build without CMake of docs/tutorial/18-building.md: the quick start
 # compiled with one command and the tutorial's makefile, against an
 # installation of this build. The makefile is a GCC/Clang recipe, so the test
 # needs a make program and a compiler that takes -std=c++23.

@@ -1,4 +1,4 @@
-# 3. Moves
+# 4. Moves
 
 The **NeighborhoodExplorer** defines the moves available from a solution,
 checks their validity and applies them. Keeping this logic in one component
@@ -18,7 +18,7 @@ as your algorithms and tools need them:
 | `moves(solution)`, or the cursor `first_move` / `next_move` | algorithms that scan the neighborhood: First Improvement, Best Improvement, Tabu Search |
 | `random_move(solution, rng)` | algorithms that sample it: Simulated Annealing, Hill Climbing, Late Acceptance Hill Climbing, Great Deluge, Pareto Late Acceptance Hill Climbing |
 | `inverse(solution, move, tabu_move)` | Tabu Search: whether a move is forbidden by one applied earlier |
-| `name()` | the interactive tester (chapter 13) |
+| `name()` | the interactive tester (chapter 14) |
 
 For example, Simulated Annealing needs random sampling but no enumeration.
 The quick start uses only First Improvement, so its explorer has no
@@ -28,7 +28,7 @@ Unlike EasyLocal 3's virtual interface, this lets you implement just the
 operations your program uses.
 
 The explorers of this tutorial implement both enumeration and sampling,
-because chapter 5 runs them with First Improvement and with Simulated
+because chapter 6 runs them with First Improvement and with Simulated
 Annealing.
 
 ## Swap moves
@@ -247,7 +247,7 @@ needs no coroutine and matches the structure of EasyLocal 3 explorers. If an
 explorer provides both, the library uses the cursor.
 
 The choice does not affect how you compose the search. Runners accept either
-form, and chapter 6 combines these explorers in one neighborhood.
+form, and chapter 7 combines these explorers in one neighborhood.
 
 ## See also
 
@@ -257,5 +257,5 @@ form, and chapter 6 combines these explorers in one neighborhood.
 ## Next steps
 
 Evaluating a move currently means applying it to a copy and re-evaluating the
-whole tour. [Chapter 4](04-delta-evaluation.md) computes the effect of a 2-opt
+whole tour. [Chapter 5](05-delta-evaluation.md) computes the effect of a 2-opt
 move on the length directly.

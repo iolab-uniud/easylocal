@@ -1,4 +1,4 @@
-# Simulated Annealing for the tutorial's TSP (chapter 9).
+# Simulated Annealing for the tutorial's TSP (chapter 10).
 # Each table is a prefix of the paths, each key a parameter:
 # [solver.search.temperature] cooling_rate is solver.search.temperature.cooling_rate.
 

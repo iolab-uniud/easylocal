@@ -1,4 +1,4 @@
-# 4. Delta evaluation
+# 5. Delta evaluation
 
 So far, evaluating a move means copying the tour, applying the move and
 recomputing its length. A **delta cost component** computes the change
@@ -49,7 +49,7 @@ auto nhe =
   `operator+(Value, Delta)`.
 - With floating-point values the law holds up to rounding: the length of a
   tour with decimal distances, updated by deltas, drifts from its full
-  evaluation in the last bits. The checks of chapters 10 and 14 forgive it,
+  evaluation in the last bits. The checks of chapters 11 and 15 forgive it,
   within a tolerance; the search compares the costs exactly, unless the cost
   expression is `cost::approximately(...)` (chapter 2).
 - Deltas are **per component and per neighborhood**. The cost of a move is
@@ -130,7 +130,7 @@ The co-located version uses one class, but ties it to the move type. Its
 `evaluate` and `delta_evaluate` members share an object, so they can also share
 precomputed data. The rest of this tutorial uses the separate version.
 
-Chapter 10 shows how to check that a delta agrees with the full evaluation.
+Chapter 11 shows how to check that a delta agrees with the full evaluation.
 
 ## Checking the deltas during a run
 
@@ -156,4 +156,4 @@ and disable it for performance measurements.
 
 ## Next steps
 
-[Chapter 5](05-running-a-search.md) runs the search.
+[Chapter 6](06-running-a-search.md) runs the search.

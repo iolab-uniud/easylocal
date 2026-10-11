@@ -1,4 +1,4 @@
-# Builds the tutorial's programs without CMake (docs/tutorial/17-building.md).
+# Builds the tutorial's programs without CMake (docs/tutorial/18-building.md).
 #
 #     make EASYLOCAL=/usr/local                    the programs of Core
 #     make EASYLOCAL=/usr/local tsp_tui            one optional component

@@ -1,4 +1,4 @@
-# 12. Tuning with irace
+# 13. Tuning with irace
 
 Good parameter values depend on the problem and its instances.
 [irace](https://mlopez-ibanez.github.io/irace/) searches for them by running
@@ -110,7 +110,7 @@ $ cd tuning && irace
 ```
 
 The best configurations are switches of the program: give them on its command
-line, or as `path = value` lines in a configuration file (chapter 9).
+line, or as `path = value` lines in a configuration file (chapter 10).
 
 ## The cost as one number
 
@@ -136,4 +136,4 @@ them would change the objective used to compare configurations.
 
 ## Next steps
 
-[Chapter 13](13-tester.md) explores the app in the interactive tester.
+[Chapter 14](14-tester.md) explores the app in the interactive tester.

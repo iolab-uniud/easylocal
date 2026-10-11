@@ -57,11 +57,11 @@ also in the opposite direction): 0 → 1 → 3 → 2 → 4 → 0 (2 + 4 + 8 + 5 
 The chapters build the solver in this order:
 
 - chapters 1 and 2 model a tour as a sequence of cities and give it a cost;
-- chapter 3 defines swaps and 2-opt moves, which reverse a segment of the
+- chapter 4 defines swaps and 2-opt moves, which reverse a segment of the
   tour, and shows how to enumerate them with a generator or a cursor;
-- chapter 4 computes the effect of a 2-opt move on the length from four
+- chapter 5 computes the effect of a 2-opt move on the length from four
   distances only;
-- chapter 5 runs both First Improvement and Simulated Annealing, and chapter 6
+- chapter 6 runs both First Improvement and Simulated Annealing, and chapter 7
   lets a search use both moves;
 - the remaining chapters build on these pieces: new algorithms, solvers,
   configuration, testing and the interactive and HTTP tools.
@@ -123,30 +123,32 @@ snippets write `Tour` for `tutorial::Tour`.
 
 1. [Modelling the problem](01-problem-model.md): Input, Solution, Move and the
    SolutionManager.
-2. [The cost](02-cost.md): cost components, cost expressions, structured costs.
-3. [Moves](03-neighborhood.md): the NeighborhoodExplorer.
-4. [Delta evaluation](04-delta-evaluation.md): evaluating moves incrementally.
-5. [Running a search](05-running-a-search.md): runners, built-in algorithms,
+2. [The cost](02-cost.md): cost components and cost expressions.
+3. [Structured costs](03-structured-costs.md): priorities, objectives, domain
+   values and cost semantics.
+4. [Moves](04-neighborhood.md): the NeighborhoodExplorer.
+5. [Delta evaluation](05-delta-evaluation.md): evaluating moves incrementally.
+6. [Running a search](06-running-a-search.md): runners, built-in algorithms,
    results, reading the instance and printing the solution.
-6. [Combining neighborhoods](06-combining-neighborhoods.md): `neighborhood_union`.
-7. [Writing your own runner](07-custom-runner.md): `search_run`.
-8. [Solvers](08-solvers.md): from an Input to a final solution.
-9. [Configuration](09-configuration.md): parameters from the command line and
-   files.
-10. [Testing your components](10-testing.md): contract checks.
-11. [Applications](11-apps-and-tools.md): the app, a problem and its runners,
+7. [Combining neighborhoods](07-combining-neighborhoods.md): `neighborhood_union`.
+8. [Writing your own runner](08-custom-runner.md): `search_run`.
+9. [Solvers](09-solvers.md): from an Input to a final solution.
+10. [Configuration](10-configuration.md): parameters from the command line and
+    files.
+11. [Testing your components](11-testing.md): contract checks.
+12. [Applications](12-apps-and-tools.md): the app, a problem and its runners,
     the Session that runs it on an Input, and a command-line program.
-12. [Tuning with irace](12-tuning.md): the parameters of a program, tuned
+13. [Tuning with irace](13-tuning.md): the parameters of a program, tuned
     on its instances.
-13. [The interactive tester](13-tester.md): the TextUI.
-14. [Checking a composed problem](14-checking.md): `check`, and the
+14. [The interactive tester](14-tester.md): the TextUI.
+15. [Checking a composed problem](15-checking.md): `check`, and the
     neighborhood checks of a Session.
-15. [A REST service](15-rest.md): searches over HTTP.
-16. [Observing and controlling a run](16-observing-and-controlling.md):
+16. [A REST service](16-rest.md): searches over HTTP.
+17. [Observing and controlling a run](17-observing-and-controlling.md):
     progress, cancellation, tracing.
-17. [Building without CMake](17-building.md): a makefile, and the headers and
+18. [Building without CMake](18-building.md): a makefile, and the headers and
     libraries of every component.
-18. [Advanced: customizing Simulated Annealing](18-customizing-annealing.md):
+19. [Advanced: customizing Simulated Annealing](19-customizing-annealing.md):
     the library's search loop, built-in reheating and a custom temperature policy.
 
 Porting an EasyLocal 3 program? [Coming from EasyLocal 3](../from-easylocal-3.md)

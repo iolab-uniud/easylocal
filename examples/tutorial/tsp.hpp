@@ -123,7 +123,7 @@ public:
     }
     // [component-text]
     // Optional, for people: the name of the component and a text that
-    // explains its value on a tour, here the edges it adds up (chapter 11).
+    // explains its value on a tour, here the edges it adds up (chapter 12).
     static std::string_view name()
     {
         return "TourLength";
@@ -201,7 +201,7 @@ public:
 // [domain-value] -----------------------------------------------------------
 
 // [cost-parameters] --------------------------------------------------------
-// The bound of chapter 2 as a parameter: how much the longest edge exceeds it.
+// The bound of chapter 3 as a parameter: how much the longest edge exceeds it.
 struct ExcessParameters
 {
     double bound{8.0}; // the longest edge allowed
@@ -304,7 +304,7 @@ public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
     // [two-opt-name]
-    // The name of the neighborhood in the interactive tester (chapter 13).
+    // The name of the neighborhood in the interactive tester (chapter 14).
     static std::string_view name()
     {
         return "2-opt";
@@ -379,7 +379,7 @@ public:
 
 // [io] ---------------------------------------------------------------------
 // Optional hooks, found by ADL, that read, write and describe the values
-// (chapter 5).
+// (chapter 6).
 // [read-input]
 inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
 {
@@ -486,7 +486,7 @@ public:
 
 // [equality] ---------------------------------------------------------------
 // Equality of solutions and moves, for the neighborhood checks of a Session
-// (chapter 14).
+// (chapter 15).
 inline bool operator==(const Tour& a, const Tour& b)
 {
     return a.order == b.order;
@@ -508,7 +508,7 @@ struct RandomDescentParameters
 {
     easylocal::limit max_evaluations{1000}; // a count, or easylocal::unlimited
 
-    // The schema makes the parameters configurable (chapter 9).
+    // The schema makes the parameters configurable (chapter 10).
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(

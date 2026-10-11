@@ -1,4 +1,4 @@
-# Building without CMake
+# 18. Building without CMake
 
 EasyLocal Core is header-only and depends only on the standard library: a
 compiler, the C++23 flag and one include path build a program. This chapter
@@ -68,7 +68,7 @@ the recipe for any EasyLocal program:
 
 <!-- snippet: tutorial/Makefile -->
 ```make
-# Builds the tutorial's programs without CMake (docs/tutorial/17-building.md).
+# Builds the tutorial's programs without CMake (docs/tutorial/18-building.md).
 #
 #     make EASYLOCAL=/usr/local                    the programs of Core
 #     make EASYLOCAL=/usr/local tsp_tui            one optional component
@@ -132,9 +132,9 @@ From the example directory, the three programs of Core are one command away:
 ```sh
 cd examples/tutorial
 make EASYLOCAL=$HOME/.local
-./tsp                 # the searches of chapters 5 and 6
-./tsp_cli --help      # the command line of chapter 11
-./tsp_checks          # the component checks of chapter 10
+./tsp                 # the searches of chapters 6 and 7
+./tsp_cli --help      # the command line of chapter 12
+./tsp_checks          # the component checks of chapter 11
 ```
 
 Three things are worth copying into a makefile of your own:
@@ -199,7 +199,7 @@ Where the libraries come from:
 
 The [dependency policy](../dependency-policy.md) says which versions each
 component accepts and why. The rest of the framework — tracing, logging, the
-command line, the [tuning](12-tuning.md) files for irace — is Core, so it
+command line, the [tuning](13-tuning.md) files for irace — is Core, so it
 needs no flag beyond the include path.
 
 ## What CMake does that a makefile does not

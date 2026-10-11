@@ -1,4 +1,4 @@
-# 13. The interactive tester
+# 14. The interactive tester
 
 The **interactive tester**, or TextUI, lets you explore the app without writing
 a debugging interface. Load a solution, inspect individual moves, change
@@ -43,7 +43,7 @@ The tester has three pages, switched with F3, F4 and F5; the header shows the
 instance, the current seed and the cost of the current solution.
 
 On the **Input/Output** page, `I` creates the initial solution and `C` runs the
-app check of chapter 14:
+app check of chapter 15:
 
 ![The Input/Output page after creating the initial solution and running the check](images/tui-check.svg)
 
@@ -53,7 +53,7 @@ and full evaluation, and `A` would apply it:
 ![The Move page with the best 2-opt move and its delta check](images/tui-moves.svg)
 
 On the **Run** page, press `G` or Enter on the runner list to edit the selected
-runner's parameters. These are the same settings exposed in chapter 9, with
+runner's parameters. These are the same settings exposed in chapter 10, with
 their descriptions and current values. Enter starts the run; Esc cancels:
 
 ![The parameters of Simulated Annealing, before running it](images/tui-parameters.svg)
@@ -79,7 +79,7 @@ After a run, the controls and status line show the before/after costs and
 termination reason.
 
 Press `P` to edit shared problem parameters, such as cost weights (chapter 2)
-or neighborhood biases (chapter 6). Applying them updates the header cost
+or neighborhood biases (chapter 7). Applying them updates the header cost
 and Move page evaluations as well as future runs.
 
 On a small terminal, pages scroll to keep the focused control visible. Move
@@ -90,9 +90,9 @@ end-to-end tests.
 ## Loading, saving and displaying
 
 The TextUI reuses the I/O and display hooks from
-[chapter 5](05-running-a-search.md#reading-the-instance-printing-the-solution):
+[chapter 6](06-running-a-search.md#reading-the-instance-printing-the-solution):
 `read_input`, `read_solution`, `write_solution` and `describe`. The solution
-window (`S` or F2) also shows the component report from chapter 11.
+window (`S` or F2) also shows the component report from chapter 12.
 
 Commands requiring missing hooks are hidden. For display, a Solution without
 `describe` falls back to `write_solution`; a value with neither appears as
@@ -103,7 +103,7 @@ member of `TwoOptExplorer`:
 
 <!-- snippet: tutorial/tsp.hpp:two-opt-name -->
 ```cpp
-// The name of the neighborhood in the interactive tester (chapter 13).
+// The name of the neighborhood in the interactive tester (chapter 14).
 static std::string_view name()
 {
     return "2-opt";
@@ -173,7 +173,7 @@ el::tui::run_launcher(
   SolutionManager recipe, cost included: they differ in the neighborhood and
   the runners. A launcher of apps with different recipes does not compile.
 - To search with both neighborhoods at once, compose them in one app with
-  `neighborhood_union` (chapter 6); the launcher is for examining them one at
+  `neighborhood_union` (chapter 7); the launcher is for examining them one at
   a time.
 - To run searches with different neighborhoods from one app, give a runner a
   neighborhood of its own, the third argument of `runner`: it is built over
@@ -225,5 +225,5 @@ during a session, edit *Random seed* on the Run page and press Enter or
 
 ## Next steps
 
-[Chapter 14](14-checking.md) checks the composed problem, from code and from
+[Chapter 15](15-checking.md) checks the composed problem, from code and from
 the tester.

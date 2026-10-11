@@ -106,7 +106,7 @@ int main(int argc, char* argv[])
         | el::runner<runners::SimulatedAnnealing<Classic>>("sa");
 
     // [text] -------------------------------------------------------------
-    // The Input and the tours in the text of the I/O hooks (chapter 5).
+    // The Input and the tours in the text of the I/O hooks (chapter 6).
     auto text_api = el::rest::blueprint("/tsp-text", application);
     // [text] -------------------------------------------------------------
 

@@ -1,4 +1,4 @@
-# 10. Testing your components
+# 11. Testing your components
 
 Before trusting search results, check that moves preserve valid solutions and
 deltas agree with full evaluation. `<easylocal/testing.hpp>` supplies these
@@ -52,7 +52,7 @@ Failures identify the move, starting solution and disagreeing values. The
 report prints up to three failures per check. A hook that throws fails its
 check without stopping the remaining checks.
 
-For a co-located delta (chapter 4) omit the third type, as for
+For a co-located delta (chapter 5) omit the third type, as for
 `TourLengthWithDelta` above: the check then uses the component's own
 `delta_evaluate`.
 
@@ -74,12 +74,12 @@ provides the options and reports for `check(app)`, but not these individual
 checks.
 
 For bugs that appear only during a longer search, enable
-[`EASYLOCAL_VERIFY_DELTAS`](04-delta-evaluation.md#checking-the-deltas-during-a-run)
+[`EASYLOCAL_VERIFY_DELTAS`](05-delta-evaluation.md#checking-the-deltas-during-a-run)
 in a debug build. It compares incremental and full evaluation after every
 committed move.
 
 For a whole composed problem, `easylocal::check(app, input)` runs the same
-checks against an app ([chapter 14](14-checking.md)).
+checks against an app ([chapter 15](15-checking.md)).
 
 ## See also
 
@@ -87,4 +87,4 @@ checks against an app ([chapter 14](14-checking.md)).
 
 ## Next steps
 
-[Chapter 11](11-apps-and-tools.md) packages the problem as an application.
+[Chapter 12](12-apps-and-tools.md) packages the problem as an application.

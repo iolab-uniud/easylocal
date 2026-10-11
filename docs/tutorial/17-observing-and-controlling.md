@@ -1,4 +1,4 @@
-# 16. Observing and controlling a run
+# 17. Observing and controlling a run
 
 You can monitor a search, stop it from another thread or record its decisions
 without changing the algorithm. Pass a control and a tracer as the final

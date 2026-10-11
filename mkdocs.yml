@@ -82,22 +82,23 @@ nav:
       - tutorial/README.md
       - tutorial/01-problem-model.md
       - tutorial/02-cost.md
-      - tutorial/03-neighborhood.md
-      - tutorial/04-delta-evaluation.md
-      - tutorial/05-running-a-search.md
-      - tutorial/06-combining-neighborhoods.md
-      - tutorial/07-custom-runner.md
-      - tutorial/08-solvers.md
-      - tutorial/09-configuration.md
-      - tutorial/10-testing.md
-      - tutorial/11-apps-and-tools.md
-      - tutorial/12-tuning.md
-      - tutorial/13-tester.md
-      - tutorial/14-checking.md
-      - tutorial/15-rest.md
-      - tutorial/16-observing-and-controlling.md
-      - tutorial/17-building.md
-      - tutorial/18-customizing-annealing.md
+      - tutorial/03-structured-costs.md
+      - tutorial/04-neighborhood.md
+      - tutorial/05-delta-evaluation.md
+      - tutorial/06-running-a-search.md
+      - tutorial/07-combining-neighborhoods.md
+      - tutorial/08-custom-runner.md
+      - tutorial/09-solvers.md
+      - tutorial/10-configuration.md
+      - tutorial/11-testing.md
+      - tutorial/12-apps-and-tools.md
+      - tutorial/13-tuning.md
+      - tutorial/14-tester.md
+      - tutorial/15-checking.md
+      - tutorial/16-rest.md
+      - tutorial/17-observing-and-controlling.md
+      - tutorial/18-building.md
+      - tutorial/19-customizing-annealing.md
   - Coming from EasyLocal 3: from-easylocal-3.md
   - Reference:
       - reference/README.md

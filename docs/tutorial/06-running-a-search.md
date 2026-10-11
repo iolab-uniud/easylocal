@@ -1,10 +1,10 @@
-# 5. Running a search
+# 6. Running a search
 
 ## A runner
 
 A **runner** combines an algorithm with the problem recipes. We now have both:
 `sm` describes the SolutionManager and cost (chapter 2), and `nhe` describes
-2-opt moves and their delta (chapter 4). Attach them to First Improvement and
+2-opt moves and their delta (chapter 5). Attach them to First Improvement and
 run it on the five-city instance:
 
 <!-- snippet: tutorial/main.cpp:first-improvement -->
@@ -82,7 +82,7 @@ For `Classic`, the parameter block is
 `SimulatedAnnealingParameters<ClassicParameters>`. It groups schedule settings
 under `temperature` and also holds the run's evaluation budget:
 `{.temperature = {...}, .max_evaluations = 10000}`. Configuration paths use
-`search.temperature.*` (chapter 9). Setting `calibration_samples` above zero
+`search.temperature.*` (chapter 10). Setting `calibration_samples` above zero
 estimates the initial temperature from sampled moves.
 
 Pass an RNG to `run` for a stochastic algorithm:
@@ -118,7 +118,7 @@ never increases. To let it cross infeasible regions, as EasyLocal 3's
 `cost::sum(component<Hard>() * 1000, component<Soft>())`.
 
 To change the schedule, follow
-[Advanced: customizing Simulated Annealing](18-customizing-annealing.md).
+[Advanced: customizing Simulated Annealing](19-customizing-annealing.md).
 It shows the actual search loop, the built-in reheating wrapper and a policy
 that reheats after consecutive rejected moves.
 
@@ -147,7 +147,7 @@ as free functions next to the types, found by argument-dependent lookup:
 <!-- snippet: tutorial/tsp.hpp:io -->
 ```cpp
 // Optional hooks, found by ADL, that read, write and describe the values
-// (chapter 5).
+// (chapter 6).
 inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
 {
     std::size_t cities = 0; // "n", then the n rows of the distance matrix
@@ -227,7 +227,7 @@ These helpers throw `std::runtime_error` on stream failures; file errors name
 the affected path. Implement only the hooks you use: a program that constructs
 its Input in code needs no `read_input`.
 
-The Session (chapter 11) and interactive tester (chapter 13) reuse these hooks,
+The Session (chapter 12) and interactive tester (chapter 14) reuse these hooks,
 so adding a frontend does not require another file parser or solution writer.
 
 ## See also
@@ -237,4 +237,4 @@ so adding a frontend does not require another file parser or solution writer.
 
 ## Next steps
 
-[Chapter 6](06-combining-neighborhoods.md) adds a second neighborhood.
+[Chapter 7](07-combining-neighborhoods.md) adds a second neighborhood.

@@ -227,7 +227,7 @@ the solution hooks only when the corresponding switches are used.
 
 ### Tuning with irace
 
-`<easylocal/app/tuning.hpp>`; tutorial: [chapter 12](../tutorial/12-tuning.md).
+`<easylocal/app/tuning.hpp>`; tutorial: [chapter 13](../tutorial/13-tuning.md).
 
 `cli::run` also reads the block `easylocal::TuningParameters` under `tuning`:
 

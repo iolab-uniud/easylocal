@@ -1,4 +1,4 @@
-# 11. Applications
+# 12. Applications
 
 An **app** packages the problem recipes and gives each available algorithm a
 name. A **Session** uses that app on one Input and keeps a current solution.
@@ -40,7 +40,7 @@ auto piped_application = el::app("tsp") | sm | nhe
   or a cursor.
 - An app also registers pipelines of stages, `el::pipeline("name", stages...)`,
   run by name like a runner; a stage may be an algorithm on the app's recipes,
-  `stage<A>(name, parameters)` (chapter 8).
+  `stage<A>(name, parameters)` (chapter 9).
 - `application.bind(tsp)` builds the services once for an Input, a `BoundApp`
   whose `run("fi", solution, rng)` runs a registration on them; the Session
   below does this for you.
@@ -198,7 +198,7 @@ termination completed
 
 | Switch | |
 | --- | --- |
-| `--instance <file>` | the Input, read with the `read_input` hook (chapter 5); required |
+| `--instance <file>` | the Input, read with the `read_input` hook (chapter 6); required |
 | `--seed <n>` | the seed of the random generator given to random solutions and stochastic runners |
 | `--runner <name>` | a registered runner; the first one when empty |
 | `--start random`, `--start initial` | the starting solution; random by default when the problem has `random_solution` |
@@ -210,7 +210,7 @@ termination completed
 | `--runners.<name>.*`, `--cost.*`, `--solution_manager.*`, `--neighborhood.*` | the app's parameters, as `configuration()` lists them |
 | `--report true` | also print the value of each cost component, see below |
 | `--trace <file>` | record the [trace](../tracing.md) of the run, with timestamps: JSON Lines for a `.jsonl` name, ELTR otherwise |
-| `--config <file>` | the same settings from a file (chapter 9); `--help` lists them all |
+| `--config <file>` | the same settings from a file (chapter 10); `--help` lists them all |
 
 - Output includes the cost, elapsed seconds and solution. Built-in algorithms
   also report iterations, evaluations and the termination reason. Exit status
@@ -218,7 +218,7 @@ termination completed
   such as an unreadable file.
 - Add program-specific parameters with
   `el::cli::run(application, argc, argv, {.program_parameters = own})`.
-  The blocks referenced by `own` must outlive the call (chapter 9).
+  The blocks referenced by `own` must outlive the call (chapter 10).
 - Set default switches through `defaults`, a `cli::CommandLineParameters`.
   For example:
   `{.defaults = {.instance = "...", .seed = 2026, .start = "initial"}}`.
@@ -226,7 +226,7 @@ termination completed
   steps from `el::config::load_and_apply` and a Session; see the
   [reference](../reference/app-and-tools.md).
 
-The TextUI (chapter 13) and the REST service (chapter 15) take the same
+The TextUI (chapter 14) and the REST service (chapter 16) take the same
 parameter paths and targets.
 
 ### A report of the cost components
@@ -238,7 +238,7 @@ Two optional members give a component a name and explanatory text. Here
 <!-- snippet: tutorial/tsp.hpp:component-text -->
 ```cpp
 // Optional, for people: the name of the component and a text that
-// explains its value on a tour, here the edges it adds up (chapter 11).
+// explains its value on a tour, here the edges it adds up (chapter 12).
 static std::string_view name()
 {
     return "TourLength";
@@ -276,7 +276,7 @@ component TourLength 26
 - `describe` is the place for what EasyLocal 3's `PrintViolations` printed:
   the violations a constraint counts, for example.
 - The same report is `session.cost_report()` in a program, and the
-  solution window of the TextUI (chapter 13) shows it.
+  solution window of the TextUI (chapter 14) shows it.
 
 ## See also
 
@@ -285,4 +285,4 @@ component TourLength 26
 
 ## Next steps
 
-[Chapter 12](12-tuning.md) tunes the parameters of the program with irace.
+[Chapter 13](13-tuning.md) tunes the parameters of the program with irace.

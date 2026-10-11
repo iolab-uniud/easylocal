@@ -268,7 +268,7 @@ schedule does, keeping the reheat temperature above the final one.
 `Reheating<Hybrid>` is EasyLocal 3's annealing with reheating.
 
 For a complete extension example, see
-[Customizing Simulated Annealing](../tutorial/18-customizing-annealing.md).
+[Customizing Simulated Annealing](../tutorial/19-customizing-annealing.md).
 It walks through the library's `run` implementation, configures this wrapper
 and writes a temperature policy that reheats after consecutive rejections.
 

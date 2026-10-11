@@ -1,4 +1,4 @@
-# 18. Advanced: customizing Simulated Annealing
+# 19. Advanced: customizing Simulated Annealing
 
 Simulated Annealing separates three decisions: how to propose a move, whether
 to accept it, and how to change the temperature. The neighborhood handles the
@@ -8,8 +8,8 @@ run limits and tracing.
 
 This chapter reads the actual EL4 implementation, enables its built-in
 reheating schedule, then writes a different reheating rule. It builds on
-[runners](05-running-a-search.md), [custom algorithms](07-custom-runner.md)
-and [parameter blocks](09-configuration.md). The complete program is
+[runners](06-running-a-search.md), [custom algorithms](08-custom-runner.md)
+and [parameter blocks](10-configuration.md). The complete program is
 `examples/tutorial/annealing_main.cpp`; the custom policy is in
 `reheat_on_rejection.hpp` beside it.
 
@@ -391,7 +391,7 @@ if (!session.run("reheat"))
 
 The command line, TextUI and REST adapter can use this app as they do the
 earlier TSP app. Give count parameters finite ranges when exporting them for
-tuning ([chapter 12](12-tuning.md)).
+tuning ([chapter 13](13-tuning.md)).
 
 Build and run the complete example:
 
@@ -411,7 +411,7 @@ handling, without relying on a lucky sequence of random moves.
 A temperature policy sees only whether a proposal was accepted. A rule based
 on iterations since the *best solution improved* needs more information.
 For that change, write a runner on `search_run`, following the loop above and
-[chapter 7](07-custom-runner.md). Likewise, change the acceptance policy if the
+[chapter 8](08-custom-runner.md). Likewise, change the acceptance policy if the
 decision depends on candidate cost, current cost and temperature; its member
 is `accept(candidate, current, temperature, rng)`.
 
@@ -422,5 +422,5 @@ implementation intact.
 ## See also
 
 - [Runners](../reference/runners.md): temperature and acceptance contracts.
-- [Observing and controlling a run](16-observing-and-controlling.md): recording
+- [Observing and controlling a run](17-observing-and-controlling.md): recording
   temperature changes and applying common run limits.

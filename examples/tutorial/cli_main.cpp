@@ -1,4 +1,4 @@
-// The tutorial's TSP as a command-line program (chapter 11): the app, run by
+// The tutorial's TSP as a command-line program (chapter 12): the app, run by
 // cli::run, which reads the instance, the seed and the runner from the
 // command line.
 #include "tsp.hpp"

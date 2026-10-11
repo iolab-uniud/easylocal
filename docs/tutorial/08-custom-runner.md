@@ -1,4 +1,4 @@
-# 7. Writing your own runner
+# 8. Writing your own runner
 
 To try a search strategy of your own, write a class with a `run` member.
 The framework supplies evaluation, counters and run control, leaving you to
@@ -11,7 +11,7 @@ struct RandomDescentParameters
 {
     easylocal::limit max_evaluations{1000}; // a count, or easylocal::unlimited
 
-    // The schema makes the parameters configurable (chapter 9).
+    // The schema makes the parameters configurable (chapter 10).
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
@@ -101,14 +101,14 @@ auto descent =
 the parameters and exposes them through `parameters()`. The runner keeps this
 block and constructs the algorithm from it when bound.
 
-Adding `parameter_schema()` and `validate()` to the block (chapter 9) also
+Adding `parameter_schema()` and `validate()` to the block (chapter 10) also
 exposes it to configuration files and frontends. Standalone runners use paths
-under `search.*`; apps use `runners.<name>.*` (chapter 11). Your custom
+under `search.*`; apps use `runners.<name>.*` (chapter 12). Your custom
 algorithm then gets the same configuration support as the built-in ones.
 
 An algorithm whose `parameters_type` is not a parameter block can still run,
 but frontends cannot edit its settings. `check(app, ...)` reports this gap
-(chapter 14).
+(chapter 15).
 
 ## See also
 
@@ -117,8 +117,8 @@ but frontends cannot edit its settings. `check(app, ...)` reports this gap
 
 ## Next steps
 
-[Chapter 8](08-solvers.md) lets the framework build the initial solution.
+[Chapter 9](09-solvers.md) lets the framework build the initial solution.
 
 For a worked extension of an existing algorithm, the advanced
-[Simulated Annealing chapter](18-customizing-annealing.md) reads the library's
+[Simulated Annealing chapter](19-customizing-annealing.md) reads the library's
 search loop and implements a custom reheating policy.

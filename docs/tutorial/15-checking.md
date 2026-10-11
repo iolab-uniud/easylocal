@@ -1,6 +1,6 @@
-# 14. Checking a composed problem
+# 15. Checking a composed problem
 
-Chapter 10 tested components individually. Now check that they work together:
+Chapter 11 tested components individually. Now check that they work together:
 `check` validates the app, while Session checks inspect the neighborhood of
 a particular solution. Both are also available in the interactive tester.
 
@@ -21,7 +21,7 @@ composition: solution_managers=1, cost_components=1, neighborhoods=1, delta_bind
 
 `easylocal::check(app, input)` builds the services and tests them from the
 initial solution, or one supplied as the third argument. It also tries random
-solutions, as in chapter 10.
+solutions, as in chapter 11.
 
 An optional final `testing::check_options` argument controls sample counts,
 random walks, seed and comparison tolerance. The default tolerance allows for
@@ -39,10 +39,10 @@ floating-point rounding in incremental costs. The report covers:
 | random proposal, random proposal application | a sampled move that is not valid, or that breaks the solution |
 | random move in the neighborhood, availability, reproducibility | with moves that compare, a sampled move that the enumeration does not contain, a `random_move` that finds nothing while the neighborhood has moves, or one that does not draw from the generator given |
 | registration names | a runner or pipeline name that is empty, repeated, or made of other characters than letters, digits, `_` and `-` |
-| runner parameters | a registered runner whose `parameters_type` is not a parameter block (chapter 7), so no frontend can change it; an empty one has nothing to configure |
+| runner parameters | a registered runner whose `parameters_type` is not a parameter block (chapter 8), so no frontend can change it; an empty one has nothing to configure |
 | runner configuration, runner construction | invalid registered parameters, or a runner that cannot be built |
 | app configuration | invalid parameters of the app, or pipeline stages without distinct names |
-| parameter domain | a parameter of the app that declares no domain (chapter 9): give it a range, `one_of`, or `easylocal::unlimited` for any value |
+| parameter domain | a parameter of the app that declares no domain (chapter 10): give it a range, `one_of`, or `easylocal::unlimited` for any value |
 
 Test the report as a `bool` to check success. `failures()` gives diagnostics,
 including the starting solution and move for move-related failures.
@@ -50,7 +50,7 @@ including the starting solution and move for move-related failures.
 registrations.
 
 Use `print_report` for readable output or pass the report to
-`testing::run_checks` alongside the component checks from chapter 10.
+`testing::run_checks` alongside the component checks from chapter 11.
 Exceptions from hooks are reported as check failures.
 
 ## Session checks: the neighborhood of a solution
@@ -95,7 +95,7 @@ if (costs.mismatches != 0 || costs.invalid != 0 || sampling.out_of_neighborhood 
 All three need the moves to be enumerable; the last one also needs
 `random_move`. `check_neighborhood_costs(tolerance)` compares the costs within
 a `cost::tolerance` (1e-9 relative and absolute by default; `{0, 0}` compares
-exactly). The interactive tester of chapter 13 runs the same checks from
+exactly). The interactive tester of chapter 14 runs the same checks from
 its Move page: `C`, `D` and `U`.
 
 The last two checks need equality. `check_move_independence` compares resulting
@@ -109,7 +109,7 @@ Add equality to the tutorial's types to enable them:
 <!-- snippet: tutorial/tsp.hpp:equality -->
 ```cpp
 // Equality of solutions and moves, for the neighborhood checks of a Session
-// (chapter 14).
+// (chapter 15).
 inline bool operator==(const Tour& a, const Tour& b)
 {
     return a.order == b.order;
@@ -140,4 +140,4 @@ Without equality, these two checks do not compile and the tester hides their
 
 ## Next steps
 
-[Chapter 15](15-rest.md) offers the same searches over HTTP.
+[Chapter 16](16-rest.md) offers the same searches over HTTP.

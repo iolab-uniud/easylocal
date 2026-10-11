@@ -1,4 +1,4 @@
-# 15. A REST service
+# 16. A REST service
 
 The **REST** adapter makes the same app available over HTTP. Clients can submit
 runs, monitor progress, cancel searches and retrieve solutions without changes
@@ -14,13 +14,13 @@ target_link_libraries(tsp_rest PRIVATE EasyLocal::REST)
 
 ## Without a codec
 
-The quickest setup reuses the I/O hooks from chapter 5. Inputs and tours travel
+The quickest setup reuses the I/O hooks from chapter 6. Inputs and tours travel
 as JSON strings containing your existing text format; this TSP's numeric costs
 travel as JSON numbers. No extra serialization code is needed:
 
 <!-- snippet: tutorial/rest_main.cpp:text -->
 ```cpp
-// The Input and the tours in the text of the I/O hooks (chapter 5).
+// The Input and the tours in the text of the I/O hooks (chapter 6).
 auto text_api = el::rest::blueprint("/tsp-text", application);
 ```
 
@@ -114,7 +114,7 @@ auto application = el::app("tsp")
     | el::runner<runners::FirstImprovement>("fi")
     | el::runner<runners::SimulatedAnnealing<Classic>>("sa");
 
-// The Input and the tours in the text of the I/O hooks (chapter 5).
+// The Input and the tours in the text of the I/O hooks (chapter 6).
 auto text_api = el::rest::blueprint("/tsp-text", application);
 
 // The same app, in the JSON of TspCodec.
@@ -185,5 +185,5 @@ TSP, `"target": 26` stops at the known optimum of the five-city instance.
 
 ## Next steps
 
-[Chapter 16](16-observing-and-controlling.md) watches and stops a run from your
+[Chapter 17](17-observing-and-controlling.md) watches and stops a run from your
 own code.

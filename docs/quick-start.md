@@ -27,7 +27,7 @@ library.
 
 CMake is the supported way to consume the library, but not the only one: a
 compiler and one include path are enough, as
-[Building without CMake](tutorial/17-building.md) shows.
+[Building without CMake](tutorial/18-building.md) shows.
 
 ## The problem
 
@@ -273,7 +273,7 @@ public:
 
 The explorer has only what First Improvement uses. Other algorithms need other
 members, for example `random_move` for Simulated Annealing; the
-[tutorial](tutorial/03-neighborhood.md) adds them.
+[tutorial](tutorial/04-neighborhood.md) adds them.
 
 ### The instance
 

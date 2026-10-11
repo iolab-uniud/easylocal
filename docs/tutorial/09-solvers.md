@@ -1,4 +1,4 @@
-# 8. Solvers
+# 9. Solvers
 
 A runner starts from a solution you supply. A **solver** handles the whole
 search from an Input: it creates a starting solution, owns the RNG and
@@ -49,7 +49,7 @@ The built-in solvers live in `easylocal::solvers`:
 - `make_solver<Solver>(runner[, parameters])` deduces the solver type from the
   runner, as `solvers::MultiStart{runner, {...}}` does.
 - `solver.solve(input, el::with(control, tracer))` cancels and traces a solve
-  like a run ([chapter 16](16-observing-and-controlling.md)); the result counts
+  like a run ([chapter 17](17-observing-and-controlling.md)); the result counts
   the evaluations and iterations of all the runs.
 
 ## Hard and soft costs
@@ -57,7 +57,7 @@ The built-in solvers live in `easylocal::solvers`:
 For a `cost::hard_soft` objective, `solvers::two_stage()` separates the search
 for feasibility from optimization of the full cost. It derives the hard-only
 stage from the existing cost expression, so you can reuse the same components
-([chapter 2](02-cost.md#cost-expressions)):
+([chapter 3](03-structured-costs.md#choosing-an-expression)):
 
 ```cpp
 auto sm = el::solution_manager<TimetableManager>()
@@ -163,4 +163,4 @@ stages under `runners.cascade.*` ([Apps and tools](../reference/app-and-tools.md
 
 ## Next steps
 
-[Chapter 9](09-configuration.md) exposes the parameters to the command line.
+[Chapter 10](10-configuration.md) exposes the parameters to the command line.
