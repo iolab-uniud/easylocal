@@ -208,22 +208,23 @@ on the union of 2-opt and swap, a first improvement 4.3 against 17.5. The
 deltas there are O(1), so what the union adds is the whole difference; with a
 delta that scans the solution it would disappear in the noise.
 
-**What.**
-
-- a variant of the infrastructure benchmarks for unions, which EasyLocal 4 has
-  only against EasyLocal 3 today, to separate the enumeration from the
-  evaluation and to tell which of the two the cost is in;
-- enumerating a union child by child, so that the moves of a child are
-  evaluated with that child's own move type, the variant being needed only to
-  carry the move the runner keeps. This is the one that removes the dispatch
-  rather than making it cheaper, and the one that changes how a runner walks a
-  neighborhood, so it comes after the measurements.
-
 `delta_bindings()` is built once, when the union is constructed, and returned
-by reference, since 4.0.0-alpha.3: what is left is the dispatch itself.
+by reference, since 4.0.0-alpha.3. The infrastructure benchmarks now measure
+the enumeration apart, `tsp-union-medium`: the union against the same moves
+enumerated by one child and then the other. On 256 cities the union's iterator
+costs about 0.7 nanoseconds per move, and about 0.4 when the move is also
+read. The enumeration is therefore not where a union's cost is: the rest is in
+the evaluation, where `is_valid()`, `make_move()` and each delta visit the move
+again.
 
-**When.** Not scheduled. The benchmark is small and independent of the other
-item, which comes after its measurements.
+**What.** Evaluating the moves of a child with that child's own move type: the
+union's enumeration would hand a runner the child it is in, and the variant
+would be needed only to carry the move the runner keeps, so the visits of the
+evaluation disappear. It changes how a runner walks a neighborhood, which is
+the same question as [where a first improvement starts its
+scan](#where-a-first-improvement-starts-its-scan).
+
+**When.** Not scheduled.
 
 ## Where a first improvement starts its scan
 
