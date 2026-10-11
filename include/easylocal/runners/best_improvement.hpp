@@ -6,6 +6,7 @@
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
+#include <easylocal/runners/requirements.hpp>
 #include <easylocal/runners/search_run.hpp>
 #include <easylocal/utils/limit.hpp>
 
@@ -56,6 +57,10 @@ class BestImprovement
 public:
     /// The parameter block of the algorithm.
     using parameters_type = BestImprovementParameters;
+
+    /// What the algorithm asks of the services it searches with.
+    using search_requirements =
+        requirements<needs::enumerated_moves, needs::strict_improvement>;
 
     /// It draws nothing at random: from the same solution, every run is the
     /// same, which a pipeline stage's attempts must not repeat.

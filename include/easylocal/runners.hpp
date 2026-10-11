@@ -11,6 +11,7 @@
 #include <easylocal/runners/late_acceptance_hill_climbing.hpp>
 #include <easylocal/runners/pareto_archive.hpp>
 #include <easylocal/runners/pareto_late_acceptance_hill_climbing.hpp>
+#include <easylocal/runners/requirements.hpp>
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/runners/search_run.hpp>

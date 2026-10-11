@@ -1113,7 +1113,7 @@ easylocal_add_compile_failure_test(
 easylocal_add_compile_failure_test(
     app-runner-without-moves
     app_runner_without_moves.cpp
-    "a registered runner's algorithm must run on the app's neighborhood"
+    "this algorithm scans the neighborhood of a solution"
     "FirstImprovement"
 )
 easylocal_add_compile_failure_test(
@@ -1232,7 +1232,12 @@ easylocal_add_compile_failure_test(
 easylocal_add_compile_failure_test(
     runner-neighborhood-not-runnable
     runner_neighborhood_not_runnable.cpp
-    "a registered runner's algorithm must run on its neighborhood"
+    "its explorer needs moves(), or first_move() and next_move()"
+)
+easylocal_add_compile_failure_test(
+    runner-without-random-moves
+    runner_without_random_moves.cpp
+    "its explorer needs random_move(solution, rng)"
 )
 easylocal_add_compile_failure_test(
     tracer-emit-mismatch
@@ -1614,6 +1619,14 @@ easylocal_add_test(
     union-copied-deltas
     SOURCES
         union_copied_deltas.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
+
+easylocal_add_test(
+    runner-requirements
+    SOURCES
+        runner_requirements.cpp
     LIBRARIES
         EasyLocal::Core
 )

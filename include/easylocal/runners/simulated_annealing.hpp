@@ -8,6 +8,7 @@
 #include <easylocal/cost/concepts.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
 #include <easylocal/runners/detail/throttled_clock.hpp>
+#include <easylocal/runners/requirements.hpp>
 #include <easylocal/runners/search_run.hpp>
 #include <easylocal/trace/events.hpp>
 #include <easylocal/trace/tracer.hpp>
@@ -1637,6 +1638,10 @@ class SimulatedAnnealing
     : public detail::policy_parameters<TemperaturePolicy>
 {
 public:
+    /// What the algorithm asks of the services it searches with.
+    using search_requirements =
+        requirements<needs::random_moves, needs::strict_improvement>;
+
     /// From a temperature schedule and an acceptance policy.
     explicit SimulatedAnnealing(
         TemperaturePolicy temperature_policy,

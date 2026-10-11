@@ -354,6 +354,30 @@ member. Without one, `parameters_type` serves only app registration.
 Extra `run` arguments (an RNG, for example) are passed through
 `search.run(solution, extra...)`.
 
+An algorithm may also declare what it asks of the services it searches with,
+so that a registration on a neighborhood it cannot use names the capability
+that is missing instead of the concepts that failed:
+
+```cpp
+using search_requirements = easylocal::runners::requirements<
+    easylocal::runners::needs::random_moves,
+    easylocal::runners::needs::non_worsening>;
+```
+
+| Capability | What the services must provide |
+| --- | --- |
+| `needs::enumerated_moves` | the explorer's `moves()`, or `first_move()` and `next_move()` |
+| `needs::random_moves` | the explorer's `random_move(solution, rng)` |
+| `needs::random_solutions` | the SolutionManager's `random_solution(rng)` |
+| `needs::strict_improvement` | a cost with `better()` |
+| `needs::non_worsening` | a cost with `better_or_equivalent()` |
+
+The capabilities are reported in the order they are declared, one message for
+the first the services do not provide; the neighborhood's before the cost's
+reads best. They only choose the message: an algorithm that runs is never
+rejected because of what it declares, and one that declares nothing keeps the
+generic message. The built-in algorithms declare theirs.
+
 ### search_run
 
 | Member | Effect |

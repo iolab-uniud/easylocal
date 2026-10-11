@@ -73,6 +73,16 @@ reviewed by hand before tagging.
   `delta_bindings()`, which the evaluation makes once per component of every
   move. The bindings point to the children the union holds, so a union that is
   copied or moved rebuilds its own.
+- A runner registered on a neighborhood its algorithm cannot use names the
+  capability that is missing ("this algorithm draws random moves: its explorer
+  needs random_move(solution, rng)") instead of the concepts that failed. An
+  algorithm declares what it asks of its services as
+  `easylocal::runners::requirements<...>` of
+  `easylocal::runners::needs::{enumerated_moves, random_moves,
+  random_solutions, strict_improvement, non_worsening}`, in the order they are
+  reported, and the built-in algorithms declare theirs. It only chooses the
+  message: an algorithm that runs is never rejected because of it, and one
+  that declares nothing keeps the generic message.
 
 ### Parameters
 

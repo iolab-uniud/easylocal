@@ -14,6 +14,7 @@
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
+#include <easylocal/runners/requirements.hpp>
 #include <easylocal/runners/search_run.hpp>
 #include <easylocal/trace/events.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
@@ -2389,6 +2390,10 @@ public:
     /// The parameter block of the algorithm.
     using parameters_type = TabuSearchParameters<typename TabuList::parameters_type>;
 
+    /// What the algorithm asks of the services it searches with.
+    using search_requirements =
+        requirements<needs::enumerated_moves, needs::strict_improvement>;
+
     /// From its parameters and an aspiration criterion.
     ///
     /// Throws `std::invalid_argument` when the parameters are not valid.
@@ -2432,6 +2437,10 @@ public:
     using parameters_type = TabuSearchParameters<
         typename TabuList::parameters_type,
         candidates::FirstImprovementParameters>;
+
+    /// What the algorithm asks of the services it searches with.
+    using search_requirements =
+        requirements<needs::enumerated_moves, needs::strict_improvement>;
 
     /// From its parameters and an aspiration criterion.
     ///
@@ -2495,6 +2504,10 @@ public:
     using parameters_type = TabuSearchParameters<
         typename TabuList::parameters_type,
         candidates::AspirationPlusParameters>;
+
+    /// What the algorithm asks of the services it searches with.
+    using search_requirements =
+        requirements<needs::enumerated_moves, needs::strict_improvement>;
 
     /// From its parameters and an aspiration criterion.
     ///
@@ -2587,6 +2600,10 @@ public:
     using parameters_type = TabuSearchParameters<
         typename TabuList::parameters_type,
         candidates::EliteListParameters>;
+
+    /// What the algorithm asks of the services it searches with.
+    using search_requirements =
+        requirements<needs::enumerated_moves, needs::strict_improvement>;
 
     /// From its parameters and an aspiration criterion.
     ///

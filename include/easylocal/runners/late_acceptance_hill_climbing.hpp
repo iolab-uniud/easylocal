@@ -7,6 +7,7 @@
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
+#include <easylocal/runners/requirements.hpp>
 #include <easylocal/runners/search_run.hpp>
 #include <easylocal/utils/limit.hpp>
 
@@ -78,6 +79,12 @@ class LateAcceptanceHillClimbing
 public:
     /// The parameter block of the algorithm.
     using parameters_type = LateAcceptanceHillClimbingParameters;
+
+    /// What the algorithm asks of the services it searches with.
+    using search_requirements = requirements<
+        needs::random_moves,
+        needs::strict_improvement,
+        needs::non_worsening>;
 
     /// From its parameters.
     ///

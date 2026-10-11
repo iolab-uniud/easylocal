@@ -7,7 +7,7 @@ when it is released and listed in the changelog.
 
 ## What is left of alpha.3
 
-**Why.** Three pieces of the release in preparation are not done. The fourth,
+**Why.** Two pieces of the release in preparation are not done. The fourth,
 removing one of the two spellings of the composition, is not going to be: the
 rule is one documented spelling for each part of the API *and* the shortcuts
 of a named one, and the pipe is the shortcut of the `with_*` members. Both
@@ -16,9 +16,6 @@ that `with_*` is leaving.
 
 **What.**
 
-- messages naming what each algorithm needs when a runner is registered on a
-  neighborhood it cannot use, where today the reader gets the concepts that
-  failed;
 - Pareto Late Acceptance committing a move in place, if a benchmark shows it
   pays;
 - a restructured chapter 2 of the tutorial.

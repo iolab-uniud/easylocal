@@ -8,6 +8,7 @@
 /// runners by name, and exposes all its parameters as one parameter_set. Tools
 /// (Session, TextUI, REST) work on apps.
 
+#include <easylocal/runners/requirements.hpp>
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/solvers.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
@@ -247,6 +248,21 @@ consteval bool validate_app_runner()
             "Solution of the app's SolutionManager");
         return false;
     }
+    else if constexpr (!app_runnable_v<Algorithm, SM, neighborhood_explorer_type>
+        && !runners::detail::provides_declared<
+            Algorithm,
+            runner_context<SM, neighborhood_explorer_type>,
+            std::mt19937_64&>())
+    {
+        // What the algorithm asks and the services do not provide, named one
+        // by one, in place of the concepts that failed.
+        runners::detail::report_missing_requirements<
+            Algorithm,
+            runner_context<SM, neighborhood_explorer_type>,
+            std::mt19937_64&>();
+        // Reported: the caller's check adds nothing to it.
+        return true;
+    }
     else
     {
         static_assert(
@@ -281,11 +297,29 @@ consteval bool validate_app_neighborhood()
 template<class Algorithm, class SM, class NHESpec>
 consteval bool validate_app_runner_on_app_neighborhood()
 {
-    static_assert(
-        app_runnable_v<Algorithm, SM, service_t<NHESpec>>,
-        "a registered runner's algorithm must run on the app's neighborhood, with "
-        "or without an RNG: run(run, solution[, rng]); check what it asks of the "
-        "neighborhood (moves(), random_move(), inverse())");
+    using neighborhood_explorer_type = service_t<NHESpec>;
+    if constexpr (!app_runnable_v<Algorithm, SM, neighborhood_explorer_type>
+        && !runners::detail::provides_declared<
+            Algorithm,
+            runner_context<SM, neighborhood_explorer_type>,
+            std::mt19937_64&>())
+    {
+        // What the algorithm asks and the services do not provide, named one
+        // by one, in place of the concepts that failed.
+        runners::detail::report_missing_requirements<
+            Algorithm,
+            runner_context<SM, neighborhood_explorer_type>,
+            std::mt19937_64&>();
+    }
+    else
+    {
+        static_assert(
+            app_runnable_v<Algorithm, SM, neighborhood_explorer_type>,
+            "a registered runner's algorithm must run on the app's neighborhood, with "
+            "or without an RNG: run(run, solution[, rng]); check what it asks of the "
+            "neighborhood (moves(), random_move(), inverse())");
+    }
+
     return true;
 }
 
