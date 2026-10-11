@@ -333,21 +333,62 @@ the stages do.
 **Why.** Writing a delta cost component by hand is where the bugs of a search
 are: the checks of the library exist to catch them, and an incremental
 evaluation has to be rewritten whenever the neighborhood changes. EasyLocal 3
-carried a tentative modelling layer (`AutoState` and expressions over decision
-variables) that derived the cost and its changes from a declarative model;
-it never became part of the framework people used, but the need it addressed
-did not go away.
+carried a tentative modelling layer (`AutoState`, with Tommaso Urli) that
+derived the cost and its changes from a declarative model; it never became
+part of the framework people used, but the need it addressed did not go away.
+Constraint-Based Local Search answers it with a declarative model whose
+network of invariants derives the cost and its change under a move:
+[OscaR.cbls](https://bitbucket.org/oscarlib/oscar) as a library,
+[Hexaly](https://www.hexaly.com) (formerly LocalSolver) as a black-box solver
+that also owns the search.
 
-**What.** To be explored, and nothing is designed yet: a declarative
-description of a cost over the variables of a solution, from which the library
-derives both the full evaluation and the change under a move, next to the
-hand-written components rather than in their place. The cost expressions
-already compose component values, so the question is what a single component
-could declare about itself, and at what price in compile time and in
-flexibility. A first step that costs nothing is to collect, from real models,
-the delta evaluations that are mechanical and the ones that are not.
+**What.** Not in this library. The core stays a framework where the search is
+written by its user, and the modelling layer grows outside it, in
+`easylocal-model` (namespace `easylocal::model`), which consumes the released
+headers and nothing else: whether that is enough is also the measure of how
+extensible this API is from the outside. The design it starts from:
 
-**When.** Not scheduled: a brainstorming item.
+- the solution stays the decision state alone, copied and hashed as it is
+  today, and the network of invariants lives in an evaluator owned by the
+  SolutionManager, which follows the current solution (`sync`), answers
+  `probe(move)` without committing and `commit(move)` when the explorer
+  applies one. A solution that carried its network would pay for it at every
+  copy, which is what sank `AutoState`;
+- the graph is built at run time from the instance data, and is made of typed
+  kernels (sum, weighted sum, element, count, min and max, capacity,
+  all-different violations, the successor of a sequence): the dispatch is per
+  node, over a whole vector, not per element;
+- a move is differentiated on a trail by default (apply the variable changes,
+  propagate incrementally, read the objective, roll back), with a closed-form
+  fast path for the kernels that have one, which are the linear ones on the
+  hot path;
+- a constraint exposes its violation and the violation imputed to each
+  variable, which is what guided neighborhoods (the most violated variable,
+  then the value that reduces it most) are built on, and what makes an
+  explorer that nobody wrote for the problem possible;
+- what a model produces are the pieces of this library: each constraint and
+  each objective is a leaf of a cost expression, with a SolutionManager, the
+  neighborhoods and the deltas, so hard and soft costs, hierarchical costs and
+  Pareto costs keep working. A declared component and a hand-written one then
+  compose in the same cost expression: the hot component keeps its closed
+  delta, the rest is declared. That mixing is what justifies doing this here
+  rather than using Hexaly.
+
+A catalog of standard representations (a permutation, an assignment, a
+selection, a sequence per resource) with their moves, their explorers and the
+structures they keep consistent complements the model: the moves say what
+changes, the model says what it costs.
+
+The price is a factor of 3 to 10 per move against a hand-written delta. The
+layer is there to write a problem in an afternoon instead of a week, and to
+serve as a reference the hand-written components are checked against (the
+delta checks of `testing` compare a delta with a full evaluation already);
+it is not there to win benchmarks.
+
+**When.** Not scheduled. A vertical spike on the assignment problem comes
+first, with a few kernels and no fast path, to answer two questions: whether a
+mutable evaluator behind the const `delta_evaluate` works without touching the
+core, and what it costs, measured against `examples/assignment`.
 
 ## Parameter tuning
 
