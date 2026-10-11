@@ -376,6 +376,14 @@ easylocal_add_test(
 )
 
 easylocal_add_test(
+    run-services
+    SOURCES
+        run_services.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
+
+easylocal_add_test(
     assignment-model
     SOURCES
         assignment_model.cpp

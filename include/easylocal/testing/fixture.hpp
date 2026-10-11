@@ -6,6 +6,7 @@
 /// limits, tolerance) and the comparison of the values.
 
 #include <easylocal/cost/tolerance.hpp>
+#include <easylocal/helpers/run_services.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/testing/check.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
@@ -81,6 +82,10 @@ public:
     /// The Solution of the SolutionManager.
     using solution_type = typename SM::solution_type;
 
+private:
+    using services_holder_type = detail::run_services_holder<SM, input_type>;
+
+public:
     /// From an Input, a Solution and the options of the checks.
     ///
     /// The checks verify that the Solution is valid.
@@ -113,6 +118,15 @@ public:
     [[nodiscard]] const input_type& input() const noexcept
     {
         return input_;
+    }
+
+    /// The services of the run, built on the Input as an app builds them, when
+    /// the SolutionManager declares a services_type.
+    [[nodiscard]]
+    auto& services() const noexcept
+        requires services_holder_type::present
+    {
+        return services_.services();
     }
 
     /// The SolutionManager built on the Input.
@@ -155,6 +169,7 @@ private:
 
     input_type input_;
     SM solution_manager_;
+    EASYLOCAL_NO_UNIQUE_ADDRESS services_holder_type services_{input_};
     solution_type solution_;
     check_options options_;
     EASYLOCAL_NO_UNIQUE_ADDRESS Equivalent equivalent_;
@@ -197,6 +212,18 @@ template<class T, class Input>
     }
 }
 
+// Builds a component or a delta cost component the way an app does: from the
+// Input and the services of the run when it takes them, and otherwise from the
+// Input alone.
+template<class T, class Fixture>
+[[nodiscard]] T make_for(const Fixture& fixture)
+{
+    if constexpr (requires { T{fixture.input(), fixture.services()}; })
+        return T{fixture.input(), fixture.services()};
+    else
+        return make_from_input<T>(fixture.input());
+}
+
 template<class Fixture>
 bool check_fixture_solution(check_report& report, const Fixture& fixture)
 {
@@ -214,6 +241,18 @@ template<class NHE, class SM>
         "EasyLocal testing cannot construct the NeighborhoodExplorer from the "
         "SolutionManager; construct it yourself and pass the object to the check");
     return NHE{solution_manager};
+}
+
+// Builds a NeighborhoodExplorer the way an app does: from the SolutionManager
+// and the services of the run when it takes them, and otherwise from the
+// SolutionManager alone.
+template<class NHE, class Fixture>
+[[nodiscard]] NHE make_neighborhood_for(const Fixture& fixture)
+{
+    if constexpr (requires { NHE{fixture.solution_manager(), fixture.services()}; })
+        return NHE{fixture.solution_manager(), fixture.services()};
+    else
+        return make_neighborhood<NHE>(fixture.solution_manager());
 }
 
 } // namespace detail

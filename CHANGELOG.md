@@ -11,6 +11,18 @@ reviewed by hand before tagging.
 
 ## [4.0.0-alpha.3] — not yet released
 
+### Added
+
+- The services of a run: a SolutionManager that declares `services_type` gets
+  one built for each bind, from the Input, and a cost component, a delta cost
+  component and a NeighborhoodExplorer that take it in their constructor
+  (`C(const Input&, Services&, args...)`, `NHE(const SM&, Services&, args...)`)
+  are built on it. It is the place for what a run keeps on the problem's side
+  — a cache, incremental structures, the network of a declared model — which a
+  component built from the Input alone had nowhere to put. The services are
+  never copied and never shared between two binds. The contract checks of
+  `testing` build the components the same way, on the services of the fixture.
+
 ### Fixed
 
 - `cost::delta(candidate, current)` computes the difference where it is

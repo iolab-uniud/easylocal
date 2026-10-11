@@ -239,9 +239,7 @@ template<check_fixture Fixture, class NHE>
 template<class NHE, check_fixture Fixture>
 [[nodiscard]] check_report check_neighborhood(const Fixture& fixture)
 {
-    return check_neighborhood(
-        fixture,
-        detail::make_neighborhood<NHE>(fixture.solution_manager()));
+    return check_neighborhood(fixture, detail::make_neighborhood_for<NHE>(fixture));
 }
 
 } // namespace easylocal::testing

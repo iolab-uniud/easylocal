@@ -13,6 +13,7 @@
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/helpers/detail/cost_expression.hpp>
+#include <easylocal/helpers/run_services.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
 #include <easylocal/utils/detail/meta.hpp>
@@ -115,6 +116,16 @@ public:
         return inner_.random_solution(rng);
     }
 
+    // The services of the run of the innermost cost layer, which a cost
+    // component, a delta cost component and an explorer are built on.
+    template<class Self>
+    [[nodiscard]]
+    auto& services(this Self&& self) noexcept
+        requires requires(const Inner& inner) { inner.services(); }
+    {
+        return self.inner_.services();
+    }
+
     // The cost component of type Component of the innermost cost layer, for
     // the co-located deltas (delta<C>()) bound to this layer: every layer,
     // the hard projection included, reaches all the components.
@@ -147,6 +158,8 @@ private:
 template<class BaseSM, class... ComponentSpecs>
 class cost_layer : public solution_manager_layer<BaseSM>
 {
+    using services_holder_type = run_services_holder<BaseSM, typename BaseSM::input_type>;
+
 public:
     using typename solution_manager_layer<BaseSM>::solution_type;
     using component_types = std::tuple<typename ComponentSpecs::component_type...>;
@@ -159,9 +172,12 @@ public:
         "the conflicting component type is shown in the template instantiation "
         "context");
 
+    // The services of the run are built first, from the Input, and each
+    // component that takes them is built on them.
     cost_layer(BaseSM base, const ComponentSpecs&... component_specs)
         : solution_manager_layer<BaseSM>{std::move(base)},
-          components_{component_specs.construct(this->input())...}
+          services_{this->input()},
+          components_{construct_component(component_specs, this->input(), services_)...}
     {
         static_assert(
             sizeof...(ComponentSpecs) > 0,
@@ -196,7 +212,28 @@ public:
         return std::get<tuple_type_index_v<Component, component_types>>(self.components_);
     }
 
+    // The services of the run, which the SolutionManager declares with
+    // services_type; absent otherwise.
+    [[nodiscard]]
+    auto& services() const noexcept
+        requires services_holder_type::present
+    {
+        return services_.services();
+    }
+
 private:
+    // A component is built on the services when it takes them.
+    template<class Spec, class Input, class Holder>
+    [[nodiscard]]
+    static auto construct_component(const Spec& spec, const Input& input, Holder& holder)
+    {
+        if constexpr (Holder::present)
+            return spec.construct(input, holder.services());
+        else
+            return spec.construct(input);
+    }
+
+    EASYLOCAL_NO_UNIQUE_ADDRESS services_holder_type services_;
     std::tuple<typename ComponentSpecs::component_type...> components_;
 };
 

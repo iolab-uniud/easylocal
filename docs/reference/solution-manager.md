@@ -72,6 +72,41 @@ a cost component and a NeighborhoodExplorer do: it keeps the Input by
 reference, so the constructor from a temporary Input is deleted and the Input
 outlives the SolutionManager.
 
+## The services of a run
+
+A SolutionManager may declare the state its components share while they
+search: a cache, the loads of each resource, the network of a declared model.
+
+```cpp
+class MySolutionManager : public easylocal::solution_manager_base<Input, Solution>
+{
+public:
+    using services_type = MyCache;   // one per bind, from the Input
+    ...
+};
+```
+
+One `services_type` is built for each bind — `app.bind(input)`,
+`runner.bind(input)`, a `testing::fixture` — from the Input when it takes one
+and without arguments otherwise, and handed to whatever asks for it in its
+constructor:
+
+```cpp
+MyComponent(const Input&, MyCache&, args...)          // a cost component
+MyDelta(const Input&, MyCache&, args...)              // a delta cost component
+MyExplorer(const MySolutionManager&, MyCache&, args...)   // an explorer
+```
+
+A component that does not take them is built from the Input as before. The
+services are the mutable state of a run: a const SolutionManager hands them
+out, and what they hold changes while the search runs.
+
+They are never copied and never shared between two binds, so two runs never
+share them — which is what makes a search on several threads safe: each thread
+binds its own app, as the TextUI does. Keep what the services hold, not the
+SolutionManager: the layers of a bound SolutionManager are moved as they are
+composed, while the services keep their address.
+
 ## Recipes
 
 ```cpp

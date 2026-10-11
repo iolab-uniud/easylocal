@@ -7,6 +7,7 @@
 
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
+#include <easylocal/helpers/run_services.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
 #include <easylocal/utils/detail/meta.hpp>
 #include <easylocal/utils/input_base.hpp>
@@ -66,10 +67,21 @@ public:
         return std::apply(
             [&](const auto&... args) -> binding_type {
                 using input_type = typename std::remove_cvref_t<Dependency>::input_type;
-                if constexpr (std::constructible_from<
-                                  Delta,
-                                  const input_type&,
-                                  const StoredArgs&...>)
+                // The Input and the services of the run first, as a cost
+                // component takes them, and otherwise the Input alone.
+                if constexpr (carries_run_services<Dependency>
+                    && requires {
+                           Delta(dependency.input(), dependency.services(), args...);
+                       })
+                {
+                    return binding_type{
+                        Delta(dependency.input(), dependency.services(), args...),
+                    };
+                }
+                else if constexpr (std::constructible_from<
+                                       Delta,
+                                       const input_type&,
+                                       const StoredArgs&...>)
                 {
                     return binding_type{
                         Delta(dependency.input(), args...),
@@ -192,11 +204,17 @@ consteval bool base_neighborhood_constructible_from_args()
 {
     if constexpr (requires(Dependency& dependency) { dependency.base(); })
     {
-        return std::constructible_from<
-                   BaseNHE,
-                   decltype(std::declval<Dependency&>().base()),
-                   const Args&...> ||
-               std::constructible_from<BaseNHE, Dependency&, const Args&...>;
+        constexpr bool from_services = carries_run_services<Dependency>
+            && requires(Dependency& dependency, const Args&... args) {
+                   BaseNHE(dependency.base(), dependency.services(), args...);
+               };
+
+        return from_services
+            || std::constructible_from<
+                BaseNHE,
+                decltype(std::declval<Dependency&>().base()),
+                const Args&...>
+            || std::constructible_from<BaseNHE, Dependency&, const Args&...>;
     }
     else
     {

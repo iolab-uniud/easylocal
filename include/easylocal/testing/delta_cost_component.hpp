@@ -228,8 +228,8 @@ template<check_fixture Fixture, class NHE, class Component>
 template<class NHE, class Component, class Delta = void, check_fixture Fixture>
 [[nodiscard]] check_report check_delta_cost_component(const Fixture& fixture)
 {
-    const auto neighborhood = detail::make_neighborhood<NHE>(fixture.solution_manager());
-    const auto component = detail::make_from_input<Component>(fixture.input());
+    const auto neighborhood = detail::make_neighborhood_for<NHE>(fixture);
+    const auto component = detail::make_for<Component>(fixture);
     if constexpr (std::is_void_v<Delta>)
     {
         return check_delta_cost_component(fixture, neighborhood, component);
@@ -240,7 +240,7 @@ template<class NHE, class Component, class Delta = void, check_fixture Fixture>
             fixture,
             neighborhood,
             component,
-            detail::make_from_input<Delta>(fixture.input()));
+            detail::make_for<Delta>(fixture));
     }
 }
 

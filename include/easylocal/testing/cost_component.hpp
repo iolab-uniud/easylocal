@@ -62,9 +62,7 @@ template<check_fixture Fixture, class Component>
 template<class Component, check_fixture Fixture>
 [[nodiscard]] check_report check_cost_component(const Fixture& fixture)
 {
-    return check_cost_component(
-        fixture,
-        detail::make_from_input<Component>(fixture.input()));
+    return check_cost_component(fixture, detail::make_for<Component>(fixture));
 }
 
 } // namespace easylocal::testing

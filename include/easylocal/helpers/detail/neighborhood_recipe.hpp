@@ -113,7 +113,14 @@ template<class NHE, class Dependency, class... Args>
 [[nodiscard]]
 NHE construct_explorer(Dependency& dependency, const Args&... args)
 {
-    if constexpr (constructible_from_base<NHE, Dependency, Args...>())
+    // The user's SolutionManager and the services of the run first, as a cost
+    // component takes the Input and the services.
+    if constexpr (carries_run_services<Dependency>
+        && requires { NHE(dependency.base(), dependency.services(), args...); })
+    {
+        return NHE(dependency.base(), dependency.services(), args...);
+    }
+    else if constexpr (constructible_from_base<NHE, Dependency, Args...>())
     {
         return NHE(dependency.base(), args...);
     }

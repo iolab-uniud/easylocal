@@ -75,6 +75,32 @@ public:
         return self.parameters_;
     }
 
+    // The component as the cost layer builds it: from the Input and the
+    // services of the run when it takes them, and otherwise from the Input
+    // alone. The services are what the SolutionManager declares with
+    // services_type (see run_services.hpp).
+    template<class Input, class Services>
+    [[nodiscard]]
+    Component construct(const Input& instance, Services& services) const
+    {
+        return std::apply(
+            [&](const auto&... args) -> Component {
+                if constexpr (std::constructible_from<
+                                  Component,
+                                  const Input&,
+                                  Services&,
+                                  decltype(args)...>)
+                {
+                    return Component(instance, services, args...);
+                }
+                else
+                {
+                    return construct(instance);
+                }
+            },
+            parameters_.arguments(args_));
+    }
+
     template<class Input>
     [[nodiscard]]
     Component construct(const Input& instance) const
