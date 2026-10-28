@@ -119,6 +119,15 @@ reviewed by hand before tagging.
   &P::member>` is gone. `config::group<"name", &P::member>` is unchanged.
 - `config::parameter_info` says whether anything has set the parameter
   (`set`), and the value of one that nothing has set is empty.
+- A required parameter is reported before the run, wherever the parameters
+  are given: `load_and_apply` lists by path each one that matters and that
+  nothing has set, also when no override touches its block; `cli_help` writes
+  `required: it has no default and must be set` in place of its current
+  value; the TextUI refuses to start a runner and names them; the REST
+  service answers 422 `invalid_parameters` to a run request that leaves one
+  unset; and `--tuning.irace` writes `(required)` instead of a default, with
+  `required, and not tunable by irace: give its value in fixed.conf` for a
+  parameter irace cannot sample.
 - **Breaking:** a parameter set is applied and validated by its members
   only: the free `config::apply_overrides(set, overrides)` and
   `config::validate(set)` are gone, use `set.apply(overrides)` and

@@ -1840,6 +1840,13 @@ private:
     {
         if (!require_solution("Run runner"))
             return;
+        if (const auto unset = unset_parameters(); !unset.empty())
+        {
+            set_status(
+                status_kind::error,
+                "Run runner: " + unset + " must be set (Parameters)");
+            return;
+        }
         if (runner_names_.empty())
         {
             set_status(status_kind::warning, "Run runner: no runner registered");
@@ -2167,6 +2174,26 @@ private:
         refresh_changed_parameters();
         if (parameter_after_)
             parameter_after_();
+    }
+
+    // The parameters that matter and that nothing has set, by their paths: a
+    // run reads them, so it cannot start.
+    [[nodiscard]]
+    std::string unset_parameters() const
+    {
+        std::string paths;
+        if constexpr (supports_parameters)
+        {
+            for (const auto& parameter : tester_.configuration().parameters())
+            {
+                if (parameter.set || !parameter.active)
+                    continue;
+                if (!paths.empty())
+                    paths += ", ";
+                paths += parameter.path;
+            }
+        }
+        return paths;
     }
 
     void remember_original_parameters()

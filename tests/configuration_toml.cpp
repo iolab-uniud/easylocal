@@ -110,7 +110,7 @@ rate = 2
     const auto views = easylocal::config::override_views(parsed.overrides);
     assert(tree.apply(views));
     assert(flags.verbose);
-    assert((flags.enabled == std::array<bool, 2>{false, true}));
+    assert((flags.enabled.value() == std::array<bool, 2>{false, true}));
     assert(flags.count == 3);
     assert(flags.rate == 2.0);
 
@@ -207,10 +207,10 @@ max_iterations = 500
     assert(app.instance_file == std::filesystem::path{"instances/small.tsp"});
     assert(app.seed == 2026);
     assert(search.cooling_rate == 0.75);
-    assert((search.biases == std::array<double, 2>{3.0, 1.0}));
+    assert((search.biases.value() == std::array<double, 2>{3.0, 1.0}));
     // A limit is a TOML integer, or the string "unlimited".
-    assert(search.max_evaluations.is_unlimited());
-    assert(search.max_iterations == 500);
+    assert(search.max_evaluations.value().is_unlimited());
+    assert(search.max_iterations.value() == 500);
 
     const auto malformed = easylocal::config::parse_toml_text("x = [1,");
     assert(!malformed);

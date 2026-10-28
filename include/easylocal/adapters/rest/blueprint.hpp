@@ -918,6 +918,7 @@ private:
             entry["path"] = parameter.path;
             entry["description"] = std::string{parameter.description};
             entry["value"] = parameter.value;
+            entry["set"] = parameter.set;
             entry["kind"] = std::string{detail::kind_name(parameter.kind)};
             if (parameter.domain)
                 entry["domain"] = parameter.domain.text();
@@ -995,6 +996,21 @@ private:
                     }
                     return detail::error_response(422, "invalid_parameters", message);
                 }
+            }
+            // A parameter that matters and that nothing has set: the run
+            // would read it and throw.
+            {
+                std::string unset;
+                for (const auto& parameter : session.configuration().parameters())
+                {
+                    if (parameter.set || !parameter.active)
+                        continue;
+                    if (!unset.empty())
+                        unset += "; ";
+                    unset += parameter.path + ": not set, and it has no default";
+                }
+                if (!unset.empty())
+                    return detail::error_response(422, "invalid_parameters", unset);
             }
             session.set_input(input);
             auto start = choose_start(session, payload);

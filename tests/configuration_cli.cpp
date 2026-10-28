@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <span>
@@ -253,6 +254,41 @@ void help_is_generated_from_the_configuration_tree()
     assert(help.find("current: 0.75") != std::string::npos);
 }
 
+// A parameter without a member initializer: the help says it must be set.
+void help_marks_a_parameter_that_has_no_default()
+{
+    struct Parameters
+    {
+        easylocal::config::parameter<std::size_t, "budget"> budget;
+        easylocal::config::parameter<std::size_t, "samples"> samples{10};
+
+        [[nodiscard]]
+        static consteval auto parameter_schema()
+        {
+            return easylocal::config::fields(
+                easylocal::config::field<&Parameters::budget>("Evaluation budget"),
+                easylocal::config::field<&Parameters::samples>("Samples"));
+        }
+
+        [[nodiscard]]
+        easylocal::config::validation_result validate() const noexcept
+        {
+            return easylocal::config::check_schema(*this);
+        }
+    };
+
+    Parameters parameters;
+    easylocal::config::parameter_set tree;
+    tree.add("search", parameters);
+
+    const auto help = cli_help("solver", tree);
+
+    assert(help.find("required: it has no default and must be set") != std::string::npos);
+    assert(help.find("current: 10") != std::string::npos);
+    assert(!parameters.validate());
+    assert(parameters.validate().message == "budget: not set, and it has no default");
+}
+
 void help_lists_domains_and_conditions_of_the_changeable_parameters()
 {
     struct Parameters
@@ -308,5 +344,6 @@ int main()
     cli_validation_errors_leave_configuration_unchanged();
     help_is_generated_from_the_configuration_tree();
     help_lists_domains_and_conditions_of_the_changeable_parameters();
+    help_marks_a_parameter_that_has_no_default();
     return 0;
 }

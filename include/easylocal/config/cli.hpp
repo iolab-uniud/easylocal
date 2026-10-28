@@ -215,7 +215,8 @@ inline cli_parse_result parse_cli(const int argc, char* const argv[])
 
 /// The help text of a program: its usage, the options `--help` and `--config`,
 /// and every parameter of the set that can be changed, with its description,
-/// the values it may take, when it matters and its current value.
+/// the values it may take, when it matters, and its current value or that it
+/// is required.
 [[nodiscard]]
 inline std::string cli_help(
     const std::string_view program_name,
@@ -254,7 +255,9 @@ inline std::string cli_help(
                     false)
                 + '\n';
         }
-        output += "      current: " + parameter.value + '\n';
+        output += parameter.set
+            ? "      current: " + parameter.value + '\n'
+            : std::string{"      required: it has no default and must be set\n"};
     }
 
     return output;

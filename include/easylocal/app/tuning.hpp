@@ -283,6 +283,7 @@ struct irace_parameter
     std::vector<std::string> values; // two bounds, or the choices
     std::string condition;
     std::string default_value;
+    bool required{}; // nothing has set it: it has no default
     bool active{};
     bool off{}; // its condition is false with the values that are not tuned
     std::string note;
@@ -634,6 +635,7 @@ inline std::vector<irace_parameter> irace_parameters(
         parameter.name = irace_identifier_of(info.path, identifiers);
         parameter.path = info.path;
         parameter.default_value = info.value;
+        parameter.required = !info.set;
         parameter.description = info.description;
         if (!owner.empty() && stub.runners.size() > 1)
             parameter.condition = "runner == \"" + owner + '"';
@@ -665,7 +667,9 @@ inline std::vector<irace_parameter> irace_parameters(
             || (domain && domain->kind == config::domain_info::shape::choice);
         if (!tunable_kind)
         {
-            parameter.note = "not tunable by irace (a list, a path or text)";
+            parameter.note = parameter.required
+                ? "required, and not tunable by irace: give its value in fixed.conf"
+                : "not tunable by irace (a list, a path or text)";
             result.push_back(std::move(parameter));
             continue;
         }
@@ -930,8 +934,12 @@ inline irace_stub_result write_irace_stub(const irace_stub& stub)
         {
             out << '\n';
             if (!parameter.description.empty())
-                out << "# " << parameter.description << " (default "
-                    << parameter.default_value << ")\n";
+            {
+                out << "# " << parameter.description
+                    << (parameter.required ? std::string{" (required)"}
+                                           : " (default " + parameter.default_value + ")")
+                    << '\n';
+            }
             if (parameter.type == 0)
                 out << "# " << parameter.name << ": " << parameter.note << '\n';
             else

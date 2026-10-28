@@ -424,6 +424,50 @@ void every_diagnostic_source_is_rendered()
     }
 }
 
+// A required parameter nothing sets is reported by its path, also when no
+// override touches its block.
+void setup_reports_a_parameter_that_nothing_set()
+{
+    struct SearchParameters
+    {
+        easylocal::config::parameter<std::size_t, "budget"> budget;
+
+        [[nodiscard]]
+        static consteval auto parameter_schema()
+        {
+            return easylocal::config::fields(
+                easylocal::config::field<&SearchParameters::budget>("Budget"));
+        }
+
+        [[nodiscard]]
+        easylocal::config::validation_result validate() const noexcept
+        {
+            return easylocal::config::check_schema(*this);
+        }
+    };
+
+    SearchParameters search;
+    easylocal::config::parameter_set tree;
+    tree.add("search", search);
+
+    char program[] = "solver";
+    char* argv[]{program};
+
+    const auto result = easylocal::config::load_and_apply(1, argv, tree);
+
+    assert(!result);
+    assert(result.diagnostics.size() == 1);
+    assert(result.diagnostics[0].subject == "search.budget");
+    assert(result.diagnostics[0].message == "not set, and it has no default");
+
+    // The value given on the command line sets it.
+    char budget[] = "--search.budget=100";
+    char* set_argv[]{program, budget};
+    const auto configured = easylocal::config::load_and_apply(2, set_argv, tree);
+    assert(configured);
+    assert(search.budget.value() == 100);
+}
+
 } // namespace
 
 int main()
@@ -439,5 +483,6 @@ int main()
     help_remains_frontend_policy();
     diagnostics_have_a_uniform_rendering_surface();
     every_diagnostic_source_is_rendered();
+    setup_reports_a_parameter_that_nothing_set();
     return 0;
 }
