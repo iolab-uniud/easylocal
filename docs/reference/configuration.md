@@ -12,14 +12,17 @@ which frontends (command line, files, TOML, the TextUI) read and change.
 ```cpp
 struct MyParameters
 {
-    std::size_t size{10};
-    Schedule schedule{};          // itself a parameter block
+    config::parameter<std::size_t, "size"> size{10};  // 10 is its default
+    config::parameter<double, "bound"> bound{};       // required: no default
+    Schedule schedule{};                              // itself a parameter block
 
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"size", &MyParameters::size>(
+            config::field<&MyParameters::size>(
                 "Description", config::range(1, easylocal::unlimited)),
+            config::field<&MyParameters::bound>(
+                "Description", config::range(0.0, easylocal::unlimited)),
             config::group<"schedule", &MyParameters::schedule>("Description"));
     }
 
@@ -27,9 +30,23 @@ struct MyParameters
 };
 ```
 
-Fields may be integral and floating-point types, `bool`, `easylocal::limit`,
-`std::string`, `std::filesystem::path`, and `std::array`s and `std::vector`s
-of those (written `[a, b, c]`; `[]` is an empty vector; see
+Every field is a `config::parameter<Value, "name">`, which holds the value and
+whether anything has set it; `field<&MyParameters::size>` reads the name from
+the member instead of repeating it. **The default of a field is its member
+initializer, and a field declared `bound{}` has none**: nothing sets it, so
+`validate()` reports `bound: not set, and it has no default`, and reading it
+before a value arrives throws `config::parameter_not_set`. A plain member
+does not compile: its default would be implicit.
+
+A parameter converts to its value, so it reads like the value it holds
+(`temperature * parameters().cooling_rate`); where a template deduces its
+argument, as `(std::max)(a, b)` does, or where the value is a class with its
+own templated operators, as `std::string` compared with a literal is,
+`value()` spells the value out.
+
+The value may be an integral or floating-point type, `bool`,
+`easylocal::limit`, `std::string`, `std::filesystem::path`, and `std::array`s
+and `std::vector`s of those (written `[a, b, c]`; `[]` is an empty vector; see
 [Values as text](#values-as-text)). A `group` nests another
 block: its fields are under `schedule.`, and `config::check_schema` of the
 enclosing block runs its `validate()` once the enclosing block's own fields
@@ -40,10 +57,10 @@ pass, so that the enclosing block's `validate()` checks it too.
 A field may declare the values it takes as the second argument of `field`:
 
 ```cpp
-config::field<"cooling_rate", &P::cooling_rate>(
+config::field<&P::cooling_rate>(
     "Multiplicative cooling factor", config::range(0.0, 1.0).open()),
-config::field<"samples", &P::samples>("Proposals", config::range(1, 1000).log()),
-config::field<"policy", &P::policy>("Tabu list", config::one_of("fixed", "random")),
+config::field<&P::samples>("Proposals", config::range(1, 1000).log()),
+config::field<&P::policy>("Tabu list", config::one_of("fixed", "random")),
 ```
 
 | Domain | Values |
@@ -72,7 +89,7 @@ converts to the unlimited `limit` and which no number converts to.
 ### Conditions and requirements
 
 ```cpp
-config::field<"initial_acceptance", &P::initial_acceptance>("...", config::range(0.0, 1.0).open())
+config::field<&P::initial_acceptance>("...", config::range(0.0, 1.0).open())
     .only_if(config::value<"calibration_samples"> > 0),
 config::require(
     config::value<"final_temperature"> < config::value<"initial_temperature">,

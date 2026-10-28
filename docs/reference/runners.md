@@ -70,8 +70,10 @@ shapes the search rather than stopping it, is `allowed_<x>`
 (`allowed_iterations` of the annealing schedules, `allowed_reheats`,
 `allowed_running_time`), and a threshold the search must pass first is
 `min_<x>` (`min_iterations` of Pareto Late Acceptance). The bounds of a value,
-such as `min_tenure` and `max_tenure`, keep their names. The caps are
-unlimited by default, except `max_idle_iterations` (1000).
+such as `min_tenure` and `max_tenure`, keep their names. The caps are unlimited by
+default, except the ones whose value belongs to the problem, which have no
+default and must be set: `max_idle_iterations`, `allowed_iterations`,
+`allowed_running_time` and `min_iterations`.
 
 The budget is checked only before evaluating a move, so an empty neighborhood
 is a local optimum even when the budget is exhausted.
@@ -298,8 +300,9 @@ is feasible. Another acceptance criterion is a value with
 `SimulatedAnnealingParameters<Policy::parameters_type>`, the policy's under the
 group `temperature` and the evaluation budget `max_evaluations`:
 `make_runner<SimulatedAnnealing<Classic>>({.temperature = {...}})`,
-`search.temperature.*` in a configuration. The parameter blocks have defaults
-that pass validation. A calibrating schedule with `calibration_samples` above 0
+`search.temperature.*` in a configuration. The temperatures have no default,
+since they live in the scale of the cost, and neither has the budget of a
+schedule that has one; the rest of each block does. A calibrating schedule with `calibration_samples` above 0
 needs a cost with `cost::delta`; with any other cost the run throws
 `std::invalid_argument`.
 

@@ -1213,24 +1213,30 @@ parsed as `--box::name`. You used `IsSet()` to check for a value and
 `SetParameter("name", value)` to change it.
 
 In EasyLocal 4, related parameters live in a **parameter block**: a plain
-struct with default values and a `parameter_schema()` describing its fields.
-Algorithms, temperature policies, tabu lists, cost expressions and
-neighborhoods use these blocks. Your classes can use them too:
+struct whose fields are `config::parameter`s and whose `parameter_schema()`
+describes them. Algorithms, temperature policies, tabu lists, cost expressions
+and neighborhoods use these blocks. Your classes can use them too:
 
 ```cpp title="EasyLocal 4"
 struct ExcessParameters
 {
-    double bound{8.0};
+    easylocal::config::parameter<double, "bound"> bound{8.0};
 
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<"bound", &ExcessParameters::bound>(
+            easylocal::config::field<&ExcessParameters::bound>(
                 "Longest edge that is not a violation",
                 easylocal::config::range(0.0, easylocal::unlimited)));
     }
 };
 ```
+
+The default of a field is its member initializer: `bound{8.0}` here, where
+EasyLocal 3 set the default in the constructor of the parameter. A field
+written `bound{}` has no default and must be set, which the parameters whose
+value belongs to the problem are: the temperatures of Simulated Annealing and
+the budget of a search, which EasyLocal 3 gave arbitrary values.
 
 The schema is read at compile time. It gives each field a **description** for
 `--help` and the tester, and a **domain** of allowed values. For example, use

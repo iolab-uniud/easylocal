@@ -108,6 +108,20 @@ public:
 };
 ```
 
+Each field is a `config::parameter<Value, "name">`, and **its default is its
+member initializer**: `bound{8.0}` here. A field written `bound{}` has no
+default, and nothing but a value given to it will do: `validate()` reports
+`bound: not set, and it has no default`, `--help` writes `required: it has no
+default and must be set` in place of a current value, and a run that reads it
+anyway throws `config::parameter_not_set`. This is how the library declares
+the parameters whose value belongs to the problem — the temperatures of
+Simulated Annealing, the budget of a search — rather than inventing one. A
+plain member does not compile: its default would be implicit.
+
+A parameter reads like the value it holds, since it converts to it
+(`parameters().bound` above); where a template deduces its argument, as
+`(std::max)(a, b)` does, `value()` spells the value out.
+
 Every configurable class follows the same rule: declare a parameter block as
 `parameters_type` and accept it in the constructor.
 `parameters_base<ExcessParameters>` supplies both, stores the block and exposes
@@ -166,15 +180,17 @@ Your own parameters take part by describing themselves with a schema:
 ```cpp
 struct AppParameters
 {
-    std::filesystem::path instance_file;
-    std::uint64_t seed{0};
+    // No default: the program does not run until --application.instance_file
+    // gives it one.
+    easylocal::config::parameter<std::filesystem::path, "instance_file"> instance_file{};
+    easylocal::config::parameter<std::uint64_t, "seed"> seed{0};
 
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<"instance_file", &AppParameters::instance_file>(
+            easylocal::config::field<&AppParameters::instance_file>(
                 "TSP instance", easylocal::unlimited),
-            easylocal::config::field<"seed", &AppParameters::seed>(
+            easylocal::config::field<&AppParameters::seed>(
                 "RNG seed", easylocal::unlimited));
     }
 
@@ -201,16 +217,16 @@ Simulated Annealing's classic schedule shows the three kinds of rule:
 static consteval auto parameter_schema()
 {
     return config::fields(
-        config::field<"initial_temperature", &ClassicParameters::initial_temperature>(
+        config::field<&ClassicParameters::initial_temperature>(
             "Initial annealing temperature",
             config::range(0.0, easylocal::unlimited).open_low()),
-        config::field<"final_temperature", &ClassicParameters::final_temperature>(
+        config::field<&ClassicParameters::final_temperature>(
             "Final annealing temperature",
             config::range(0.0, easylocal::unlimited).open_low()),
-        config::field<"cooling_rate", &ClassicParameters::cooling_rate>(
+        config::field<&ClassicParameters::cooling_rate>(
             "Multiplicative cooling factor", config::range(0.0, 1.0).open()),
         // ... samples_per_temperature, calibration_samples
-        config::field<"initial_acceptance", &ClassicParameters::initial_acceptance>(
+        config::field<&ClassicParameters::initial_acceptance>(
             "Acceptance probability of an average worsening move at the "
             "estimated initial temperature",
             config::range(0.0, 1.0).open())
@@ -335,9 +351,9 @@ if (!applied)
 - `apply` checks every path and validates every value before
   changing anything: an unknown key (a typo such as `coolin_rate`) or an
   invalid value (`cooling_rate = 2.0`) leaves the parameters as they were.
-- The runner here has default parameters and a cost with two weights; with
-  the file, Simulated Annealing finds the cost 66, the length 26 plus 5 times
-  the longest edge, 8.
+- The runner here has its temperatures set, since they have no default, and a
+  cost with two weights; with the file, Simulated Annealing finds the cost 66,
+  the length 26 plus 5 times the longest edge, 8.
 - To let the command line override the file, give `load_toml_file` to
   `load_and_apply`, which reads it for `--config`:
   `el::config::load_and_apply(argc, argv, configuration,

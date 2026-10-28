@@ -422,28 +422,6 @@ search space as a Python function for Optuna, which with the Python bindings
 
 **When.** Not scheduled.
 
-## Parameters that must be set
-
-**Why.** The values of a parameter are checked (its domain, the block's
-`validate()`, the requirements between parameters), but whether it has been
-set is not: a field that no option, configuration file or program sets keeps
-its default member initializer, or 0 when it has none, since the blocks are
-value-initialized. A missing value is then reported only when that default
-lies outside the domain, and as an invalid value rather than a missing one;
-with a domain that contains it, the run goes on silently. Today a block can
-reject a sentinel default in its `validate()`, as the tutorial's staged
-program does for an empty instance path, and `cli::run` refuses to run without
-`--instance`, a check written for that one option.
-
-**What.** A field could be declared required in its schema. `load_and_apply`
-would report each required parameter that nothing has set, by its path,
-before validating the values; `--help` and the interactive tester would mark
-it; the irace export would either tune it or ask for its value in
-`fixed.conf`; and `--instance` would become one case of the same rule.
-
-**When.** Next, once the design is agreed: it extends the schema of every
-parameter block, so it belongs before the API is declared stable.
-
 ## Experiment configurations
 
 **Why.** Tuning and benchmarking produce configurations (the tuned values, the
