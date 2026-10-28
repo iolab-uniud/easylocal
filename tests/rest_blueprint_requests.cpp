@@ -670,7 +670,9 @@ void a_problem_with_text_hooks_needs_no_codec()
             | easylocal::delta<TourLength, TwoOptLengthDelta>())
         | easylocal::runner<easylocal::runners::FirstImprovement>("fi")
         | easylocal::runner<easylocal::runners::SimulatedAnnealing<
-            easylocal::runners::temperature::Classic>>("sa");
+            easylocal::runners::temperature::Classic>>(
+            "sa",
+            {.temperature = {.initial_temperature = 10.0, .final_temperature = 0.01}});
     // A copy, for the Session that repeats a REST run below.
     const auto session_application = application;
     auto api = easylocal::rest::blueprint(
@@ -795,7 +797,8 @@ void a_pareto_run_returns_its_front()
     auto application = easylocal::app("grid") | grid_solution_manager()
         | easylocal::neighborhood<StepNeighborhood>()
         | easylocal::runner<easylocal::runners::ParetoLateAcceptanceHillClimbing>(
-            "plahc");
+            "plahc",
+            {.min_iterations = 2000});
     auto api = easylocal::rest::blueprint(
         "/grid",
         std::move(application),

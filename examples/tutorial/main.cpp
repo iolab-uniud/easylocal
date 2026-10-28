@@ -219,13 +219,19 @@ int main(int argc, char* argv[])
             .with_runner<runners::FirstImprovement>("fi")
             .with_runner<runners::SimulatedAnnealing<Classic>>(
                 "sa",
-                {.temperature = {.samples_per_temperature = 50}});
+                {.temperature = {
+                     .initial_temperature = 10.0,
+                     .final_temperature = 0.1,
+                     .samples_per_temperature = 50}});
 
     auto piped_application = el::app("tsp") | sm | nhe
         | el::runner<runners::FirstImprovement>("fi")
         | el::runner<runners::SimulatedAnnealing<Classic>>(
             "sa",
-            {.temperature = {.samples_per_temperature = 50}});
+            {.temperature = {
+                 .initial_temperature = 10.0,
+                 .final_temperature = 0.1,
+                 .samples_per_temperature = 50}});
     // [app] ----------------------------------------------------------------
 
     // [session] ------------------------------------------------------------

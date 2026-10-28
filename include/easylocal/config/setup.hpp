@@ -11,7 +11,6 @@
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/parameter_set.hpp>
 
-#include <algorithm>
 #include <cstddef>
 #include <ostream>
 #include <span>
@@ -130,19 +129,12 @@ inline void append_diagnostics(
 }
 
 // Every parameter that matters and that nothing has set, by its path: a
-// required parameter is reported once, also when no override touched its
-// block.
+// required parameter is reported also when no override touched its block.
 inline void append_unset_parameters(setup_result& result, const parameter_set& parameters)
 {
     for (const auto& parameter : parameters.parameters())
     {
         if (parameter.set || !parameter.active)
-            continue;
-        const auto reported = [&parameter](const setup_diagnostic& diagnostic) {
-            return diagnostic.source == setup_diagnostic_source::validation
-                && diagnostic.subject == parameter.path;
-        };
-        if (std::ranges::any_of(result.diagnostics, reported))
             continue;
         result.diagnostics.push_back({
             .source = setup_diagnostic_source::validation,
@@ -206,7 +198,10 @@ inline setup_result load_and_apply(
     // apply() validates every block, the touched ones on their copies, before
     // committing anything: invalid defaults pass when the batch fixes them.
     detail::append_diagnostics(result, overrides);
-    detail::append_unset_parameters(result, parameters);
+    // Only once the values are in: a batch that fails commits nothing, and
+    // would leave every required parameter looking unset.
+    if (result)
+        detail::append_unset_parameters(result, parameters);
     return result;
 }
 

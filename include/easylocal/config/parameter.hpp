@@ -38,8 +38,10 @@ public:
 /// not have been set.
 ///
 /// A member initializer is the default of the field, `parameter<double,
-/// "cooling_rate"> cooling_rate{0.95}`; a field declared without one is
-/// required, and reading it before anything sets it throws parameter_not_set.
+/// "cooling_rate"> cooling_rate{0.95}`; a field with no default is declared
+/// `initial_temperature{}`, and reading it before anything sets it throws
+/// parameter_not_set. An empty initializer sets nothing, and keeps a
+/// designated initializer that leaves the field out from warning.
 /// It converts to its value, so a parameter reads like the value it holds;
 /// where a template deduces its argument, value() spells the value out.
 template<class Value, fixed_string Name>

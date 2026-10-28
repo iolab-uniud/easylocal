@@ -69,7 +69,8 @@ struct requirement_info
     std::string_view message;
     /// The expression that must hold, with the full paths of the parameters.
     expression_info expression;
-    /// Whether it holds with the current values.
+    /// Whether it holds with the current values; one over a parameter that
+    /// nothing has set holds, since it cannot be read.
     bool satisfied{};
 };
 
@@ -493,8 +494,12 @@ private:
                         .path = path,
                         .message = requirement.message,
                         .expression = describe_expression(requirement.expression, path),
+                        // A requirement over a parameter nothing has set
+                        // cannot be read, and holds: the parameter is
+                        // reported on its own.
                         .satisfied =
-                            static_cast<bool>(evaluate(requirement.expression, block)),
+                            !detail::references_are_set(requirement.expression, block)
+                            || static_cast<bool>(evaluate(requirement.expression, block)),
                     });
                 };
                 detail::walk_requirements(get(), std::string{at}, visit);

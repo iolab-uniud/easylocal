@@ -220,12 +220,15 @@ void built_in_schemas_declare_their_relations()
     using easylocal::runners::GreatDelugeParameters;
     using easylocal::runners::temperature::ClassicParameters;
 
-    ClassicParameters classic;
+    // The temperatures have no default: they are given, and the test changes
+    // one field at a time.
+    const ClassicParameters valid{.initial_temperature = 10.0, .final_temperature = 0.1};
+    ClassicParameters classic = valid;
     classic.final_temperature = 20.0;
     assert(
         classic.validate().message
         == "final_temperature must be smaller than initial_temperature");
-    classic = {};
+    classic = valid;
     classic.initial_acceptance = 1.0; // calibration_samples is 0
     assert(config::check_schema(classic));
 

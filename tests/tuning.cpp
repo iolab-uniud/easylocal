@@ -242,7 +242,9 @@ auto tsp_app()
         | easylocal::delta<TourLength, TwoOptLengthDelta>();
     return easylocal::app("tsp") | sm | nhe
         | easylocal::runner<easylocal::runners::FirstImprovement>("fi")
-        | easylocal::runner<SimulatedAnnealing<Classic>>("sa");
+        | easylocal::runner<SimulatedAnnealing<Classic>>(
+            "sa",
+            {.temperature = {.initial_temperature = 10.0, .final_temperature = 0.01}});
 }
 
 struct Captured
@@ -314,11 +316,16 @@ void cli_prints_only_the_cost()
         == "error: tuning.print: expected a value in {\"\", cost, cost_time}, got all\n");
 }
 
-void cli_writes_the_stub_without_an_instance()
+void cli_writes_the_stub()
 {
+    const std::string instance = EASYLOCAL_TUTORIAL_INSTANCE;
     const auto directory = fresh_directory("easylocal-tuning-cli");
+    // The instance has no default: a scenario is written with one, which its
+    // runs start from.
     const auto written = run(
-        {"--tuning.irace",
+        {"--instance",
+            instance,
+            "--tuning.irace",
             directory.string(),
             "--runners.sa.temperature.final_temperature=0.1"},
         {{"runners.sa.temperature.cooling_rate", config::range(0.8, 0.99)}});
@@ -349,7 +356,8 @@ void cli_writes_the_stub_without_an_instance()
     std::filesystem::remove_all(directory);
 
     // A runner chosen on the command line is the only one tuned.
-    const auto chosen = run({"--tuning.irace", directory.string(), "--runner", "sa"});
+    const auto chosen = run(
+        {"--instance", instance, "--tuning.irace", directory.string(), "--runner", "sa"});
     assert(chosen.status == 0);
     const auto only_sa = read_file(directory / "parameters.txt");
     assert(!contains(only_sa, "\"--runner=\""));
@@ -358,7 +366,7 @@ void cli_writes_the_stub_without_an_instance()
     std::filesystem::remove_all(directory);
 
     const auto outside = run(
-        {"--tuning.irace", directory.string()},
+        {"--instance", instance, "--tuning.irace", directory.string()},
         {{"runners.sa.temperature.cooling_rate", config::range(0.5, 1.5)}});
     assert(outside.status == 2);
     assert(contains(outside.err, "is outside its domain (0, 1)"));
@@ -373,8 +381,11 @@ void fixed_values_are_shared_by_every_run()
     Files files;
     config::parameter_set own;
     own.add("files", files);
+    const std::string instance = EASYLOCAL_TUTORIAL_INSTANCE;
     const auto written = run(
-        {"--tuning.irace",
+        {"--instance",
+            instance,
+            "--tuning.irace",
             directory.string(),
             "--solution",
             "start.txt",
@@ -391,8 +402,13 @@ void fixed_values_are_shared_by_every_run()
     std::filesystem::remove_all(directory);
 
     // The weight of the hard cost is the program's: every run uses it.
-    const auto weighted =
-        run({"--tuning.irace", directory.string(), "--tuning.hard_weight", "1000"});
+    const auto weighted = run(
+        {"--instance",
+            instance,
+            "--tuning.irace",
+            directory.string(),
+            "--tuning.hard_weight",
+            "1000"});
     assert(weighted.status == 0);
     assert(contains(read_file(directory / "fixed.conf"), "tuning.hard_weight = 1000\n"));
     std::filesystem::remove_all(directory);
@@ -423,9 +439,16 @@ void a_cost_without_a_number_is_not_tuned()
             | easylocal::runner<easylocal::runners::FirstImprovement>("fi");
     };
     std::string program{"/opt/bin/tsp"};
+    std::string instance_switch{"--instance"};
+    std::string instance{EASYLOCAL_TUTORIAL_INSTANCE};
     std::string irace_switch{"--tuning.irace"};
     std::string irace_directory{directory.string()};
-    std::vector<char*> argv{program.data(), irace_switch.data(), irace_directory.data()};
+    std::vector<char*> argv{
+        program.data(),
+        instance_switch.data(),
+        instance.data(),
+        irace_switch.data(),
+        irace_directory.data()};
     std::ostringstream out;
     std::ostringstream err;
     const int status = easylocal::cli::run(
@@ -772,7 +795,7 @@ int main()
     the_stub_has_the_parameters_with_conditions();
     ranges_must_name_parameters_within_their_domains();
     cli_prints_only_the_cost();
-    cli_writes_the_stub_without_an_instance();
+    cli_writes_the_stub();
     fixed_values_are_shared_by_every_run();
     a_cost_without_a_number_is_not_tuned();
     the_stub_reads_numbers_in_any_locale();

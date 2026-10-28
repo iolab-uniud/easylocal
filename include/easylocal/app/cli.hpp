@@ -53,12 +53,13 @@ namespace easylocal::cli
 /// --max_evaluations, --report and --trace.
 ///
 /// The app's parameters come next to them: `--runners.<name>.*`, `--cost.*` and
-/// `--neighborhood.*`. Every field has an initializer, so that designated
-/// initializers, as in options::defaults, may name only some of them.
+/// `--neighborhood.*`. Every field but the instance has an initializer, so that
+/// designated initializers, as in options::defaults, may name only some of
+/// them.
 struct CommandLineParameters
 {
-    /// The Input file; it must be set to run, not to write a tuning scenario.
-    config::parameter<std::filesystem::path, "instance"> instance{""};
+    /// The Input file; it has no default and must be set.
+    config::parameter<std::filesystem::path, "instance"> instance{};
     /// The seed of the random generator.
     config::parameter<std::uint64_t, "seed"> seed{0};
     /// The name of the runner; empty: the first registered.
@@ -577,12 +578,6 @@ int run(App application, const int argc, char* argv[], options settings = {})
             std::move(tunable),
             std::move(requirements),
             names);
-
-    if (command_line.instance.value().empty())
-    {
-        err << "error: instance must be set\n";
-        return 2;
-    }
 
     // What the problem cannot do is an error of the command line, found
     // before the Input is read and the search runs.

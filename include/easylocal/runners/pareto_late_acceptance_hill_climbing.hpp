@@ -33,8 +33,8 @@ struct ParetoLateAcceptanceHillClimbingParameters
     config::parameter<std::size_t, "history_length"> history_length{20};
     /// Iterations after which the search stops as soon as the idle iterations
     /// exceed idle_ratio of all the iterations: the least it runs, not a
-    /// limit.
-    config::parameter<std::size_t, "min_iterations"> min_iterations{100000};
+    /// limit; it has no default, since the budget belongs to the problem.
+    config::parameter<std::size_t, "min_iterations"> min_iterations{};
     /// Share of the iterations that may be idle once min_iterations is past.
     config::parameter<double, "idle_ratio"> idle_ratio{0.02};
     /// A candidate that does not dominate the current solution may still

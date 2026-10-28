@@ -517,19 +517,26 @@ int main()
             policy.on_iteration(false);
         ok &= expect(policy.finished(), "fixed temperature ends on its iteration budget");
 
-        temperature::FixedTemperature unbounded{
-            temperature::FixedTemperatureParameters{.allowed_iterations = 3}};
+        temperature::FixedTemperature unbounded{temperature::FixedTemperatureParameters{
+            .temperature = 1.0,
+            .allowed_iterations = 3}};
         for (int i = 0; i < 2; ++i)
             unbounded.on_iteration(true);
         ok &= expect(
             !unbounded.finished()
-                && temperature::FixedTemperatureParameters{}
-                    .max_accepted.value()
-                    .is_unlimited(),
+                && temperature::
+                    FixedTemperatureParameters{.temperature = 1.0, .allowed_iterations = 3}
+                        .max_accepted.value()
+                        .is_unlimited(),
             "fixed temperature accepts without limit by default");
         ok &= expect(
-            !temperature::FixedTemperatureParameters{.temperature = 0.0}.validate()
-                && !temperature::FixedTemperatureParameters{.max_accepted = 0}.validate(),
+            !temperature::FixedTemperatureParameters{
+                .temperature = 0.0,
+                .allowed_iterations = 100}
+                    .validate()
+                && !temperature::
+                    FixedTemperatureParameters{.temperature = 1.0, .allowed_iterations = 100, .max_accepted = 0}
+                        .validate(),
             "fixed temperature rejects invalid parameters");
     }
 
@@ -639,14 +646,20 @@ int main()
             cutoff.temperature() == 4.0 && cutoff.level_time() == milliseconds{1400},
             "time-based cutoff cools early and redistributes the time it saves");
         // A time longer than the clock can count is as long as it can.
-        const temperature::TimeBased endless{
-            temperature::TimeBasedParameters{.allowed_running_time = 1e30}};
+        const temperature::TimeBased endless{temperature::TimeBasedParameters{
+            .initial_temperature = 10.0,
+            .final_temperature = 0.01,
+            .allowed_running_time = 1e30}};
         ok &= expect(
             endless.level_time() > std::chrono::steady_clock::duration::zero()
                 && !endless.finished(),
             "time-based SA holds an allowed time longer than the clock counts");
         ok &= expect(
-            !temperature::TimeBasedParameters{.allowed_running_time = 0.0}.validate(),
+            !temperature::TimeBasedParameters{
+                .initial_temperature = 10.0,
+                .final_temperature = 0.01,
+                .allowed_running_time = 0.0}
+                .validate(),
             "time-based policy rejects a non-positive running time");
     }
 
@@ -690,16 +703,30 @@ int main()
             policy.reheats() == 0 && policy.temperature() == 8.0 && !policy.finished(),
             "reheating reset restarts the first descent");
 
+        // The descent has no default temperatures: each case starts from a
+        // valid block and changes one field.
+        const HybridReheating valid{
+            .descent = {
+                .initial_temperature = 8.0,
+                .final_temperature = 1.0,
+                .allowed_iterations = 12}};
+        const auto changed = [&valid](auto change) {
+            HybridReheating parameters = valid;
+            change(parameters);
+            return static_cast<bool>(parameters.validate());
+        };
         ok &= expect(
-            static_cast<bool>(HybridReheating{}.validate())
-                && static_cast<bool>(
-                    HybridReheating{.allowed_reheats = 0, .first_descent_share = 1.0}
-                        .validate())
-                && !HybridReheating{.reheat_ratio = 0.0}.validate()
-                && !HybridReheating{.first_descent_share = 1.0}.validate()
-                && !HybridReheating{.descent = {.final_temperature = 6.0}, .reheat_ratio = 0.5}
-                    .validate()
-                && !HybridReheating{.descent = {.cooling_rate = 1.0}}.validate(),
+            static_cast<bool>(valid.validate()) && changed([](auto& p) {
+                p.allowed_reheats = 0;
+                p.first_descent_share = 1.0;
+            }) && !changed([](auto& p) {
+                p.reheat_ratio = 0.0;
+            }) && !changed([](auto& p) {
+                p.first_descent_share = 1.0;
+            }) && !changed([](auto& p) {
+                p.descent.final_temperature = 6.0;
+                p.reheat_ratio = 0.5;
+            }) && !changed([](auto& p) { p.descent.cooling_rate = 1.0; }),
             "reheating validates the descent, its reheat ratio and first-descent share");
 
         // Without a budget, each descent runs the whole schedule: Classic
@@ -737,7 +764,10 @@ int main()
         using FixedReheating =
             temperature::ReheatingParameters<temperature::FixedLengthParameters>;
         const FixedReheating tight{
-            .descent = {.allowed_iterations = 10},
+            .descent =
+                {.initial_temperature = 10.0,
+                    .final_temperature = 0.01,
+                    .allowed_iterations = 10},
             .allowed_reheats = 1,
             .first_descent_share = 0.9};
         temperature::Reheating<temperature::FixedLength> spent{tight};
@@ -758,7 +788,10 @@ int main()
 
         // A time budget is divided like an iteration budget.
         temperature::Reheating<temperature::TimeBased> timed{
-            {.descent = {.allowed_running_time = 8.0},
+            {.descent =
+                    {.initial_temperature = 10.0,
+                        .final_temperature = 0.01,
+                        .allowed_running_time = 8.0},
                 .allowed_reheats = 2,
                 .first_descent_share = 0.5}};
         ok &= expect(
@@ -802,6 +835,7 @@ int main()
 
         temperature::Classic uncalibrated{temperature::ClassicParameters{
             .initial_temperature = 7.0,
+            .final_temperature = 0.01,
             .calibration_samples = 10,
         }};
         uncalibrated.calibrate(huge_deltas);
@@ -809,8 +843,10 @@ int main()
             uncalibrated.parameters().initial_temperature == 7.0,
             "a calibration without an estimate keeps the configured temperature");
 
-        temperature::Classic classic{
-            temperature::ClassicParameters{.calibration_samples = 10}};
+        temperature::Classic classic{temperature::ClassicParameters{
+            .initial_temperature = 10.0,
+            .final_temperature = 0.01,
+            .calibration_samples = 10}};
         classic.calibrate(deltas);
         ok &= expect(
             approximately_equal(classic.temperature(), expected, tolerance)
@@ -821,6 +857,7 @@ int main()
             "a calibrated policy starts from the estimated temperature");
 
         temperature::Classic clamped{temperature::ClassicParameters{
+            .initial_temperature = 10.0,
             .final_temperature = 1.0,
             .cooling_rate = 0.5,
             .calibration_samples = 10}};
@@ -830,15 +867,19 @@ int main()
             clamped.temperature() == 2.0,
             "a calibrated temperature keeps at least one cooling level");
 
-        temperature::Classic unchanged{
-            temperature::ClassicParameters{.calibration_samples = 10}};
+        temperature::Classic unchanged{temperature::ClassicParameters{
+            .initial_temperature = 10.0,
+            .final_temperature = 0.01,
+            .calibration_samples = 10}};
         unchanged.calibrate(improving);
         ok &= expect(
             unchanged.temperature() == 10.0,
             "without worsening moves the configured temperature stays");
 
-        temperature::FixedTemperature fixed{
-            temperature::FixedTemperatureParameters{.calibration_samples = 10}};
+        temperature::FixedTemperature fixed{temperature::FixedTemperatureParameters{
+            .temperature = 1.0,
+            .allowed_iterations = 100'000,
+            .calibration_samples = 10}};
         fixed.calibrate(deltas);
         ok &= expect(
             approximately_equal(fixed.temperature(), expected, tolerance),
@@ -846,8 +887,10 @@ int main()
 
         temperature::Reheating<temperature::Hybrid> reheating{
             {.descent =
-                    {.final_temperature = 1.0,
+                    {.initial_temperature = 10.0,
+                        .final_temperature = 1.0,
                         .cooling_rate = 0.5,
+                        .allowed_iterations = 1000,
                         .calibration_samples = 10},
                 .reheat_ratio = 0.5}};
         reheating.calibrate(tiny);
@@ -857,11 +900,13 @@ int main()
 
         ok &= expect(
             !temperature::ClassicParameters{
+                .initial_temperature = 10.0,
+                .final_temperature = 0.01,
                 .calibration_samples = 10,
                 .initial_acceptance = 1.0}
                     .validate()
                 && !temperature::
-                    TimeBasedParameters{.calibration_samples = 10, .initial_acceptance = 0.0}
+                    TimeBasedParameters{.initial_temperature = 10.0, .final_temperature = 0.01, .allowed_running_time = 10.0, .calibration_samples = 10, .initial_acceptance = 0.0}
                         .validate(),
             "calibrating policies reject an initial acceptance outside (0, 1)");
     }
@@ -989,7 +1034,11 @@ int main()
         auto calibrating =
             easylocal::make_runner<
                 SimulatedAnnealing<temperature::Classic, AlwaysAccept>>(
-                {.temperature = temperature::ClassicParameters{.calibration_samples = 4}})
+                {.temperature =
+                        temperature::ClassicParameters{
+                            .initial_temperature = 10.0,
+                            .final_temperature = 0.01,
+                            .calibration_samples = 4}})
             | (solution_manager<ChainSolutionManager>() | component<OrderedChainValue>())
             | neighborhood<RandomOnlyChainNeighborhood>();
         std::mt19937 calibration_rng{7U};
@@ -1176,7 +1225,10 @@ int main()
         auto timed =
             easylocal::make_runner<SimulatedAnnealing<temperature::TimeBased>>(
                 {.temperature =
-                        temperature::TimeBasedParameters{.allowed_running_time = 0.02}})
+                        temperature::TimeBasedParameters{
+                            .initial_temperature = 10.0,
+                            .final_temperature = 0.01,
+                            .allowed_running_time = 0.02}})
             | solution_manager_recipe | neighborhood_recipe;
         std::mt19937 rng{2026U};
         const auto start = std::chrono::steady_clock::now();
@@ -1199,6 +1251,8 @@ int main()
             easylocal::make_runner<SimulatedAnnealing<temperature::FixedLength>>(
                 {.temperature =
                         temperature::FixedLengthParameters{
+                            .initial_temperature = 10.0,
+                            .final_temperature = 0.01,
                             .allowed_iterations = 40,
                             .calibration_samples = 30}})
             | solution_manager_recipe | neighborhood_recipe;
@@ -1216,6 +1270,7 @@ int main()
             easylocal::make_runner<SimulatedAnnealing<temperature::FixedTemperature>>(
                 {.temperature =
                         temperature::FixedTemperatureParameters{
+                            .temperature = 1.0,
                             .allowed_iterations = 50}})
             | solution_manager_recipe | neighborhood_recipe;
         const auto fixed_result = fixed.bind(instance).run(initial, rng);

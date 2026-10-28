@@ -1875,8 +1875,9 @@ template<class ListParameters, class CandidateParameters = candidates::FullParam
 struct TabuSearchParameters
 {
     /// Iterations without improving the best cost after which the search
-    /// stops; unlimited: it never stops for that.
-    config::parameter<limit, "max_idle_iterations"> max_idle_iterations{1000};
+    /// stops, or unlimited to never stop for that; it has no default, since
+    /// the budget belongs to the problem.
+    config::parameter<limit, "max_idle_iterations"> max_idle_iterations{};
     /// Iterations in all; unlimited by default.
     config::parameter<limit, "max_iterations"> max_iterations{unlimited};
     /// Evaluation budget, including the initial evaluation; unlimited by

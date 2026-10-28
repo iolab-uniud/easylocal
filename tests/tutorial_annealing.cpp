@@ -125,7 +125,10 @@ bool check_runner_integration()
     auto runner =
         el::make_runner<Algorithm>(
             {
-                .temperature = {.rejections_before_reheat = 1, .allowed_reheats = 100},
+                .temperature =
+                    {.descent = {.initial_temperature = 10.0, .final_temperature = 0.1},
+                        .rejections_before_reheat = 1,
+                        .allowed_reheats = 100},
                 .max_evaluations = 4,
             })
             .with_solution_manager(

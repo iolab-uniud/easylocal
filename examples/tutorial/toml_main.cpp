@@ -21,8 +21,11 @@ int main(int argc, char* argv[])
 
     const auto tsp = five_cities();
 
-    // A runner with the default parameters, whose cost has two weights.
-    auto sa = el::make_runner<runners::SimulatedAnnealing<Classic>>()
+    // A runner whose temperatures are set, since they have no default, and
+    // whose cost has two weights.
+    auto sa =
+        el::make_runner<runners::SimulatedAnnealing<Classic>>(
+            {.temperature = {.initial_temperature = 10.0, .final_temperature = 0.1}})
         | (el::solution_manager<TourManager>()
             | el::cost::sum(el::component<TourLength>(), el::component<MaxEdge>()))
         | (el::neighborhood<TwoOptExplorer>()

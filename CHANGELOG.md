@@ -119,6 +119,23 @@ reviewed by hand before tagging.
   &P::member>` is gone. `config::group<"name", &P::member>` is unchanged.
 - `config::parameter_info` says whether anything has set the parameter
   (`set`), and the value of one that nothing has set is empty.
+- **Breaking:** the parameters whose value belongs to the problem have no
+  default any more, and must be set: the temperatures of Simulated Annealing
+  (`initial_temperature` and `final_temperature` of the four schedules, the
+  `temperature` of the fixed one), which live in the scale of the cost, and
+  the budgets of a search (`max_idle_iterations` of Hill Climbing, Late
+  Acceptance and Tabu Search, `allowed_iterations`, `allowed_running_time`,
+  `min_iterations`). What they had was a guess: 10.0 and 0.01 are a cost
+  scale, 1000 idle iterations an instance size. The parameters that mean
+  nothing in particular keep their defaults (`unlimited` budgets,
+  `calibration_samples` 0, the flags), as do the ones that are a ratio or a
+  factor and so transfer between problems (`cooling_rate`, `accepted_ratio`,
+  the levels of Great Deluge, `idle_ratio`) and the values taken from the
+  literature (the tenures of a tabu list, `history_length`, `elite_size`).
+- **Breaking:** `--instance` has no default and must be set, also to write a
+  tuning scenario with `--tuning.irace`: it is one case of the rule, and the
+  check written for that one option is gone. The message is
+  `error: instance: not set, and it has no default`.
 - A required parameter is reported before the run, wherever the parameters
   are given: `load_and_apply` lists by path each one that matters and that
   nothing has set, also when no override touches its block; `cli_help` writes

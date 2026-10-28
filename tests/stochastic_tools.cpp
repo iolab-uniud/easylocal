@@ -25,7 +25,12 @@ using Annealing = runners::SimulatedAnnealing<runners::temperature::Classic>;
         | (el::neighborhood<TwoOptExplorer>()
             | el::delta<TourLength, TwoOptLengthDelta>())
         | el::runner<runners::FirstImprovement>("fi")
-        | el::runner<Annealing>("sa", {.temperature = {.samples_per_temperature = 20}})
+        | el::runner<Annealing>(
+            "sa",
+            {.temperature =
+                    {.initial_temperature = 10.0,
+                        .final_temperature = 0.01,
+                        .samples_per_temperature = 20}})
         | el::runner<RandomDescent>("descent", {.max_evaluations = 50});
 }
 

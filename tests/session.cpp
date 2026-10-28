@@ -958,7 +958,8 @@ void session_keeps_the_front_of_its_last_run()
     auto application = easylocal::app("grid") | grid_solution_manager()
         | easylocal::neighborhood<StepNeighborhood>()
         | easylocal::runner<easylocal::runners::ParetoLateAcceptanceHillClimbing>(
-            "plahc");
+            "plahc",
+            {.min_iterations = 100000});
     easylocal::Session session{std::move(application), Grid{}, 11};
     session.set_solution(Point{4, 9});
     assert(session.last_run_front().empty()); // no run yet

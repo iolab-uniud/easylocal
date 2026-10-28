@@ -112,7 +112,9 @@ auto application = el::app("tsp")
     | (el::neighborhood<TwoOptExplorer>()
         | el::delta<TourLength, TwoOptLengthDelta>())
     | el::runner<runners::FirstImprovement>("fi")
-    | el::runner<runners::SimulatedAnnealing<Classic>>("sa");
+    | el::runner<runners::SimulatedAnnealing<Classic>>(
+        "sa",
+        {.temperature = {.initial_temperature = 10.0, .final_temperature = 0.1}});
 
 // The Input and the tours in the text of the I/O hooks (chapter 6).
 auto text_api = el::rest::blueprint("/tsp-text", application);

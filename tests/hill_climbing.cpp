@@ -196,10 +196,16 @@ int main()
             !HillClimbingParameters{.max_idle_iterations = 0}.validate(),
             "hill climbing rejects a zero idle limit");
         ok &= expect(
-            static_cast<bool>(HillClimbingParameters{}.validate()),
-            "hill climbing defaults pass validation");
+            !HillClimbingParameters{}.validate()
+                && HillClimbingParameters{}.validate().message
+                    == "max_idle_iterations: not set, and it has no default",
+            "hill climbing asks for an idle limit, which has no default");
+        ok &= expect(
+            static_cast<bool>(
+                HillClimbingParameters{.max_idle_iterations = 1000}.validate()),
+            "hill climbing accepts an idle limit");
 
-        HillClimbingParameters climbing_parameters;
+        HillClimbingParameters climbing_parameters{.max_idle_iterations = 1000};
         easylocal::config::parameter_set configuration;
         configuration.add(climbing_parameters);
         ok &= expect(
@@ -259,13 +265,16 @@ int main()
             return expect(result.termination == termination_reason::local_optimum, name);
         };
         ok &= ends_at_local_optimum(
-            chain(make_runner<LateAcceptanceHillClimbing>({})),
+            chain(make_runner<LateAcceptanceHillClimbing>({.max_idle_iterations = 1000})),
             "late acceptance ends at a solution without moves");
         ok &= ends_at_local_optimum(
             chain(make_runner<GreatDeluge>({})),
             "great deluge ends at a solution without moves");
         ok &= ends_at_local_optimum(
-            chain(make_runner<SimulatedAnnealing<>>({})),
+            chain(
+                make_runner<SimulatedAnnealing<>>(
+                    {.temperature =
+                            {.initial_temperature = 10.0, .final_temperature = 0.01}})),
             "simulated annealing ends at a solution without moves");
     }
 

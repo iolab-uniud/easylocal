@@ -283,7 +283,8 @@ int main()
 
         easylocal::runners::SimulatedAnnealingParameters<
             easylocal::runners::temperature::ClassicParameters>
-            parameters{};
+            parameters{
+                .temperature = {.initial_temperature = 10.0, .final_temperature = 0.01}};
         easylocal::config::parameter_set set;
         set.add("runners.sa", parameters);
 

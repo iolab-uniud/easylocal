@@ -227,10 +227,12 @@ namespace temperature
 /// The parameters of the Classic schedule.
 struct ClassicParameters
 {
-    /// The temperature the annealing starts from.
-    config::parameter<double, "initial_temperature"> initial_temperature{10.0};
-    /// The temperature the cooling stops at.
-    config::parameter<double, "final_temperature"> final_temperature{0.01};
+    /// The temperature the annealing starts from; it has no default, since
+    /// it lives in the scale of the cost.
+    config::parameter<double, "initial_temperature"> initial_temperature{};
+    /// The temperature the cooling stops at; it has no default, since it
+    /// lives in the scale of the cost.
+    config::parameter<double, "final_temperature"> final_temperature{};
     /// The factor that multiplies the temperature at each cooling.
     config::parameter<double, "cooling_rate"> cooling_rate{0.95};
     /// Proposals evaluated at each temperature.
@@ -362,14 +364,17 @@ private:
 /// The parameters of the FixedLength schedule.
 struct FixedLengthParameters
 {
-    /// The temperature the annealing starts from.
-    config::parameter<double, "initial_temperature"> initial_temperature{10.0};
-    /// The temperature the cooling stops at.
-    config::parameter<double, "final_temperature"> final_temperature{0.01};
+    /// The temperature the annealing starts from; it has no default, since
+    /// it lives in the scale of the cost.
+    config::parameter<double, "initial_temperature"> initial_temperature{};
+    /// The temperature the cooling stops at; it has no default, since it
+    /// lives in the scale of the cost.
+    config::parameter<double, "final_temperature"> final_temperature{};
     /// The factor that multiplies the temperature at each cooling.
     config::parameter<double, "cooling_rate"> cooling_rate{0.95};
-    /// Proposals in all, spread over the temperature levels.
-    config::parameter<std::size_t, "allowed_iterations"> allowed_iterations{100'000};
+    /// Proposals in all, spread over the temperature levels; it has no
+    /// default, since the budget belongs to the problem.
+    config::parameter<std::size_t, "allowed_iterations"> allowed_iterations{};
 
     /// Moves sampled at the initial solution to estimate the initial
     /// temperature; 0 keeps initial_temperature.
@@ -506,14 +511,17 @@ private:
 /// The parameters of the Cutoff and Hybrid schedules.
 struct CutoffParameters
 {
-    /// The temperature the annealing starts from.
-    config::parameter<double, "initial_temperature"> initial_temperature{10.0};
-    /// The temperature the cooling stops at.
-    config::parameter<double, "final_temperature"> final_temperature{0.01};
+    /// The temperature the annealing starts from; it has no default, since
+    /// it lives in the scale of the cost.
+    config::parameter<double, "initial_temperature"> initial_temperature{};
+    /// The temperature the cooling stops at; it has no default, since it
+    /// lives in the scale of the cost.
+    config::parameter<double, "final_temperature"> final_temperature{};
     /// The factor that multiplies the temperature at each cooling.
     config::parameter<double, "cooling_rate"> cooling_rate{0.95};
-    /// Proposals in all, spread over the temperature levels.
-    config::parameter<std::size_t, "allowed_iterations"> allowed_iterations{100'000};
+    /// Proposals in all, spread over the temperature levels; it has no
+    /// default, since the budget belongs to the problem.
+    config::parameter<std::size_t, "allowed_iterations"> allowed_iterations{};
     /// Accepted proposals that cool, as a share of a level's proposals
     /// (allowed_iterations over the temperature levels).
     config::parameter<double, "accepted_ratio"> accepted_ratio{0.1};
@@ -821,10 +829,12 @@ private:
 /// The parameters of the FixedTemperature schedule.
 struct FixedTemperatureParameters
 {
-    /// The constant temperature.
-    config::parameter<double, "temperature"> temperature{1.0};
-    /// Proposals in all.
-    config::parameter<std::size_t, "allowed_iterations"> allowed_iterations{100'000};
+    /// The constant temperature; it has no default, since it lives in the
+    /// scale of the cost.
+    config::parameter<double, "temperature"> temperature{};
+    /// Proposals in all; it has no default, since the budget belongs to the
+    /// problem.
+    config::parameter<std::size_t, "allowed_iterations"> allowed_iterations{};
     /// Accepted proposals after which the annealing ends; unlimited by default.
     config::parameter<limit, "max_accepted"> max_accepted{unlimited};
 
@@ -915,7 +925,8 @@ public:
         accepted_ = 0;
     }
 
-    /// The constant temperature.
+    /// The constant temperature; it has no default, since it lives in the
+    /// scale of the cost.
     [[nodiscard]]
     double temperature() const noexcept
     {
@@ -948,14 +959,16 @@ private:
 /// The parameters of the TimeBased schedule.
 struct TimeBasedParameters
 {
-    /// The temperature the annealing starts from.
-    config::parameter<double, "initial_temperature"> initial_temperature{10.0};
-    /// The temperature the cooling stops at.
-    config::parameter<double, "final_temperature"> final_temperature{0.01};
+    /// The temperature the annealing starts from; it has no default, since
+    /// it lives in the scale of the cost.
+    config::parameter<double, "initial_temperature"> initial_temperature{};
+    /// The temperature the cooling stops at; it has no default, since it
+    /// lives in the scale of the cost.
+    config::parameter<double, "final_temperature"> final_temperature{};
     /// The factor that multiplies the temperature at each cooling.
     config::parameter<double, "cooling_rate"> cooling_rate{0.95};
-    /// Seconds.
-    config::parameter<double, "allowed_running_time"> allowed_running_time{10.0};
+    /// Seconds; it has no default, since the budget belongs to the problem.
+    config::parameter<double, "allowed_running_time"> allowed_running_time{};
     /// Accepted proposals that cool early; unlimited cools only on time.
     config::parameter<limit, "accepted_per_temperature"> accepted_per_temperature{
         unlimited};

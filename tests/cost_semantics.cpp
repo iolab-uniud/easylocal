@@ -372,7 +372,9 @@ int main()
 
     // Hill Climbing accepts sideways moves with better_or_equivalent: derived
     // from the same compare as better, it climbs towards larger values.
-    auto hill_climbing = easylocal::make_runner<easylocal::runners::HillClimbing>()
+    auto hill_climbing =
+        easylocal::make_runner<easylocal::runners::HillClimbing>(
+            {.max_idle_iterations = 1000})
         | maximizing_manager | neighborhood<NeighborhoodExplorer>();
     std::mt19937 rng{7U};
     const auto climbed = hill_climbing.bind(instance).run(

@@ -138,7 +138,9 @@ int main()
         "the deltas leave the weight above zero, by rounding");
 
     {
-        auto runner = easylocal::make_runner<easylocal::runners::HillClimbing>()
+        auto runner =
+            easylocal::make_runner<easylocal::runners::HillClimbing>(
+                {.max_idle_iterations = 1000})
             | (easylocal::solution_manager<SelectionManager>() | component<Weight>())
             | (easylocal::neighborhood<DropNeighborhood>() | delta<Weight>());
         std::mt19937 rng{1U};
@@ -151,7 +153,9 @@ int main()
     }
 
     {
-        auto runner = easylocal::make_runner<easylocal::runners::HillClimbing>()
+        auto runner =
+            easylocal::make_runner<easylocal::runners::HillClimbing>(
+                {.max_idle_iterations = 1000})
             | (easylocal::solution_manager<SelectionManager>()
                 | cost::hard_soft(component<Weight>(), component<Dropped>()))
             | (easylocal::neighborhood<DropNeighborhood>() | delta<Weight>()

@@ -359,7 +359,9 @@ void write_pipeline(const std::filesystem::path& directory)
     auto pipeline = el::solvers::pipeline(
         el::solvers::stage(
             "climb",
-            el::make_runner<el::runners::HillClimbing>({.max_evaluations = 4}) | sm | nhe)
+            el::make_runner<el::runners::HillClimbing>(
+                {.max_idle_iterations = 1000, .max_evaluations = 4})
+                | sm | nhe)
             & el::solvers::attempts(2),
         el::solvers::stage(
             "descend",

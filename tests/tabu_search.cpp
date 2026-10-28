@@ -321,7 +321,7 @@ auto keeps_its_limits(const std::string_view name) -> bool
     bool ok = true;
     std::mt19937 rng{3U};
 
-    typename Algorithm::parameters_type budgeted{};
+    typename Algorithm::parameters_type budgeted{.max_idle_iterations = 1000};
     budgeted.max_evaluations = 4;
     const auto spent =
         line_runner<Algorithm, Valley>(budgeted).bind(instance).run(Position{1}, rng);
@@ -335,10 +335,10 @@ auto keeps_its_limits(const std::string_view name) -> bool
     std::stop_source source;
     StopAfter observer{.source = source, .after = 2};
     const easylocal::run_control control{source.get_token(), observer};
-    const auto cancelled = line_runner<Algorithm, Valley>({}).bind(instance).run(
-        Position{1},
-        rng,
-        easylocal::with(control));
+    const auto cancelled =
+        line_runner<Algorithm, Valley>({.max_idle_iterations = 1000})
+            .bind(instance)
+            .run(Position{1}, rng, easylocal::with(control));
     ok &= expect(
         cancelled.termination == termination_reason::cancelled
             && cancelled.evaluations == 2 && cancelled.iterations <= 1,
@@ -346,7 +346,7 @@ auto keeps_its_limits(const std::string_view name) -> bool
 
     // From 1 the fork has no move.
     const auto stuck =
-        (easylocal::make_runner<Algorithm>({})
+        (easylocal::make_runner<Algorithm>({.max_idle_iterations = 1000})
             | (solution_manager<ForkManager>() | component<ForkObjective<0>>())
             | neighborhood<ForkExplorer>())
             .bind(instance)
@@ -367,15 +367,17 @@ int main()
 
     {
         ok &= expect(
-            static_cast<bool>(
-                TabuSearchParameters<tabu::FixedLengthParameters>{}.validate())
+            static_cast<bool>(TabuSearchParameters<tabu::FixedLengthParameters>{
+                .max_idle_iterations = 1000}
+                    .validate())
+                && !TabuSearchParameters<tabu::FixedLengthParameters>{}.validate()
                 && !tabu::FixedLengthParameters{.tenure = 0}.validate()
                 && !TabuSearchParameters<
                     tabu::FixedLengthParameters>{.max_idle_iterations = 0}
                     .validate(),
-            "tabu search validates its parameters");
+            "tabu search validates its parameters, its idle limit included");
 
-        TabuSearch<>::parameters_type parameters;
+        TabuSearch<>::parameters_type parameters{.max_idle_iterations = 1000};
         easylocal::config::parameter_set configuration;
         configuration.add(parameters);
         ok &= expect(
@@ -407,7 +409,8 @@ int main()
 
     {
         // The candidate strategies share the block, under the group candidates.
-        AspirationPlusTabuSearch<>::parameters_type parameters;
+        AspirationPlusTabuSearch<>::parameters_type parameters{
+            .max_idle_iterations = 1000};
         easylocal::config::parameter_set configuration;
         configuration.add(parameters);
         const std::array changes{
@@ -427,7 +430,7 @@ int main()
 
     {
         // The cyclic list's tenures are a vector: [a, b, ...].
-        TabuSearch<tabu::Cyclic>::parameters_type parameters;
+        TabuSearch<tabu::Cyclic>::parameters_type parameters{.max_idle_iterations = 1000};
         easylocal::config::parameter_set configuration;
         configuration.add(parameters);
         ok &= expect(
@@ -565,7 +568,9 @@ int main()
         for (unsigned seed = 0; seed < 32; ++seed)
         {
             auto runner = line_runner<TabuSearch<>, Twin>(
-                {.max_iterations = 1, .tabu_list = {.tenure = 2}});
+                {.max_idle_iterations = 1000,
+                    .max_iterations = 1,
+                    .tabu_list = {.tenure = 2}});
             std::mt19937 rng{seed};
             const auto result = runner.bind(instance).run(Position{5}, rng);
             left = left || result.solution.value == 4;
@@ -581,17 +586,22 @@ int main()
         std::mt19937 rng{7U};
         const auto best =
             line_runner<TabuSearch<>, Uneven>(
-                {.max_iterations = 1, .tabu_list = {.tenure = 2}})
+                {.max_idle_iterations = 1000,
+                    .max_iterations = 1,
+                    .tabu_list = {.tenure = 2}})
                 .bind(instance)
                 .run(Position{5}, rng);
         const auto first =
             line_runner<FirstImprovementTabuSearch<>, Uneven>(
-                {.max_iterations = 1, .tabu_list = {.tenure = 2}})
+                {.max_idle_iterations = 1000,
+                    .max_iterations = 1,
+                    .tabu_list = {.tenure = 2}})
                 .bind(instance)
                 .run(Position{5}, rng);
         const auto on_best =
             line_runner<FirstImprovementTabuSearch<>, Uneven>(
-                {.max_iterations = 1,
+                {.max_idle_iterations = 1000,
+                    .max_iterations = 1,
                     .tabu_list = {.tenure = 2},
                     .candidates = {.improve_on_best = true}})
                 .bind(instance)
@@ -606,21 +616,24 @@ int main()
         // examines the right step (0).
         const auto stop_at_first =
             line_runner<AspirationPlusTabuSearch<>, Uneven>(
-                {.max_iterations = 1,
+                {.max_idle_iterations = 1000,
+                    .max_iterations = 1,
                     .tabu_list = {.tenure = 2},
                     .candidates = {.min_moves = 1, .max_moves = 10, .plus = 0}})
                 .bind(instance)
                 .run(Position{5}, rng);
         const auto one_more =
             line_runner<AspirationPlusTabuSearch<>, Uneven>(
-                {.max_iterations = 1,
+                {.max_idle_iterations = 1000,
+                    .max_iterations = 1,
                     .tabu_list = {.tenure = 2},
                     .candidates = {.min_moves = 1, .max_moves = 10, .plus = 1}})
                 .bind(instance)
                 .run(Position{5}, rng);
         const auto capped =
             line_runner<AspirationPlusTabuSearch<>, Uneven>(
-                {.max_iterations = 1,
+                {.max_idle_iterations = 1000,
+                    .max_iterations = 1,
                     .tabu_list = {.tenure = 2},
                     .candidates = {.min_moves = 1, .max_moves = 1, .plus = 5}})
                 .bind(instance)
@@ -634,17 +647,17 @@ int main()
         // factor 1.5 it is -3, so the left step (-8) is under it and the scan
         // stops there; 1.5 * -6 = -9 would have skipped it for the right one.
         using NegativeUneven = Profile<-1, -1, -1, -1, -8, -6, -10, -1, -1, -1, -1>;
-        const auto negative =
-            line_runner<AspirationPlusTabuSearch<>, NegativeUneven>(
-                {.max_iterations = 1,
-                    .tabu_list = {.tenure = 2},
-                    .candidates =
-                        {.min_moves = 1,
-                            .max_moves = 10,
-                            .plus = 0,
-                            .aspiration_level = 1.5}})
-                .bind(instance)
-                .run(Position{5}, rng);
+        const auto negative = line_runner<AspirationPlusTabuSearch<>, NegativeUneven>(
+            {.max_idle_iterations = 1000,
+                .max_iterations = 1,
+                .tabu_list = {.tenure = 2},
+                .candidates =
+                    {.min_moves = 1,
+                        .max_moves = 10,
+                        .plus = 0,
+                        .aspiration_level = 1.5}})
+                                  .bind(instance)
+                                  .run(Position{5}, rng);
         ok &= expect(
             negative.solution.value == 4 && negative.evaluations == 2,
             "the aspiration level is above a negative best cost");
@@ -654,7 +667,9 @@ int main()
         // second evaluation (1 + 2 + 2).
         const auto least_tabu =
             line_runner<TabuSearch<>, Valley>(
-                {.max_iterations = 2, .tabu_list = {.tenure = 2}},
+                {.max_idle_iterations = 1000,
+                    .max_iterations = 2,
+                    .tabu_list = {.tenure = 2}},
                 true)
                 .bind(instance)
                 .run(Position{1}, rng);
@@ -665,7 +680,9 @@ int main()
         // From 1 nothing improves: the best admissible move is applied.
         const auto worse =
             line_runner<FirstImprovementTabuSearch<>, Valley>(
-                {.max_iterations = 1, .tabu_list = {.tenure = 2}})
+                {.max_idle_iterations = 1000,
+                    .max_iterations = 1,
+                    .tabu_list = {.tenure = 2}})
                 .bind(instance)
                 .run(Position{1}, rng);
         ok &= expect(
@@ -829,7 +846,9 @@ int main()
         // With a pareto cost only equivalent candidates are ties: (0, 5) does
         // not replace (2, 2), so (3, 3), which (2, 2) dominates, is never
         // applied.
-        auto runner = easylocal::make_runner<TabuSearch<>>({.max_iterations = 1})
+        auto runner =
+            easylocal::make_runner<TabuSearch<>>(
+                {.max_idle_iterations = 1000, .max_iterations = 1})
             | (solution_manager<ForkManager>()
                 | easylocal::cost::objectives(
                     component<ForkObjective<0>>(),
@@ -896,7 +915,8 @@ int main()
         Forgetful::state::updates = 0;
         std::mt19937 rng{3U};
         const auto forgetful =
-            line_runner<TabuSearch<Forgetful>, Valley>({.max_iterations = 3})
+            line_runner<TabuSearch<Forgetful>, Valley>(
+                {.max_idle_iterations = 1000, .max_iterations = 3})
                 .bind(line)
                 .run(Position{1}, rng);
         ok &= expect(
@@ -911,7 +931,9 @@ int main()
         const auto second_step = [&](const bool improve_on_best) {
             std::mt19937 step_rng{3U};
             return line_runner<FirstImprovementTabuSearch<Forgetful>, Bowl>(
-                {.max_iterations = 2, .candidates = {.improve_on_best = improve_on_best}})
+                {.max_idle_iterations = 1000,
+                    .max_iterations = 2,
+                    .candidates = {.improve_on_best = improve_on_best}})
                 .bind(line)
                 .run(Position{5}, step_rng);
         };
@@ -931,11 +953,13 @@ int main()
                     .bind(line)
                     .run(Position{1}, elite_rng);
             };
-        const auto full =
-            evaluations.template operator()<TabuSearch<Forgetful>>({.max_iterations = 6});
+        const auto full = evaluations.template operator()<TabuSearch<Forgetful>>(
+            {.max_idle_iterations = 1000, .max_iterations = 6});
         const auto elite =
             evaluations.template operator()<EliteCandidateTabuSearch<Forgetful>>(
-                {.max_iterations = 6, .candidates = {.elite_size = 1, .quality = 10.0}});
+                {.max_idle_iterations = 1000,
+                    .max_iterations = 6,
+                    .candidates = {.elite_size = 1, .quality = 10.0}});
         ok &= expect(
             full.iterations == 6 && elite.iterations == 6
                 && elite.evaluations < full.evaluations,

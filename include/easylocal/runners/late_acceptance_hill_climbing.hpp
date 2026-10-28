@@ -28,7 +28,7 @@ struct LateAcceptanceHillClimbingParameters
     config::parameter<std::size_t, "history_length"> history_length{10};
     /// Consecutive proposals without improving the best cost after which the
     /// search stops; unlimited: it never stops for that.
-    config::parameter<limit, "max_idle_iterations"> max_idle_iterations{1000};
+    config::parameter<limit, "max_idle_iterations"> max_idle_iterations{};
     /// Evaluation budget, including the initial evaluation; unlimited by
     /// default.
     config::parameter<limit, "max_evaluations"> max_evaluations{unlimited};

@@ -384,7 +384,7 @@ struct sum_term_weight<cost::weighted_term<Child, Weight>, ChildCost>
 template<class Weight, std::size_t Size>
 struct sum_parameters
 {
-    config::parameter<std::array<Weight, Size>, "weights"> weights;
+    config::parameter<std::array<Weight, Size>, "weights"> weights{};
 
     [[nodiscard]]
     static consteval auto parameter_schema()

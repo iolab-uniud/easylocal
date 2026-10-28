@@ -148,13 +148,18 @@ int main()
 
     {
         ok &= expect(
-            !ParetoLateAcceptanceHillClimbingParameters{.history_length = 0}.validate()
-                && !ParetoLateAcceptanceHillClimbingParameters{.idle_ratio = 1.5}
+            !ParetoLateAcceptanceHillClimbingParameters{
+                .history_length = 0,
+                .min_iterations = 100000}
                     .validate()
+                && !ParetoLateAcceptanceHillClimbingParameters{.min_iterations = 100000, .idle_ratio = 1.5}
+                    .validate()
+                && !ParetoLateAcceptanceHillClimbingParameters{}.validate()
                 && static_cast<bool>(
-                    ParetoLateAcceptanceHillClimbingParameters{}.validate()),
-            "pareto late acceptance validates its parameters");
-        ParetoLateAcceptanceHillClimbingParameters parameters;
+                    ParetoLateAcceptanceHillClimbingParameters{.min_iterations = 100000}
+                        .validate()),
+            "pareto late acceptance validates its parameters, min_iterations included");
+        ParetoLateAcceptanceHillClimbingParameters parameters{.min_iterations = 100000};
         config::parameter_set configuration;
         configuration.add(parameters);
         const std::array overrides{config::text_override{"second_chance", "false"}};
@@ -229,7 +234,7 @@ int main()
         std::mt19937 rng{11U};
         const auto result =
             (easylocal::make_runner<ParetoLateAcceptanceHillClimbing>(
-                 {.history_length = 3})
+                 {.history_length = 3, .min_iterations = 100000})
                 | (solution_manager<PointManager>()
                     | cost::objectives(component<Left>(), component<Right>()))
                 | neighborhood<StuckNeighborhood>())
@@ -255,7 +260,7 @@ int main()
         std::mt19937 rng{11U};
         const auto result =
             grid_runner<ParetoLateAcceptanceHillClimbing>(
-                {.history_length = 10, .max_evaluations = 25})
+                {.history_length = 10, .min_iterations = 2000, .max_evaluations = 25})
                 .bind(grid)
                 .run(Point{4, 9}, rng);
         ok &= expect(
@@ -427,7 +432,9 @@ int main()
                     solution_manager<PointManager>()
                     | cost::objectives(component<Left>(), component<Right>()))
                 .with_neighborhood(neighborhood<StepNeighborhood>())
-                .with_runner<ParetoLateAcceptanceHillClimbing>("plahc");
+                .with_runner<ParetoLateAcceptanceHillClimbing>(
+                    "plahc",
+                    {.min_iterations = 2000});
         std::mt19937 rng{11U};
         const auto result = application.run("plahc", grid, Point{4, 9}, rng);
         ok &= expect(

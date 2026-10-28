@@ -192,7 +192,10 @@ int main()
         "a tabu list rejects its invalid parameters");
     ok &= expect(
         says(
-            invalid_argument([] { return TabuSearch<>{{.tabu_list = {.tenure = 0}}}; }),
+            invalid_argument([] {
+                return TabuSearch<>{
+                    {.max_idle_iterations = 1000, .tabu_list = {.tenure = 0}}};
+            }),
             "tabu_list.tenure: expected a value in"),
         "Tabu Search names the invalid field of its list");
     ok &= expect(
@@ -216,12 +219,20 @@ int main()
             "step: expected a value in"),
         "a neighborhood recipe rejects invalid parameters");
     ok &= expect(
-        !invalid_argument([] { return temperature::Classic{{}}; }).has_value(),
-        "the default parameters are valid");
+        !invalid_argument([] {
+            return temperature::Classic{
+                {.initial_temperature = 10.0, .final_temperature = 0.01}};
+        }).has_value(),
+        "parameters that are set are accepted");
+    ok &= expect(
+        says(
+            invalid_argument([] { return temperature::Classic{{}}; }),
+            "initial_temperature: not set, and it has no default"),
+        "a policy rejects the parameters nothing has set");
 
     {
         const ChainInstance instance;
-        auto runner = make_runner<HillClimbing>()
+        auto runner = make_runner<HillClimbing>({.max_idle_iterations = 1000})
             | (solution_manager<ChainSolutionManager>() | component<ChainCost>())
             | neighborhood<ChainNeighborhood>();
         runner.parameters().max_idle_iterations = 0;
@@ -246,7 +257,9 @@ int main()
                 "runners.hc.max_idle_iterations"),
             "a Session on an app with invalid parameters is not made");
         ok &= expect(
-            !invalid_argument([] { return Session{chain_app({})}; }).has_value(),
+            !invalid_argument([] {
+                return Session{chain_app({.max_idle_iterations = 1000})};
+            }).has_value(),
             "a Session on a valid app is made");
     }
 

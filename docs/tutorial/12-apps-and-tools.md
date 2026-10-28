@@ -16,13 +16,19 @@ auto application =
         .with_runner<runners::FirstImprovement>("fi")
         .with_runner<runners::SimulatedAnnealing<Classic>>(
             "sa",
-            {.temperature = {.samples_per_temperature = 50}});
+            {.temperature = {
+                 .initial_temperature = 10.0,
+                 .final_temperature = 0.1,
+                 .samples_per_temperature = 50}});
 
 auto piped_application = el::app("tsp") | sm | nhe
     | el::runner<runners::FirstImprovement>("fi")
     | el::runner<runners::SimulatedAnnealing<Classic>>(
         "sa",
-        {.temperature = {.samples_per_temperature = 50}});
+        {.temperature = {
+             .initial_temperature = 10.0,
+             .final_temperature = 0.1,
+             .samples_per_temperature = 50}});
 ```
 
 - The app is a description. Binding it will construct the services.
@@ -181,7 +187,10 @@ auto application = el::app("tsp")
     | el::runner<runners::FirstImprovement>("fi")
     | el::runner<runners::SimulatedAnnealing<Classic>>(
         "sa",
-        {.temperature = {.samples_per_temperature = 50}});
+        {.temperature = {
+             .initial_temperature = 10.0,
+             .final_temperature = 0.1,
+             .samples_per_temperature = 50}});
 
 return el::cli::run(application, argc, argv);
 ```

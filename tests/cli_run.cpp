@@ -102,7 +102,9 @@ auto annealing_app()
         | (easylocal::neighborhood<TwoOptExplorer>()
             | easylocal::delta<TourLength, TwoOptLengthDelta>())
         | easylocal::runner<easylocal::runners::SimulatedAnnealing<
-            easylocal::runners::temperature::Classic>>("sa");
+            easylocal::runners::temperature::Classic>>(
+            "sa",
+            {.temperature = {.initial_temperature = 10.0, .final_temperature = 0.1}});
 }
 
 // The tutorial's TSP without runners: an app may be built one component at a
@@ -153,7 +155,8 @@ auto grid_app()
     return easylocal::app("grid") | grid_solution_manager()
         | easylocal::neighborhood<StepNeighborhood>()
         | easylocal::runner<easylocal::runners::ParetoLateAcceptanceHillClimbing>(
-            "plahc");
+            "plahc",
+            {.min_iterations = 2000});
 }
 
 template<class App>
@@ -343,7 +346,7 @@ int main()
     // Invalid command lines: exit status 2, with a message.
     const auto missing = run({});
     assert(missing.status == 2);
-    assert(missing.err == "error: instance must be set\n");
+    assert(missing.err == "error: instance: not set, and it has no default\n");
 
     const auto unknown = run({"--instance", instance, "--runner", "sa"});
     assert(unknown.status == 2);

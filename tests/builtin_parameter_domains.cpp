@@ -199,34 +199,60 @@ int main()
         "great_deluge",
         "min_level",
         [](auto& block, const double value) { block.min_level = value; });
+    // The temperatures and the budgets have no default: the block is made
+    // valid, then the field under test is set to infinity.
     expect_finite<sa::ClassicParameters>(
         "classic",
         "initial_temperature",
-        [](auto& block, const double value) { block.initial_temperature = value; });
+        [](auto& block, const double value) {
+            block.final_temperature = 0.1;
+            block.initial_temperature = value;
+        });
     expect_finite<sa::FixedLengthParameters>(
         "fixed_length",
         "initial_temperature",
-        [](auto& block, const double value) { block.initial_temperature = value; });
+        [](auto& block, const double value) {
+            block.final_temperature = 0.1;
+            block.allowed_iterations = 1000;
+            block.initial_temperature = value;
+        });
     expect_finite<sa::CutoffParameters>(
         "cutoff",
         "initial_temperature",
-        [](auto& block, const double value) { block.initial_temperature = value; });
+        [](auto& block, const double value) {
+            block.final_temperature = 0.1;
+            block.allowed_iterations = 1000;
+            block.initial_temperature = value;
+        });
     expect_finite<sa::FixedTemperatureParameters>(
         "fixed_temperature",
         "temperature",
-        [](auto& block, const double value) { block.temperature = value; });
+        [](auto& block, const double value) {
+            block.allowed_iterations = 1000;
+            block.temperature = value;
+        });
     expect_finite<sa::TimeBasedParameters>(
         "time_based",
         "initial_temperature",
-        [](auto& block, const double value) { block.initial_temperature = value; });
+        [](auto& block, const double value) {
+            block.final_temperature = 0.1;
+            block.allowed_running_time = 10.0;
+            block.initial_temperature = value;
+        });
     expect_finite<sa::TimeBasedParameters>(
         "time_based",
         "allowed_running_time",
-        [](auto& block, const double value) { block.allowed_running_time = value; });
+        [](auto& block, const double value) {
+            block.initial_temperature = 10.0;
+            block.final_temperature = 0.1;
+            block.allowed_running_time = value;
+        });
     expect_finite<sa::ReheatingParameters<sa::ClassicParameters>>(
         "reheating",
         "reheat_ratio",
         [](auto& block, const double value) {
+            block.descent.initial_temperature = 10.0;
+            block.descent.final_temperature = 0.1;
             block.allowed_reheats = 1;
             block.reheat_ratio = value;
         });
@@ -234,6 +260,9 @@ int main()
         "reheating",
         "first_descent_share",
         [](auto& block, const double value) {
+            block.descent.initial_temperature = 10.0;
+            block.descent.final_temperature = 0.1;
+            block.descent.allowed_iterations = 1000;
             block.allowed_reheats = 1;
             block.first_descent_share = value;
         });

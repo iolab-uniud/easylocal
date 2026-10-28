@@ -273,17 +273,23 @@ void built_in_validate_checks_the_declared_domains()
     using easylocal::runners::temperature::ClassicParameters;
     using easylocal::runners::temperature::CutoffParameters;
 
-    ClassicParameters classic;
+    // The temperatures have no default: they are given, and the test changes
+    // one field at a time.
+    const ClassicParameters valid{.initial_temperature = 10.0, .final_temperature = 0.1};
+    ClassicParameters classic = valid;
     classic.cooling_rate = 1.0;
     assert(
         classic.validate().message == "cooling_rate: expected a value in (0, 1), got 1");
-    classic = {};
+    classic = valid;
     classic.initial_acceptance = 0.0;
     assert(classic.validate()); // without calibration it does not matter
     classic.calibration_samples = 10;
     assert(!classic.validate());
 
-    CutoffParameters cutoff;
+    CutoffParameters cutoff{
+        .initial_temperature = 10.0,
+        .final_temperature = 0.1,
+        .allowed_iterations = 1000};
     cutoff.accepted_ratio = 1.0;
     assert(cutoff.validate());
     cutoff.accepted_ratio = 0.0;

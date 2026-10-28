@@ -167,10 +167,18 @@ int main()
             !LateAcceptanceHillClimbingParameters{.max_idle_iterations = 0}.validate(),
             "late acceptance rejects a zero idle limit");
         ok &= expect(
-            static_cast<bool>(LateAcceptanceHillClimbingParameters{}.validate()),
-            "late acceptance defaults pass validation");
+            !LateAcceptanceHillClimbingParameters{}.validate()
+                && LateAcceptanceHillClimbingParameters{}.validate().message
+                    == "max_idle_iterations: not set, and it has no default",
+            "late acceptance asks for an idle limit, which has no default");
+        ok &= expect(
+            static_cast<bool>(
+                LateAcceptanceHillClimbingParameters{.max_idle_iterations = 1000}
+                    .validate()),
+            "late acceptance accepts an idle limit");
 
-        LateAcceptanceHillClimbingParameters climbing_parameters;
+        LateAcceptanceHillClimbingParameters climbing_parameters{
+            .max_idle_iterations = 1000};
         easylocal::config::parameter_set configuration;
         configuration.add(climbing_parameters);
         ok &= expect(
@@ -271,7 +279,8 @@ int main()
     }
 
     {
-        auto runner = chain_runner<PlateauCost>({.history_length = 2});
+        auto runner =
+            chain_runner<PlateauCost>({.history_length = 2, .max_idle_iterations = 1000});
         std::mt19937 rng{7U};
         const auto result =
             runner.bind(instance).run(ChainSolution{}, rng, easylocal::stop_at(0));
