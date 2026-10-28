@@ -13,23 +13,22 @@ namespace
 
 struct AppParameters
 {
-    std::filesystem::path instance_file{"initial.dat"};
-    std::uint64_t seed{17U};
+    easylocal::config::parameter<std::filesystem::path, "instance_file"> instance_file{
+        "initial.dat"};
+    easylocal::config::parameter<std::uint64_t, "seed"> seed{17U};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<
-                "instance_file",
-                &AppParameters::instance_file>(),
-            easylocal::config::field<"seed", &AppParameters::seed>());
+            easylocal::config::field<&AppParameters::instance_file>(),
+            easylocal::config::field<&AppParameters::seed>());
     }
 
     [[nodiscard]]
     auto validate() const noexcept -> easylocal::config::validation_result
     {
-        return instance_file.empty()
+        return instance_file.value().empty()
             ? easylocal::config::validation_result::failure(
                   "instance_file must not be empty")
             : easylocal::config::validation_result::success();
@@ -39,17 +38,15 @@ struct AppParameters
 // A requirement of the enclosing block over the fields of its group.
 struct WindowParameters
 {
-    double low{2.0};
-    double high{1.0};
+    easylocal::config::parameter<double, "low"> low{2.0};
+    easylocal::config::parameter<double, "high"> high{1.0};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<"low", &WindowParameters::low>(
-                "Low",
-                easylocal::unlimited),
-            easylocal::config::field<"high", &WindowParameters::high>(
+            easylocal::config::field<&WindowParameters::low>("Low", easylocal::unlimited),
+            easylocal::config::field<&WindowParameters::high>(
                 "High",
                 easylocal::unlimited));
     }
@@ -85,15 +82,13 @@ struct OuterParameters
 
 struct SolverParameters
 {
-    double cooling_rate{0.75};
+    easylocal::config::parameter<double, "cooling_rate"> cooling_rate{0.75};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<
-                "cooling_rate",
-                &SolverParameters::cooling_rate>());
+            easylocal::config::field<&SolverParameters::cooling_rate>());
     }
 
     [[nodiscard]]
@@ -126,7 +121,7 @@ struct temporary_file
 
 void tree_validation_reports_invalid_untouched_blocks()
 {
-    AppParameters app{.instance_file = {}, .seed = 17U};
+    AppParameters app{.instance_file = "", .seed = 17U};
     SolverParameters solver{};
     easylocal::config::parameter_set tree;
     tree.add("application", app);
@@ -255,7 +250,7 @@ void invalid_batch_is_transactional()
 
 void invalid_baseline_can_be_repaired_by_overrides()
 {
-    AppParameters app{.instance_file = {}, .seed = 17U};
+    AppParameters app{.instance_file = "", .seed = 17U};
     SolverParameters solver{};
     easylocal::config::parameter_set tree;
     tree.add("application", app);
@@ -273,7 +268,7 @@ void invalid_baseline_can_be_repaired_by_overrides()
 
 void invalid_untouched_baseline_preserves_transactionality()
 {
-    AppParameters app{.instance_file = {}, .seed = 17U};
+    AppParameters app{.instance_file = "", .seed = 17U};
     SolverParameters solver{};
     easylocal::config::parameter_set tree;
     tree.add("application", app);
@@ -310,7 +305,7 @@ void a_nested_override_repairs_a_requirement_of_its_enclosing_block()
 
 void help_remains_frontend_policy()
 {
-    AppParameters app{.instance_file = {}, .seed = 17U};
+    AppParameters app{.instance_file = "", .seed = 17U};
     SolverParameters solver{};
     easylocal::config::parameter_set tree;
     tree.add("application", app);
@@ -393,7 +388,7 @@ void every_diagnostic_source_is_rendered()
         char cooling[] = "--solver.cooling_rate=0.8";
         char* argv[]{program, cooling};
         assert(
-            rendered(2, argv, AppParameters{.instance_file = {}, .seed = 17U})
+            rendered(2, argv, AppParameters{.instance_file = "", .seed = 17U})
             == "error: application: instance_file must not be empty\n");
     }
 

@@ -48,12 +48,11 @@ public:
 
 struct StepParameters
 {
-    int stride{1};
+    config::parameter<int, "stride"> stride{1};
 
     static consteval auto parameter_schema()
     {
-        return config::fields(
-            config::field<"stride", &StepParameters::stride>("Step length"));
+        return config::fields(config::field<&StepParameters::stride>("Step length"));
     }
 
     [[nodiscard]] auto validate() const -> config::validation_result

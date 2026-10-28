@@ -56,12 +56,12 @@ public:
 
 struct Parameters
 {
-    int weight{1};
+    easylocal::config::parameter<int, "weight"> weight{1};
 
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<"weight", &Parameters::weight>("The weight"));
+            easylocal::config::field<&Parameters::weight>("The weight"));
     }
 
     [[nodiscard]]

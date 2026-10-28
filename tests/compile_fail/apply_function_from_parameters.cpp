@@ -9,12 +9,12 @@
 
 struct OffsetParameters
 {
-    int offset{0};
+    easylocal::config::parameter<int, "offset"> offset{0};
 
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<"offset", &OffsetParameters::offset>(
+            easylocal::config::field<&OffsetParameters::offset>(
                 "Offset",
                 easylocal::config::range(0, 10)));
     }

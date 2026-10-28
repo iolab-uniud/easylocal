@@ -58,76 +58,76 @@ namespace easylocal::cli
 struct CommandLineParameters
 {
     /// The Input file; it must be set to run, not to write a tuning scenario.
-    std::filesystem::path instance{};
+    config::parameter<std::filesystem::path, "instance"> instance{""};
     /// The seed of the random generator.
-    std::uint64_t seed{0};
+    config::parameter<std::uint64_t, "seed"> seed{0};
     /// The name of the runner; empty: the first registered.
-    std::string runner{};
+    config::parameter<std::string, "runner"> runner{""};
     /// The starting solution, random or initial; empty: random when the problem
     /// has random solutions.
-    std::string start{};
+    config::parameter<std::string, "start"> start{""};
     /// A file to read the starting solution from, instead of start.
-    std::filesystem::path solution{};
+    config::parameter<std::filesystem::path, "solution"> solution{""};
     /// The file to write the solution to; empty: the standard output.
     ///
     /// The points of a front go to numbered files next to it: best.txt gives
     /// best.1.txt, best.2.txt...
-    std::filesystem::path output{};
+    config::parameter<std::filesystem::path, "output"> output{""};
     /// The cost at which the run stops, such as 0 or [0, 120]; empty: no
     /// target.
-    std::string target{};
+    config::parameter<std::string, "target"> target{""};
     /// The seconds the run may last, such as 10 or 2.5; empty: no limit.
-    std::string timeout{};
+    config::parameter<std::string, "timeout"> timeout{""};
     /// The evaluations the run may make, the initial one included; unlimited:
     /// no budget beyond the runner's own.
-    limit max_evaluations{unlimited};
+    config::parameter<limit, "max_evaluations"> max_evaluations{unlimited};
     /// Whether to print the value of each cost component, and its description.
-    bool report{false};
+    config::parameter<bool, "report"> report{false};
     /// The file to record the trace of the run to, with timestamps: JSON Lines
     /// when its extension is .jsonl, ELTR otherwise; empty: no trace.
-    std::filesystem::path trace{};
+    config::parameter<std::filesystem::path, "trace"> trace{""};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"instance", &CommandLineParameters::instance>(
+            config::field<&CommandLineParameters::instance>(
                 "Input file",
                 easylocal::unlimited),
-            config::field<"seed", &CommandLineParameters::seed>(
+            config::field<&CommandLineParameters::seed>(
                 "Seed of the random generator",
                 easylocal::unlimited),
-            config::field<"runner", &CommandLineParameters::runner>(
+            config::field<&CommandLineParameters::runner>(
                 "Name of the runner (empty: the first registered)",
                 easylocal::unlimited),
-            config::field<"start", &CommandLineParameters::start>(
+            config::field<&CommandLineParameters::start>(
                 "Starting solution: random or initial (empty: random when the "
                 "problem has random solutions)",
                 config::one_of("", "random", "initial")),
-            config::field<"solution", &CommandLineParameters::solution>(
+            config::field<&CommandLineParameters::solution>(
                 "Starting solution read from this file, instead of start",
                 easylocal::unlimited),
-            config::field<"output", &CommandLineParameters::output>(
+            config::field<&CommandLineParameters::output>(
                 "Solution file, with the points of a front in numbered files next "
                 "to it (empty: standard output)",
                 easylocal::unlimited),
-            config::field<"target", &CommandLineParameters::target>(
+            config::field<&CommandLineParameters::target>(
                 "Stop when the solution reaches this cost, such as 0 or "
                 "[0, 120] (empty: no target); a pipeline gives it to its last "
                 "stage, unless that stage has a target of its own",
                 easylocal::unlimited),
-            config::field<"timeout", &CommandLineParameters::timeout>(
+            config::field<&CommandLineParameters::timeout>(
                 "Stop the run after this many seconds, such as 10 or 2.5 (empty: no "
                 "limit)",
                 easylocal::unlimited),
-            config::field<"max_evaluations", &CommandLineParameters::max_evaluations>(
+            config::field<&CommandLineParameters::max_evaluations>(
                 "Stop the run after this many evaluations (unlimited: no budget "
                 "beyond the runner's own)",
                 config::range(0, easylocal::unlimited)),
-            config::field<"report", &CommandLineParameters::report>(
+            config::field<&CommandLineParameters::report>(
                 "Print the value of each cost component, and its description"),
-            config::field<"trace", &CommandLineParameters::trace>(
+            config::field<&CommandLineParameters::trace>(
                 "Record the trace of the run to this file, JSON Lines for a .jsonl "
                 "name, ELTR otherwise (empty: no trace)",
                 easylocal::unlimited));
@@ -399,8 +399,9 @@ inline int write_irace(
     }
     // A runner chosen on the command line is the only one tuned; the default
     // of the program's options does not restrict the tuning.
-    if (!command_line.runner.empty() && command_line.runner != settings.defaults.runner)
-        stub.runners.push_back(command_line.runner);
+    if (!command_line.runner.value().empty()
+        && command_line.runner.value() != settings.defaults.runner.value())
+        stub.runners.push_back(command_line.runner.value());
     else
         stub.runners.assign(names.begin(), names.end());
     // What every run shares: not what belongs to one run, such as its
@@ -513,7 +514,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
     // the program's own.
     std::vector<config::parameter_info> tunable;
     std::vector<config::requirement_info> requirements;
-    if (!tuning.irace.empty())
+    if (!tuning.irace.value().empty())
     {
         // write_irace_stub leaves out the cost's and the read-only ones.
         for (auto& info : application.configuration().parameters())
@@ -535,8 +536,9 @@ int run(App application, const int argc, char* argv[], options settings = {})
         err << "error: this app has no runner registered\n";
         return 2;
     }
-    const std::string runner =
-        command_line.runner.empty() ? std::string{names.front()} : command_line.runner;
+    const std::string runner = command_line.runner.value().empty()
+        ? std::string{names.front()}
+        : command_line.runner.value();
     if (std::find(names.begin(), names.end(), runner) == names.end())
     {
         err << "error: unknown runner " << runner << "; the runners are:";
@@ -552,16 +554,17 @@ int run(App application, const int argc, char* argv[], options settings = {})
                       typename session_type::input_type,
                       typename session_type::cost_type>)
     {
-        if (!tuning.irace.empty() || !tuning.print.empty())
+        if (!tuning.irace.value().empty() || !tuning.print.value().empty())
         {
-            err << "error: " << (tuning.irace.empty() ? "tuning.print" : "tuning.irace")
+            err << "error: "
+                << (tuning.irace.value().empty() ? "tuning.print" : "tuning.irace")
                 << ": this cost is not one number; give the problem a "
                    "scalar_cost(input, cost)\n";
             return 2;
         }
     }
 
-    if (!tuning.irace.empty())
+    if (!tuning.irace.value().empty())
         return detail::write_irace(
             out,
             err,
@@ -575,7 +578,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
             std::move(requirements),
             names);
 
-    if (command_line.instance.empty())
+    if (command_line.instance.value().empty())
     {
         err << "error: instance must be set\n";
         return 2;
@@ -583,26 +586,27 @@ int run(App application, const int argc, char* argv[], options settings = {})
 
     // What the problem cannot do is an error of the command line, found
     // before the Input is read and the search runs.
-    const bool initial_start = command_line.start == "initial"
-        || (command_line.start.empty() && !session_type::supports_random_solution);
-    if (!command_line.solution.empty() && !session_type::supports_read_solution)
+    const bool initial_start = command_line.start.value() == "initial"
+        || (command_line.start.value().empty()
+            && !session_type::supports_random_solution);
+    if (!command_line.solution.value().empty() && !session_type::supports_read_solution)
     {
         err << "error: solution: this problem cannot read solutions\n";
         return 2;
     }
-    if (command_line.solution.empty() && initial_start
+    if (command_line.solution.value().empty() && initial_start
         && !session_type::supports_initial_solution)
     {
         err << "error: start: this problem has no initial solution\n";
         return 2;
     }
-    if (command_line.solution.empty() && !initial_start
+    if (command_line.solution.value().empty() && !initial_start
         && !session_type::supports_random_solution)
     {
         err << "error: start: this problem has no random solutions\n";
         return 2;
     }
-    if (!command_line.output.empty() && !session_type::supports_write_solution)
+    if (!command_line.output.value().empty() && !session_type::supports_write_solution)
     {
         err << "error: output: this problem cannot write solutions\n";
         return 2;
@@ -626,7 +630,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
             return 2;
         }
 
-        if (!command_line.solution.empty())
+        if (!command_line.solution.value().empty())
         {
             if constexpr (session_type::supports_read_solution)
             {
@@ -665,7 +669,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
             return session.run(runner, options);
         };
         bool ran = false;
-        if (command_line.trace.empty())
+        if (command_line.trace.value().empty())
             ran = run_with(static_cast<trace::null_tracer*>(nullptr));
         else
         {
@@ -698,19 +702,19 @@ int run(App application, const int argc, char* argv[], options settings = {})
                           typename session_type::input_type,
                           typename session_type::cost_type>)
         {
-            if (!tuning.print.empty())
+            if (!tuning.print.value().empty())
             {
                 out << easylocal::detail::number_text(
                     easylocal::scalar_cost(
                         session.input(),
                         session.evaluate(),
                         tuning.hard_weight));
-                if (tuning.print == "cost_time")
+                if (tuning.print.value() == "cost_time")
                     out << ' ' << easylocal::detail::number_text(elapsed.count());
                 out << '\n';
                 // The solution, when it is asked for, is saved all the same.
                 if constexpr (session_type::supports_write_solution)
-                    if (!command_line.output.empty())
+                    if (!command_line.output.value().empty())
                         session.save_solution(command_line.output);
                 return 0;
             }
@@ -728,7 +732,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
         }
         if (command_line.report)
             detail::write_report(out, session);
-        if (command_line.output.empty())
+        if (command_line.output.value().empty())
             detail::write_solution(out, session, session.solution());
         else if constexpr (session_type::supports_write_solution)
             session.save_solution(command_line.output);

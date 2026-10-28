@@ -25,12 +25,12 @@ namespace el = easylocal;
 
 struct FragileParameters
 {
-    int mode{0};
+    easylocal::config::parameter<int, "mode"> mode{0};
 
     static consteval auto parameter_schema()
     {
         return el::config::fields(
-            el::config::field<"mode", &FragileParameters::mode>(
+            el::config::field<&FragileParameters::mode>(
                 "0 builds, 1 throws when built",
                 el::config::range(0, 1)));
     }
@@ -155,7 +155,7 @@ void run_parameters_read_their_target()
         threw = std::string{error.what()}.starts_with("target: ");
     }
     assert(threw);
-    run.target.clear();
+    run.target = std::string{};
     run.timeout = "-1";
     assert(!run.validate());
 }

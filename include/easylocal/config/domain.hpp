@@ -126,7 +126,7 @@ constexpr range_domain<Number> range(const Number low, easylocal::unlimited_t)
 /// Any value: the domain of a field whose values are all valid, such as a seed,
 /// free text or a number that may be negative.
 ///
-/// It is declared as easylocal::unlimited: `field<"seed", &P::seed>("...",
+/// It is declared as easylocal::unlimited: `field<&P::seed>("...",
 /// easylocal::unlimited)`.
 struct unbounded_domain
 {

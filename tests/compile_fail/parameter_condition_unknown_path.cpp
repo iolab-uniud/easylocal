@@ -4,15 +4,15 @@
 
 struct Parameters
 {
-    std::size_t samples{0};
-    double acceptance{0.5};
+    easylocal::config::parameter<std::size_t, "samples"> samples{0};
+    easylocal::config::parameter<double, "acceptance"> acceptance{0.5};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<"samples", &Parameters::samples>("Samples"),
-            easylocal::config::field<"acceptance", &Parameters::acceptance>("Acceptance")
+            easylocal::config::field<&Parameters::samples>("Samples"),
+            easylocal::config::field<&Parameters::acceptance>("Acceptance")
                 .only_if(easylocal::config::value<"sample"> > 0));
     }
 

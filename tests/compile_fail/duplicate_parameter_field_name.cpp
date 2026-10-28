@@ -4,15 +4,15 @@
 
 struct Parameters
 {
-    std::size_t first{1};
-    std::size_t second{2};
+    easylocal::config::parameter<std::size_t, "duplicate"> first{1};
+    easylocal::config::parameter<std::size_t, "duplicate"> second{2};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<"duplicate", &Parameters::first>(),
-            easylocal::config::field<"duplicate", &Parameters::second>());
+            easylocal::config::field<&Parameters::first>(),
+            easylocal::config::field<&Parameters::second>());
     }
 
     [[nodiscard]]

@@ -130,7 +130,7 @@ void a_program_configures_the_app_before_the_session()
     assert(value_at(session.configuration(), "cost.weights") == "[1, 0]");
     session.use_initial_solution();
     assert(session.evaluate() == 29.0);
-    assert(session.run("fi", el::stop_at(session.read_cost(run.target))));
+    assert(session.run("fi", el::stop_at(session.read_cost(run.target.value()))));
     assert(session.evaluate() == 29.0);
 }
 

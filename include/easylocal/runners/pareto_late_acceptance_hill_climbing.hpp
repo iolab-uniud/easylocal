@@ -30,47 +30,37 @@ struct ParetoLateAcceptanceHillClimbingParameters
 {
     /// Number of solutions in the history: the first is the initial solution,
     /// the others random ones.
-    std::size_t history_length{20};
+    config::parameter<std::size_t, "history_length"> history_length{20};
     /// Iterations after which the search stops as soon as the idle iterations
     /// exceed idle_ratio of all the iterations: the least it runs, not a
     /// limit.
-    std::size_t min_iterations{100000};
+    config::parameter<std::size_t, "min_iterations"> min_iterations{100000};
     /// Share of the iterations that may be idle once min_iterations is past.
-    double idle_ratio{0.02};
+    config::parameter<double, "idle_ratio"> idle_ratio{0.02};
     /// A candidate that does not dominate the current solution may still
     /// replace the next solution of the history if it dominates it.
-    bool second_chance{true};
+    config::parameter<bool, "second_chance"> second_chance{true};
     /// Evaluation budget, including the initial evaluations; unlimited by
     /// default.
-    limit max_evaluations{unlimited};
+    config::parameter<limit, "max_evaluations"> max_evaluations{unlimited};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<
-                "history_length",
-                &ParetoLateAcceptanceHillClimbingParameters::history_length>(
+            config::field<&ParetoLateAcceptanceHillClimbingParameters::history_length>(
                 "Number of solutions in the history",
                 config::range(1, easylocal::unlimited)),
-            config::field<
-                "min_iterations",
-                &ParetoLateAcceptanceHillClimbingParameters::min_iterations>(
+            config::field<&ParetoLateAcceptanceHillClimbingParameters::min_iterations>(
                 "Iterations after which the search may stop when mostly idle",
                 config::range(0, easylocal::unlimited)),
-            config::field<
-                "idle_ratio",
-                &ParetoLateAcceptanceHillClimbingParameters::idle_ratio>(
+            config::field<&ParetoLateAcceptanceHillClimbingParameters::idle_ratio>(
                 "Share of idle iterations that ends the search after min_iterations",
                 config::range(0.0, 1.0)),
-            config::field<
-                "second_chance",
-                &ParetoLateAcceptanceHillClimbingParameters::second_chance>(
+            config::field<&ParetoLateAcceptanceHillClimbingParameters::second_chance>(
                 "Let a candidate replace the next solution of the history it dominates"),
-            config::field<
-                "max_evaluations",
-                &ParetoLateAcceptanceHillClimbingParameters::max_evaluations>(
+            config::field<&ParetoLateAcceptanceHillClimbingParameters::max_evaluations>(
                 "Maximum number of solution evaluations, or unlimited",
                 config::range(0, easylocal::unlimited)));
     }

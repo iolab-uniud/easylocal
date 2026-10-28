@@ -394,7 +394,7 @@ private:
 struct FixedLengthParameters
 {
     /// Iterations a move stays in the list.
-    std::size_t tenure{10};
+    config::parameter<std::size_t, "tenure"> tenure{10};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -402,7 +402,7 @@ struct FixedLengthParameters
     {
         using self = FixedLengthParameters;
         return config::fields(
-            config::field<"tenure", &self::tenure>(
+            config::field<&self::tenure>(
                 "Number of iterations a move stays tabu",
                 config::range(1, easylocal::unlimited)));
     }
@@ -507,9 +507,9 @@ private:
 struct RandomTenureParameters
 {
     /// The shortest tenure drawn.
-    std::size_t min_tenure{5};
+    config::parameter<std::size_t, "min_tenure"> min_tenure{5};
     /// The longest tenure drawn.
-    std::size_t max_tenure{15};
+    config::parameter<std::size_t, "max_tenure"> max_tenure{15};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -517,10 +517,10 @@ struct RandomTenureParameters
     {
         using self = RandomTenureParameters;
         return config::fields(
-            config::field<"min_tenure", &self::min_tenure>(
+            config::field<&self::min_tenure>(
                 "Minimum number of iterations a move stays tabu",
                 config::range(1, easylocal::unlimited)),
-            config::field<"max_tenure", &self::max_tenure>(
+            config::field<&self::max_tenure>(
                 "Maximum number of iterations a move stays tabu",
                 config::range(1, easylocal::unlimited)),
             config::require(
@@ -608,9 +608,9 @@ private:
 struct CyclicParameters
 {
     /// Iterations each tenure is used for.
-    std::size_t period{100};
+    config::parameter<std::size_t, "period"> period{100};
     /// The tenures, used in turn.
-    std::vector<std::size_t> tenures{11, 34, 20, 8, 98};
+    config::parameter<std::vector<std::size_t>, "tenures"> tenures{11, 34, 20, 8, 98};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -618,10 +618,10 @@ struct CyclicParameters
     {
         using self = CyclicParameters;
         return config::fields(
-            config::field<"period", &self::period>(
+            config::field<&self::period>(
                 "Number of iterations each tenure is used for",
                 config::range(1, easylocal::unlimited)),
-            config::field<"tenures", &self::tenures>(
+            config::field<&self::tenures>(
                 "The tenures, used in turn",
                 config::range(1, easylocal::unlimited)));
     }
@@ -633,7 +633,7 @@ struct CyclicParameters
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
         // The schema checks each tenure, not that there is one.
-        if (tenures.empty())
+        if (tenures.value().empty())
             return config::validation_result::failure("tenures must not be empty");
         return config::validation_result::success();
     }
@@ -681,10 +681,10 @@ public:
         void update(const Step& step, RNG&)
         {
             iteration_ = step.iteration();
-            moves_.add(step.move(), iteration_, parameters_.tenures[current_]);
+            moves_.add(step.move(), iteration_, parameters_.tenures.value()[current_]);
             if (++used_ == parameters_.period)
             {
-                current_ = (current_ + 1) % parameters_.tenures.size();
+                current_ = (current_ + 1) % parameters_.tenures.value().size();
                 used_ = 0;
             }
         }
@@ -693,7 +693,7 @@ public:
         [[nodiscard]]
         std::size_t current_tenure() const noexcept
         {
-            return parameters_.tenures[current_];
+            return parameters_.tenures.value()[current_];
         }
 
     private:
@@ -721,21 +721,21 @@ struct ReactiveParameters
 {
     /// Factor of the tenure when a solution comes back within cycle_length
     /// iterations.
-    double increase{1.1};
+    config::parameter<double, "increase"> increase{1.1};
     /// Factor of the tenure when no cycle is seen for longer than the average
     /// cycle length.
-    double decrease{0.9};
+    config::parameter<double, "decrease"> decrease{0.9};
     /// Visits of a solution after which each further visit counts as chaos.
-    std::size_t repetitions{3};
+    config::parameter<std::size_t, "repetitions"> repetitions{3};
     /// Chaos counts after which the search escapes with random moves.
-    std::size_t chaos{3};
+    config::parameter<std::size_t, "chaos"> chaos{3};
     /// Revisits closer than this many iterations are cycles.
-    std::size_t cycle_length{50};
+    config::parameter<std::size_t, "cycle_length"> cycle_length{50};
     /// The largest tenure.
-    std::size_t max_tenure{1000};
+    config::parameter<std::size_t, "max_tenure"> max_tenure{1000};
     /// Confirms a revisit by comparing the solutions with the same hash, which
     /// keeps a copy of each visited solution; it needs solution equality.
-    bool verify_equality{false};
+    config::parameter<bool, "verify_equality"> verify_equality{false};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -743,25 +743,25 @@ struct ReactiveParameters
     {
         using self = ReactiveParameters;
         return config::fields(
-            config::field<"increase", &self::increase>(
+            config::field<&self::increase>(
                 "Factor of the tenure when a solution is revisited within cycle_length",
                 config::range(1.0, easylocal::unlimited).open()),
-            config::field<"decrease", &self::decrease>(
+            config::field<&self::decrease>(
                 "Factor of the tenure when no cycle is seen for the average cycle length",
                 config::range(0.0, 1.0).open()),
-            config::field<"repetitions", &self::repetitions>(
+            config::field<&self::repetitions>(
                 "Visits of a solution after which further visits count as chaos",
                 config::range(0, easylocal::unlimited)),
-            config::field<"chaos", &self::chaos>(
+            config::field<&self::chaos>(
                 "Chaos counts after which the search escapes with random moves",
                 config::range(0, easylocal::unlimited)),
-            config::field<"cycle_length", &self::cycle_length>(
+            config::field<&self::cycle_length>(
                 "Revisits closer than this many iterations are cycles",
                 config::range(1, easylocal::unlimited)),
-            config::field<"max_tenure", &self::max_tenure>(
+            config::field<&self::max_tenure>(
                 "The largest tenure",
                 config::range(1, easylocal::unlimited)),
-            config::field<"verify_equality", &self::verify_equality>(
+            config::field<&self::verify_equality>(
                 "Confirm revisits by comparing solutions with equal hashes"));
     }
 
@@ -991,7 +991,7 @@ private:
 struct FrequencyParameters
 {
     /// Relative frequency above which an attribute is tabu.
-    double threshold{0.05};
+    config::parameter<double, "threshold"> threshold{0.05};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -999,7 +999,7 @@ struct FrequencyParameters
     {
         using self = FrequencyParameters;
         return config::fields(
-            config::field<"threshold", &self::threshold>(
+            config::field<&self::threshold>(
                 "Relative frequency of an attribute above which its moves are tabu",
                 config::range(0.0, 1.0).open_low()));
     }
@@ -1095,7 +1095,7 @@ private:
 struct ObjectiveBasedParameters
 {
     /// Iterations a cost value stays tabu.
-    std::size_t tenure{10};
+    config::parameter<std::size_t, "tenure"> tenure{10};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -1103,7 +1103,7 @@ struct ObjectiveBasedParameters
     {
         using self = ObjectiveBasedParameters;
         return config::fields(
-            config::field<"tenure", &self::tenure>(
+            config::field<&self::tenure>(
                 "Number of iterations a reached cost stays tabu",
                 config::range(1, easylocal::unlimited)));
     }
@@ -1195,11 +1195,11 @@ private:
 struct LimDynamicParameters
 {
     /// The tenure after an improvement of the best cost.
-    std::size_t min_tenure{5};
+    config::parameter<std::size_t, "min_tenure"> min_tenure{5};
     /// The tenure at which it falls back to min_tenure.
-    std::size_t max_tenure{20};
+    config::parameter<std::size_t, "max_tenure"> max_tenure{20};
     /// Iterations without improving the best cost after which the tenure grows.
-    std::size_t idle_threshold{10};
+    config::parameter<std::size_t, "idle_threshold"> idle_threshold{10};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -1207,13 +1207,13 @@ struct LimDynamicParameters
     {
         using self = LimDynamicParameters;
         return config::fields(
-            config::field<"min_tenure", &self::min_tenure>(
+            config::field<&self::min_tenure>(
                 "The tenure after an improvement of the best cost",
                 config::range(1, easylocal::unlimited)),
-            config::field<"max_tenure", &self::max_tenure>(
+            config::field<&self::max_tenure>(
                 "The tenure at which it falls back to min_tenure",
                 config::range(1, easylocal::unlimited)),
-            config::field<"idle_threshold", &self::idle_threshold>(
+            config::field<&self::idle_threshold>(
                 "Iterations without improvement after which the tenure grows",
                 config::range(0, easylocal::unlimited)),
             config::require(
@@ -1411,12 +1411,12 @@ private:
 struct FooParameters
 {
     /// Iterations between two tenure changes.
-    std::size_t window{100};
+    config::parameter<std::size_t, "window"> window{100};
     /// Growth of the tenure when the costs fluctuate little; also the initial
     /// tenure.
-    std::size_t increment{5};
+    config::parameter<std::size_t, "increment"> increment{5};
     /// The spread of the costs in a window below which the tenure grows.
-    double fluctuation{1.0};
+    config::parameter<double, "fluctuation"> fluctuation{1.0};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -1424,13 +1424,13 @@ struct FooParameters
     {
         using self = FooParameters;
         return config::fields(
-            config::field<"window", &self::window>(
+            config::field<&self::window>(
                 "Iterations between two tenure changes",
                 config::range(1, easylocal::unlimited)),
-            config::field<"increment", &self::increment>(
+            config::field<&self::increment>(
                 "Growth of the tenure when the costs fluctuate little (the initial tenure)",
                 config::range(1, easylocal::unlimited)),
-            config::field<"fluctuation", &self::fluctuation>(
+            config::field<&self::fluctuation>(
                 "Spread of the costs in a window below which the tenure grows",
                 config::range(0.0, easylocal::unlimited).open_high()));
     }
@@ -1535,17 +1535,17 @@ private:
 struct RandomFooParameters
 {
     /// The smallest window drawn.
-    std::size_t min_window{50};
+    config::parameter<std::size_t, "min_window"> min_window{50};
     /// The largest window drawn.
-    std::size_t max_window{150};
+    config::parameter<std::size_t, "max_window"> max_window{150};
     /// The smallest increment drawn.
-    std::size_t min_increment{2};
+    config::parameter<std::size_t, "min_increment"> min_increment{2};
     /// The largest increment drawn.
-    std::size_t max_increment{8};
+    config::parameter<std::size_t, "max_increment"> max_increment{8};
     /// The smallest fluctuation threshold drawn.
-    double min_fluctuation{0.5};
+    config::parameter<double, "min_fluctuation"> min_fluctuation{0.5};
     /// The largest fluctuation threshold drawn.
-    double max_fluctuation{2.0};
+    config::parameter<double, "max_fluctuation"> max_fluctuation{2.0};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -1553,22 +1553,22 @@ struct RandomFooParameters
     {
         using self = RandomFooParameters;
         return config::fields(
-            config::field<"min_window", &self::min_window>(
+            config::field<&self::min_window>(
                 "Smallest window",
                 config::range(1, easylocal::unlimited)),
-            config::field<"max_window", &self::max_window>(
+            config::field<&self::max_window>(
                 "Largest window",
                 config::range(1, easylocal::unlimited)),
-            config::field<"min_increment", &self::min_increment>(
+            config::field<&self::min_increment>(
                 "Smallest increment",
                 config::range(1, easylocal::unlimited)),
-            config::field<"max_increment", &self::max_increment>(
+            config::field<&self::max_increment>(
                 "Largest increment",
                 config::range(1, easylocal::unlimited)),
-            config::field<"min_fluctuation", &self::min_fluctuation>(
+            config::field<&self::min_fluctuation>(
                 "Smallest fluctuation threshold",
                 config::range(0.0, easylocal::unlimited).open_high()),
-            config::field<"max_fluctuation", &self::max_fluctuation>(
+            config::field<&self::max_fluctuation>(
                 "Largest fluctuation threshold",
                 config::range(0.0, easylocal::unlimited).open_high()),
             config::require(
@@ -1662,7 +1662,7 @@ public:
                 parameters_.min_increment,
                 parameters_.max_increment}(rng);
             fluctuation_ = parameters_.min_fluctuation == parameters_.max_fluctuation
-                ? parameters_.min_fluctuation
+                ? parameters_.min_fluctuation.value()
                 : std::uniform_real_distribution<double>{
                       parameters_.min_fluctuation,
                       parameters_.max_fluctuation}(rng);
@@ -1765,7 +1765,7 @@ struct FirstImprovementParameters
 {
     /// The scan stops at the first admissible move that improves the best cost
     /// rather than the current one.
-    bool improve_on_best{false};
+    config::parameter<bool, "improve_on_best"> improve_on_best{false};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -1773,7 +1773,7 @@ struct FirstImprovementParameters
     {
         using self = FirstImprovementParameters;
         return config::fields(
-            config::field<"improve_on_best", &self::improve_on_best>(
+            config::field<&self::improve_on_best>(
                 "Stop the scan at a move improving the best cost, not the current one"));
     }
 
@@ -1790,15 +1790,15 @@ struct FirstImprovementParameters
 struct AspirationPlusParameters
 {
     /// Admissible moves examined at least in each scan.
-    std::size_t min_moves{10};
+    config::parameter<std::size_t, "min_moves"> min_moves{10};
     /// Admissible moves examined at most in each scan.
-    std::size_t max_moves{100};
+    config::parameter<std::size_t, "max_moves"> max_moves{100};
     /// Admissible moves examined after the first one under the aspiration
     /// level.
-    std::size_t plus{5};
+    config::parameter<std::size_t, "plus"> plus{5};
     /// The aspiration level, as a factor of the best cost (see
     /// AspirationPlusTabuSearch).
-    double aspiration_level{1.0};
+    config::parameter<double, "aspiration_level"> aspiration_level{1.0};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -1806,16 +1806,16 @@ struct AspirationPlusParameters
     {
         using self = AspirationPlusParameters;
         return config::fields(
-            config::field<"min_moves", &self::min_moves>(
+            config::field<&self::min_moves>(
                 "Admissible moves examined at least in each scan",
                 config::range(1, easylocal::unlimited)),
-            config::field<"max_moves", &self::max_moves>(
+            config::field<&self::max_moves>(
                 "Admissible moves examined at most in each scan",
                 config::range(1, easylocal::unlimited)),
-            config::field<"plus", &self::plus>(
+            config::field<&self::plus>(
                 "Admissible moves examined after the first under the aspiration level",
                 config::range(0, easylocal::unlimited)),
-            config::field<"aspiration_level", &self::aspiration_level>(
+            config::field<&self::aspiration_level>(
                 "The aspiration level, as a factor of the best cost",
                 config::range(1.0, easylocal::unlimited).open_high()),
             config::require(
@@ -1836,10 +1836,10 @@ struct AspirationPlusParameters
 struct EliteListParameters
 {
     /// The moves kept from a full scan.
-    std::size_t elite_size{10};
+    config::parameter<std::size_t, "elite_size"> elite_size{10};
     /// A kept move is applied while its cost is within this factor of the best
     /// cost (see EliteCandidateTabuSearch).
-    double quality{1.05};
+    config::parameter<double, "quality"> quality{1.05};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -1847,10 +1847,10 @@ struct EliteListParameters
     {
         using self = EliteListParameters;
         return config::fields(
-            config::field<"elite_size", &self::elite_size>(
+            config::field<&self::elite_size>(
                 "The moves kept from a full scan",
                 config::range(1, easylocal::unlimited)),
-            config::field<"quality", &self::quality>(
+            config::field<&self::quality>(
                 "Cost, as a factor of the best, up to which a kept move is applied",
                 config::range(1.0, easylocal::unlimited).open_high()));
     }
@@ -1876,12 +1876,12 @@ struct TabuSearchParameters
 {
     /// Iterations without improving the best cost after which the search
     /// stops; unlimited: it never stops for that.
-    limit max_idle_iterations{1000};
+    config::parameter<limit, "max_idle_iterations"> max_idle_iterations{1000};
     /// Iterations in all; unlimited by default.
-    limit max_iterations{unlimited};
+    config::parameter<limit, "max_iterations"> max_iterations{unlimited};
     /// Evaluation budget, including the initial evaluation; unlimited by
     /// default.
-    limit max_evaluations{unlimited};
+    config::parameter<limit, "max_evaluations"> max_evaluations{unlimited};
     /// The parameters of the tabu list.
     ListParameters tabu_list{};
     /// The parameters of the candidate strategy, the scan of each iteration.
@@ -1893,14 +1893,14 @@ struct TabuSearchParameters
     {
         using self = TabuSearchParameters;
         const auto common = config::fields(
-            config::field<"max_idle_iterations", &self::max_idle_iterations>(
+            config::field<&self::max_idle_iterations>(
                 "Maximum number of iterations without improving the best cost, or "
                 "unlimited",
                 config::range(1, easylocal::unlimited)),
-            config::field<"max_iterations", &self::max_iterations>(
+            config::field<&self::max_iterations>(
                 "Maximum number of iterations, or unlimited",
                 config::range(0, easylocal::unlimited)),
-            config::field<"max_evaluations", &self::max_evaluations>(
+            config::field<&self::max_evaluations>(
                 "Maximum number of solution evaluations, or unlimited",
                 config::range(0, easylocal::unlimited)),
             config::group<"tabu_list", &self::tabu_list>("The tabu list"));

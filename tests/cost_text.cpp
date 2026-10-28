@@ -121,7 +121,7 @@ void a_target_from_the_configuration_stops_a_run()
     el::Session session{application, tutorial::five_cities(), 1};
     session.use_initial_solution();
     assert(session.evaluate() == 29.0);
-    assert(session.run("fi", el::stop_at(session.read_cost(run.target))));
+    assert(session.run("fi", el::stop_at(session.read_cost(run.target.value()))));
     assert(session.evaluate() == 29.0);
 
     // options() gives the run options of every limit set.

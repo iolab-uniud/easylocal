@@ -29,25 +29,24 @@ using easylocal::runners::temperature::FixedLengthParameters;
 
 struct AppParameters
 {
-    std::filesystem::path instance_file{"instance.dat"};
-    std::uint64_t seed{2026U};
+    easylocal::config::parameter<std::filesystem::path, "instance_file"> instance_file{
+        "instance.dat"};
+    easylocal::config::parameter<std::uint64_t, "seed"> seed{2026U};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<
-                "instance_file",
-                &AppParameters::instance_file>("Problem instance file"),
-            easylocal::config::field<
-                "seed",
-                &AppParameters::seed>("Pseudo-random generator seed"));
+            easylocal::config::field<&AppParameters::instance_file>(
+                "Problem instance file"),
+            easylocal::config::field<&AppParameters::seed>(
+                "Pseudo-random generator seed"));
     }
 
     [[nodiscard]]
     auto validate() const noexcept -> easylocal::config::validation_result
     {
-        return instance_file.empty()
+        return instance_file.value().empty()
             ? easylocal::config::validation_result::failure(
                   "instance_file must not be empty")
             : easylocal::config::validation_result::success();
@@ -77,7 +76,7 @@ void app_parameter_schema_is_internal_and_typed()
     AppParameters parameters{};
     assert(parameters.validate());
 
-    parameters.instance_file.clear();
+    parameters.instance_file = std::filesystem::path{};
     const auto invalid = parameters.validate();
     assert(!invalid);
     assert(invalid.message == "instance_file must not be empty");
@@ -105,7 +104,7 @@ void iteration_exposes_names_descriptions_and_typed_references()
             if constexpr (descriptor_type::name() == "allowed_iterations")
             {
                 static_assert(std::same_as<
-                    std::remove_cvref_t<decltype(value)>,
+                    typename std::remove_cvref_t<decltype(value)>::value_type,
                     std::size_t>);
                 value = 250;
             }
@@ -176,14 +175,14 @@ void first_improvement_parameters_live_with_the_search_method()
 
     FirstImprovementParameters parameters{.max_evaluations = 100};
     assert(parameters.validate());
-    assert(parameters.max_evaluations == 100);
+    assert(parameters.max_evaluations.value() == 100);
     // No budget, the default: until a local optimum.
-    assert(FirstImprovementParameters{}.max_evaluations.is_unlimited());
+    assert(FirstImprovementParameters{}.max_evaluations.value().is_unlimited());
     parameters.max_evaluations = easylocal::unlimited;
     assert(parameters.validate());
     // Zero is a budget of zero, not "no budget".
     parameters.max_evaluations = 0;
-    assert(!parameters.max_evaluations.is_unlimited());
+    assert(!parameters.max_evaluations.value().is_unlimited());
 }
 
 void a_limit_is_a_count_or_unlimited_in_text()
@@ -316,7 +315,7 @@ void neighborhood_union_parameter_block_describes_bias_array()
         std::array<double, 2>>);
 
     parameters_type parameters{};
-    assert((parameters.random_biases == std::array{1.0, 1.0}));
+    assert((parameters.random_biases.value() == std::array{1.0, 1.0}));
     assert(parameters.validate());
 
     parameters.random_biases = {0.0, 0.0};

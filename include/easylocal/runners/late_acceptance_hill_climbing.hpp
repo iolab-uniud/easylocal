@@ -25,33 +25,27 @@ namespace easylocal::runners
 struct LateAcceptanceHillClimbingParameters
 {
     /// Number of past costs a candidate is compared with.
-    std::size_t history_length{10};
+    config::parameter<std::size_t, "history_length"> history_length{10};
     /// Consecutive proposals without improving the best cost after which the
     /// search stops; unlimited: it never stops for that.
-    limit max_idle_iterations{1000};
+    config::parameter<limit, "max_idle_iterations"> max_idle_iterations{1000};
     /// Evaluation budget, including the initial evaluation; unlimited by
     /// default.
-    limit max_evaluations{unlimited};
+    config::parameter<limit, "max_evaluations"> max_evaluations{unlimited};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<
-                "history_length",
-                &LateAcceptanceHillClimbingParameters::history_length>(
+            config::field<&LateAcceptanceHillClimbingParameters::history_length>(
                 "Number of past costs a candidate is compared with",
                 config::range(1, easylocal::unlimited)),
-            config::field<
-                "max_idle_iterations",
-                &LateAcceptanceHillClimbingParameters::max_idle_iterations>(
+            config::field<&LateAcceptanceHillClimbingParameters::max_idle_iterations>(
                 "Maximum number of consecutive proposals without improving "
                 "the best cost, or unlimited",
                 config::range(1, easylocal::unlimited)),
-            config::field<
-                "max_evaluations",
-                &LateAcceptanceHillClimbingParameters::max_evaluations>(
+            config::field<&LateAcceptanceHillClimbingParameters::max_evaluations>(
                 "Maximum number of solution evaluations, or unlimited",
                 config::range(0, easylocal::unlimited)));
     }
@@ -115,7 +109,7 @@ public:
 
         while (!run.should_stop())
         {
-            if (idle_iterations >= parameters_.max_idle_iterations)
+            if (idle_iterations >= parameters_.max_idle_iterations.value())
             {
                 return run.finish(
                     std::move(best.solution),

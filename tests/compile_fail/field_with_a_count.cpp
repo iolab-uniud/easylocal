@@ -4,11 +4,11 @@
 
 struct Parameters
 {
-    int size{1};
+    easylocal::config::parameter<int, "size"> size{1};
 };
 
 int main()
 {
     [[maybe_unused]] constexpr auto descriptor =
-        easylocal::config::field<"size", &Parameters::size>("Size", 5);
+        easylocal::config::field<&Parameters::size>("Size", 5);
 }

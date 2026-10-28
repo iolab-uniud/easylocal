@@ -29,17 +29,21 @@
 namespace easylocal::config
 {
 
-/// One parameter of a set: its full path, its description, its value as text
-/// (format_value), whether it can be changed, the kind of its value, its
-/// domain, and when it matters.
+/// One parameter of a set: its full path, its description, whether anything
+/// has set it, its value as text (format_value), whether it can be changed,
+/// the kind of its value, its domain, and when it matters.
 struct parameter_info
 {
     /// The full path of the parameter.
     std::string path;
     /// The description of the parameter.
     std::string_view description;
-    /// The value, as text.
+    /// The value, as text; empty when nothing has set the parameter.
     std::string value;
+    /// Whether anything has set the parameter, its default included; a
+    /// parameter that is not set has no value until a configurator gives it
+    /// one.
+    bool set{true};
     /// Whether the parameter cannot be changed.
     bool read_only{};
     /// The kind of the value.
@@ -98,8 +102,8 @@ namespace detail
 {
 
 // Every field of a block, the fields of its nested groups included:
-// leaf(path, descriptor, value&, owner) for the fields, with the block they
-// belong to, group(path, nested&) for each nested block, before its own
+// leaf(path, descriptor, parameter&, owner) for the fields, with the block
+// they belong to, group(path, nested&) for each nested block, before its own
 // fields. Requirements are left out.
 template<class Block, class Leaf, class Group>
 void walk_schema(Block& block, const std::string& prefix, Leaf& leaf, Group& group)
@@ -447,14 +451,19 @@ private:
                          std::vector<parameter_info>& result) {
             auto leaf = [&](const std::string& path,
                             const auto& descriptor,
-                            const auto& value,
+                            const auto& parameter,
                             const auto& owner) {
+                using value_type =
+                    typename std::remove_cvref_t<decltype(parameter)>::value_type;
                 parameter_info info{
                     .path = path,
                     .description = descriptor.description,
-                    .value = format_value(value),
+                    .value = parameter.is_set()
+                        ? format_value(parameter.value())
+                        : std::string{},
+                    .set = parameter.is_set(),
                     .read_only = read_only,
-                    .kind = kind_of<decltype(value)>(),
+                    .kind = kind_of<value_type>(),
                     .domain = describe_domain(descriptor.domain),
                     .active = is_active(descriptor, owner),
                 };
@@ -525,8 +534,15 @@ private:
                         });
                         continue;
                     }
-                    const auto error = detail::parse_text_value(candidate.value, value);
-                    if (!error.empty())
+                    using value_type =
+                        typename std::remove_cvref_t<decltype(value)>::value_type;
+                    value_type parsed{};
+                    const auto error = detail::parse_text_value(candidate.value, parsed);
+                    if (error.empty())
+                    {
+                        value = std::move(parsed);
+                    }
+                    else
                     {
                         failed = true;
                         diagnostics.push_back({

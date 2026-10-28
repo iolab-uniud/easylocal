@@ -173,12 +173,12 @@ private:
 // A neighborhood with a parameter that declares no domain.
 struct ProbeParameters
 {
-    int probes{1};
+    easylocal::config::parameter<int, "probes"> probes{1};
 
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<"probes", &ProbeParameters::probes>("Probes"));
+            easylocal::config::field<&ProbeParameters::probes>("Probes"));
     }
 
     [[nodiscard]] easylocal::config::validation_result validate() const

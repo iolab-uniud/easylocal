@@ -9,15 +9,14 @@ improvements:
 ```cpp
 struct RandomDescentParameters
 {
-    easylocal::limit max_evaluations{1000}; // a count, or easylocal::unlimited
+    easylocal::config::parameter<easylocal::limit, "max_evaluations"> max_evaluations{
+        1000}; // a count, or easylocal::unlimited
 
     // The schema makes the parameters configurable (chapter 10).
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<
-                "max_evaluations",
-                &RandomDescentParameters::max_evaluations>(
+            easylocal::config::field<&RandomDescentParameters::max_evaluations>(
                 "Evaluation budget",
                 easylocal::config::range(1, easylocal::unlimited)));
     }

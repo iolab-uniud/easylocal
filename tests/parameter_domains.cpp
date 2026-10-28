@@ -23,33 +23,29 @@ namespace config = easylocal::config;
 
 struct TunedParameters
 {
-    double rate{0.5};
-    std::size_t samples{10};
-    std::string policy{"tabu"};
-    std::vector<double> weights{1.0, 2.0};
-    easylocal::limit budget{100};
-    double free{3.0};
+    config::parameter<double, "rate"> rate{0.5};
+    config::parameter<std::size_t, "samples"> samples{10};
+    config::parameter<std::string, "policy"> policy{"tabu"};
+    config::parameter<std::vector<double>, "weights"> weights{1.0, 2.0};
+    config::parameter<easylocal::limit, "budget"> budget{100};
+    config::parameter<double, "free"> free{3.0};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"rate", &TunedParameters::rate>(
+            config::field<&TunedParameters::rate>(
                 "A rate",
                 config::range(0.0, 1.0).open_low()),
-            config::field<"samples", &TunedParameters::samples>(
+            config::field<&TunedParameters::samples>(
                 "A count",
                 config::range(1, 1000).log()),
-            config::field<"policy", &TunedParameters::policy>(
+            config::field<&TunedParameters::policy>(
                 "A policy",
                 config::one_of("tabu", "random")),
-            config::field<"weights", &TunedParameters::weights>(
-                "Weights",
-                config::range(0.0, 10.0)),
-            config::field<"budget", &TunedParameters::budget>(
-                "A budget",
-                config::range(1, 1000)),
-            config::field<"free", &TunedParameters::free>("No domain"));
+            config::field<&TunedParameters::weights>("Weights", config::range(0.0, 10.0)),
+            config::field<&TunedParameters::budget>("A budget", config::range(1, 1000)),
+            config::field<&TunedParameters::free>("No domain"));
     }
 
     [[nodiscard]]
@@ -191,25 +187,23 @@ void an_invalid_default_can_be_overridden()
 // A range may have no upper bound, and easylocal::unlimited alone is any value.
 struct OpenParameters
 {
-    double positive{1.0};
-    easylocal::limit budget{easylocal::unlimited};
-    int offset{-3};
-    double timeout{std::numeric_limits<double>::infinity()};
+    config::parameter<double, "positive"> positive{1.0};
+    config::parameter<easylocal::limit, "budget"> budget{easylocal::unlimited};
+    config::parameter<int, "offset"> offset{-3};
+    config::parameter<double, "timeout"> timeout{std::numeric_limits<double>::infinity()};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"positive", &OpenParameters::positive>(
+            config::field<&OpenParameters::positive>(
                 "Positive",
                 config::range(0.0, easylocal::unlimited).open_low()),
-            config::field<"budget", &OpenParameters::budget>(
+            config::field<&OpenParameters::budget>(
                 "Budget",
                 config::range(1, easylocal::unlimited)),
-            config::field<"offset", &OpenParameters::offset>(
-                "Offset",
-                easylocal::unlimited),
-            config::field<"timeout", &OpenParameters::timeout>(
+            config::field<&OpenParameters::offset>("Offset", easylocal::unlimited),
+            config::field<&OpenParameters::timeout>(
                 "Timeout",
                 config::range(0.0, easylocal::unlimited)));
     }

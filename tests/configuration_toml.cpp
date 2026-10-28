@@ -18,15 +18,16 @@ namespace
 
 struct AppParameters
 {
-    std::filesystem::path instance_file{"default.tsp"};
-    std::size_t seed{1};
+    easylocal::config::parameter<std::filesystem::path, "instance_file"> instance_file{
+        "default.tsp"};
+    easylocal::config::parameter<std::size_t, "seed"> seed{1};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<"instance_file", &AppParameters::instance_file>(),
-            easylocal::config::field<"seed", &AppParameters::seed>());
+            easylocal::config::field<&AppParameters::instance_file>(),
+            easylocal::config::field<&AppParameters::seed>());
     }
 
     [[nodiscard]]
@@ -38,23 +39,20 @@ struct AppParameters
 
 struct SearchParameters
 {
-    double cooling_rate{0.9};
-    std::array<double, 2> biases{1.0, 1.0};
-    easylocal::limit max_evaluations{100};
-    easylocal::limit max_iterations{100};
+    easylocal::config::parameter<double, "cooling_rate"> cooling_rate{0.9};
+    easylocal::config::parameter<std::array<double, 2>, "biases"> biases{1.0, 1.0};
+    easylocal::config::parameter<easylocal::limit, "max_evaluations"> max_evaluations{
+        100};
+    easylocal::config::parameter<easylocal::limit, "max_iterations"> max_iterations{100};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<"cooling_rate", &SearchParameters::cooling_rate>(),
-            easylocal::config::field<"biases", &SearchParameters::biases>(),
-            easylocal::config::field<
-                "max_evaluations",
-                &SearchParameters::max_evaluations>(),
-            easylocal::config::field<
-                "max_iterations",
-                &SearchParameters::max_iterations>());
+            easylocal::config::field<&SearchParameters::cooling_rate>(),
+            easylocal::config::field<&SearchParameters::biases>(),
+            easylocal::config::field<&SearchParameters::max_evaluations>(),
+            easylocal::config::field<&SearchParameters::max_iterations>());
     }
 
     [[nodiscard]]
@@ -71,19 +69,19 @@ struct SearchParameters
 
 struct FlagParameters
 {
-    bool verbose{false};
-    std::array<bool, 2> enabled{false, false};
-    std::size_t count{0};
-    double rate{0.5};
+    easylocal::config::parameter<bool, "verbose"> verbose{false};
+    easylocal::config::parameter<std::array<bool, 2>, "enabled"> enabled{false, false};
+    easylocal::config::parameter<std::size_t, "count"> count{0};
+    easylocal::config::parameter<double, "rate"> rate{0.5};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<"verbose", &FlagParameters::verbose>(),
-            easylocal::config::field<"enabled", &FlagParameters::enabled>(),
-            easylocal::config::field<"count", &FlagParameters::count>(),
-            easylocal::config::field<"rate", &FlagParameters::rate>());
+            easylocal::config::field<&FlagParameters::verbose>(),
+            easylocal::config::field<&FlagParameters::enabled>(),
+            easylocal::config::field<&FlagParameters::count>(),
+            easylocal::config::field<&FlagParameters::rate>());
     }
 
     [[nodiscard]]

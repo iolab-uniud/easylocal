@@ -547,7 +547,7 @@ int main()
     const std::array budget{easylocal::config::text_override{"max_evaluations", "5"}};
     ok &= expect(
         static_cast<bool>(configuration.apply(budget))
-            && configurable.max_evaluations == 5,
+            && configurable.max_evaluations.value() == 5,
         "best improvement parameters are configurable like first improvement");
 
     return ok ? 0 : 1;

@@ -21,25 +21,24 @@ using easylocal::runners::temperature::FixedLengthParameters;
 
 struct AppParameters
 {
-    std::filesystem::path instance_file{"initial.dat"};
-    std::uint64_t seed{17U};
+    easylocal::config::parameter<std::filesystem::path, "instance_file"> instance_file{
+        "initial.dat"};
+    easylocal::config::parameter<std::uint64_t, "seed"> seed{17U};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<
-                "instance_file",
-                &AppParameters::instance_file>(
-                    "Problem instance file"),
-            easylocal::config::field<"seed", &AppParameters::seed>(
+            easylocal::config::field<&AppParameters::instance_file>(
+                "Problem instance file"),
+            easylocal::config::field<&AppParameters::seed>(
                 "Pseudo-random generator seed"));
     }
 
     [[nodiscard]]
     auto validate() const noexcept -> easylocal::config::validation_result
     {
-        return instance_file.empty()
+        return instance_file.value().empty()
             ? easylocal::config::validation_result::failure(
                   "instance_file must not be empty")
             : easylocal::config::validation_result::success();

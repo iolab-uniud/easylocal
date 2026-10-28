@@ -523,7 +523,9 @@ int main()
             unbounded.on_iteration(true);
         ok &= expect(
             !unbounded.finished()
-                && temperature::FixedTemperatureParameters{}.max_accepted.is_unlimited(),
+                && temperature::FixedTemperatureParameters{}
+                    .max_accepted.value()
+                    .is_unlimited(),
             "fixed temperature accepts without limit by default");
         ok &= expect(
             !temperature::FixedTemperatureParameters{.temperature = 0.0}.validate()
@@ -813,7 +815,7 @@ int main()
         ok &= expect(
             approximately_equal(classic.temperature(), expected, tolerance)
                 && approximately_equal(
-                    classic.parameters().initial_temperature,
+                    classic.parameters().initial_temperature.value(),
                     expected,
                     tolerance),
             "a calibrated policy starts from the estimated temperature");

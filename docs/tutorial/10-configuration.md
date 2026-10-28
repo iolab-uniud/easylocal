@@ -72,12 +72,12 @@ the lambda with a class that takes a parameter block:
 // The bound of chapter 3 as a parameter: how much the longest edge exceeds it.
 struct ExcessParameters
 {
-    double bound{8.0}; // the longest edge allowed
+    easylocal::config::parameter<double, "bound"> bound{8.0}; // the longest edge allowed
 
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<"bound", &ExcessParameters::bound>(
+            easylocal::config::field<&ExcessParameters::bound>(
                 "Longest edge allowed",
                 easylocal::config::range(0.0, easylocal::unlimited)));
     }

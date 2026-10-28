@@ -204,12 +204,12 @@ public:
 // The bound of chapter 3 as a parameter: how much the longest edge exceeds it.
 struct ExcessParameters
 {
-    double bound{8.0}; // the longest edge allowed
+    easylocal::config::parameter<double, "bound"> bound{8.0}; // the longest edge allowed
 
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<"bound", &ExcessParameters::bound>(
+            easylocal::config::field<&ExcessParameters::bound>(
                 "Longest edge allowed",
                 easylocal::config::range(0.0, easylocal::unlimited)));
     }
@@ -506,15 +506,14 @@ inline bool operator==(const TwoOpt& a, const TwoOpt& b)
 // [custom-runner] ----------------------------------------------------------
 struct RandomDescentParameters
 {
-    easylocal::limit max_evaluations{1000}; // a count, or easylocal::unlimited
+    easylocal::config::parameter<easylocal::limit, "max_evaluations"> max_evaluations{
+        1000}; // a count, or easylocal::unlimited
 
     // The schema makes the parameters configurable (chapter 10).
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<
-                "max_evaluations",
-                &RandomDescentParameters::max_evaluations>(
+            easylocal::config::field<&RandomDescentParameters::max_evaluations>(
                 "Evaluation budget",
                 easylocal::config::range(1, easylocal::unlimited)));
     }

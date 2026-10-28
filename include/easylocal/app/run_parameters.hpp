@@ -79,27 +79,27 @@ Cost read_cost(const Input& input, const std::string_view text)
 struct RunParameters
 {
     /// The cost at which a run stops, such as 0 or [0, 120]; empty: no target.
-    std::string target{};
+    config::parameter<std::string, "target"> target{""};
     /// The seconds a run may last, such as 10 or 2.5; empty: no time limit.
-    std::string timeout{};
+    config::parameter<std::string, "timeout"> timeout{""};
     /// The evaluations a run may make, the initial one included; unlimited: no
     /// budget beyond the runner's own.
-    limit max_evaluations{unlimited};
+    config::parameter<limit, "max_evaluations"> max_evaluations{unlimited};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"target", &RunParameters::target>(
+            config::field<&RunParameters::target>(
                 "Stop a run when its solution reaches this cost, such as 0 or "
                 "[0, 120]; empty: no target",
                 easylocal::unlimited),
-            config::field<"timeout", &RunParameters::timeout>(
+            config::field<&RunParameters::timeout>(
                 "Stop a run after this many seconds, such as 10 or 2.5; empty: no "
                 "limit",
                 easylocal::unlimited),
-            config::field<"max_evaluations", &RunParameters::max_evaluations>(
+            config::field<&RunParameters::max_evaluations>(
                 "Stop a run after this many evaluations; unlimited: no budget "
                 "beyond the runner's own",
                 config::range(0, easylocal::unlimited)));
@@ -124,9 +124,9 @@ struct RunParameters
     [[nodiscard]]
     std::optional<std::optional<double>> timeout_seconds() const
     {
-        if (detail::trim_space(timeout).empty())
+        if (detail::trim_space(timeout.value()).empty())
             return std::optional<double>{};
-        const auto seconds = detail::parse_number<double>(timeout);
+        const auto seconds = detail::parse_number<double>(timeout.value());
         if (!seconds || !(*seconds >= 0.0) || !std::isfinite(*seconds))
             return std::nullopt;
         return std::optional<double>{*seconds};
@@ -153,14 +153,15 @@ struct RunParameters
         if (!seconds)
         {
             throw std::invalid_argument{
-                "timeout: '" + timeout + "' is not a non-negative number of seconds"};
+                "timeout: '" + timeout.value()
+                + "' is not a non-negative number of seconds"};
         }
         const auto result = detail::with_limits(
             base.without_target(),
             *seconds,
-            max_evaluations.is_unlimited()
+            max_evaluations.value().is_unlimited()
                 ? std::nullopt
-                : std::optional<std::size_t>{max_evaluations});
+                : std::optional<std::size_t>{max_evaluations.value()});
         run_options<Tracer, Cost> options{
             .control = result.control,
             .tracer = result.tracer,
@@ -181,11 +182,11 @@ struct RunParameters
     [[nodiscard]]
     std::optional<Cost> target_cost(const Input& input) const
     {
-        if (target.find_first_not_of(" \t") == std::string::npos)
+        if (target.value().find_first_not_of(" \t") == std::string::npos)
             return std::nullopt;
         try
         {
-            return read_cost<Cost>(input, target);
+            return read_cost<Cost>(input, target.value());
         }
         catch (const std::invalid_argument& error)
         {

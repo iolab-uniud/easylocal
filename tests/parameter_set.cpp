@@ -22,21 +22,22 @@ using easylocal::runners::temperature::FixedLengthParameters;
 
 struct AppParameters
 {
-    std::filesystem::path instance_file{"instance.dat"};
-    std::uint64_t seed{2026U};
+    config::parameter<std::filesystem::path, "instance_file"> instance_file{
+        "instance.dat"};
+    config::parameter<std::uint64_t, "seed"> seed{2026U};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"instance_file", &AppParameters::instance_file>("The instance"),
-            config::field<"seed", &AppParameters::seed>());
+            config::field<&AppParameters::instance_file>("The instance"),
+            config::field<&AppParameters::seed>());
     }
 
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        return instance_file.empty()
+        return instance_file.value().empty()
             ? config::validation_result::failure("instance_file must not be empty")
             : config::validation_result::success();
     }
@@ -45,12 +46,12 @@ struct AppParameters
 // A block with a nested group.
 struct Schedule
 {
-    double rate{0.5};
+    config::parameter<double, "rate"> rate{0.5};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
-        return config::fields(config::field<"rate", &Schedule::rate>());
+        return config::fields(config::field<&Schedule::rate>());
     }
 
     [[nodiscard]]
@@ -64,14 +65,14 @@ struct Schedule
 
 struct Search
 {
-    std::size_t budget{100};
+    config::parameter<std::size_t, "budget"> budget{100};
     Schedule schedule{};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"budget", &Search::budget>(),
+            config::field<&Search::budget>(),
             config::group<"schedule", &Search::schedule>("The schedule"));
     }
 
@@ -325,7 +326,7 @@ void the_same_path_cannot_be_added_twice()
 
 void validate_reports_invalid_blocks_by_path()
 {
-    AppParameters app{.instance_file = {}};
+    AppParameters app{.instance_file = ""};
     Search search;
     search.schedule.rate = 3.0;
     config::parameter_set set;

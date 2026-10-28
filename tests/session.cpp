@@ -996,7 +996,8 @@ void app_copy_preserves_graph_configuration()
     assert(copy.name() == std::string_view{"assignment"});
     assert(copy.runner_names().front() == std::string_view{"fi"});
     assert(
-        copy.runner_parameters<easylocal::runners::FirstImprovement>("fi").max_evaluations
+        copy.runner_parameters<easylocal::runners::FirstImprovement>("fi")
+            .max_evaluations.value()
         == 17);
 }
 
@@ -1014,7 +1015,7 @@ void session_can_copy_an_lvalue_app()
 
     assert(
         application.runner_parameters<easylocal::runners::FirstImprovement>("fi")
-            .max_evaluations
+            .max_evaluations.value()
         != 3);
 }
 
@@ -1030,7 +1031,7 @@ void session_can_take_ownership_of_an_rvalue_app()
     assert(
         session.app()
             .runner_parameters<easylocal::runners::FirstImprovement>("fi")
-            .max_evaluations
+            .max_evaluations.value()
         == 29);
 }
 

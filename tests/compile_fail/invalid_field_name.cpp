@@ -4,13 +4,13 @@
 
 struct Parameters
 {
-    double rate{0.5};
+    easylocal::config::parameter<double, "cooling rate"> rate{0.5};
 };
 
 int main()
 {
     [[maybe_unused]] constexpr auto descriptor =
-        easylocal::config::field<"cooling rate", &Parameters::rate>(
+        easylocal::config::field<&Parameters::rate>(
             "Rate",
             easylocal::config::range(0.0, 1.0));
 }

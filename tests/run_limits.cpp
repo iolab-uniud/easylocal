@@ -487,14 +487,18 @@ int main()
             "a memory recorder records each attempt and stage after its run_context");
     }
     ok &= expect(
-        solvers::stage("s", runner).with_max_evaluations(7).parameters().max_evaluations
+        solvers::stage("s", runner)
+                .with_max_evaluations(7)
+                .parameters()
+                .max_evaluations.value()
             == 7,
         "with_max_evaluations sets the stage's budget");
     auto budget_parameters = budgeted_pipeline.configuration();
     const auto budget_set = budget_parameters.apply(
         std::vector<el::config::text_override>{{"second.max_evaluations", "5"}});
     ok &= expect(
-        budget_set && budgeted_pipeline.stage<1>().parameters().max_evaluations == 5,
+        budget_set
+            && budgeted_pipeline.stage<1>().parameters().max_evaluations.value() == 5,
         "a stage's budget is set through the parameters");
 
     return ok ? 0 : 1;

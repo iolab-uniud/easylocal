@@ -131,13 +131,13 @@ template<class Block>
 consteval auto cooling_fields()
 {
     return config::fields(
-        config::field<"initial_temperature", &Block::initial_temperature>(
+        config::field<&Block::initial_temperature>(
             "Initial annealing temperature",
             config::range(0.0, easylocal::unlimited).open()),
-        config::field<"final_temperature", &Block::final_temperature>(
+        config::field<&Block::final_temperature>(
             "Final annealing temperature",
             config::range(0.0, easylocal::unlimited).open()),
-        config::field<"cooling_rate", &Block::cooling_rate>(
+        config::field<&Block::cooling_rate>(
             "Multiplicative cooling factor",
             config::range(0.0, 1.0).open()));
 }
@@ -158,10 +158,10 @@ template<class Block>
 consteval auto calibration_fields()
 {
     return config::fields(
-        config::field<"calibration_samples", &Block::calibration_samples>(
+        config::field<&Block::calibration_samples>(
             "Moves sampled to estimate the initial temperature (0: none)",
             config::range(0, easylocal::unlimited)),
-        config::field<"initial_acceptance", &Block::initial_acceptance>(
+        config::field<&Block::initial_acceptance>(
             "Acceptance probability of an average worsening move at the "
             "estimated initial temperature",
             config::range(0.0, 1.0).open())
@@ -228,20 +228,21 @@ namespace temperature
 struct ClassicParameters
 {
     /// The temperature the annealing starts from.
-    double initial_temperature{10.0};
+    config::parameter<double, "initial_temperature"> initial_temperature{10.0};
     /// The temperature the cooling stops at.
-    double final_temperature{0.01};
+    config::parameter<double, "final_temperature"> final_temperature{0.01};
     /// The factor that multiplies the temperature at each cooling.
-    double cooling_rate{0.95};
+    config::parameter<double, "cooling_rate"> cooling_rate{0.95};
     /// Proposals evaluated at each temperature.
-    std::size_t samples_per_temperature{100};
+    config::parameter<std::size_t, "samples_per_temperature"> samples_per_temperature{
+        100};
 
     /// Moves sampled at the initial solution to estimate the initial
     /// temperature; 0 keeps initial_temperature.
-    std::size_t calibration_samples{0};
+    config::parameter<std::size_t, "calibration_samples"> calibration_samples{0};
     /// Acceptance probability of an average worsening move at the estimated
     /// initial temperature.
-    double initial_acceptance{0.5};
+    config::parameter<double, "initial_acceptance"> initial_acceptance{0.5};
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -249,9 +250,7 @@ struct ClassicParameters
         return std::tuple_cat(
             detail::cooling_fields<ClassicParameters>(),
             config::fields(
-                config::field<
-                    "samples_per_temperature",
-                    &ClassicParameters::samples_per_temperature>(
+                config::field<&ClassicParameters::samples_per_temperature>(
                     "Proposals evaluated at each temperature",
                     config::range(1, easylocal::unlimited))),
             detail::calibration_fields<ClassicParameters>(),
@@ -364,20 +363,20 @@ private:
 struct FixedLengthParameters
 {
     /// The temperature the annealing starts from.
-    double initial_temperature{10.0};
+    config::parameter<double, "initial_temperature"> initial_temperature{10.0};
     /// The temperature the cooling stops at.
-    double final_temperature{0.01};
+    config::parameter<double, "final_temperature"> final_temperature{0.01};
     /// The factor that multiplies the temperature at each cooling.
-    double cooling_rate{0.95};
+    config::parameter<double, "cooling_rate"> cooling_rate{0.95};
     /// Proposals in all, spread over the temperature levels.
-    std::size_t allowed_iterations{100'000};
+    config::parameter<std::size_t, "allowed_iterations"> allowed_iterations{100'000};
 
     /// Moves sampled at the initial solution to estimate the initial
     /// temperature; 0 keeps initial_temperature.
-    std::size_t calibration_samples{0};
+    config::parameter<std::size_t, "calibration_samples"> calibration_samples{0};
     /// Acceptance probability of an average worsening move at the estimated
     /// initial temperature.
-    double initial_acceptance{0.5};
+    config::parameter<double, "initial_acceptance"> initial_acceptance{0.5};
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -385,9 +384,7 @@ struct FixedLengthParameters
         return std::tuple_cat(
             detail::cooling_fields<FixedLengthParameters>(),
             config::fields(
-                config::field<
-                    "allowed_iterations",
-                    &FixedLengthParameters::allowed_iterations>(
+                config::field<&FixedLengthParameters::allowed_iterations>(
                     "Proposals of the annealing, spread over its levels",
                     config::range(1, easylocal::unlimited))),
             detail::calibration_fields<FixedLengthParameters>(),
@@ -510,23 +507,23 @@ private:
 struct CutoffParameters
 {
     /// The temperature the annealing starts from.
-    double initial_temperature{10.0};
+    config::parameter<double, "initial_temperature"> initial_temperature{10.0};
     /// The temperature the cooling stops at.
-    double final_temperature{0.01};
+    config::parameter<double, "final_temperature"> final_temperature{0.01};
     /// The factor that multiplies the temperature at each cooling.
-    double cooling_rate{0.95};
+    config::parameter<double, "cooling_rate"> cooling_rate{0.95};
     /// Proposals in all, spread over the temperature levels.
-    std::size_t allowed_iterations{100'000};
+    config::parameter<std::size_t, "allowed_iterations"> allowed_iterations{100'000};
     /// Accepted proposals that cool, as a share of a level's proposals
     /// (allowed_iterations over the temperature levels).
-    double accepted_ratio{0.1};
+    config::parameter<double, "accepted_ratio"> accepted_ratio{0.1};
 
     /// Moves sampled at the initial solution to estimate the initial
     /// temperature; 0 keeps initial_temperature.
-    std::size_t calibration_samples{0};
+    config::parameter<std::size_t, "calibration_samples"> calibration_samples{0};
     /// Acceptance probability of an average worsening move at the estimated
     /// initial temperature.
-    double initial_acceptance{0.5};
+    config::parameter<double, "initial_acceptance"> initial_acceptance{0.5};
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -534,12 +531,10 @@ struct CutoffParameters
         return std::tuple_cat(
             detail::cooling_fields<CutoffParameters>(),
             config::fields(
-                config::field<
-                    "allowed_iterations",
-                    &CutoffParameters::allowed_iterations>(
+                config::field<&CutoffParameters::allowed_iterations>(
                     "Proposals of the annealing, spread over its levels",
                     config::range(1, easylocal::unlimited)),
-                config::field<"accepted_ratio", &CutoffParameters::accepted_ratio>(
+                config::field<&CutoffParameters::accepted_ratio>(
                     "Fraction of accepted proposals that triggers cooling",
                     config::range(0.0, 1.0).open_low())),
             detail::calibration_fields<CutoffParameters>(),
@@ -827,33 +822,31 @@ private:
 struct FixedTemperatureParameters
 {
     /// The constant temperature.
-    double temperature{1.0};
+    config::parameter<double, "temperature"> temperature{1.0};
     /// Proposals in all.
-    std::size_t allowed_iterations{100'000};
+    config::parameter<std::size_t, "allowed_iterations"> allowed_iterations{100'000};
     /// Accepted proposals after which the annealing ends; unlimited by default.
-    limit max_accepted{unlimited};
+    config::parameter<limit, "max_accepted"> max_accepted{unlimited};
 
     /// Moves sampled at the initial solution to estimate the temperature; 0
     /// keeps temperature.
-    std::size_t calibration_samples{0};
+    config::parameter<std::size_t, "calibration_samples"> calibration_samples{0};
     /// Acceptance probability of an average worsening move at the estimated
     /// initial temperature.
-    double initial_acceptance{0.5};
+    config::parameter<double, "initial_acceptance"> initial_acceptance{0.5};
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return std::tuple_cat(
             config::fields(
-                config::field<"temperature", &FixedTemperatureParameters::temperature>(
+                config::field<&FixedTemperatureParameters::temperature>(
                     "Constant annealing temperature",
                     config::range(0.0, easylocal::unlimited).open()),
-                config::field<
-                    "allowed_iterations",
-                    &FixedTemperatureParameters::allowed_iterations>(
+                config::field<&FixedTemperatureParameters::allowed_iterations>(
                     "Proposals of the annealing",
                     config::range(1, easylocal::unlimited)),
-                config::field<"max_accepted", &FixedTemperatureParameters::max_accepted>(
+                config::field<&FixedTemperatureParameters::max_accepted>(
                     "Accepted proposals that end the annealing, or unlimited",
                     config::range(1, easylocal::unlimited))),
             detail::calibration_fields<FixedTemperatureParameters>());
@@ -943,7 +936,7 @@ public:
     bool finished() const noexcept
     {
         return iterations_ >= parameters_.allowed_iterations
-            || accepted_ >= parameters_.max_accepted;
+            || accepted_ >= parameters_.max_accepted.value();
     }
 
 private:
@@ -956,22 +949,23 @@ private:
 struct TimeBasedParameters
 {
     /// The temperature the annealing starts from.
-    double initial_temperature{10.0};
+    config::parameter<double, "initial_temperature"> initial_temperature{10.0};
     /// The temperature the cooling stops at.
-    double final_temperature{0.01};
+    config::parameter<double, "final_temperature"> final_temperature{0.01};
     /// The factor that multiplies the temperature at each cooling.
-    double cooling_rate{0.95};
+    config::parameter<double, "cooling_rate"> cooling_rate{0.95};
     /// Seconds.
-    double allowed_running_time{10.0};
+    config::parameter<double, "allowed_running_time"> allowed_running_time{10.0};
     /// Accepted proposals that cool early; unlimited cools only on time.
-    limit accepted_per_temperature{unlimited};
+    config::parameter<limit, "accepted_per_temperature"> accepted_per_temperature{
+        unlimited};
 
     /// Moves sampled at the initial solution to estimate the initial
     /// temperature; 0 keeps initial_temperature.
-    std::size_t calibration_samples{0};
+    config::parameter<std::size_t, "calibration_samples"> calibration_samples{0};
     /// Acceptance probability of an average worsening move at the estimated
     /// initial temperature.
-    double initial_acceptance{0.5};
+    config::parameter<double, "initial_acceptance"> initial_acceptance{0.5};
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -979,14 +973,10 @@ struct TimeBasedParameters
         return std::tuple_cat(
             detail::cooling_fields<TimeBasedParameters>(),
             config::fields(
-                config::field<
-                    "allowed_running_time",
-                    &TimeBasedParameters::allowed_running_time>(
+                config::field<&TimeBasedParameters::allowed_running_time>(
                     "Running time of the annealing, in seconds",
                     config::range(0.0, easylocal::unlimited).open()),
-                config::field<
-                    "accepted_per_temperature",
-                    &TimeBasedParameters::accepted_per_temperature>(
+                config::field<&TimeBasedParameters::accepted_per_temperature>(
                     "Accepted proposals that trigger cooling (unlimited: cool only on time)",
                     config::range(1, easylocal::unlimited))),
             detail::calibration_fields<TimeBasedParameters>(),
@@ -1089,7 +1079,8 @@ public:
     {
         assert(!finished());
         accepted_ += accepted ? 1U : 0U;
-        const auto accepted_cutoff = accepted_ >= parameters_.accepted_per_temperature;
+        const auto accepted_cutoff =
+            accepted_ >= parameters_.accepted_per_temperature.value();
         const auto reading = accepted_cutoff ? clock_.now() : clock_.due();
         if (!reading)
             return;
@@ -1207,16 +1198,16 @@ struct ReheatingParameters
     /// initial temperature.
     DescentParameters descent{};
     /// Descents after the first one: the size of the schedule, not a limit.
-    std::size_t allowed_reheats{3};
+    config::parameter<std::size_t, "allowed_reheats"> allowed_reheats{3};
     /// The temperature a reheat restarts from, as a factor of the descent's
     /// initial_temperature.
-    double reheat_ratio{0.5};
+    config::parameter<double, "reheat_ratio"> reheat_ratio{0.5};
     /// The share of the descent's budget (allowed_iterations or
     /// allowed_running_time) spent by the first descent; the reheats divide the
     /// rest evenly.
     ///
     /// Ignored by a schedule without a budget.
-    double first_descent_share{0.5};
+    config::parameter<double, "first_descent_share"> first_descent_share{0.5};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -1228,16 +1219,14 @@ struct ReheatingParameters
         const auto fields = config::fields(
             config::group<"descent", &ReheatingParameters::descent>(
                 "The schedule of each descent"),
-            config::field<"allowed_reheats", &ReheatingParameters::allowed_reheats>(
+            config::field<&ReheatingParameters::allowed_reheats>(
                 "Number of reheats after the first descent",
                 config::range(0, easylocal::unlimited)),
-            config::field<"reheat_ratio", &ReheatingParameters::reheat_ratio>(
+            config::field<&ReheatingParameters::reheat_ratio>(
                 "Restart temperature of a reheat, as a factor of the initial one",
                 config::range(0.0, easylocal::unlimited).open())
                 .only_if(config::value<"allowed_reheats"> > 0),
-            config::field<
-                "first_descent_share",
-                &ReheatingParameters::first_descent_share>(
+            config::field<&ReheatingParameters::first_descent_share>(
                 "Share of the budget spent by the first descent",
                 config::range(0.0, 1.0).open())
                 .only_if(config::value<"allowed_reheats"> > 0 && budgeted));
@@ -1337,7 +1326,7 @@ public:
         Descent probe{first_descent(parameters_)};
         probe.calibrate(deltas);
         parameters_.descent.initial_temperature =
-            (std::max)(probe.parameters().initial_temperature,
+            (std::max)(probe.parameters().initial_temperature.value(),
                 lowest_initial_temperature());
         reset();
     }
@@ -1401,7 +1390,7 @@ private:
             const auto& descent = parameters_.descent;
             const auto reheat_factor = parameters_.allowed_reheats == 0
                 ? 1.0
-                : (std::min)(1.0, parameters_.reheat_ratio);
+                : (std::min)(1.0, parameters_.reheat_ratio.value());
             double cooling = 1.0;
             if constexpr (requires { descent.cooling_rate; })
                 cooling = descent.cooling_rate;
@@ -1428,7 +1417,8 @@ private:
         }
         else if constexpr (detail::time_budget<descent_parameters_type>)
         {
-            descent.allowed_running_time *= parameters.first_descent_share;
+            descent.allowed_running_time = descent.allowed_running_time.value()
+                * parameters.first_descent_share.value();
         }
         return descent;
     }
@@ -1437,7 +1427,8 @@ private:
     static descent_parameters_type reheat_descent(const parameters_type& parameters)
     {
         auto descent = parameters.descent;
-        descent.initial_temperature *= parameters.reheat_ratio;
+        descent.initial_temperature =
+            descent.initial_temperature.value() * parameters.reheat_ratio.value();
         if constexpr (detail::iteration_budget<descent_parameters_type>)
         {
             const auto first = first_descent(parameters).allowed_iterations;
@@ -1560,7 +1551,7 @@ struct SimulatedAnnealingParameters
     TemperatureParameters temperature{};
     /// Evaluation budget, including the initial evaluation; unlimited by
     /// default.
-    limit max_evaluations{unlimited};
+    config::parameter<limit, "max_evaluations"> max_evaluations{unlimited};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -1569,9 +1560,7 @@ struct SimulatedAnnealingParameters
         return config::fields(
             config::group<"temperature", &SimulatedAnnealingParameters::temperature>(
                 "The temperature schedule"),
-            config::field<
-                "max_evaluations",
-                &SimulatedAnnealingParameters::max_evaluations>(
+            config::field<&SimulatedAnnealingParameters::max_evaluations>(
                 "Maximum number of solution evaluations, or unlimited",
                 config::range(0, easylocal::unlimited)));
     }

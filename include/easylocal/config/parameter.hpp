@@ -9,6 +9,7 @@
 
 #include <easylocal/config/fixed_string.hpp>
 
+#include <concepts>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -48,23 +49,56 @@ public:
     /// The type of the value.
     using value_type = Value;
 
+    /// The name of the field, as a template argument: the schema reads it from
+    /// the member instead of repeating it.
+    static constexpr auto name_literal = Name;
+
     /// Not set: the field is required, unless a member initializer gives it a
     /// default.
     parameter() = default;
 
     /// From a value, which the field is then set to: the member initializer of
     /// a field is its default.
-    constexpr parameter(Value value) noexcept(std::is_nothrow_move_constructible_v<Value>)
-        : value_{std::move(value)}
+    ///
+    /// It takes whatever the value is built from, so that a count sets a
+    /// field of easylocal::limit and a literal one of std::string.
+    template<class From>
+        requires(!std::same_as<std::remove_cvref_t<From>, parameter>)
+        && std::constructible_from<Value, From>
+    constexpr parameter(From&& value) noexcept(
+        std::is_nothrow_constructible_v<Value, From>)
+        : value_{std::in_place, std::forward<From>(value)}
     {
     }
 
-    /// Sets the field to a value.
-    constexpr parameter& operator=(Value value) noexcept(
-        std::is_nothrow_move_constructible_v<Value>)
+    /// Sets the field to a value, or to whatever the value is built from.
+    template<class From>
+        requires(!std::same_as<std::remove_cvref_t<From>, parameter>)
+        && std::constructible_from<Value, From>
+    constexpr parameter& operator=(From&& value) noexcept(
+        std::is_nothrow_constructible_v<Value, From>)
     {
-        value_ = std::move(value);
+        value_.emplace(std::forward<From>(value));
         return *this;
+    }
+
+    /// From the elements of a value written as a braced list, e.g. `{1.0,
+    /// 2.0}` for a field of std::array or std::vector.
+    template<class... Elements>
+        requires(sizeof...(Elements) >= 2) && requires { typename Value::value_type; }
+    && (std::convertible_to<Elements, typename Value::value_type> && ...)
+    constexpr parameter(Elements&&... elements)
+        : value_{
+              std::in_place,
+              Value{static_cast<typename Value::value_type>(elements)...}}
+    {
+    }
+
+    /// From a value, which the field is then set to: a value written as a
+    /// braced list, as an array or a vector takes one.
+    constexpr parameter(Value value) noexcept(std::is_nothrow_move_constructible_v<Value>)
+        : value_{std::in_place, std::move(value)}
+    {
     }
 
     /// Whether anything has set the field, its default included.

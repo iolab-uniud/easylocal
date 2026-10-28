@@ -1162,6 +1162,11 @@ easylocal_add_compile_failure_test(
     "the name of a parameter field is a segment of its path"
 )
 easylocal_add_compile_failure_test(
+    field-without-parameter
+    field_without_parameter.cpp
+    "a field of a parameter block is declared config::parameter"
+)
+easylocal_add_compile_failure_test(
     range-of-mixed-numbers
     range_of_mixed_numbers.cpp
     "no matching function for call to"

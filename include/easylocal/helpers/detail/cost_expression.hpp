@@ -384,13 +384,13 @@ struct sum_term_weight<cost::weighted_term<Child, Weight>, ChildCost>
 template<class Weight, std::size_t Size>
 struct sum_parameters
 {
-    std::array<Weight, Size> weights{};
+    config::parameter<std::array<Weight, Size>, "weights"> weights;
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"weights", &sum_parameters::weights>(
+            config::field<&sum_parameters::weights>(
                 "Weights of the terms of the sum",
                 easylocal::unlimited));
     }
@@ -403,7 +403,7 @@ struct sum_parameters
         // A negative weight may be intended; NaN and infinity are not.
         if constexpr (std::floating_point<Weight>)
         {
-            for (const auto weight : weights)
+            for (const auto weight : weights.value())
                 if (!(weight >= std::numeric_limits<Weight>::lowest()
                         && weight <= (std::numeric_limits<Weight>::max)()))
                     return config::validation_result::failure("weights must be finite");
@@ -453,17 +453,16 @@ public:
         : parameters_{std::apply(
               [](const auto&... term) {
                   return parameters_type{
-                      .weights = {
-                          sum_term<std::remove_cvref_t<decltype(term)>>::
-                              template weight<cost_type>(term)...,
-                      },
+                      .weights =
+                          std::array<cost_type, sizeof...(Terms)>{
+                              sum_term<std::remove_cvref_t<
+                                  decltype(term)>>::template weight<cost_type>(term)...,
+                          },
                   };
               },
               expression.terms)},
           children_{std::apply(
-              [](auto&... term) {
-                  return children_type{make_child(std::move(term))...};
-              },
+              [](auto&... term) { return children_type{make_child(std::move(term))...}; },
               expression.terms)}
     {
     }
@@ -487,13 +486,12 @@ public:
     cost_type evaluate(const Values& values) const
     {
         return [&]<std::size_t... Indices>(std::index_sequence<Indices...>) {
-            return static_cast<cost_type>(
-                (cost_type{} + ... +
-                 static_cast<cost_type>(
-                     parameters_.weights[Indices] *
-                     static_cast<cost_type>(
-                         std::get<Indices>(children_).template evaluate<
-                             Offset + offsets[Indices]>(values)))));
+            return static_cast<cost_type>((
+                cost_type{} + ...
+                + static_cast<cost_type>(
+                    parameters_.weights.value()[Indices]
+                    * static_cast<cost_type>(std::get<Indices>(children_)
+                            .template evaluate<Offset + offsets[Indices]>(values)))));
         }(std::index_sequence_for<Terms...>{});
     }
 

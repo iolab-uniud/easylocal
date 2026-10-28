@@ -104,6 +104,21 @@ reviewed by hand before tagging.
 
 ### Parameters
 
+- **Breaking:** every field of a parameter block is a `config::parameter<Value,
+  "name">`, and its default is its member initializer: `config::parameter<double,
+  "cooling_rate"> cooling_rate{0.95}`. A field declared without one is required,
+  so that reading it before anything sets it throws `config::parameter_not_set`
+  and `validate()` reports it by its path, `cooling_rate: not set, and it has no
+  default`. A field whose default was the value-initialized one says so, as
+  `target{""}` does. A parameter converts to its value, so it reads like the
+  value it holds; where a template deduces its argument, such as `(std::max)(a,
+  b)` or a comparison of a `std::string` with a literal, `value()` spells the
+  value out. A plain member no longer compiles: its default would be implicit.
+- **Breaking:** `config::field<&P::member>("...")` takes the name of the field
+  from the member instead of repeating it: the former `config::field<"name",
+  &P::member>` is gone. `config::group<"name", &P::member>` is unchanged.
+- `config::parameter_info` says whether anything has set the parameter
+  (`set`), and the value of one that nothing has set is empty.
 - **Breaking:** a parameter set is applied and validated by its members
   only: the free `config::apply_overrides(set, overrides)` and
   `config::validate(set)` are gone, use `set.apply(overrides)` and

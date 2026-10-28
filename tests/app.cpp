@@ -146,7 +146,7 @@ void app_owns_runner_configuration_and_names()
     assert((application.runner_names() == std::vector<std::string_view>{"fi", "bi"}));
     assert(
         application.runner_parameters<easylocal::runners::FirstImprovement>("fi")
-            .max_evaluations
+            .max_evaluations.value()
         == 100);
 }
 
@@ -521,11 +521,11 @@ void app_builder_pipes_and_registration_parameters()
     static_assert(std::same_as<decltype(fluent), decltype(piped)>);
     assert(
         fluent.runner_parameters<easylocal::runners::FirstImprovement>("fi")
-            .max_evaluations
+            .max_evaluations.value()
         == 5);
     assert(
         piped.runner_parameters<easylocal::runners::FirstImprovement>("fi")
-            .max_evaluations
+            .max_evaluations.value()
         == 5);
     assert(piped.runner_names().front() == "fi");
 }

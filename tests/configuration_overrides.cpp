@@ -21,23 +21,22 @@ using easylocal::runners::temperature::FixedLengthParameters;
 
 struct AppParameters
 {
-    std::filesystem::path instance_file{"initial.dat"};
-    std::uint64_t seed{17U};
+    easylocal::config::parameter<std::filesystem::path, "instance_file"> instance_file{
+        "initial.dat"};
+    easylocal::config::parameter<std::uint64_t, "seed"> seed{17U};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<
-                "instance_file",
-                &AppParameters::instance_file>(),
-            easylocal::config::field<"seed", &AppParameters::seed>());
+            easylocal::config::field<&AppParameters::instance_file>(),
+            easylocal::config::field<&AppParameters::seed>());
     }
 
     [[nodiscard]]
     auto validate() const noexcept -> easylocal::config::validation_result
     {
-        return instance_file.empty()
+        return instance_file.value().empty()
             ? easylocal::config::validation_result::failure(
                   "instance_file must not be empty")
             : easylocal::config::validation_result::success();
@@ -81,7 +80,7 @@ void text_overrides_apply_to_multiple_typed_blocks()
     assert(temperature.final_temperature == 0.05);
     assert(temperature.cooling_rate == 0.8);
     assert(temperature.allowed_iterations == 500);
-    assert((neighborhood.random_biases == std::array{3.0, 1.0}));
+    assert((neighborhood.random_biases.value() == std::array{3.0, 1.0}));
 }
 
 void cross_field_overrides_are_validated_as_one_block()
@@ -189,7 +188,7 @@ void unbracketed_fixed_arrays_are_supported()
 
     const auto result = tree.apply(overrides);
     assert(result);
-    assert((neighborhood.random_biases == std::array{2.5, 0.0}));
+    assert((neighborhood.random_biases.value() == std::array{2.5, 0.0}));
 }
 
 
@@ -217,7 +216,7 @@ void parameter_group_local_values_can_be_overridden()
     const auto result = tree.apply(overrides);
     assert(result);
     assert(result.applied_parameter_blocks == 1);
-    assert((neighborhood.random_biases == std::array{4.0, 1.0}));
+    assert((neighborhood.random_biases.value() == std::array{4.0, 1.0}));
     assert(temperature.initial_temperature == 8.0);
 }
 
@@ -288,7 +287,7 @@ void diagnostics_accumulate_across_independent_failures()
 
     assert(app.seed == 17U);
     assert(temperature.cooling_rate == 0.75);
-    assert((neighborhood.random_biases == std::array{1.0, 1.0}));
+    assert((neighborhood.random_biases.value() == std::array{1.0, 1.0}));
 }
 
 

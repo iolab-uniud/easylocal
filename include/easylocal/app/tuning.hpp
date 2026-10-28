@@ -47,29 +47,29 @@ struct TuningParameters
 {
     /// The directory where the files of an irace scenario are written; empty:
     /// none.
-    std::filesystem::path irace{};
+    config::parameter<std::filesystem::path, "irace"> irace{""};
     /// What a run prints: empty for the usual report, "cost" for the cost as
     /// one number, "cost_time" for the cost and the running time in seconds.
-    std::string print{};
+    config::parameter<std::string, "print"> print{""};
     /// The weight of a hard cost over a soft one, and of each lexicographic
     /// value over the next, when a cost is turned into one number; it must
     /// exceed every soft cost, and the number must stay below 2^53, where a
     /// double still holds the lower levels exactly.
-    double hard_weight{1e9};
+    config::parameter<double, "hard_weight"> hard_weight{1e9};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"irace", &TuningParameters::irace>(
+            config::field<&TuningParameters::irace>(
                 "Write the files of an irace scenario to this directory, and exit",
                 easylocal::unlimited),
-            config::field<"print", &TuningParameters::print>(
+            config::field<&TuningParameters::print>(
                 "Print only the cost as one number (cost), or the cost and the "
                 "running time (cost_time); empty: the usual report",
                 config::one_of("", "cost", "cost_time")),
-            config::field<"hard_weight", &TuningParameters::hard_weight>(
+            config::field<&TuningParameters::hard_weight>(
                 "Weight of the hard cost over the soft one in the printed number",
                 config::range(0.0, easylocal::unlimited).open_low()));
     }

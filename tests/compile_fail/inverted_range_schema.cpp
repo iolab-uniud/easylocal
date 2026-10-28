@@ -4,12 +4,12 @@
 
 struct Parameters
 {
-    double rate{0.5};
+    easylocal::config::parameter<double, "rate"> rate{0.5};
 
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<"rate", &Parameters::rate>(
+            easylocal::config::field<&Parameters::rate>(
                 "Rate",
                 easylocal::config::range(1.0, 0.0)));
     }

@@ -20,15 +20,15 @@ namespace config = easylocal::config;
 
 struct Schedule
 {
-    double start{10.0};
-    double end{1.0};
+    config::parameter<double, "start"> start{10.0};
+    config::parameter<double, "end"> end{1.0};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"start", &Schedule::start>("Start"),
-            config::field<"end", &Schedule::end>("End"),
+            config::field<&Schedule::start>("Start"),
+            config::field<&Schedule::end>("End"),
             config::require(
                 config::value<"end"> < config::value<"start">,
                 "end must be below start"));
@@ -43,28 +43,26 @@ struct Schedule
 
 struct Search
 {
-    std::size_t samples{0};
-    double acceptance{0.5};
-    std::string policy{"fixed"};
-    std::size_t tenure{5};
-    double reheat{2.0};
+    config::parameter<std::size_t, "samples"> samples{0};
+    config::parameter<double, "acceptance"> acceptance{0.5};
+    config::parameter<std::string, "policy"> policy{"fixed"};
+    config::parameter<std::size_t, "tenure"> tenure{5};
+    config::parameter<double, "reheat"> reheat{2.0};
     Schedule schedule{};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"samples", &Search::samples>("Samples"),
-            config::field<"acceptance", &Search::acceptance>(
+            config::field<&Search::samples>("Samples"),
+            config::field<&Search::acceptance>(
                 "Acceptance",
                 config::range(0.0, 1.0).open())
                 .only_if(config::value<"samples"> > 0),
-            config::field<"policy", &Search::policy>(
-                "Policy",
-                config::one_of("fixed", "random")),
-            config::field<"tenure", &Search::tenure>("Tenure", config::range(1, 100))
+            config::field<&Search::policy>("Policy", config::one_of("fixed", "random")),
+            config::field<&Search::tenure>("Tenure", config::range(1, 100))
                 .only_if(config::value<"policy"> == "fixed"),
-            config::field<"reheat", &Search::reheat>("Reheat"),
+            config::field<&Search::reheat>("Reheat"),
             config::group<"schedule", &Search::schedule>("Schedule"),
             // A requirement may name the fields of a nested group.
             config::require(
@@ -93,15 +91,15 @@ static_assert(config::evaluate(
 // unlimited is +infinity, and a minus applies after the conversion.
 struct Counts
 {
-    std::size_t count{7};
-    easylocal::limit budget{easylocal::unlimited};
+    config::parameter<std::size_t, "count"> count{7};
+    config::parameter<easylocal::limit, "budget"> budget{easylocal::unlimited};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"count", &Counts::count>("Count", config::range(0, 100)),
-            config::field<"budget", &Counts::budget>(
+            config::field<&Counts::count>("Count", config::range(0, 100)),
+            config::field<&Counts::budget>(
                 "Budget",
                 config::range(0, easylocal::unlimited)));
     }
@@ -239,13 +237,13 @@ void built_in_schemas_declare_their_relations()
 // A limit in an expression: unlimited is above every count.
 struct Budgeted
 {
-    easylocal::limit budget{easylocal::unlimited};
+    config::parameter<easylocal::limit, "budget"> budget{easylocal::unlimited};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"budget", &Budgeted::budget>(
+            config::field<&Budgeted::budget>(
                 "Budget",
                 config::range(0, easylocal::unlimited)),
             config::require(config::value<"budget"> > 1000, "budget must be above 1000"));

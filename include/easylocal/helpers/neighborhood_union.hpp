@@ -47,7 +47,7 @@ struct NeighborhoodUnionParameters
 
     /// The relative weight of each child when a random move draws one (default
     /// 1, finite and non-negative; 0 excludes the child).
-    std::array<double, Count> random_biases = [] {
+    config::parameter<std::array<double, Count>, "random_biases"> random_biases = [] {
         std::array<double, Count> biases{};
         biases.fill(1.0);
         return biases;
@@ -58,7 +58,7 @@ struct NeighborhoodUnionParameters
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"random_biases", &NeighborhoodUnionParameters::random_biases>(
+            config::field<&NeighborhoodUnionParameters::random_biases>(
                 "Relative weights for random child-neighborhood selection",
                 config::range(0.0, easylocal::unlimited)));
     }
@@ -69,7 +69,7 @@ struct NeighborhoodUnionParameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
-        for (const auto bias : random_biases)
+        for (const auto bias : random_biases.value())
         {
             if (!std::isfinite(bias) || bias < 0.0)
             {

@@ -39,12 +39,12 @@ struct Captured
 // A program parameter, given to cli::run next to its own.
 struct Extra
 {
-    std::uint64_t level{1};
+    easylocal::config::parameter<std::uint64_t, "level"> level{1};
 
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<"level", &Extra::level>("A program parameter"));
+            easylocal::config::field<&Extra::level>("A program parameter"));
     }
 
     easylocal::config::validation_result validate() const

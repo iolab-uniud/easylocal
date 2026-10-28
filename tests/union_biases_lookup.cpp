@@ -25,5 +25,5 @@ int main()
             easylocal::neighborhood<plain::First>(),
             easylocal::neighborhood<plain::Second>())
         | easylocal::random_biases(2.0, 1.0);
-    return spec.parameters().random_biases == std::array{2.0, 1.0} ? 0 : 1;
+    return spec.parameters().random_biases.value() == std::array{2.0, 1.0} ? 0 : 1;
 }

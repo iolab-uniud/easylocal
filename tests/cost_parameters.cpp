@@ -60,12 +60,12 @@ private:
 
 struct PickParameters
 {
-    int picks{3};
+    config::parameter<int, "picks"> picks{3};
 
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"picks", &PickParameters::picks>(
+            config::field<&PickParameters::picks>(
                 "Values picked by the initial solution",
                 config::range(0, 3)));
     }
@@ -116,12 +116,12 @@ private:
 
 struct ThresholdParameters
 {
-    int threshold{4};
+    config::parameter<int, "threshold"> threshold{4};
 
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"threshold", &ThresholdParameters::threshold>(
+            config::field<&ThresholdParameters::threshold>(
                 "Values above it count",
                 config::range(0, 100)));
     }
@@ -229,12 +229,12 @@ private:
 
 struct ExcessParameters
 {
-    int bound{10};
+    config::parameter<int, "bound"> bound{10};
 
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"bound", &ExcessParameters::bound>(
+            config::field<&ExcessParameters::bound>(
                 "The largest total without excess",
                 config::range(0, 1000)));
     }

@@ -21,16 +21,14 @@ struct FirstImprovementParameters
 {
     /// Evaluation budget, including the initial evaluation; unlimited by
     /// default: the search runs until a local optimum.
-    limit max_evaluations{unlimited};
+    config::parameter<limit, "max_evaluations"> max_evaluations{unlimited};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<
-                "max_evaluations",
-                &FirstImprovementParameters::max_evaluations>(
+            config::field<&FirstImprovementParameters::max_evaluations>(
                 "Maximum number of solution evaluations "
                 "(unlimited: until a local optimum)",
                 config::range(0, easylocal::unlimited)));

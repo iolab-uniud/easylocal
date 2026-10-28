@@ -25,36 +25,36 @@ namespace easylocal::runners
 struct GreatDelugeParameters
 {
     /// Initial water level, as a factor of the initial cost.
-    double initial_level{1.1};
+    config::parameter<double, "initial_level"> initial_level{1.1};
     /// The search stops when the level falls below this factor of the best
     /// cost.
-    double min_level{0.9};
+    config::parameter<double, "min_level"> min_level{0.9};
     /// Multiplicative decrease of the level.
-    double level_rate{0.99};
+    config::parameter<double, "level_rate"> level_rate{0.99};
     /// Proposals at each level.
-    std::size_t neighbors_sampled{100};
+    config::parameter<std::size_t, "neighbors_sampled"> neighbors_sampled{100};
     /// Evaluation budget, including the initial evaluation; unlimited by
     /// default.
-    limit max_evaluations{unlimited};
+    config::parameter<limit, "max_evaluations"> max_evaluations{unlimited};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"initial_level", &GreatDelugeParameters::initial_level>(
+            config::field<&GreatDelugeParameters::initial_level>(
                 "Initial water level, as a factor of the initial cost",
                 config::range(0.0, easylocal::unlimited).open()),
-            config::field<"min_level", &GreatDelugeParameters::min_level>(
+            config::field<&GreatDelugeParameters::min_level>(
                 "Final water level, as a factor of the best cost",
                 config::range(0.0, easylocal::unlimited).open()),
-            config::field<"level_rate", &GreatDelugeParameters::level_rate>(
+            config::field<&GreatDelugeParameters::level_rate>(
                 "Multiplicative decrease of the water level",
                 config::range(0.0, 1.0).open()),
-            config::field<"neighbors_sampled", &GreatDelugeParameters::neighbors_sampled>(
+            config::field<&GreatDelugeParameters::neighbors_sampled>(
                 "Number of proposals at each water level",
                 config::range(1, easylocal::unlimited)),
-            config::field<"max_evaluations", &GreatDelugeParameters::max_evaluations>(
+            config::field<&GreatDelugeParameters::max_evaluations>(
                 "Maximum number of solution evaluations, or unlimited",
                 config::range(0, easylocal::unlimited)),
             config::require(

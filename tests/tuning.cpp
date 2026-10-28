@@ -255,12 +255,12 @@ struct Captured
 // A program parameter that names a file.
 struct Files
 {
-    std::filesystem::path table{};
+    config::parameter<std::filesystem::path, "table"> table{""};
 
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"table", &Files::table>("A file", easylocal::unlimited));
+            config::field<&Files::table>("A file", easylocal::unlimited));
     }
 
     config::validation_result validate() const
@@ -586,22 +586,22 @@ void parameters_get_irace_identifiers()
 // unlimited limit and a text.
 struct Related
 {
-    double low{0.2};
-    double high{0.8};
-    double scale{5.0};
-    bool verbose{false};
-    easylocal::limit budget{easylocal::unlimited};
-    std::string label{"plain"};
+    config::parameter<double, "low"> low{0.2};
+    config::parameter<double, "high"> high{0.8};
+    config::parameter<double, "scale"> scale{5.0};
+    config::parameter<bool, "verbose"> verbose{false};
+    config::parameter<easylocal::limit, "budget"> budget{easylocal::unlimited};
+    config::parameter<std::string, "label"> label{"plain"};
 
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"low", &Related::low>("Low", config::range(0.0, 1.0)),
-            config::field<"high", &Related::high>("High", config::range(0.0, 1.0)),
-            config::field<"scale", &Related::scale>("Scale"),
-            config::field<"verbose", &Related::verbose>("Verbose"),
-            config::field<"budget", &Related::budget>("Budget"),
-            config::field<"label", &Related::label>("Label"),
+            config::field<&Related::low>("Low", config::range(0.0, 1.0)),
+            config::field<&Related::high>("High", config::range(0.0, 1.0)),
+            config::field<&Related::scale>("Scale"),
+            config::field<&Related::verbose>("Verbose"),
+            config::field<&Related::budget>("Budget"),
+            config::field<&Related::label>("Label"),
             config::require(
                 config::value<"low"> < config::value<"high">,
                 "low must be below high"),

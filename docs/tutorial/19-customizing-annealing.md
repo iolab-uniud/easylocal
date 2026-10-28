@@ -205,8 +205,9 @@ settings available to configuration and tuning:
 struct ReheatOnRejectionParameters
 {
     easylocal::runners::temperature::ClassicParameters descent{};
-    std::size_t rejections_before_reheat{100};
-    std::size_t allowed_reheats{2};
+    easylocal::config::parameter<std::size_t, "rejections_before_reheat">
+        rejections_before_reheat{100};
+    easylocal::config::parameter<std::size_t, "allowed_reheats"> allowed_reheats{2};
 
     static consteval auto parameter_schema()
     {
@@ -214,12 +215,10 @@ struct ReheatOnRejectionParameters
         return cfg::fields(
             cfg::group<"descent", &ReheatOnRejectionParameters::descent>(
                 "The geometric cooling schedule"),
-            cfg::field<
-                "rejections_before_reheat",
-                &ReheatOnRejectionParameters::rejections_before_reheat>(
+            cfg::field<&ReheatOnRejectionParameters::rejections_before_reheat>(
                 "Consecutive rejected proposals before reheating",
                 cfg::range(1, easylocal::unlimited)),
-            cfg::field<"allowed_reheats", &ReheatOnRejectionParameters::allowed_reheats>(
+            cfg::field<&ReheatOnRejectionParameters::allowed_reheats>(
                 "Maximum reheats (0: cooling only)",
                 cfg::range(0, easylocal::unlimited)));
     }

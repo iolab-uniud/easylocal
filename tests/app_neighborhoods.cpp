@@ -32,12 +32,12 @@ using el::runners::FirstImprovement;
 
 struct WindowParameters
 {
-    std::size_t window{1};
+    easylocal::config::parameter<std::size_t, "window"> window{1};
 
     static consteval auto parameter_schema()
     {
         return el::config::fields(
-            el::config::field<"window", &WindowParameters::window>(
+            el::config::field<&WindowParameters::window>(
                 "The largest distance between the swapped positions",
                 el::config::range(std::size_t{1}, std::size_t{100})));
     }

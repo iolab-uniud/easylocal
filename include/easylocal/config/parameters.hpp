@@ -13,6 +13,7 @@
 #include <easylocal/config/domain.hpp>
 #include <easylocal/config/fixed_string.hpp>
 #include <easylocal/config/overrides.hpp>
+#include <easylocal/config/parameter.hpp>
 
 #include <concepts>
 #include <cstddef>
@@ -136,9 +137,18 @@ struct parameter_field
     /// The parameter block the member belongs to.
     using owner_type = typename detail::member_pointer_traits<
         member_pointer_type>::owner_type;
-    /// The type of the member.
-    using value_type = typename detail::member_pointer_traits<
-        member_pointer_type>::value_type;
+    /// The type of the member, a config::parameter.
+    using member_type =
+        typename detail::member_pointer_traits<member_pointer_type>::value_type;
+
+    static_assert(
+        detail::is_parameter_v<member_type>,
+        "a field of a parameter block is declared config::parameter<Value, "
+        "\"name\">: its default is its member initializer, and a field without "
+        "one is required");
+
+    /// The type of the value the field holds.
+    using value_type = detail::parameter_value_t<member_type>;
     /// The type of the domain: no_domain, a range_domain or a choice_domain.
     using domain_type = Domain;
 
@@ -178,14 +188,39 @@ struct parameter_field
     }
 };
 
+namespace detail
+{
+
+// The name a member carries, as a template argument: the name of the field it
+// declares. A member that is not a parameter has none, and keeps a name the
+// descriptor accepts, so that its own static_assert reports it.
+template<auto Member>
+[[nodiscard]]
+consteval auto member_name_of() noexcept
+{
+    using member_type = typename member_pointer_traits<decltype(Member)>::value_type;
+    if constexpr (is_parameter_v<member_type>)
+        return member_type::name_literal;
+    else
+        return fixed_string{"not_a_parameter"};
+}
+
+template<auto Member>
+inline constexpr auto member_name_v = member_name_of<Member>();
+
+} // namespace detail
+
 /// The descriptor of a field of a parameter block, e.g.
-/// `field<"size", &MyParameters::size>("Description")`, with the values it may
-/// take as the second argument:
-/// `field<"cooling_rate", &P::cooling_rate>("...", range(0.0, 1.0).open())`.
-template<fixed_string Name, auto Member, class Domain = no_domain>
+/// `field<&MyParameters::size>("Description")`, with the values it may take as
+/// the second argument:
+/// `field<&P::cooling_rate>("...", range(0.0, 1.0).open())`.
+///
+/// The name of the field is the one its member carries, `config::parameter<T,
+/// "cooling_rate">`.
+template<auto Member, class Domain = no_domain>
     requires std::is_member_object_pointer_v<decltype(Member)> && is_domain_v<Domain>
 [[nodiscard]]
-constexpr parameter_field<Name, Member, Domain> field(
+constexpr parameter_field<detail::member_name_v<Member>, Member, Domain> field(
     const std::string_view description = {},
     const Domain domain = {}) noexcept
 {
@@ -193,12 +228,12 @@ constexpr parameter_field<Name, Member, Domain> field(
 }
 
 /// The descriptor of a field that takes any value of its type, e.g.
-/// `field<"seed", &P::seed>("Seed", easylocal::unlimited)`: a seed, free text,
-/// a number that may be negative.
-template<fixed_string Name, auto Member>
+/// `field<&P::seed>("Seed", easylocal::unlimited)`: a seed, free text, a
+/// number that may be negative.
+template<auto Member>
     requires std::is_member_object_pointer_v<decltype(Member)>
 [[nodiscard]]
-constexpr parameter_field<Name, Member, unbounded_domain> field(
+constexpr parameter_field<detail::member_name_v<Member>, Member, unbounded_domain> field(
     const std::string_view description,
     easylocal::unlimited_t) noexcept
 {
@@ -376,8 +411,11 @@ inline constexpr auto schema_v = std::remove_cvref_t<Block>::parameter_schema();
 
 } // namespace detail
 
-/// Calls `function(descriptor, value)` on each field of a block, without its
-/// nested groups; the value is const when the block is.
+/// Calls `function(descriptor, parameter)` on each field of a block, without
+/// its nested groups; the parameter is const when the block is.
+///
+/// The second argument is the config::parameter the field declares, which
+/// tells whether anything has set it and holds its value.
 template<class Parameters, class Function>
     requires parameter_block<std::remove_cvref_t<Parameters>>
 constexpr void for_each_parameter(Parameters&& parameters, Function&& function)
@@ -470,11 +508,29 @@ struct field_reader
 
     template<class Reference>
     [[nodiscard]]
-    constexpr const auto& operator()(const Reference&) const noexcept
+    constexpr const auto& operator()(const Reference&) const
     {
-        return field_at<Reference::path_literal>(block);
+        return field_at<Reference::path_literal>(block).value();
     }
 };
+
+// Whether every field an expression refers to is set: an expression that
+// refers to one that is not cannot be evaluated, and the fields that are not
+// set are reported on their own.
+template<class Block, class Expression>
+[[nodiscard]]
+constexpr bool references_are_set(const Expression& node, const Block& block)
+{
+    if constexpr (requires { Expression::path_literal; })
+        return field_at<Expression::path_literal>(block).is_set();
+    else if constexpr (requires { node.operand; })
+        return references_are_set(node.operand, block);
+    else if constexpr (requires { node.left; })
+        return references_are_set(node.left, block)
+            && references_are_set(node.right, block);
+    else
+        return true;
+}
 
 } // namespace detail
 
@@ -496,6 +552,10 @@ constexpr bool is_active(const Descriptor& descriptor, const Block& block)
     if constexpr (std::same_as<
                       std::remove_cvref_t<decltype(descriptor.condition)>,
                       no_condition>)
+        return true;
+    else if (!detail::references_are_set(descriptor.condition, block))
+        // The condition cannot be read: the field matters until the fields it
+        // refers to are set.
         return true;
     else
         return static_cast<bool>(evaluate(descriptor.condition, block));
@@ -519,11 +579,11 @@ constexpr std::string join_path(
     return path;
 }
 
-// The fields of a block that matter, not of its nested groups, that lie
-// outside their domains, and the requirements that do not hold, in the order
-// of the schema: report(path, message) for each, with the path of the field,
-// or of the block for a requirement, until report returns false. Whether
-// there were none.
+// The fields of a block that matter, not of its nested groups, that nothing
+// has set or that lie outside their domains, and the requirements that do not
+// hold, in the order of the schema: report(path, message) for each, with the
+// path of the field, or of the block for a requirement, until report returns
+// false. Whether there were none.
 template<class Block, class Report>
 constexpr bool schema_diagnostics(
     const Block& block,
@@ -541,7 +601,9 @@ constexpr bool schema_diagnostics(
                         return;
                     if constexpr (is_parameter_requirement_v<descriptor_type>)
                     {
-                        if (!static_cast<bool>(evaluate(descriptors.expression, block)))
+                        if (references_are_set(descriptors.expression, block)
+                            && !static_cast<bool>(
+                                evaluate(descriptors.expression, block)))
                         {
                             valid = false;
                             reporting = report(
@@ -551,16 +613,24 @@ constexpr bool schema_diagnostics(
                     }
                     else if constexpr (!is_parameter_group_v<descriptor_type>)
                     {
-                        const auto& value = block.*descriptor_type::member;
-                        if (is_active(descriptors, block)
-                            && !domain_contains(descriptors.domain, value))
+                        const auto& parameter = block.*descriptor_type::member;
+                        if (!is_active(descriptors, block))
+                            return;
+                        if (!parameter.is_set())
+                        {
+                            valid = false;
+                            reporting = report(
+                                join_path(prefix, descriptor_type::name()),
+                                "not set, and it has no default");
+                        }
+                        else if (!domain_contains(descriptors.domain, parameter.value()))
                         {
                             valid = false;
                             reporting = report(
                                 join_path(prefix, descriptor_type::name()),
                                 "expected a value in "
                                     + describe_domain(descriptors.domain).text()
-                                    + ", got " + format_value(value));
+                                    + ", got " + format_value(parameter.value()));
                         }
                     }
                 }(),
@@ -573,12 +643,14 @@ constexpr bool schema_diagnostics(
 } // namespace detail
 
 /// Whether a block meets its schema, and the first reason it does not: each
-/// field that matters lies in its domain, each requirement holds, and then each
-/// nested group is valid.
+/// field that matters is set and lies in its domain, each requirement holds,
+/// and then each nested group is valid.
 ///
 /// It is the check a validate() makes for what its schema declares. The reason
 /// is a requirement's message, or the field and its domain:
-/// `cooling_rate: expected a value in (0, 1), got 2`.
+/// `cooling_rate: expected a value in (0, 1), got 2`; a field that nothing has
+/// set, and whose member initializer gives it no default, reads
+/// `cooling_rate: not set, and it has no default`.
 ///
 /// A group is checked with its own validate(), or with check_schema when it
 /// has none, so that a block made in the code is checked whole.

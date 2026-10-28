@@ -54,19 +54,19 @@ struct tolerance
 {
     /// The tolerance relative to the larger magnitude of the two values
     /// (default 1e-9).
-    double relative{1e-9};
+    config::parameter<double, "relative"> relative{1e-9};
     /// The tolerance near zero, in the unit of the cost (default 1e-9).
-    double absolute{1e-9};
+    config::parameter<double, "absolute"> absolute{1e-9};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"relative", &tolerance::relative>(
+            config::field<&tolerance::relative>(
                 "Tolerance relative to the larger magnitude of two costs",
                 config::range(0.0, easylocal::unlimited)),
-            config::field<"absolute", &tolerance::absolute>(
+            config::field<&tolerance::absolute>(
                 "Tolerance near zero, in the unit of the cost",
                 config::range(0.0, easylocal::unlimited)));
     }

@@ -53,26 +53,26 @@ struct StageParameters
 {
     /// The runs of the stage, at least 1: it runs again while its target is not
     /// reached, and keeps the best run.
-    std::size_t attempts{1};
+    config::parameter<std::size_t, "attempts"> attempts{1};
     /// The seconds the stage may run, all its attempts together; inf: no
     /// limit of its own (the solve's still applies).
-    double timeout{std::numeric_limits<double>::infinity()};
+    config::parameter<double, "timeout"> timeout{std::numeric_limits<double>::infinity()};
     /// The evaluations the stage may make, all its attempts together;
     /// unlimited: no budget of its own (the solve's still applies).
-    limit max_evaluations{unlimited};
+    config::parameter<limit, "max_evaluations"> max_evaluations{unlimited};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"attempts", &StageParameters::attempts>(
+            config::field<&StageParameters::attempts>(
                 "Runs of the stage while its target is not reached; the best is kept",
                 config::range(1, easylocal::unlimited)),
-            config::field<"timeout", &StageParameters::timeout>(
+            config::field<&StageParameters::timeout>(
                 "Seconds the stage may run, its attempts together; inf: no limit",
                 config::range(0.0, easylocal::unlimited)),
-            config::field<"max_evaluations", &StageParameters::max_evaluations>(
+            config::field<&StageParameters::max_evaluations>(
                 "Evaluations the stage may make, its attempts together",
                 config::range(0, easylocal::unlimited)));
     }
@@ -347,8 +347,8 @@ private:
             budget.deadline = easylocal::detail::deadline_after(
                 easylocal::detail::steady_time_limit(parameters_.timeout));
         }
-        if (!parameters_.max_evaluations.is_unlimited())
-            budget.evaluations = parameters_.max_evaluations;
+        if (!parameters_.max_evaluations.value().is_unlimited())
+            budget.evaluations = parameters_.max_evaluations.value();
         return budget;
     }
 

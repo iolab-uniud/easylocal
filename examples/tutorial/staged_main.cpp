@@ -20,28 +20,27 @@ namespace
 
 struct MainParameters
 {
-    std::filesystem::path instance;
-    std::uint64_t seed{0};
-    std::size_t evaluations_per_city{0};
+    easylocal::config::parameter<std::filesystem::path, "instance"> instance;
+    easylocal::config::parameter<std::uint64_t, "seed"> seed{0};
+    easylocal::config::parameter<std::size_t, "evaluations_per_city">
+        evaluations_per_city{0};
 
     static consteval auto parameter_schema()
     {
         namespace config = easylocal::config;
         return config::fields(
-            config::field<"instance", &MainParameters::instance>(
+            config::field<&MainParameters::instance>(
                 "Input instance",
                 easylocal::unlimited),
-            config::field<"seed", &MainParameters::seed>(
-                "Random seed",
-                easylocal::unlimited),
-            config::field<"evaluations_per_city", &MainParameters::evaluations_per_city>(
+            config::field<&MainParameters::seed>("Random seed", easylocal::unlimited),
+            config::field<&MainParameters::evaluations_per_city>(
                 "Descent budget per city (0: until a local optimum)",
                 config::range(0, easylocal::unlimited)));
     }
 
     easylocal::config::validation_result validate() const
     {
-        if (instance.empty())
+        if (instance.value().empty())
             return easylocal::config::validation_result::failure("instance must be set");
         return easylocal::config::validation_result::success();
     }

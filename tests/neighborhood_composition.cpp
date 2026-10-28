@@ -463,7 +463,7 @@ int main()
             static_cast<bool>(configuration.apply(valid)),
             "neighborhood union accepts valid runtime recipe parameters");
         ok &= expect(
-            configured_union.parameters().random_biases
+            configured_union.parameters().random_biases.value()
                 == std::array<double, 3>{0.0, 2.0, 0.0},
             "neighborhood union configuration update changes the recipe state");
 
@@ -473,7 +473,7 @@ int main()
             !configuration.apply(invalid),
             "neighborhood union rejects invalid runtime recipe parameters");
         ok &= expect(
-            configured_union.parameters().random_biases
+            configured_union.parameters().random_biases.value()
                 == std::array<double, 3>{0.0, 2.0, 0.0},
             "invalid neighborhood union update leaves the recipe unchanged");
     }

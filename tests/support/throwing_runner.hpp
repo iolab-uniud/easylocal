@@ -30,12 +30,12 @@ struct ThrowingRunnerParameters
 {
     // The moves made before the failure; unlimited: it never fails, and ends
     // at a solution without moves or when it is stopped.
-    easylocal::limit fail_after{3};
+    easylocal::config::parameter<easylocal::limit, "fail_after"> fail_after{3};
 
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<"fail_after", &ThrowingRunnerParameters::fail_after>(
+            easylocal::config::field<&ThrowingRunnerParameters::fail_after>(
                 "Moves made before the run throws, or unlimited",
                 easylocal::config::range(0, easylocal::unlimited)));
     }
@@ -68,7 +68,7 @@ public:
         std::size_t moves = 0;
         while (!run.should_stop())
         {
-            if (moves >= parameters_.fail_after)
+            if (moves >= parameters_.fail_after.value())
                 throw std::runtime_error{std::string{failure}};
             auto move = run.random_move(solution, rng);
             if (!move.has_value())

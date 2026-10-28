@@ -4,13 +4,13 @@
 
 struct Parameters
 {
-    std::string policy{"tabu"};
+    easylocal::config::parameter<std::string, "policy"> policy{"tabu"};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<"policy", &Parameters::policy>(
+            easylocal::config::field<&Parameters::policy>(
                 "A policy",
                 easylocal::config::range(0, 1)));
     }

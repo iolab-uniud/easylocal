@@ -415,7 +415,8 @@ int main()
             easylocal::config::text_override{"max_iterations", "7"}};
         ok &= expect(
             static_cast<bool>(configuration.apply(changes))
-                && parameters.candidates.min_moves == 3 && parameters.max_iterations == 7,
+                && parameters.candidates.min_moves == 3
+                && parameters.max_iterations.value() == 7,
             "the parameters of a candidate strategy are the group candidates");
         static_assert(std::same_as<
             FirstImprovementTabuSearch<>::parameters_type,
@@ -441,7 +442,7 @@ int main()
             easylocal::config::text_override{"tabu_list.tenures", "[3, 4]"}};
         ok &= expect(
             static_cast<bool>(configuration.apply(tenures))
-                && parameters.tabu_list.tenures == std::vector<std::size_t>{3, 4},
+                && parameters.tabu_list.tenures.value() == std::vector<std::size_t>{3, 4},
             "a vector parameter is read with any number of elements");
         const std::array empty{
             easylocal::config::text_override{"tabu_list.tenures", "[]"}};
@@ -449,7 +450,7 @@ int main()
             easylocal::config::text_override{"tabu_list.tenures", "[3, x]"}};
         ok &= expect(
             !configuration.apply(empty) && !configuration.apply(malformed)
-                && parameters.tabu_list.tenures == std::vector<std::size_t>{3, 4},
+                && parameters.tabu_list.tenures.value() == std::vector<std::size_t>{3, 4},
             "an empty or malformed vector is rejected, leaving the parameters");
     }
 
