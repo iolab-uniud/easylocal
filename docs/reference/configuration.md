@@ -86,6 +86,45 @@ types, `range(0.0, 1)`, or a count where a domain goes, `field<...>("...", 5)`:
 `easylocal::unlimited` is a tag of its own type, `unlimited_t`, which
 converts to the unlimited `limit` and which no number converts to.
 
+### Enumerations
+
+A field may be of an enum type, which a configurator reads and writes by name.
+C++ cannot read the names of an enum, so they are declared once, beside it:
+
+```cpp
+enum class Start { random, initial, greedy };
+
+template<>
+struct easylocal::enumeration<Start>
+{
+    static constexpr std::array values{
+        easylocal::enumerator{"random", Start::random},
+        easylocal::enumerator{"initial", Start::initial},
+        easylocal::enumerator{"greedy", Start::greedy}};
+};
+```
+
+The field is then declared and used like any other, and **the values declared
+are its domain**:
+
+```cpp
+easylocal::parameter<Start, "start"> start{Start::random};
+// in the schema:
+config::field<&Parameters::start>("Where the search starts"),
+```
+
+`--start greedy` on the command line, `start = "greedy"` in a configuration
+file or in TOML, a list in the TextUI, `{random, initial, greedy}` in
+`--help`, and a categorical parameter for irace, `c ("random", "initial",
+"greedy")`. A name that is not declared is rejected with `expected one of
+random, initial, greedy`, and a value cast from a number that no enumerator
+has fails validation like any value outside its domain.
+
+`config::one_of(Start::random, Start::initial)` as the domain of the field
+keeps only the values it gives, when a field takes fewer than the enum
+declares. A field of an enum with no `easylocal::enumeration` does not
+compile: its values would have no names.
+
 ### Conditions and requirements
 
 ```cpp
@@ -247,6 +286,7 @@ writes it back in that syntax:
 | a floating-point number | a decimal or scientific number, `inf`, `-inf` |
 | `easylocal::limit` | a count, or `unlimited` |
 | `std::string`, `std::filesystem::path` | the text as it is; a path in UTF-8, on Windows too |
+| an enum with an `easylocal::enumeration` | the name of the value ([Enumerations](#enumerations)) |
 | `std::array`, `std::vector` | `[a, b, c]`, the brackets optional; `[]` is an empty vector, and an array needs exactly its size |
 
 Spaces around a value or an element are ignored, except in a text. A list is

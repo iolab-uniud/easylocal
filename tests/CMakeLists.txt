@@ -627,6 +627,14 @@ easylocal_add_test(
 )
 
 easylocal_add_test(
+    parameter-enums
+    SOURCES
+        parameter_enums.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
+
+easylocal_add_test(
     parameter-domains
     SOURCES
         parameter_domains.cpp
@@ -1165,6 +1173,11 @@ easylocal_add_compile_failure_test(
     field-without-parameter
     field_without_parameter.cpp
     "a field of a parameter block is declared easylocal::parameter"
+)
+easylocal_add_compile_failure_test(
+    enum-without-names
+    enum_without_names.cpp
+    "a field of an enum type needs the names of its values"
 )
 easylocal_add_compile_failure_test(
     range-of-mixed-numbers

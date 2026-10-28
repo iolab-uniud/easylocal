@@ -242,6 +242,10 @@ static consteval auto parameter_schema()
   `easylocal::unlimited` for an unrestricted value, such as a filename.
   Except for booleans, every field needs an explicit domain to pass
   `check(app, ...)` (chapter 15).
+- A field of an **enum** type takes the names its `easylocal::enumeration`
+  declares, which are also its domain: `--start greedy`, `{random, initial,
+  greedy}` in `--help`, a categorical parameter for irace. See
+  [Enumerations](../reference/configuration.md#enumerations).
 - A **condition**, `.only_if(...)`, says when a field applies. Initial
   acceptance matters only during temperature calibration; when calibration
   is disabled, that field's domain is not checked.

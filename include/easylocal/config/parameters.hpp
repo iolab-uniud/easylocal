@@ -11,6 +11,7 @@
 
 #include <easylocal/config/condition.hpp>
 #include <easylocal/config/domain.hpp>
+#include <easylocal/config/enumeration.hpp>
 #include <easylocal/config/fixed_string.hpp>
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/parameter.hpp>
@@ -147,6 +148,12 @@ struct parameter_field
         "\"name\">: its default is its member initializer, and a field without "
         "one is required");
 
+    static_assert(
+        !std::is_enum_v<detail::parameter_value_t<member_type>>
+            || easylocal::enumerated<detail::parameter_value_t<member_type>>,
+        "a field of an enum type needs the names of its values: specialize "
+        "easylocal::enumeration<E> beside the enum");
+
     /// The type of the value the field holds.
     using value_type = detail::parameter_value_t<member_type>;
     /// The type of the domain: no_domain, a range_domain or a choice_domain.
@@ -208,6 +215,29 @@ consteval auto member_name_of() noexcept
 template<auto Member>
 inline constexpr auto member_name_v = member_name_of<Member>();
 
+// The domain of a field declared without one: the values an enumeration
+// declares, no_domain for anything else.
+template<auto Member>
+[[nodiscard]]
+consteval auto implicit_domain() noexcept
+{
+    using value_type =
+        parameter_value_t<typename member_pointer_traits<decltype(Member)>::value_type>;
+    if constexpr (easylocal::enumerated<value_type>)
+    {
+        return []<std::size_t... Index>(std::index_sequence<Index...>) {
+            return one_of(enumerator_values<value_type>()[Index]...);
+        }(std::make_index_sequence<enumerator_count<value_type>>{});
+    }
+    else
+    {
+        return no_domain{};
+    }
+}
+
+template<auto Member>
+using implicit_domain_t = decltype(implicit_domain<Member>());
+
 } // namespace detail
 
 /// The descriptor of a field of a parameter block, e.g.
@@ -215,14 +245,16 @@ inline constexpr auto member_name_v = member_name_of<Member>();
 /// the second argument:
 /// `field<&P::cooling_rate>("...", range(0.0, 1.0).open())`.
 ///
-/// The name of the field is the one its member carries, `parameter<T,
-/// "cooling_rate">`.
-template<auto Member, class Domain = no_domain>
+/// The name of the field is the one its member carries,
+/// `easylocal::parameter<T, "cooling_rate">`. A field of an enumeration takes
+/// every value its easylocal::enumeration declares; a domain of its own,
+/// `one_of(Start::random, Start::initial)`, keeps only the values it gives.
+template<auto Member, class Domain = detail::implicit_domain_t<Member>>
     requires std::is_member_object_pointer_v<decltype(Member)> && is_domain_v<Domain>
 [[nodiscard]]
 constexpr parameter_field<detail::member_name_v<Member>, Member, Domain> field(
     const std::string_view description = {},
-    const Domain domain = {}) noexcept
+    const Domain domain = detail::implicit_domain<Member>()) noexcept
 {
     return {.description = description, .domain = domain};
 }

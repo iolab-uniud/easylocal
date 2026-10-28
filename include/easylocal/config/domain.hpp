@@ -7,6 +7,7 @@
 /// A domain is checked when the parameters are validated, and exported to
 /// automatic configurators such as irace.
 
+#include <easylocal/config/enumeration.hpp>
 #include <easylocal/utils/detail/number_text.hpp>
 #include <easylocal/utils/limit.hpp>
 
@@ -172,7 +173,9 @@ using choice_value_t = typename choice_value<First, Rest...>::type;
 } // namespace detail
 
 /// The values given, as the domain of a field: `config::one_of("tabu",
-/// "random")` for text, `config::one_of(10, 100, 1000)` for numbers.
+/// "random")` for text, `config::one_of(10, 100, 1000)` for numbers,
+/// `config::one_of(Start::random, Start::initial)` for some of the values of
+/// an enumeration (a field takes all of them without a domain).
 ///
 /// Numbers of different types are held as their common type, as
 /// `one_of(1, 1.5, 2)` holds 1.0, 1.5 and 2.0.
@@ -314,6 +317,11 @@ constexpr bool choice_contains(
             if (std::string_view{value} == choice)
                 return true;
         }
+        else if constexpr (easylocal::enumerated<Choice>)
+        {
+            if (choice == value)
+                return true;
+        }
         else if (number_equal(choice, value))
             return true;
     }
@@ -335,7 +343,11 @@ concept domain_for =
         && ((std::same_as<typename Domain::value_type, std::string_view>
                 && std::same_as<detail::domain_element_t<Value>, std::string>)
             || (detail::is_number_v<typename Domain::value_type>
-                && detail::is_number_v<detail::domain_element_t<Value>>)));
+                && detail::is_number_v<detail::domain_element_t<Value>>)
+            || (easylocal::enumerated<typename Domain::value_type>
+                && std::same_as<
+                    typename Domain::value_type,
+                    detail::domain_element_t<Value>>)));
 
 /// Whether value lies in domain; for an array or a vector, whether each element
 /// does.
@@ -398,6 +410,8 @@ consteval parameter_kind kind_of() noexcept
     else if constexpr (std::same_as<value_type, std::filesystem::path>)
         return parameter_kind::path;
     else if constexpr (std::same_as<value_type, std::string>)
+        return parameter_kind::text;
+    else if constexpr (easylocal::enumerated<value_type>)
         return parameter_kind::text;
     else
         return parameter_kind::list;
@@ -566,6 +580,9 @@ domain_info describe_domain(const Domain& domain)
                               std::remove_cvref_t<decltype(value)>,
                               std::string_view>)
                 result.choices.emplace_back(value);
+            else if constexpr (easylocal::enumerated<
+                                   std::remove_cvref_t<decltype(value)>>)
+                result.choices.emplace_back(detail::enumerator_name(value));
             else
                 result.choices.push_back(easylocal::detail::number_text(value));
     }

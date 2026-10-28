@@ -5,6 +5,7 @@
 /// overrides are read as booleans, numbers, strings, arrays and vectors, and
 /// format_value writes them back in the same syntax.
 
+#include <easylocal/config/enumeration.hpp>
 #include <easylocal/utils/detail/meta.hpp>
 #include <easylocal/utils/detail/number_text.hpp>
 #include <easylocal/utils/detail/text.hpp>
@@ -234,6 +235,25 @@ std::string parse_text_value(const std::string_view text, Value& value)
         value = std::string{text};
         return {};
     }
+    else if constexpr (easylocal::enumerated<value_type>)
+    {
+        const auto name = easylocal::detail::trim_space(text);
+        if (const auto read = enumerator_value<value_type>(name); read.has_value())
+        {
+            value = *read;
+            return {};
+        }
+        std::string expected{"expected one of "};
+        bool first = true;
+        for (const auto& enumerator : easylocal::enumeration<value_type>::values)
+        {
+            if (!first)
+                expected += ", ";
+            first = false;
+            expected.append(enumerator.name);
+        }
+        return expected;
+    }
     else if constexpr (std::same_as<value_type, bool>)
     {
         const auto trimmed = easylocal::detail::trim_space(text);
@@ -330,7 +350,7 @@ std::string parse_text_value(const std::string_view text, Value& value)
 
 /// A parameter value as text, in the syntax overrides are read in: true/false,
 /// numbers, "unlimited" for an unlimited limit, [a, b] for arrays and vectors,
-/// a path in UTF-8.
+/// a path in UTF-8, the name of a value of an enumeration.
 template<class Value>
 [[nodiscard]]
 std::string format_value(const Value& value)
@@ -354,6 +374,16 @@ std::string format_value(const Value& value)
     else if constexpr (std::same_as<value_type, std::string>)
     {
         return value;
+    }
+    else if constexpr (easylocal::enumerated<value_type>)
+    {
+        // A value none of the enumerators has, which its domain rejects, is
+        // written as the number it holds.
+        const auto name = detail::enumerator_name(value);
+        return name.empty()
+            ? easylocal::detail::number_text(
+                  static_cast<std::underlying_type_t<value_type>>(value))
+            : std::string{name};
     }
     else if constexpr (detail::is_std_array_v<value_type>
         || detail::is_std_vector_v<value_type>)

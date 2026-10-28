@@ -12,6 +12,7 @@
 #include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
 
+#include <array>
 #include <cassert>
 #include <clocale>
 #include <cstdlib>
@@ -26,6 +27,22 @@
 #ifndef EASYLOCAL_TUTORIAL_INSTANCE
 #error "EASYLOCAL_TUTORIAL_INSTANCE must name the tutorial's instance"
 #endif
+
+// A program parameter that is one of named values: irace tunes it as a
+// categorical parameter, by its names.
+enum class Mode
+{
+    fast,
+    thorough,
+};
+
+template<>
+struct easylocal::enumeration<Mode>
+{
+    static constexpr std::array values{
+        easylocal::enumerator{"fast", Mode::fast},
+        easylocal::enumerator{"thorough", Mode::thorough}};
+};
 
 namespace
 {
@@ -254,15 +271,17 @@ struct Captured
     std::string err;
 };
 
-// A program parameter that names a file.
+// A program parameter that names a file, and one of an enumeration.
 struct Files
 {
     easylocal::parameter<std::filesystem::path, "table"> table{""};
+    easylocal::parameter<Mode, "mode"> mode{Mode::fast};
 
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<&Files::table>("A file", easylocal::unlimited));
+            config::field<&Files::table>("A file", easylocal::unlimited),
+            config::field<&Files::mode>("How the program works"));
     }
 
     config::validation_result validate() const
@@ -399,6 +418,10 @@ void fixed_values_are_shared_by_every_run()
     assert(contains(
         fixed,
         "files.table = " + std::filesystem::absolute("data/table.txt").string() + '\n'));
+    // An enumeration is a categorical parameter of irace, by its names.
+    assert(contains(
+        read_file(directory / "parameters.txt"),
+        "files.mode \"--files.mode=\" c (\"fast\", \"thorough\")"));
     std::filesystem::remove_all(directory);
 
     // The weight of the hard cost is the program's: every run uses it.

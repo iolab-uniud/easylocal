@@ -12,6 +12,7 @@
 #include <easylocal/app/run_parameters.hpp>
 #include <easylocal/app/session.hpp>
 #include <easylocal/config/cli.hpp>
+#include <easylocal/config/enumeration.hpp>
 #include <easylocal/config/file.hpp>
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/parameter.hpp>

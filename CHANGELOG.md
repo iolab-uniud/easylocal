@@ -119,6 +119,17 @@ reviewed by hand before tagging.
 - **Breaking:** `config::field<&P::member>("...")` takes the name of the field
   from the member instead of repeating it: the former `config::field<"name",
   &P::member>` is gone. `config::group<"name", &P::member>` is unchanged.
+- A parameter may be of an **enum** type, whose values are named once beside
+  the enum by specializing `easylocal::enumeration<E>` with
+  `easylocal::enumerator{"name", E::value}`. The names are what every
+  frontend reads and writes — the command line, a configuration file, TOML,
+  the TextUI — and the values declared are the field's domain, so `--help`
+  lists them, validation rejects a value no enumerator has, and the irace
+  export writes a categorical parameter, `c ("random", "initial")`, which
+  until now only a `std::string` with `one_of` could be.
+  `config::one_of(E::a, E::b)` as the domain of the field keeps only the
+  values it gives. A field of an enum without an `easylocal::enumeration`
+  does not compile.
 - `config::parameter_info` says whether anything has set the parameter
   (`set`), and the value of one that nothing has set is empty.
 - **Breaking:** the parameters whose value belongs to the problem have no
