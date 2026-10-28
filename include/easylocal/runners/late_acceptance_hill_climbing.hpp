@@ -25,13 +25,13 @@ namespace easylocal::runners
 struct LateAcceptanceHillClimbingParameters
 {
     /// Number of past costs a candidate is compared with.
-    config::parameter<std::size_t, "history_length"> history_length{10};
+    parameter<std::size_t, "history_length"> history_length{10};
     /// Consecutive proposals without improving the best cost after which the
     /// search stops; unlimited: it never stops for that.
-    config::parameter<limit, "max_idle_iterations"> max_idle_iterations{};
+    parameter<limit, "max_idle_iterations"> max_idle_iterations{};
     /// Evaluation budget, including the initial evaluation; unlimited by
     /// default.
-    config::parameter<limit, "max_evaluations"> max_evaluations{unlimited};
+    parameter<limit, "max_evaluations"> max_evaluations{unlimited};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]

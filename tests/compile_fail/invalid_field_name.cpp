@@ -4,7 +4,7 @@
 
 struct Parameters
 {
-    easylocal::config::parameter<double, "cooling rate"> rate{0.5};
+    easylocal::parameter<double, "cooling rate"> rate{0.5};
 };
 
 int main()

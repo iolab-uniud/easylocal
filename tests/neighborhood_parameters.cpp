@@ -48,7 +48,7 @@ public:
 
 struct StepParameters
 {
-    config::parameter<int, "stride"> stride{1};
+    easylocal::parameter<int, "stride"> stride{1};
 
     static consteval auto parameter_schema()
     {

@@ -1164,7 +1164,7 @@ easylocal_add_compile_failure_test(
 easylocal_add_compile_failure_test(
     field-without-parameter
     field_without_parameter.cpp
-    "a field of a parameter block is declared config::parameter"
+    "a field of a parameter block is declared easylocal::parameter"
 )
 easylocal_add_compile_failure_test(
     range-of-mixed-numbers

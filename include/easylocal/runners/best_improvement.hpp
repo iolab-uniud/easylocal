@@ -22,7 +22,7 @@ struct BestImprovementParameters
 {
     /// Evaluation budget, including the initial evaluation; unlimited by
     /// default: the search runs until a local optimum.
-    config::parameter<limit, "max_evaluations"> max_evaluations{unlimited};
+    parameter<limit, "max_evaluations"> max_evaluations{unlimited};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]

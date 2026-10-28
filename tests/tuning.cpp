@@ -257,7 +257,7 @@ struct Captured
 // A program parameter that names a file.
 struct Files
 {
-    config::parameter<std::filesystem::path, "table"> table{""};
+    easylocal::parameter<std::filesystem::path, "table"> table{""};
 
     static consteval auto parameter_schema()
     {
@@ -609,12 +609,12 @@ void parameters_get_irace_identifiers()
 // unlimited limit and a text.
 struct Related
 {
-    config::parameter<double, "low"> low{0.2};
-    config::parameter<double, "high"> high{0.8};
-    config::parameter<double, "scale"> scale{5.0};
-    config::parameter<bool, "verbose"> verbose{false};
-    config::parameter<easylocal::limit, "budget"> budget{easylocal::unlimited};
-    config::parameter<std::string, "label"> label{"plain"};
+    easylocal::parameter<double, "low"> low{0.2};
+    easylocal::parameter<double, "high"> high{0.8};
+    easylocal::parameter<double, "scale"> scale{5.0};
+    easylocal::parameter<bool, "verbose"> verbose{false};
+    easylocal::parameter<easylocal::limit, "budget"> budget{easylocal::unlimited};
+    easylocal::parameter<std::string, "label"> label{"plain"};
 
     static consteval auto parameter_schema()
     {

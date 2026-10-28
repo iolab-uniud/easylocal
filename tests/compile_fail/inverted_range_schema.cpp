@@ -4,7 +4,7 @@
 
 struct Parameters
 {
-    easylocal::config::parameter<double, "rate"> rate{0.5};
+    easylocal::parameter<double, "rate"> rate{0.5};
 
     static consteval auto parameter_schema()
     {

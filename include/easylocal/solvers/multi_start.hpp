@@ -23,7 +23,7 @@ namespace easylocal::solvers
 struct MultiStartParameters
 {
     /// The total number of runs, at least 1 (not the runs after the first one).
-    config::parameter<std::size_t, "starts"> starts{1};
+    parameter<std::size_t, "starts"> starts{1};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]

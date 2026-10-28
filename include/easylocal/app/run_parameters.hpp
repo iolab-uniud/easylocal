@@ -79,12 +79,12 @@ Cost read_cost(const Input& input, const std::string_view text)
 struct RunParameters
 {
     /// The cost at which a run stops, such as 0 or [0, 120]; empty: no target.
-    config::parameter<std::string, "target"> target{""};
+    parameter<std::string, "target"> target{""};
     /// The seconds a run may last, such as 10 or 2.5; empty: no time limit.
-    config::parameter<std::string, "timeout"> timeout{""};
+    parameter<std::string, "timeout"> timeout{""};
     /// The evaluations a run may make, the initial one included; unlimited: no
     /// budget beyond the runner's own.
-    config::parameter<limit, "max_evaluations"> max_evaluations{unlimited};
+    parameter<limit, "max_evaluations"> max_evaluations{unlimited};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]

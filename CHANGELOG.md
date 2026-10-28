@@ -104,10 +104,12 @@ reviewed by hand before tagging.
 
 ### Parameters
 
-- **Breaking:** every field of a parameter block is a `config::parameter<Value,
-  "name">`, and its default is its member initializer: `config::parameter<double,
-  "cooling_rate"> cooling_rate{0.95}`. A field declared without one is required,
-  so that reading it before anything sets it throws `config::parameter_not_set`
+- **Breaking:** every field of a parameter block is an
+  `easylocal::parameter<Value, "name">` (beside `easylocal::limit`, which a
+  field often holds), and its default is its member initializer:
+  `easylocal::parameter<double, "cooling_rate"> cooling_rate{0.95}`. A field
+  with no default is written `initial_temperature{}`,
+  so that reading it before anything sets it throws `easylocal::parameter_not_set`
   and `validate()` reports it by its path, `cooling_rate: not set, and it has no
   default`. A field whose default was the value-initialized one says so, as
   `target{""}` does. A parameter converts to its value, so it reads like the

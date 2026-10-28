@@ -54,9 +54,9 @@ struct tolerance
 {
     /// The tolerance relative to the larger magnitude of the two values
     /// (default 1e-9).
-    config::parameter<double, "relative"> relative{1e-9};
+    parameter<double, "relative"> relative{1e-9};
     /// The tolerance near zero, in the unit of the cost (default 1e-9).
-    config::parameter<double, "absolute"> absolute{1e-9};
+    parameter<double, "absolute"> absolute{1e-9};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]

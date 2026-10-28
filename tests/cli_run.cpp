@@ -39,7 +39,7 @@ struct Captured
 // A program parameter, given to cli::run next to its own.
 struct Extra
 {
-    easylocal::config::parameter<std::uint64_t, "level"> level{1};
+    easylocal::parameter<std::uint64_t, "level"> level{1};
 
     static consteval auto parameter_schema()
     {

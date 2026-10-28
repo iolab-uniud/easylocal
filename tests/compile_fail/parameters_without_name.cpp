@@ -7,7 +7,7 @@
 
 struct WeightParameters
 {
-    easylocal::config::parameter<int, "weight"> weight{1};
+    easylocal::parameter<int, "weight"> weight{1};
 
     static consteval auto parameter_schema()
     {

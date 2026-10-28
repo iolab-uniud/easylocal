@@ -32,7 +32,7 @@ using el::runners::FirstImprovement;
 
 struct WindowParameters
 {
-    easylocal::config::parameter<std::size_t, "window"> window{1};
+    easylocal::parameter<std::size_t, "window"> window{1};
 
     static consteval auto parameter_schema()
     {

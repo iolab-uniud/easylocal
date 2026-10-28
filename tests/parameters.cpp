@@ -29,9 +29,9 @@ using easylocal::runners::temperature::FixedLengthParameters;
 
 struct AppParameters
 {
-    easylocal::config::parameter<std::filesystem::path, "instance_file"> instance_file{
+    easylocal::parameter<std::filesystem::path, "instance_file"> instance_file{
         "instance.dat"};
-    easylocal::config::parameter<std::uint64_t, "seed"> seed{2026U};
+    easylocal::parameter<std::uint64_t, "seed"> seed{2026U};
 
     [[nodiscard]]
     static consteval auto parameter_schema()

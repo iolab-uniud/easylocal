@@ -9,7 +9,7 @@
 
 struct OffsetParameters
 {
-    easylocal::config::parameter<int, "offset"> offset{0};
+    easylocal::parameter<int, "offset"> offset{0};
 
     static consteval auto parameter_schema()
     {

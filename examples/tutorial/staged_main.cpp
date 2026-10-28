@@ -20,10 +20,9 @@ namespace
 
 struct MainParameters
 {
-    easylocal::config::parameter<std::filesystem::path, "instance"> instance;
-    easylocal::config::parameter<std::uint64_t, "seed"> seed{0};
-    easylocal::config::parameter<std::size_t, "evaluations_per_city">
-        evaluations_per_city{0};
+    easylocal::parameter<std::filesystem::path, "instance"> instance;
+    easylocal::parameter<std::uint64_t, "seed"> seed{0};
+    easylocal::parameter<std::size_t, "evaluations_per_city"> evaluations_per_city{0};
 
     static consteval auto parameter_schema()
     {

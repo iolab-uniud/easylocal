@@ -47,7 +47,7 @@ struct NeighborhoodUnionParameters
 
     /// The relative weight of each child when a random move draws one (default
     /// 1, finite and non-negative; 0 excludes the child).
-    config::parameter<std::array<double, Count>, "random_biases"> random_biases = [] {
+    parameter<std::array<double, Count>, "random_biases"> random_biases = [] {
         std::array<double, Count> biases{};
         biases.fill(1.0);
         return biases;

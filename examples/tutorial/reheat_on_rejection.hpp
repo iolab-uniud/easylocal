@@ -14,9 +14,9 @@ namespace tutorial
 struct ReheatOnRejectionParameters
 {
     easylocal::runners::temperature::ClassicParameters descent{};
-    easylocal::config::parameter<std::size_t, "rejections_before_reheat">
+    easylocal::parameter<std::size_t, "rejections_before_reheat">
         rejections_before_reheat{100};
-    easylocal::config::parameter<std::size_t, "allowed_reheats"> allowed_reheats{2};
+    easylocal::parameter<std::size_t, "allowed_reheats"> allowed_reheats{2};
 
     static consteval auto parameter_schema()
     {

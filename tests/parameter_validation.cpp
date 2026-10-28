@@ -88,7 +88,7 @@ public:
 // The parameters of a neighborhood: a positive step.
 struct StepParameters
 {
-    config::parameter<int, "step"> step{1};
+    easylocal::parameter<int, "step"> step{1};
 
     static consteval auto parameter_schema()
     {

@@ -13,9 +13,9 @@ namespace
 
 struct AppParameters
 {
-    easylocal::config::parameter<std::filesystem::path, "instance_file"> instance_file{
+    easylocal::parameter<std::filesystem::path, "instance_file"> instance_file{
         "initial.dat"};
-    easylocal::config::parameter<std::uint64_t, "seed"> seed{17U};
+    easylocal::parameter<std::uint64_t, "seed"> seed{17U};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -38,8 +38,8 @@ struct AppParameters
 // A requirement of the enclosing block over the fields of its group.
 struct WindowParameters
 {
-    easylocal::config::parameter<double, "low"> low{2.0};
-    easylocal::config::parameter<double, "high"> high{1.0};
+    easylocal::parameter<double, "low"> low{2.0};
+    easylocal::parameter<double, "high"> high{1.0};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -82,7 +82,7 @@ struct OuterParameters
 
 struct SolverParameters
 {
-    easylocal::config::parameter<double, "cooling_rate"> cooling_rate{0.75};
+    easylocal::parameter<double, "cooling_rate"> cooling_rate{0.75};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -430,7 +430,7 @@ void setup_reports_a_parameter_that_nothing_set()
 {
     struct SearchParameters
     {
-        easylocal::config::parameter<std::size_t, "budget"> budget;
+        easylocal::parameter<std::size_t, "budget"> budget;
 
         [[nodiscard]]
         static consteval auto parameter_schema()

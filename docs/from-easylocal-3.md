@@ -1213,14 +1213,15 @@ parsed as `--box::name`. You used `IsSet()` to check for a value and
 `SetParameter("name", value)` to change it.
 
 In EasyLocal 4, related parameters live in a **parameter block**: a plain
-struct whose fields are `config::parameter`s and whose `parameter_schema()`
+struct whose fields are `easylocal::parameter`s and whose
+`parameter_schema()`
 describes them. Algorithms, temperature policies, tabu lists, cost expressions
 and neighborhoods use these blocks. Your classes can use them too:
 
 ```cpp title="EasyLocal 4"
 struct ExcessParameters
 {
-    easylocal::config::parameter<double, "bound"> bound{8.0};
+    easylocal::parameter<double, "bound"> bound{8.0};
 
     static consteval auto parameter_schema()
     {

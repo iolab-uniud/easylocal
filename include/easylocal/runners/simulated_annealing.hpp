@@ -229,22 +229,21 @@ struct ClassicParameters
 {
     /// The temperature the annealing starts from; it has no default, since
     /// it lives in the scale of the cost.
-    config::parameter<double, "initial_temperature"> initial_temperature{};
+    parameter<double, "initial_temperature"> initial_temperature{};
     /// The temperature the cooling stops at; it has no default, since it
     /// lives in the scale of the cost.
-    config::parameter<double, "final_temperature"> final_temperature{};
+    parameter<double, "final_temperature"> final_temperature{};
     /// The factor that multiplies the temperature at each cooling.
-    config::parameter<double, "cooling_rate"> cooling_rate{0.95};
+    parameter<double, "cooling_rate"> cooling_rate{0.95};
     /// Proposals evaluated at each temperature.
-    config::parameter<std::size_t, "samples_per_temperature"> samples_per_temperature{
-        100};
+    parameter<std::size_t, "samples_per_temperature"> samples_per_temperature{100};
 
     /// Moves sampled at the initial solution to estimate the initial
     /// temperature; 0 keeps initial_temperature.
-    config::parameter<std::size_t, "calibration_samples"> calibration_samples{0};
+    parameter<std::size_t, "calibration_samples"> calibration_samples{0};
     /// Acceptance probability of an average worsening move at the estimated
     /// initial temperature.
-    config::parameter<double, "initial_acceptance"> initial_acceptance{0.5};
+    parameter<double, "initial_acceptance"> initial_acceptance{0.5};
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -366,22 +365,22 @@ struct FixedLengthParameters
 {
     /// The temperature the annealing starts from; it has no default, since
     /// it lives in the scale of the cost.
-    config::parameter<double, "initial_temperature"> initial_temperature{};
+    parameter<double, "initial_temperature"> initial_temperature{};
     /// The temperature the cooling stops at; it has no default, since it
     /// lives in the scale of the cost.
-    config::parameter<double, "final_temperature"> final_temperature{};
+    parameter<double, "final_temperature"> final_temperature{};
     /// The factor that multiplies the temperature at each cooling.
-    config::parameter<double, "cooling_rate"> cooling_rate{0.95};
+    parameter<double, "cooling_rate"> cooling_rate{0.95};
     /// Proposals in all, spread over the temperature levels; it has no
     /// default, since the budget belongs to the problem.
-    config::parameter<std::size_t, "allowed_iterations"> allowed_iterations{};
+    parameter<std::size_t, "allowed_iterations"> allowed_iterations{};
 
     /// Moves sampled at the initial solution to estimate the initial
     /// temperature; 0 keeps initial_temperature.
-    config::parameter<std::size_t, "calibration_samples"> calibration_samples{0};
+    parameter<std::size_t, "calibration_samples"> calibration_samples{0};
     /// Acceptance probability of an average worsening move at the estimated
     /// initial temperature.
-    config::parameter<double, "initial_acceptance"> initial_acceptance{0.5};
+    parameter<double, "initial_acceptance"> initial_acceptance{0.5};
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -513,25 +512,25 @@ struct CutoffParameters
 {
     /// The temperature the annealing starts from; it has no default, since
     /// it lives in the scale of the cost.
-    config::parameter<double, "initial_temperature"> initial_temperature{};
+    parameter<double, "initial_temperature"> initial_temperature{};
     /// The temperature the cooling stops at; it has no default, since it
     /// lives in the scale of the cost.
-    config::parameter<double, "final_temperature"> final_temperature{};
+    parameter<double, "final_temperature"> final_temperature{};
     /// The factor that multiplies the temperature at each cooling.
-    config::parameter<double, "cooling_rate"> cooling_rate{0.95};
+    parameter<double, "cooling_rate"> cooling_rate{0.95};
     /// Proposals in all, spread over the temperature levels; it has no
     /// default, since the budget belongs to the problem.
-    config::parameter<std::size_t, "allowed_iterations"> allowed_iterations{};
+    parameter<std::size_t, "allowed_iterations"> allowed_iterations{};
     /// Accepted proposals that cool, as a share of a level's proposals
     /// (allowed_iterations over the temperature levels).
-    config::parameter<double, "accepted_ratio"> accepted_ratio{0.1};
+    parameter<double, "accepted_ratio"> accepted_ratio{0.1};
 
     /// Moves sampled at the initial solution to estimate the initial
     /// temperature; 0 keeps initial_temperature.
-    config::parameter<std::size_t, "calibration_samples"> calibration_samples{0};
+    parameter<std::size_t, "calibration_samples"> calibration_samples{0};
     /// Acceptance probability of an average worsening move at the estimated
     /// initial temperature.
-    config::parameter<double, "initial_acceptance"> initial_acceptance{0.5};
+    parameter<double, "initial_acceptance"> initial_acceptance{0.5};
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -831,19 +830,19 @@ struct FixedTemperatureParameters
 {
     /// The constant temperature; it has no default, since it lives in the
     /// scale of the cost.
-    config::parameter<double, "temperature"> temperature{};
+    parameter<double, "temperature"> temperature{};
     /// Proposals in all; it has no default, since the budget belongs to the
     /// problem.
-    config::parameter<std::size_t, "allowed_iterations"> allowed_iterations{};
+    parameter<std::size_t, "allowed_iterations"> allowed_iterations{};
     /// Accepted proposals after which the annealing ends; unlimited by default.
-    config::parameter<limit, "max_accepted"> max_accepted{unlimited};
+    parameter<limit, "max_accepted"> max_accepted{unlimited};
 
     /// Moves sampled at the initial solution to estimate the temperature; 0
     /// keeps temperature.
-    config::parameter<std::size_t, "calibration_samples"> calibration_samples{0};
+    parameter<std::size_t, "calibration_samples"> calibration_samples{0};
     /// Acceptance probability of an average worsening move at the estimated
     /// initial temperature.
-    config::parameter<double, "initial_acceptance"> initial_acceptance{0.5};
+    parameter<double, "initial_acceptance"> initial_acceptance{0.5};
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -961,24 +960,23 @@ struct TimeBasedParameters
 {
     /// The temperature the annealing starts from; it has no default, since
     /// it lives in the scale of the cost.
-    config::parameter<double, "initial_temperature"> initial_temperature{};
+    parameter<double, "initial_temperature"> initial_temperature{};
     /// The temperature the cooling stops at; it has no default, since it
     /// lives in the scale of the cost.
-    config::parameter<double, "final_temperature"> final_temperature{};
+    parameter<double, "final_temperature"> final_temperature{};
     /// The factor that multiplies the temperature at each cooling.
-    config::parameter<double, "cooling_rate"> cooling_rate{0.95};
+    parameter<double, "cooling_rate"> cooling_rate{0.95};
     /// Seconds; it has no default, since the budget belongs to the problem.
-    config::parameter<double, "allowed_running_time"> allowed_running_time{};
+    parameter<double, "allowed_running_time"> allowed_running_time{};
     /// Accepted proposals that cool early; unlimited cools only on time.
-    config::parameter<limit, "accepted_per_temperature"> accepted_per_temperature{
-        unlimited};
+    parameter<limit, "accepted_per_temperature"> accepted_per_temperature{unlimited};
 
     /// Moves sampled at the initial solution to estimate the initial
     /// temperature; 0 keeps initial_temperature.
-    config::parameter<std::size_t, "calibration_samples"> calibration_samples{0};
+    parameter<std::size_t, "calibration_samples"> calibration_samples{0};
     /// Acceptance probability of an average worsening move at the estimated
     /// initial temperature.
-    config::parameter<double, "initial_acceptance"> initial_acceptance{0.5};
+    parameter<double, "initial_acceptance"> initial_acceptance{0.5};
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -1211,16 +1209,16 @@ struct ReheatingParameters
     /// initial temperature.
     DescentParameters descent{};
     /// Descents after the first one: the size of the schedule, not a limit.
-    config::parameter<std::size_t, "allowed_reheats"> allowed_reheats{3};
+    parameter<std::size_t, "allowed_reheats"> allowed_reheats{3};
     /// The temperature a reheat restarts from, as a factor of the descent's
     /// initial_temperature.
-    config::parameter<double, "reheat_ratio"> reheat_ratio{0.5};
+    parameter<double, "reheat_ratio"> reheat_ratio{0.5};
     /// The share of the descent's budget (allowed_iterations or
     /// allowed_running_time) spent by the first descent; the reheats divide the
     /// rest evenly.
     ///
     /// Ignored by a schedule without a budget.
-    config::parameter<double, "first_descent_share"> first_descent_share{0.5};
+    parameter<double, "first_descent_share"> first_descent_share{0.5};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -1564,7 +1562,7 @@ struct SimulatedAnnealingParameters
     TemperatureParameters temperature{};
     /// Evaluation budget, including the initial evaluation; unlimited by
     /// default.
-    config::parameter<limit, "max_evaluations"> max_evaluations{unlimited};
+    parameter<limit, "max_evaluations"> max_evaluations{unlimited};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]

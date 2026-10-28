@@ -20,8 +20,8 @@ namespace config = easylocal::config;
 
 struct Schedule
 {
-    config::parameter<double, "start"> start{10.0};
-    config::parameter<double, "end"> end{1.0};
+    easylocal::parameter<double, "start"> start{10.0};
+    easylocal::parameter<double, "end"> end{1.0};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -43,11 +43,11 @@ struct Schedule
 
 struct Search
 {
-    config::parameter<std::size_t, "samples"> samples{0};
-    config::parameter<double, "acceptance"> acceptance{0.5};
-    config::parameter<std::string, "policy"> policy{"fixed"};
-    config::parameter<std::size_t, "tenure"> tenure{5};
-    config::parameter<double, "reheat"> reheat{2.0};
+    easylocal::parameter<std::size_t, "samples"> samples{0};
+    easylocal::parameter<double, "acceptance"> acceptance{0.5};
+    easylocal::parameter<std::string, "policy"> policy{"fixed"};
+    easylocal::parameter<std::size_t, "tenure"> tenure{5};
+    easylocal::parameter<double, "reheat"> reheat{2.0};
     Schedule schedule{};
 
     [[nodiscard]]
@@ -91,8 +91,8 @@ static_assert(config::evaluate(
 // unlimited is +infinity, and a minus applies after the conversion.
 struct Counts
 {
-    config::parameter<std::size_t, "count"> count{7};
-    config::parameter<easylocal::limit, "budget"> budget{easylocal::unlimited};
+    easylocal::parameter<std::size_t, "count"> count{7};
+    easylocal::parameter<easylocal::limit, "budget"> budget{easylocal::unlimited};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -240,7 +240,7 @@ void built_in_schemas_declare_their_relations()
 // A limit in an expression: unlimited is above every count.
 struct Budgeted
 {
-    config::parameter<easylocal::limit, "budget"> budget{easylocal::unlimited};
+    easylocal::parameter<easylocal::limit, "budget"> budget{easylocal::unlimited};
 
     [[nodiscard]]
     static consteval auto parameter_schema()

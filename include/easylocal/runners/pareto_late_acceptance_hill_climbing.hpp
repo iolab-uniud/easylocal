@@ -30,19 +30,19 @@ struct ParetoLateAcceptanceHillClimbingParameters
 {
     /// Number of solutions in the history: the first is the initial solution,
     /// the others random ones.
-    config::parameter<std::size_t, "history_length"> history_length{20};
+    parameter<std::size_t, "history_length"> history_length{20};
     /// Iterations after which the search stops as soon as the idle iterations
     /// exceed idle_ratio of all the iterations: the least it runs, not a
     /// limit; it has no default, since the budget belongs to the problem.
-    config::parameter<std::size_t, "min_iterations"> min_iterations{};
+    parameter<std::size_t, "min_iterations"> min_iterations{};
     /// Share of the iterations that may be idle once min_iterations is past.
-    config::parameter<double, "idle_ratio"> idle_ratio{0.02};
+    parameter<double, "idle_ratio"> idle_ratio{0.02};
     /// A candidate that does not dominate the current solution may still
     /// replace the next solution of the history if it dominates it.
-    config::parameter<bool, "second_chance"> second_chance{true};
+    parameter<bool, "second_chance"> second_chance{true};
     /// Evaluation budget, including the initial evaluations; unlimited by
     /// default.
-    config::parameter<limit, "max_evaluations"> max_evaluations{unlimited};
+    parameter<limit, "max_evaluations"> max_evaluations{unlimited};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]

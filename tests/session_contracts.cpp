@@ -25,7 +25,7 @@ namespace el = easylocal;
 
 struct FragileParameters
 {
-    easylocal::config::parameter<int, "mode"> mode{0};
+    easylocal::parameter<int, "mode"> mode{0};
 
     static consteval auto parameter_schema()
     {

@@ -12,9 +12,9 @@ which frontends (command line, files, TOML, the TextUI) read and change.
 ```cpp
 struct MyParameters
 {
-    config::parameter<std::size_t, "size"> size{10};  // 10 is its default
-    config::parameter<double, "bound"> bound{};       // required: no default
-    Schedule schedule{};                              // itself a parameter block
+    easylocal::parameter<std::size_t, "size"> size{10};  // 10 is its default
+    easylocal::parameter<double, "bound"> bound{};       // required: no default
+    Schedule schedule{};                                 // a parameter block
 
     static consteval auto parameter_schema()
     {
@@ -30,12 +30,12 @@ struct MyParameters
 };
 ```
 
-Every field is a `config::parameter<Value, "name">`, which holds the value and
+Every field is an `easylocal::parameter<Value, "name">`, which holds the value and
 whether anything has set it; `field<&MyParameters::size>` reads the name from
 the member instead of repeating it. **The default of a field is its member
 initializer, and a field declared `bound{}` has none**: nothing sets it, so
 `validate()` reports `bound: not set, and it has no default`, and reading it
-before a value arrives throws `config::parameter_not_set`. A plain member
+before a value arrives throws `parameter_not_set`. A plain member
 does not compile: its default would be implicit.
 
 A parameter converts to its value, so it reads like the value it holds

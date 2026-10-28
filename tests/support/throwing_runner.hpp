@@ -30,7 +30,7 @@ struct ThrowingRunnerParameters
 {
     // The moves made before the failure; unlimited: it never fails, and ends
     // at a solution without moves or when it is stopped.
-    easylocal::config::parameter<easylocal::limit, "fail_after"> fail_after{3};
+    easylocal::parameter<easylocal::limit, "fail_after"> fail_after{3};
 
     static consteval auto parameter_schema()
     {

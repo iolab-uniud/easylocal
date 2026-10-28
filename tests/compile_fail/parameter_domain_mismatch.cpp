@@ -4,7 +4,7 @@
 
 struct Parameters
 {
-    easylocal::config::parameter<std::string, "policy"> policy{"tabu"};
+    easylocal::parameter<std::string, "policy"> policy{"tabu"};
 
     [[nodiscard]]
     static consteval auto parameter_schema()

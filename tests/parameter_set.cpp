@@ -22,9 +22,9 @@ using easylocal::runners::temperature::FixedLengthParameters;
 
 struct AppParameters
 {
-    config::parameter<std::filesystem::path, "instance_file"> instance_file{
+    easylocal::parameter<std::filesystem::path, "instance_file"> instance_file{
         "instance.dat"};
-    config::parameter<std::uint64_t, "seed"> seed{2026U};
+    easylocal::parameter<std::uint64_t, "seed"> seed{2026U};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -46,7 +46,7 @@ struct AppParameters
 // A block with a nested group.
 struct Schedule
 {
-    config::parameter<double, "rate"> rate{0.5};
+    easylocal::parameter<double, "rate"> rate{0.5};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -65,7 +65,7 @@ struct Schedule
 
 struct Search
 {
-    config::parameter<std::size_t, "budget"> budget{100};
+    easylocal::parameter<std::size_t, "budget"> budget{100};
     Schedule schedule{};
 
     [[nodiscard]]

@@ -19,9 +19,9 @@ using easylocal::runners::temperature::FixedLengthParameters;
 
 struct AppParameters
 {
-    easylocal::config::parameter<std::filesystem::path, "instance_file"> instance_file{
+    easylocal::parameter<std::filesystem::path, "instance_file"> instance_file{
         "initial.dat"};
-    easylocal::config::parameter<std::uint64_t, "seed"> seed{17U};
+    easylocal::parameter<std::uint64_t, "seed"> seed{17U};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -259,8 +259,8 @@ void help_marks_a_parameter_that_has_no_default()
 {
     struct Parameters
     {
-        easylocal::config::parameter<std::size_t, "budget"> budget;
-        easylocal::config::parameter<std::size_t, "samples"> samples{10};
+        easylocal::parameter<std::size_t, "budget"> budget;
+        easylocal::parameter<std::size_t, "samples"> samples{10};
 
         [[nodiscard]]
         static consteval auto parameter_schema()
@@ -293,9 +293,9 @@ void help_lists_domains_and_conditions_of_the_changeable_parameters()
 {
     struct Parameters
     {
-        easylocal::config::parameter<bool, "calibrate"> calibrate{false};
-        easylocal::config::parameter<int, "samples"> samples{0};
-        easylocal::config::parameter<double, "fixed"> fixed{1.0};
+        easylocal::parameter<bool, "calibrate"> calibrate{false};
+        easylocal::parameter<int, "samples"> samples{0};
+        easylocal::parameter<double, "fixed"> fixed{1.0};
 
         static consteval auto parameter_schema()
         {

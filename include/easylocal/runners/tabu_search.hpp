@@ -394,7 +394,7 @@ private:
 struct FixedLengthParameters
 {
     /// Iterations a move stays in the list.
-    config::parameter<std::size_t, "tenure"> tenure{10};
+    parameter<std::size_t, "tenure"> tenure{10};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -507,9 +507,9 @@ private:
 struct RandomTenureParameters
 {
     /// The shortest tenure drawn.
-    config::parameter<std::size_t, "min_tenure"> min_tenure{5};
+    parameter<std::size_t, "min_tenure"> min_tenure{5};
     /// The longest tenure drawn.
-    config::parameter<std::size_t, "max_tenure"> max_tenure{15};
+    parameter<std::size_t, "max_tenure"> max_tenure{15};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -608,9 +608,9 @@ private:
 struct CyclicParameters
 {
     /// Iterations each tenure is used for.
-    config::parameter<std::size_t, "period"> period{100};
+    parameter<std::size_t, "period"> period{100};
     /// The tenures, used in turn.
-    config::parameter<std::vector<std::size_t>, "tenures"> tenures{11, 34, 20, 8, 98};
+    parameter<std::vector<std::size_t>, "tenures"> tenures{11, 34, 20, 8, 98};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -721,21 +721,21 @@ struct ReactiveParameters
 {
     /// Factor of the tenure when a solution comes back within cycle_length
     /// iterations.
-    config::parameter<double, "increase"> increase{1.1};
+    parameter<double, "increase"> increase{1.1};
     /// Factor of the tenure when no cycle is seen for longer than the average
     /// cycle length.
-    config::parameter<double, "decrease"> decrease{0.9};
+    parameter<double, "decrease"> decrease{0.9};
     /// Visits of a solution after which each further visit counts as chaos.
-    config::parameter<std::size_t, "repetitions"> repetitions{3};
+    parameter<std::size_t, "repetitions"> repetitions{3};
     /// Chaos counts after which the search escapes with random moves.
-    config::parameter<std::size_t, "chaos"> chaos{3};
+    parameter<std::size_t, "chaos"> chaos{3};
     /// Revisits closer than this many iterations are cycles.
-    config::parameter<std::size_t, "cycle_length"> cycle_length{50};
+    parameter<std::size_t, "cycle_length"> cycle_length{50};
     /// The largest tenure.
-    config::parameter<std::size_t, "max_tenure"> max_tenure{1000};
+    parameter<std::size_t, "max_tenure"> max_tenure{1000};
     /// Confirms a revisit by comparing the solutions with the same hash, which
     /// keeps a copy of each visited solution; it needs solution equality.
-    config::parameter<bool, "verify_equality"> verify_equality{false};
+    parameter<bool, "verify_equality"> verify_equality{false};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -991,7 +991,7 @@ private:
 struct FrequencyParameters
 {
     /// Relative frequency above which an attribute is tabu.
-    config::parameter<double, "threshold"> threshold{0.05};
+    parameter<double, "threshold"> threshold{0.05};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -1095,7 +1095,7 @@ private:
 struct ObjectiveBasedParameters
 {
     /// Iterations a cost value stays tabu.
-    config::parameter<std::size_t, "tenure"> tenure{10};
+    parameter<std::size_t, "tenure"> tenure{10};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -1195,11 +1195,11 @@ private:
 struct LimDynamicParameters
 {
     /// The tenure after an improvement of the best cost.
-    config::parameter<std::size_t, "min_tenure"> min_tenure{5};
+    parameter<std::size_t, "min_tenure"> min_tenure{5};
     /// The tenure at which it falls back to min_tenure.
-    config::parameter<std::size_t, "max_tenure"> max_tenure{20};
+    parameter<std::size_t, "max_tenure"> max_tenure{20};
     /// Iterations without improving the best cost after which the tenure grows.
-    config::parameter<std::size_t, "idle_threshold"> idle_threshold{10};
+    parameter<std::size_t, "idle_threshold"> idle_threshold{10};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -1411,12 +1411,12 @@ private:
 struct FooParameters
 {
     /// Iterations between two tenure changes.
-    config::parameter<std::size_t, "window"> window{100};
+    parameter<std::size_t, "window"> window{100};
     /// Growth of the tenure when the costs fluctuate little; also the initial
     /// tenure.
-    config::parameter<std::size_t, "increment"> increment{5};
+    parameter<std::size_t, "increment"> increment{5};
     /// The spread of the costs in a window below which the tenure grows.
-    config::parameter<double, "fluctuation"> fluctuation{1.0};
+    parameter<double, "fluctuation"> fluctuation{1.0};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -1535,17 +1535,17 @@ private:
 struct RandomFooParameters
 {
     /// The smallest window drawn.
-    config::parameter<std::size_t, "min_window"> min_window{50};
+    parameter<std::size_t, "min_window"> min_window{50};
     /// The largest window drawn.
-    config::parameter<std::size_t, "max_window"> max_window{150};
+    parameter<std::size_t, "max_window"> max_window{150};
     /// The smallest increment drawn.
-    config::parameter<std::size_t, "min_increment"> min_increment{2};
+    parameter<std::size_t, "min_increment"> min_increment{2};
     /// The largest increment drawn.
-    config::parameter<std::size_t, "max_increment"> max_increment{8};
+    parameter<std::size_t, "max_increment"> max_increment{8};
     /// The smallest fluctuation threshold drawn.
-    config::parameter<double, "min_fluctuation"> min_fluctuation{0.5};
+    parameter<double, "min_fluctuation"> min_fluctuation{0.5};
     /// The largest fluctuation threshold drawn.
-    config::parameter<double, "max_fluctuation"> max_fluctuation{2.0};
+    parameter<double, "max_fluctuation"> max_fluctuation{2.0};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -1765,7 +1765,7 @@ struct FirstImprovementParameters
 {
     /// The scan stops at the first admissible move that improves the best cost
     /// rather than the current one.
-    config::parameter<bool, "improve_on_best"> improve_on_best{false};
+    parameter<bool, "improve_on_best"> improve_on_best{false};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -1790,15 +1790,15 @@ struct FirstImprovementParameters
 struct AspirationPlusParameters
 {
     /// Admissible moves examined at least in each scan.
-    config::parameter<std::size_t, "min_moves"> min_moves{10};
+    parameter<std::size_t, "min_moves"> min_moves{10};
     /// Admissible moves examined at most in each scan.
-    config::parameter<std::size_t, "max_moves"> max_moves{100};
+    parameter<std::size_t, "max_moves"> max_moves{100};
     /// Admissible moves examined after the first one under the aspiration
     /// level.
-    config::parameter<std::size_t, "plus"> plus{5};
+    parameter<std::size_t, "plus"> plus{5};
     /// The aspiration level, as a factor of the best cost (see
     /// AspirationPlusTabuSearch).
-    config::parameter<double, "aspiration_level"> aspiration_level{1.0};
+    parameter<double, "aspiration_level"> aspiration_level{1.0};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -1836,10 +1836,10 @@ struct AspirationPlusParameters
 struct EliteListParameters
 {
     /// The moves kept from a full scan.
-    config::parameter<std::size_t, "elite_size"> elite_size{10};
+    parameter<std::size_t, "elite_size"> elite_size{10};
     /// A kept move is applied while its cost is within this factor of the best
     /// cost (see EliteCandidateTabuSearch).
-    config::parameter<double, "quality"> quality{1.05};
+    parameter<double, "quality"> quality{1.05};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -1877,12 +1877,12 @@ struct TabuSearchParameters
     /// Iterations without improving the best cost after which the search
     /// stops, or unlimited to never stop for that; it has no default, since
     /// the budget belongs to the problem.
-    config::parameter<limit, "max_idle_iterations"> max_idle_iterations{};
+    parameter<limit, "max_idle_iterations"> max_idle_iterations{};
     /// Iterations in all; unlimited by default.
-    config::parameter<limit, "max_iterations"> max_iterations{unlimited};
+    parameter<limit, "max_iterations"> max_iterations{unlimited};
     /// Evaluation budget, including the initial evaluation; unlimited by
     /// default.
-    config::parameter<limit, "max_evaluations"> max_evaluations{unlimited};
+    parameter<limit, "max_evaluations"> max_evaluations{unlimited};
     /// The parameters of the tabu list.
     ListParameters tabu_list{};
     /// The parameters of the candidate strategy, the scan of each iteration.

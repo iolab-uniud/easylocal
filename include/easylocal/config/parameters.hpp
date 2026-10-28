@@ -137,13 +137,13 @@ struct parameter_field
     /// The parameter block the member belongs to.
     using owner_type = typename detail::member_pointer_traits<
         member_pointer_type>::owner_type;
-    /// The type of the member, a config::parameter.
+    /// The type of the member, an easylocal::parameter.
     using member_type =
         typename detail::member_pointer_traits<member_pointer_type>::value_type;
 
     static_assert(
         detail::is_parameter_v<member_type>,
-        "a field of a parameter block is declared config::parameter<Value, "
+        "a field of a parameter block is declared easylocal::parameter<Value, "
         "\"name\">: its default is its member initializer, and a field without "
         "one is required");
 
@@ -215,7 +215,7 @@ inline constexpr auto member_name_v = member_name_of<Member>();
 /// the second argument:
 /// `field<&P::cooling_rate>("...", range(0.0, 1.0).open())`.
 ///
-/// The name of the field is the one its member carries, `config::parameter<T,
+/// The name of the field is the one its member carries, `parameter<T,
 /// "cooling_rate">`.
 template<auto Member, class Domain = no_domain>
     requires std::is_member_object_pointer_v<decltype(Member)> && is_domain_v<Domain>
@@ -414,7 +414,8 @@ inline constexpr auto schema_v = std::remove_cvref_t<Block>::parameter_schema();
 /// Calls `function(descriptor, parameter)` on each field of a block, without
 /// its nested groups; the parameter is const when the block is.
 ///
-/// The second argument is the config::parameter the field declares, which
+/// The second argument is the easylocal::parameter the field declares,
+/// which
 /// tells whether anything has set it and holds its value.
 template<class Parameters, class Function>
     requires parameter_block<std::remove_cvref_t<Parameters>>

@@ -4,8 +4,8 @@
 
 struct Parameters
 {
-    easylocal::config::parameter<std::size_t, "samples"> samples{0};
-    easylocal::config::parameter<double, "acceptance"> acceptance{0.5};
+    easylocal::parameter<std::size_t, "samples"> samples{0};
+    easylocal::parameter<double, "acceptance"> acceptance{0.5};
 
     [[nodiscard]]
     static consteval auto parameter_schema()

@@ -72,7 +72,7 @@ the lambda with a class that takes a parameter block:
 // The bound of chapter 3 as a parameter: how much the longest edge exceeds it.
 struct ExcessParameters
 {
-    easylocal::config::parameter<double, "bound"> bound{8.0}; // the longest edge allowed
+    easylocal::parameter<double, "bound"> bound{8.0}; // the longest edge allowed
 
     static consteval auto parameter_schema()
     {
@@ -108,12 +108,12 @@ public:
 };
 ```
 
-Each field is a `config::parameter<Value, "name">`, and **its default is its
+Each field is an `easylocal::parameter<Value, "name">`, and **its default is its
 member initializer**: `bound{8.0}` here. A field written `bound{}` has no
 default, and nothing but a value given to it will do: `validate()` reports
 `bound: not set, and it has no default`, `--help` writes `required: it has no
 default and must be set` in place of a current value, and a run that reads it
-anyway throws `config::parameter_not_set`. This is how the library declares
+anyway throws `parameter_not_set`. This is how the library declares
 the parameters whose value belongs to the problem — the temperatures of
 Simulated Annealing, the budget of a search — rather than inventing one. A
 plain member does not compile: its default would be implicit.
@@ -182,8 +182,8 @@ struct AppParameters
 {
     // No default: the program does not run until --application.instance_file
     // gives it one.
-    easylocal::config::parameter<std::filesystem::path, "instance_file"> instance_file{};
-    easylocal::config::parameter<std::uint64_t, "seed"> seed{0};
+    easylocal::parameter<std::filesystem::path, "instance_file"> instance_file{};
+    easylocal::parameter<std::uint64_t, "seed"> seed{0};
 
     static consteval auto parameter_schema()
     {

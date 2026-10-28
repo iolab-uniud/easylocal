@@ -25,17 +25,17 @@ namespace easylocal::runners
 struct GreatDelugeParameters
 {
     /// Initial water level, as a factor of the initial cost.
-    config::parameter<double, "initial_level"> initial_level{1.1};
+    parameter<double, "initial_level"> initial_level{1.1};
     /// The search stops when the level falls below this factor of the best
     /// cost.
-    config::parameter<double, "min_level"> min_level{0.9};
+    parameter<double, "min_level"> min_level{0.9};
     /// Multiplicative decrease of the level.
-    config::parameter<double, "level_rate"> level_rate{0.99};
+    parameter<double, "level_rate"> level_rate{0.99};
     /// Proposals at each level.
-    config::parameter<std::size_t, "neighbors_sampled"> neighbors_sampled{100};
+    parameter<std::size_t, "neighbors_sampled"> neighbors_sampled{100};
     /// Evaluation budget, including the initial evaluation; unlimited by
     /// default.
-    config::parameter<limit, "max_evaluations"> max_evaluations{unlimited};
+    parameter<limit, "max_evaluations"> max_evaluations{unlimited};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]

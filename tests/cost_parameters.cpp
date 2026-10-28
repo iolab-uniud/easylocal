@@ -60,7 +60,7 @@ private:
 
 struct PickParameters
 {
-    config::parameter<int, "picks"> picks{3};
+    easylocal::parameter<int, "picks"> picks{3};
 
     static consteval auto parameter_schema()
     {
@@ -116,7 +116,7 @@ private:
 
 struct ThresholdParameters
 {
-    config::parameter<int, "threshold"> threshold{4};
+    easylocal::parameter<int, "threshold"> threshold{4};
 
     static consteval auto parameter_schema()
     {
@@ -229,7 +229,7 @@ private:
 
 struct ExcessParameters
 {
-    config::parameter<int, "bound"> bound{10};
+    easylocal::parameter<int, "bound"> bound{10};
 
     static consteval auto parameter_schema()
     {

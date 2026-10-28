@@ -23,12 +23,12 @@ namespace config = easylocal::config;
 
 struct TunedParameters
 {
-    config::parameter<double, "rate"> rate{0.5};
-    config::parameter<std::size_t, "samples"> samples{10};
-    config::parameter<std::string, "policy"> policy{"tabu"};
-    config::parameter<std::vector<double>, "weights"> weights{1.0, 2.0};
-    config::parameter<easylocal::limit, "budget"> budget{100};
-    config::parameter<double, "free"> free{3.0};
+    easylocal::parameter<double, "rate"> rate{0.5};
+    easylocal::parameter<std::size_t, "samples"> samples{10};
+    easylocal::parameter<std::string, "policy"> policy{"tabu"};
+    easylocal::parameter<std::vector<double>, "weights"> weights{1.0, 2.0};
+    easylocal::parameter<easylocal::limit, "budget"> budget{100};
+    easylocal::parameter<double, "free"> free{3.0};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -187,10 +187,11 @@ void an_invalid_default_can_be_overridden()
 // A range may have no upper bound, and easylocal::unlimited alone is any value.
 struct OpenParameters
 {
-    config::parameter<double, "positive"> positive{1.0};
-    config::parameter<easylocal::limit, "budget"> budget{easylocal::unlimited};
-    config::parameter<int, "offset"> offset{-3};
-    config::parameter<double, "timeout"> timeout{std::numeric_limits<double>::infinity()};
+    easylocal::parameter<double, "positive"> positive{1.0};
+    easylocal::parameter<easylocal::limit, "budget"> budget{easylocal::unlimited};
+    easylocal::parameter<int, "offset"> offset{-3};
+    easylocal::parameter<double, "timeout"> timeout{
+        std::numeric_limits<double>::infinity()};
 
     [[nodiscard]]
     static consteval auto parameter_schema()

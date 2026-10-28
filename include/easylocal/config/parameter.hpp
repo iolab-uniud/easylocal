@@ -17,7 +17,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace easylocal::config
+namespace easylocal
 {
 
 /// Reading a parameter that nothing has set and that has no default.
@@ -44,7 +44,7 @@ public:
 /// designated initializer that leaves the field out from warning.
 /// It converts to its value, so a parameter reads like the value it holds;
 /// where a template deduces its argument, value() spells the value out.
-template<class Value, fixed_string Name>
+template<class Value, config::fixed_string Name>
 class parameter
 {
 public:
@@ -139,7 +139,9 @@ private:
     std::optional<Value> value_{};
 };
 
-namespace detail
+} // namespace easylocal
+
+namespace easylocal::config::detail
 {
 
 // Whether a type is a parameter.
@@ -165,6 +167,4 @@ struct parameter_value<parameter<Value, Name>>
 template<class T>
 using parameter_value_t = typename parameter_value<T>::type;
 
-} // namespace detail
-
-} // namespace easylocal::config
+} // namespace easylocal::config::detail

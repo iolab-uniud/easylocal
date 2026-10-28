@@ -53,13 +53,13 @@ struct StageParameters
 {
     /// The runs of the stage, at least 1: it runs again while its target is not
     /// reached, and keeps the best run.
-    config::parameter<std::size_t, "attempts"> attempts{1};
+    parameter<std::size_t, "attempts"> attempts{1};
     /// The seconds the stage may run, all its attempts together; inf: no
     /// limit of its own (the solve's still applies).
-    config::parameter<double, "timeout"> timeout{std::numeric_limits<double>::infinity()};
+    parameter<double, "timeout"> timeout{std::numeric_limits<double>::infinity()};
     /// The evaluations the stage may make, all its attempts together;
     /// unlimited: no budget of its own (the solve's still applies).
-    config::parameter<limit, "max_evaluations"> max_evaluations{unlimited};
+    parameter<limit, "max_evaluations"> max_evaluations{unlimited};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]

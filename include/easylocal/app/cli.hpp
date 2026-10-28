@@ -59,34 +59,34 @@ namespace easylocal::cli
 struct CommandLineParameters
 {
     /// The Input file; it has no default and must be set.
-    config::parameter<std::filesystem::path, "instance"> instance{};
+    parameter<std::filesystem::path, "instance"> instance{};
     /// The seed of the random generator.
-    config::parameter<std::uint64_t, "seed"> seed{0};
+    parameter<std::uint64_t, "seed"> seed{0};
     /// The name of the runner; empty: the first registered.
-    config::parameter<std::string, "runner"> runner{""};
+    parameter<std::string, "runner"> runner{""};
     /// The starting solution, random or initial; empty: random when the problem
     /// has random solutions.
-    config::parameter<std::string, "start"> start{""};
+    parameter<std::string, "start"> start{""};
     /// A file to read the starting solution from, instead of start.
-    config::parameter<std::filesystem::path, "solution"> solution{""};
+    parameter<std::filesystem::path, "solution"> solution{""};
     /// The file to write the solution to; empty: the standard output.
     ///
     /// The points of a front go to numbered files next to it: best.txt gives
     /// best.1.txt, best.2.txt...
-    config::parameter<std::filesystem::path, "output"> output{""};
+    parameter<std::filesystem::path, "output"> output{""};
     /// The cost at which the run stops, such as 0 or [0, 120]; empty: no
     /// target.
-    config::parameter<std::string, "target"> target{""};
+    parameter<std::string, "target"> target{""};
     /// The seconds the run may last, such as 10 or 2.5; empty: no limit.
-    config::parameter<std::string, "timeout"> timeout{""};
+    parameter<std::string, "timeout"> timeout{""};
     /// The evaluations the run may make, the initial one included; unlimited:
     /// no budget beyond the runner's own.
-    config::parameter<limit, "max_evaluations"> max_evaluations{unlimited};
+    parameter<limit, "max_evaluations"> max_evaluations{unlimited};
     /// Whether to print the value of each cost component, and its description.
-    config::parameter<bool, "report"> report{false};
+    parameter<bool, "report"> report{false};
     /// The file to record the trace of the run to, with timestamps: JSON Lines
     /// when its extension is .jsonl, ELTR otherwise; empty: no trace.
-    config::parameter<std::filesystem::path, "trace"> trace{""};
+    parameter<std::filesystem::path, "trace"> trace{""};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]

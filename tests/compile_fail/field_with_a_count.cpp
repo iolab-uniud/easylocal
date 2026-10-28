@@ -4,7 +4,7 @@
 
 struct Parameters
 {
-    easylocal::config::parameter<int, "size"> size{1};
+    easylocal::parameter<int, "size"> size{1};
 };
 
 int main()

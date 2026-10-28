@@ -13,9 +13,9 @@ namespace
 {
 
 using easylocal::limit;
+using easylocal::parameter;
+using easylocal::parameter_not_set;
 using easylocal::unlimited;
-using easylocal::config::parameter;
-using easylocal::config::parameter_not_set;
 
 // A block as a user writes it: a field with a member initializer has that
 // default, a field without one is required.
