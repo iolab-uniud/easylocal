@@ -14,6 +14,7 @@
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/file.hpp>
 #include <easylocal/config/overrides.hpp>
+#include <easylocal/config/parameter.hpp>
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/config/parameters_base.hpp>

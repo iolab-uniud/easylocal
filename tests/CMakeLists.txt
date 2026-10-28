@@ -619,6 +619,14 @@ easylocal_add_test(
 )
 
 easylocal_add_test(
+    parameter-defaults
+    SOURCES
+        parameter_defaults.cpp
+    LIBRARIES
+        EasyLocal::Core
+)
+
+easylocal_add_test(
     parameter-domains
     SOURCES
         parameter_domains.cpp
